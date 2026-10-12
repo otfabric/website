@@ -1,0 +1,98 @@
+---
+import { categories, projects, protocols } from '../data/projects';
+import ProjectCard from './ProjectCard.astro';
+
+const used = protocols.filter((p) => projects.some((project) => project.protocols.includes(p.id)));
+---
+
+<div class="ot-catalog not-content">
+	<div class="ot-filters" role="group" aria-label="Filter by protocol">
+		<span class="ot-label">Protocol</span>
+		<button type="button" data-filter="" aria-pressed="true">All</button>
+		{used.map((p) => <button type="button" data-filter={p.id} aria-pressed="false">{p.label}</button>)}
+	</div>
+
+	{categories.map((category) => {
+		const items = projects.filter((p) => p.category === category.id);
+		return (
+			<section class="ot-group" data-group={category.id}>
+				<h2 id={category.id}>{category.label}</h2>
+				<p class="ot-group-desc">{category.description}</p>
+				<div class="ot-grid">
+					{items.map((project) => <ProjectCard project={project} />)}
+				</div>
+				<p class="ot-empty" hidden>No {category.label.toLowerCase()} for this protocol yet.</p>
+			</section>
+		);
+	})}
+</div>
+
+<script>
+	const root = document.querySelector('.ot-catalog');
+	const buttons = root?.querySelectorAll<HTMLButtonElement>('[data-filter]') ?? [];
+
+	function apply(filter: string) {
+		buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
+		root?.querySelectorAll<HTMLElement>('.ot-group').forEach((group) => {
+			let visible = 0;
+			group.querySelectorAll<HTMLElement>('.ot-project').forEach((card) => {
+				const match = !filter || (card.dataset.protocols ?? '').split(' ').includes(filter);
+				card.hidden = !match;
+				if (match) visible++;
+			});
+			const empty = group.querySelector<HTMLElement>('.ot-empty');
+			if (empty) empty.hidden = visible > 0;
+		});
+	}
+
+	buttons.forEach((b) => b.addEventListener('click', () => apply(b.dataset.filter ?? '')));
+</script>
+
+<style>
+	.ot-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+		margin-bottom: 1.5rem;
+	}
+	.ot-filters .ot-label {
+		margin-right: 0.4rem;
+	}
+	.ot-filters button {
+		font: 500 0.8rem/1 var(--sl-font);
+		padding: 0.45rem 0.7rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--sl-color-gray-2);
+		cursor: pointer;
+	}
+	.ot-filters button[aria-pressed='true'] {
+		background: var(--sl-color-accent);
+		border-color: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.ot-group + .ot-group {
+		margin-top: 2.5rem;
+	}
+	.ot-group h2 {
+		font-size: var(--sl-text-h3);
+		margin: 0;
+		color: var(--sl-color-white);
+	}
+	.ot-group-desc {
+		margin: 0.25rem 0 1rem;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+	}
+	.ot-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+		gap: 0.9rem;
+	}
+	.ot-empty {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+	}
+</style>

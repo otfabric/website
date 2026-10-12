@@ -1,0 +1,89 @@
+---
+import { projects, protocols, repoUrl } from '../data/projects';
+
+const link = (name: string) => {
+	const p = projects.find((x) => x.name === name);
+	return p?.repo ? repoUrl(p.repo) : undefined;
+};
+
+const rows = protocols.map((protocol) => {
+	const of = (category: string) =>
+		projects
+			.filter((p) => p.status === 'available' && p.category === category && p.protocols[0] === protocol.id)
+			.map((p) => p.name);
+	return { ...protocol, libraries: of('library'), clis: of('cli'), interop: of('interop') };
+});
+// go-sunspec ships its own CLI.
+const sunspec = rows.find((r) => r.id === 'sunspec');
+if (sunspec && sunspec.clis.length === 0) sunspec.clis = ['sunspecctl (in go-sunspec)'];
+---
+
+<div class="ot-matrix not-content">
+	<table>
+		<thead>
+			<tr>
+				<th scope="col">Protocol</th>
+				<th scope="col">Library</th>
+				<th scope="col">CLI</th>
+				<th scope="col">Interop suite</th>
+			</tr>
+		</thead>
+		<tbody>
+			{rows.map((row) => (
+				<tr>
+					<th scope="row">{row.page ? <a href={row.page}>{row.label}</a> : row.label}</th>
+					{[row.libraries, row.clis, row.interop].map((names) => (
+						<td>
+							{names.length === 0
+								? <span class="ot-none">–</span>
+								: names.map((name, i) => {
+									const href = link(name);
+									return <>{i > 0 && ', '}{href ? <a href={href}><code>{name}</code></a> : <code>{name}</code>}</>;
+								})}
+						</td>
+					))}
+				</tr>
+			))}
+		</tbody>
+	</table>
+</div>
+
+<style>
+	.ot-matrix {
+		overflow-x: auto;
+		margin-top: 1rem;
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--sl-text-sm);
+	}
+	th,
+	td {
+		text-align: left;
+		padding: 0.6rem 0.8rem 0.6rem 0;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+		white-space: nowrap;
+	}
+	thead th {
+		font: 500 0.72rem/1 var(--sl-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--sl-color-gray-3);
+	}
+	tbody th {
+		font-weight: 600;
+	}
+	tbody th a {
+		color: var(--sl-color-white);
+	}
+	td a {
+		text-decoration: none;
+	}
+	code {
+		font-size: 0.85em;
+	}
+	.ot-none {
+		color: var(--sl-color-gray-4);
+	}
+</style>

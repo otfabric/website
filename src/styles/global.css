@@ -1,1 +1,106 @@
-@import "tailwindcss";
+/*
+ * OT Fabric theme for Starlight.
+ * Brand tokens come from the brand basics draft (slate base, teal "thread" accent,
+ * copper "wire" secondary). Swap colours here; nothing else hard-codes them.
+ */
+@layer base, starlight, theme, components, utilities;
+
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@import '@fontsource/barlow-semi-condensed/500.css';
+@import '@fontsource/barlow-semi-condensed/600.css';
+@import '@fontsource/barlow-semi-condensed/700.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/400-italic.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@theme {
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --font-display: 'Barlow Semi Condensed', 'Arial Narrow', Arial, sans-serif;
+
+  /* Thread (teal) */
+  --color-accent-50: #eef8f8;
+  --color-accent-100: #dcefef;
+  --color-accent-200: #b4e1e2;
+  --color-accent-300: #7fd0d3;
+  --color-accent-400: #3fc1c6;
+  --color-accent-500: #159ea3;
+  --color-accent-600: #0a7c80;
+  --color-accent-700: #0b6467;
+  --color-accent-800: #0b4f52;
+  --color-accent-900: #123a3d;
+  --color-accent-950: #082a2c;
+
+  /* Slate (panel, steel, mist) */
+  --color-gray-50: #f4f6f8;
+  --color-gray-100: #e6eaee;
+  --color-gray-200: #d9dfe4;
+  --color-gray-300: #b7c1ca;
+  --color-gray-400: #94a3b0;
+  --color-gray-500: #74838f;
+  --color-gray-600: #5a6875;
+  --color-gray-700: #2a3743;
+  --color-gray-800: #18222c;
+  --color-gray-900: #11181f;
+  --color-gray-950: #0b1015;
+
+  /* Wire (copper), used sparingly */
+  --color-wire-500: #e08a4e;
+  --color-wire-600: #b35a1f;
+}
+
+/* Unlayered so it wins over the plugin defaults: teal differs between light and dark. */
+:root {
+  --sl-color-accent-low: #123a3d;
+  --sl-color-accent: #3fc1c6;
+  --sl-color-accent-high: #dcefef;
+  --ot-wire: #e08a4e;
+  --ot-surface: #18222c;
+  --ot-line: #2a3743;
+  --sl-content-width: 48rem;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dcefef;
+  --sl-color-accent: #0a7c80;
+  --sl-color-accent-high: #0b4f52;
+  --sl-color-black: #ffffff;
+  --sl-color-white: #17212b;
+  --ot-wire: #b35a1f;
+  --ot-surface: #f4f6f8;
+  --ot-line: #d9dfe4;
+}
+
+h1, h2, h3, h4,
+.sl-markdown-content :is(h1, h2, h3, h4),
+.site-title,
+.hero h1 {
+  font-family: var(--font-display);
+  letter-spacing: -0.005em;
+}
+.site-title { font-weight: 600; }
+
+/* Small uppercase mono label used across custom components. */
+.ot-label {
+  font: 500 0.72rem/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sl-color-gray-3);
+}
+
+/* Links inside custom (.not-content) components follow the accent colour. */
+.not-content a:not(.ot-tile):not([class*='sl-']) {
+  color: var(--sl-color-text-accent);
+}
+
+.sl-blog-metadata-badges .sl-badge {
+  background: var(--sl-color-accent-low);
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent-high);
+  font-family: var(--font-mono);
+}

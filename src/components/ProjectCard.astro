@@ -1,0 +1,120 @@
+---
+import { protocols, repoUrl, type Project } from '../data/projects';
+
+interface Props {
+	project: Project;
+}
+
+const { project } = Astro.props;
+const labels = project.protocols.map((id) => protocols.find((p) => p.id === id)?.label ?? id);
+
+// Library icons from the brand assets (public/icons). Other projects borrow the icon
+// of the library for their main protocol, so a protocol reads the same everywhere.
+const iconNames = ['go-cotp', 'go-iec61850', 'go-mms', 'go-modbus', 'go-opcua', 'go-otfp', 'go-s7comm', 'go-serial', 'go-sunspec', 'go-tpkt'];
+const byProtocol: Record<string, string> = { modbus: 'go-modbus', 'opc-ua': 'go-opcua', 'iec-61850': 'go-iec61850', s7: 'go-s7comm', sunspec: 'go-sunspec' };
+const icon = iconNames.includes(project.name) ? project.name : byProtocol[project.protocols[0] ?? ''];
+---
+
+<article
+	class:list={['ot-project', { 'is-planned': project.status === 'planned' }]}
+	data-category={project.category}
+	data-protocols={project.protocols.join(' ')}
+>
+	<header>
+		{icon && <img class="ot-icon" src={`/icons/${icon}.svg`} alt="" width="32" height="32" loading="lazy" />}
+		<h3>
+			{project.repo ? <a href={repoUrl(project.repo)}>{project.name}</a> : project.name}
+		</h3>
+		{project.status === 'planned' && <span class="ot-badge">Planned</span>}
+	</header>
+	<p>{project.description}</p>
+	{project.install && <code class="ot-install">{project.install}</code>}
+	{labels.length > 0 && (
+		<ul class="ot-tags" aria-label="Protocols">
+			{labels.map((label) => <li>{label}</li>)}
+		</ul>
+	)}
+</article>
+
+<style>
+	.ot-project {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding: 1rem 1.1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.25rem;
+		background: var(--sl-color-black);
+		min-width: 0;
+	}
+	.ot-project[hidden] {
+		display: none;
+	}
+	.ot-project.is-planned {
+		border-style: dashed;
+		background: transparent;
+	}
+	header {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+	}
+	.ot-icon {
+		flex: none;
+		width: 2rem;
+		height: 2rem;
+	}
+	.ot-badge {
+		margin-inline-start: auto;
+	}
+	h3 {
+		margin: 0;
+		font-size: var(--sl-text-lg);
+		font-weight: 600;
+	}
+	h3 a {
+		color: var(--sl-color-white);
+		text-decoration: none;
+	}
+	h3 a:hover {
+		color: var(--sl-color-accent);
+	}
+	p {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.ot-install {
+		font-size: 0.75rem;
+		overflow-x: auto;
+		white-space: nowrap;
+		padding: 0.25rem 0.4rem;
+		background: var(--sl-color-gray-6);
+		border-radius: 0.2rem;
+	}
+	.ot-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin: auto 0 0;
+		padding: 0;
+		list-style: none;
+	}
+	.ot-tags li {
+		margin: 0;
+		font: 500 0.7rem/1 var(--sl-font-mono);
+		padding: 0.25rem 0.4rem;
+		border-radius: 0.2rem;
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.ot-badge {
+		font: 500 0.68rem/1 var(--sl-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--ot-wire);
+		border: 1px solid currentColor;
+		border-radius: 0.2rem;
+		padding: 0.2rem 0.35rem;
+	}
+</style>

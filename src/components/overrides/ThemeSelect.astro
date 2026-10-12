@@ -1,0 +1,47 @@
+---
+// Adds the main site navigation to the header, next to the theme switcher.
+// On small screens the sidebar menu carries the same links.
+import Default from '@astrojs/starlight/components/ThemeSelect.astro';
+
+const links = [
+	{ label: 'Protocols', href: '/protocols/' },
+	{ label: 'Projects', href: '/projects/' },
+	{ label: 'Blog', href: '/blog/' },
+	{ label: 'About', href: '/about/' },
+];
+const path = Astro.url.pathname;
+---
+
+<nav class="ot-nav" aria-label="Main">
+	{links.map((link) => (
+		<a href={link.href} aria-current={path.startsWith(link.href) ? 'page' : undefined}>{link.label}</a>
+	))}
+</nav>
+<Default><slot /></Default>
+
+<style>
+	.ot-nav {
+		display: none;
+		gap: 1.25rem;
+		margin-inline-end: 0.5rem;
+	}
+	@media (min-width: 72rem) {
+		.ot-nav {
+			display: flex;
+		}
+	}
+	.ot-nav a {
+		font-size: var(--sl-text-sm);
+		font-weight: 500;
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+	}
+	.ot-nav a:hover,
+	.ot-nav a[aria-current='page'] {
+		color: var(--sl-color-accent);
+	}
+	/* Inside the mobile menu footer the sidebar already lists these pages. */
+	:global(.mobile-preferences) .ot-nav {
+		display: none;
+	}
+</style>

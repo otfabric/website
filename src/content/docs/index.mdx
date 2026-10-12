@@ -1,40 +1,81 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: OT Fabric
+description: Open-source protocol libraries and tools that break down OT data silos, built by people and AI agents together.
+template: splash
+editUrl: false
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  title: Unified data for industrial operations.
+  tagline: Built by people and AI agents together, OT Fabric creates open-source protocol libraries and tools that break down operational technology (OT) data silos, so industrial data is easy to discover, access and use across systems, sites and teams.
   image:
-    file: ../../assets/houston.webp
+    light: ../../assets/logo-light.svg
+    dark: ../../assets/logo-dark.svg
+    alt: OT Fabric mark
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get started
+      link: /getting-started/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
+    - text: Browse projects
+      link: /projects/
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/otfabric
+      icon: github
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import Section from '../../components/home/Section.astro';
+import Tiles from '../../components/home/Tiles.astro';
+import ProtocolMatrix from '../../components/ProtocolMatrix.astro';
 
-## Next steps
+<Section label="01 · What we build" title="Open building blocks for industrial connectivity">
+  <Tiles
+    tiles={[
+      { label: 'Libraries', title: 'Protocol libraries', body: 'Pure Go clients and servers for Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850, Siemens S7 and SunSpec. No cgo.', href: '/projects/#library' },
+      { label: 'CLI', title: 'Command-line tools', body: 'One tool per protocol to discover, read, write and diagnose devices in the field, with JSON output for scripts and CI.', href: '/projects/#cli' },
+      { label: 'Discovery', title: 'Protocol fingerprinting', body: 'go-otfp detects which OT protocols are running on a network from transport framing alone.', href: '/projects/#discovery' },
+      { label: 'Interop', title: 'Interoperability testing', body: 'Every protocol is tested against independent stacks in public, Dockerized suites.', href: '/projects/#interop' },
+    ]}
+  />
+</Section>
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
-</CardGrid>
+<Section label="02 · Protocols" title="What you can connect today">
+  <p>Every library, CLI and interop suite is MIT-licensed and public on GitHub.</p>
+  <ProtocolMatrix />
+</Section>
+
+<Section label="03 · Why" title="Industrial data should not stay trapped">
+  <p>There is enormous potential in connecting the devices that run our factories, grids and buildings. Energy shows it most clearly: a sustainable, decentralized grid only works when solar inverters, batteries, meters and substations exchange data reliably.</p>
+  <p>Yet that data is locked inside PLCs, RTUs, meters, inverters and building controllers. Every device speaks its own protocol, documentation is often incomplete, and integrations are rebuilt from scratch for every site and vendor. We think the foundation for industrial connectivity should be open, well tested and reusable, so that nobody has to solve the same protocol problem twice.</p>
+</Section>
+
+<Section label="04 · How we build" title="Built with AI agents">
+  <p>OT Fabric is built by people and AI agents working together. We are heading toward a reality where LLMs write better code and deliver more secure software, and we build for that reality today. Engineers bring the domain knowledge of real OT systems, set direction and own every decision. Agents bring speed, breadth and attention to detail.</p>
+  <p>Speed alone is not the goal. Industrial protocols leave no room for "mostly works", so everything we ship is held to the same bar: public code, public tests and [interoperability suites](/projects/#interop) that check it against other implementations.</p>
+</Section>
+
+<Section label="05 · Who it's for" title="Made for people who connect real equipment">
+  <Tiles
+    tiles={[
+      { title: 'Energy and electricity startups', body: 'Building the software that connects solar, storage, EV charging, grid and DER equipment. Open, tested stacks let a small team integrate real hardware fast.' },
+      { title: 'OT and automation engineers', body: 'Commission, troubleshoot and maintain field devices with one CLI per protocol.' },
+      { title: 'System integrators', body: 'Connect equipment from many vendors across many sites with the same toolkit.' },
+      { title: 'Data and software teams', body: 'Get reliable, typed access to industrial devices from modern Go code.' },
+    ]}
+  />
+</Section>
+
+<Section label="06 · Where we're heading" title="Roadmap">
+  <Tiles
+    dashed
+    tiles={[
+      { label: 'Planned', title: 'Every relevant OT protocol', body: 'Full coverage, so any industrial device can be reached with the same open, tested toolkit.' },
+      { label: 'Planned', title: 'IT2OT gateways and connectors', body: 'Move OT data safely into the IT, cloud and analytics systems that need it.' },
+      { label: 'Planned', title: 'OT MCP servers', body: 'A structured, safe way for AI agents to discover, read and work with industrial devices.' },
+    ]}
+  />
+</Section>
+
+<Section label="07 · Get involved" title="Bring your own agent">
+  <p>Try a CLI, open an issue, or contribute a fix, written by you, your AI agent or both of you. Everything is MIT-licensed unless a repository says otherwise.</p>
+  <p>[Contributing guide](/contributing/) · [GitHub](https://github.com/otfabric) · [Blog](/blog/)</p>
+</Section>
