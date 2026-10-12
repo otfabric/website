@@ -40,7 +40,7 @@ Every APDU (application protocol data unit) starts with the octet `0x68` and a l
 | **S** (supervisory) | N(R) only | Acknowledges received I frames when there is nothing to send |
 | **U** (unnumbered) | One function | STARTDT, STOPDT and TESTFR, each as activation (act) and confirmation (con) |
 
-Sequence numbers are 15 bits wide and wrap at 32768. Every I frame a side sends counts up N(S); the N(R) it sends back says how many I frames it has received. An I frame of your own also acknowledges, so an S frame is only needed when one side is quiet.
+Sequence numbers are 15 bits wide and wrap at 32768. Every I frame a side sends counts up N(S); the N(R) it sends back acknowledges every I frame received up to that number. An I frame of your own also acknowledges, so an S frame is only needed when one side is quiet.
 
 ### Data transfer: STARTDT and STOPDT
 
@@ -165,8 +165,7 @@ Two standards add security:
 | | IEC 62351-3 (TLS) | IEC 62351-5 (application layer) |
 |---|---|---|
 | What it protects | The TCP connection: encryption, server and client certificates | Individual ASDUs: challenge and reply, session and update keys, message authentication codes |
-| Default port | 19998 | Runs inside the IEC 104 connection |
-| Applied to IEC 104 by | | IEC TS 60870-5-7 |
+| Default port | 19998 | Runs inside the IEC 104 connection; IEC TS 60870-5-7 says how it applies to IEC 60870-5-101 and -104 |
 | OT Fabric support | Yes, client and server, with mutual authentication | **No.** The type identifications and causes are named and carried as raw payload; the procedures are not implemented |
 
 TLS authenticates the connection, not the individual command. With TLS and client certificates the station knows which control centre is connected, and authorizes commands by that certificate. The OT Fabric projects document why IEC 62351-5 is not implemented yet: the 2023 edition with IEC TS 60870-5-7:2025 differs from the 2013 one, and none of the three open-source stacks they test against has an implementation to verify against.
