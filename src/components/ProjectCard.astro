@@ -1,39 +1,37 @@
 ---
-import { protocols, repoUrl, type Project } from '../data/projects';
+import { repoUrl, type Project } from '../data/projects';
 
 interface Props {
 	project: Project;
+	protocolNames: Record<string, string>;
 }
 
-const { project } = Astro.props;
-const labels = project.protocols.map((id) => protocols.find((p) => p.id === id)?.label ?? id);
-
-// Library icons from the brand assets (public/icons). Other projects borrow the icon
-// of the library for their main protocol, so a protocol reads the same everywhere.
-const iconNames = ['go-cotp', 'go-iec61850', 'go-mms', 'go-modbus', 'go-opcua', 'go-otfp', 'go-s7comm', 'go-serial', 'go-sunspec', 'go-tpkt'];
-const byProtocol: Record<string, string> = { modbus: 'go-modbus', 'opc-ua': 'go-opcua', 'iec-61850': 'go-iec61850', s7: 'go-s7comm', sunspec: 'go-sunspec' };
-const icon = iconNames.includes(project.name) ? project.name : byProtocol[project.protocols[0] ?? ''];
+const { project, protocolNames } = Astro.props;
+const { data } = project;
+const labels = data.protocols.map((id) => protocolNames[id] ?? id);
+const href = data.status === 'available' ? `/projects/${project.id}/` : undefined;
 ---
 
 <article
-	class:list={['ot-project', { 'is-planned': project.status === 'planned' }]}
-	data-category={project.category}
-	data-protocols={project.protocols.join(' ')}
+	class:list={['ot-project', { 'is-planned': data.status === 'planned' }]}
+	data-category={data.category}
+	data-protocols={data.protocols.join(' ')}
 >
 	<header>
-		{icon && <img class="ot-icon" src={`/icons/${icon}.svg`} alt="" width="32" height="32" loading="lazy" />}
-		<h3>
-			{project.repo ? <a href={repoUrl(project.repo)}>{project.name}</a> : project.name}
-		</h3>
-		{project.status === 'planned' && <span class="ot-badge">Planned</span>}
+		{data.icon && <img class="ot-icon" src={`/icons/${data.icon}.svg`} alt="" width="32" height="32" />}
+		<h3>{href ? <a href={href}>{data.name}</a> : data.name}</h3>
+		{data.status === 'planned' && <span class="ot-badge">Planned</span>}
 	</header>
-	<p>{project.description}</p>
-	{project.install && <code class="ot-install">{project.install}</code>}
-	{labels.length > 0 && (
-		<ul class="ot-tags" aria-label="Protocols">
-			{labels.map((label) => <li>{label}</li>)}
-		</ul>
-	)}
+	<p>{data.description}</p>
+	{data.install && <code class="ot-install">{data.install}</code>}
+	<footer>
+		{labels.length > 0 && (
+			<ul class="ot-tags" aria-label="Protocols">
+				{labels.map((label) => <li>{label}</li>)}
+			</ul>
+		)}
+		{data.repo && <a class="ot-repo" href={repoUrl(data.repo)}>GitHub</a>}
+	</footer>
 </article>
 
 <style>
@@ -42,9 +40,9 @@ const icon = iconNames.includes(project.name) ? project.name : byProtocol[projec
 		flex-direction: column;
 		gap: 0.6rem;
 		padding: 1rem 1.1rem;
-		border: 1px solid var(--sl-color-gray-5);
+		border: 1px solid var(--ot-line);
 		border-radius: 0.25rem;
-		background: var(--sl-color-black);
+		background: var(--ot-bg);
 		min-width: 0;
 	}
 	.ot-project[hidden] {
@@ -64,52 +62,64 @@ const icon = iconNames.includes(project.name) ? project.name : byProtocol[projec
 		width: 2rem;
 		height: 2rem;
 	}
-	.ot-badge {
-		margin-inline-start: auto;
-	}
 	h3 {
 		margin: 0;
-		font-size: var(--sl-text-lg);
+		font-size: 1.15rem;
 		font-weight: 600;
 	}
 	h3 a {
-		color: var(--sl-color-white);
+		color: var(--ot-fg-strong) !important;
 		text-decoration: none;
 	}
 	h3 a:hover {
-		color: var(--sl-color-accent);
+		color: var(--ot-accent) !important;
 	}
 	p {
 		margin: 0;
-		font-size: var(--sl-text-sm);
-		color: var(--sl-color-gray-2);
+		font-size: 0.875rem;
+		line-height: 1.55;
+		color: var(--ot-muted);
 	}
 	.ot-install {
+		display: block;
 		font-size: 0.75rem;
 		overflow-x: auto;
 		white-space: nowrap;
-		padding: 0.25rem 0.4rem;
-		background: var(--sl-color-gray-6);
+		padding: 0.3rem 0.45rem;
+		background: var(--ot-surface);
+		border: 1px solid var(--ot-line);
 		border-radius: 0.2rem;
+	}
+	footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-top: auto;
 	}
 	.ot-tags {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.35rem;
-		margin: auto 0 0;
+		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 	.ot-tags li {
 		margin: 0;
-		font: 500 0.7rem/1 var(--sl-font-mono);
+		font: 500 0.7rem/1 var(--ot-font-mono);
 		padding: 0.25rem 0.4rem;
 		border-radius: 0.2rem;
-		background: var(--sl-color-accent-low);
-		color: var(--sl-color-accent-high);
+		background: var(--ot-accent-soft);
+		color: var(--ot-accent-strong);
+	}
+	.ot-repo {
+		font-size: 0.8rem;
+		flex: none;
 	}
 	.ot-badge {
-		font: 500 0.68rem/1 var(--sl-font-mono);
+		margin-inline-start: auto;
+		font: 500 0.68rem/1 var(--ot-font-mono);
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		color: var(--ot-wire);

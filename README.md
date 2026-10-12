@@ -13,23 +13,33 @@ npm run build     # static site in ./dist
 npm run preview   # serve ./dist locally
 ```
 
-## Where things live
+## How the site is organised
+
+The website pages are plain Astro; the documentation under `/docs/` is Starlight. Both share the same brand tokens and navigation.
+
+| URL | Source |
+|---|---|
+| `/` | `src/pages/index.astro` |
+| `/about/` | `src/pages/about.mdx` |
+| `/protocols/`, `/protocols/<id>/` | `src/content/protocols/*.mdx` (content collection) |
+| `/projects/`, `/projects/<id>/` | `src/data/projects.json` (content collection) |
+| `/blog/`, `/blog/<id>/`, `/blog/tags/<tag>/`, `/blog/rss.xml` | `src/content/blog/*.{md,mdx}` (content collection) |
+| `/docs/...` | `src/content/docs/docs/` (Starlight) |
+
+Shared pieces:
 
 | Path | What |
 |---|---|
-| `src/content/docs/index.mdx` | Homepage |
-| `src/content/docs/protocols/` | Protocol guides (Modbus, OPC UA, BACnet/IP, IEC 104) |
-| `src/content/docs/projects/` | Project catalog page |
-| `src/data/projects.ts` | Catalog data: every public repo, plus planned items |
-| `src/content/docs/blog/` | Blog posts (starlight-blog). See `/contributing/blog-posts/` |
-| `src/components/` | Catalog, protocol matrix, homepage sections, YouTube and Video embeds |
-| `src/components/overrides/ThemeSelect.astro` | Header navigation |
-| `src/styles/global.css` | Brand colours and fonts |
-| `src/assets/logo-*.svg`, `public/favicon.svg`, `public/icons/` | Brand mark and library icons |
+| `src/layouts/BaseLayout.astro` | Layout for every non-docs page |
+| `src/components/site/` | Header, footer, logo, navigation, theme toggle |
+| `src/components/overrides/` | Starlight header and mobile menu, using the same navigation |
+| `src/data/site.ts` | Navigation links |
+| `src/styles/tokens.css` | Brand colours and fonts, used by both sides |
+| `src/styles/site.css`, `src/styles/global.css` | Website styles, Starlight theme |
 
 ## Adding a project
 
-Add an entry to `src/data/projects.ts`. Only public repositories in github.com/otfabric go in as `available`; roadmap items are `planned` and have no `repo`.
+Add an entry to `src/data/projects.json`. Only public repositories in github.com/otfabric go in as `available`; roadmap items are `planned` and have no `repo`.
 
 ## License
 

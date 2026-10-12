@@ -1,30 +1,26 @@
 ---
-import { categories, projects, protocols } from '../data/projects';
-import ProjectCard from './ProjectCard.astro';
+import { categories, getProjects, getProtocols } from '../data/projects';
+import ProjectGrid from './ProjectGrid.astro';
 
-const used = protocols.filter((p) => projects.some((project) => project.protocols.includes(p.id)));
+const projects = await getProjects();
+const protocols = await getProtocols();
 ---
 
 <div class="ot-catalog not-content">
 	<div class="ot-filters" role="group" aria-label="Filter by protocol">
 		<span class="ot-label">Protocol</span>
 		<button type="button" data-filter="" aria-pressed="true">All</button>
-		{used.map((p) => <button type="button" data-filter={p.id} aria-pressed="false">{p.label}</button>)}
+		{protocols.map((p) => <button type="button" data-filter={p.id} aria-pressed="false">{p.data.name}</button>)}
 	</div>
 
-	{categories.map((category) => {
-		const items = projects.filter((p) => p.category === category.id);
-		return (
-			<section class="ot-group" data-group={category.id}>
-				<h2 id={category.id}>{category.label}</h2>
-				<p class="ot-group-desc">{category.description}</p>
-				<div class="ot-grid">
-					{items.map((project) => <ProjectCard project={project} />)}
-				</div>
-				<p class="ot-empty" hidden>No {category.label.toLowerCase()} for this protocol yet.</p>
-			</section>
-		);
-	})}
+	{categories.map((category) => (
+		<section class="ot-group">
+			<h2 id={category.id}>{category.label}</h2>
+			<p class="ot-group-desc">{category.description}</p>
+			<ProjectGrid projects={projects.filter((p) => p.data.category === category.id)} />
+			<p class="ot-empty" hidden>No {category.label.toLowerCase()} for this protocol yet.</p>
+		</section>
+	))}
 </div>
 
 <script>
@@ -54,45 +50,40 @@ const used = protocols.filter((p) => projects.some((project) => project.protocol
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.4rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 2rem;
 	}
 	.ot-filters .ot-label {
 		margin-right: 0.4rem;
 	}
 	.ot-filters button {
-		font: 500 0.8rem/1 var(--sl-font);
-		padding: 0.45rem 0.7rem;
-		border: 1px solid var(--sl-color-gray-5);
+		font: 500 0.8rem/1 var(--ot-font-body);
+		padding: 0.45rem 0.75rem;
+		border: 1px solid var(--ot-line);
 		border-radius: 999px;
 		background: transparent;
-		color: var(--sl-color-gray-2);
+		color: var(--ot-fg);
 		cursor: pointer;
 	}
 	.ot-filters button[aria-pressed='true'] {
-		background: var(--sl-color-accent);
-		border-color: var(--sl-color-accent);
-		color: var(--sl-color-black);
+		background: var(--ot-accent);
+		border-color: var(--ot-accent);
+		color: var(--ot-bg);
 	}
 	.ot-group + .ot-group {
-		margin-top: 2.5rem;
+		margin-top: 3rem;
 	}
 	.ot-group h2 {
-		font-size: var(--sl-text-h3);
+		font-size: 1.6rem;
 		margin: 0;
-		color: var(--sl-color-white);
+		scroll-margin-top: 5rem;
 	}
 	.ot-group-desc {
-		margin: 0.25rem 0 1rem;
-		color: var(--sl-color-gray-3);
-		font-size: var(--sl-text-sm);
-	}
-	.ot-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
-		gap: 0.9rem;
+		margin: 0.3rem 0 1.1rem;
+		color: var(--ot-muted);
+		font-size: 0.9rem;
 	}
 	.ot-empty {
-		color: var(--sl-color-gray-3);
-		font-size: var(--sl-text-sm);
+		color: var(--ot-muted);
+		font-size: 0.9rem;
 	}
 </style>

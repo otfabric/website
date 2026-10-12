@@ -1,7 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import starlightBlog from 'starlight-blog';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
 
@@ -16,7 +15,7 @@ export default defineConfig({
     starlight({
       title: 'OT Fabric',
       description,
-      // Placeholder mark until the brand basics thread delivers the final logo.
+      // Same mark as the website header (src/components/site/Logo.astro).
       logo: {
         light: './src/assets/logo-light.svg',
         dark: './src/assets/logo-dark.svg',
@@ -36,53 +35,22 @@ export default defineConfig({
         baseUrl: 'https://github.com/otfabric/website/edit/main/',
       },
       components: {
-        ThemeSelect: './src/components/overrides/ThemeSelect.astro',
+        Header: './src/components/overrides/Header.astro',
+        MobileMenuFooter: './src/components/overrides/MobileMenuFooter.astro',
       },
-      plugins: [
-        starlightBlog({
-          title: 'Blog',
-          prefix: 'blog',
-          navigation: 'none',
-          postCount: 10,
-          recentPostCount: 5,
-          metrics: { readingTime: true },
-          authors: {
-            otfabric: {
-              name: 'OT Fabric',
-              title: 'Maintainers',
-              url: 'https://github.com/otfabric',
-            },
-          },
-        }),
-      ],
       sidebar: [
         {
-          label: 'Getting started',
+          label: 'Start here',
           items: [
-            { label: 'Overview', slug: 'getting-started' },
-            { label: 'About OT Fabric', slug: 'about' },
+            { label: 'Documentation', slug: 'docs' },
+            { label: 'Getting started', slug: 'docs/getting-started' },
           ],
         },
         {
-          label: 'Protocols',
+          label: 'Contributing',
           items: [
-            { label: 'All protocols', slug: 'protocols' },
-            { label: 'Modbus', slug: 'protocols/modbus' },
-            { label: 'OPC UA', slug: 'protocols/opc-ua' },
-            { label: 'BACnet/IP', slug: 'protocols/bacnet' },
-            { label: 'IEC 60870-5-104', slug: 'protocols/iec-104' },
-          ],
-        },
-        {
-          label: 'Projects',
-          items: [{ label: 'Project catalog', slug: 'projects' }],
-        },
-        {
-          label: 'Community',
-          items: [
-            { label: 'Blog', link: '/blog/' },
-            { label: 'Contributing', slug: 'contributing' },
-            { label: 'Writing blog posts', slug: 'contributing/blog-posts' },
+            { label: 'How to contribute', slug: 'docs/contributing' },
+            { label: 'Writing blog posts', slug: 'docs/contributing/blog-posts' },
           ],
         },
       ],
