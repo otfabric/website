@@ -42,6 +42,23 @@ const categoryKeywords: Record<typeof data.category, string[]> = {
 	mcp: ['Model Context Protocol', 'AI agents'],
 	gateway: ['IT/OT integration', 'data connectors'],
 };
+// The browser and search title says what the project is: "go-modbus: Modbus library".
+const what: Record<string, string> = {
+	'go-modbus-capture': 'Modbus capture format (MBCAP)',
+	'go-modbus-trace': 'Modbus/TCP packet trace reader',
+	'go-mms': 'MMS (ISO 9506) library',
+	'modbus-simulator': 'Modbus device simulator',
+	'go-cotp': 'COTP (ISO 8073) transport',
+	'go-tpkt': 'TPKT (RFC 1006) framing',
+	'go-serial': 'RS-232 and RS-485 serial ports',
+	'go-otfp': 'OT protocol fingerprinting',
+	'lan-tracker': 'OT network visibility',
+	'modbus-trace-explorer': 'Modbus/TCP trace viewer',
+};
+const kind = { library: 'library', cli: 'command-line tool', interop: 'interop test suite', ui: 'desktop app' } as Record<string, string>;
+const topic = protocols.find((p) => p.id === data.protocols[0])?.data.name;
+const pageTitle = what[project.id] ?? (topic && kind[data.category] ? `${data.name}: ${topic} ${kind[data.category]}` : data.name);
+const fullName = pageTitle.startsWith(data.name) ? pageTitle : `${data.name}: ${pageTitle}`;
 const schema = [
 	breadcrumbs([
 		{ name: 'Projects', path: '/projects/' },
@@ -88,7 +105,7 @@ const schema = [
 ];
 ---
 
-<BaseLayout title={data.name} description={data.description} schema={schema}>
+<BaseLayout title={fullName} description={data.description} schema={schema}>
 	<PageHeader label={category.label} title={data.name} lead={data.description}>
 		<div class="actions">
 			<a class="ot-btn primary" href={repoUrl(data.repo!)}>View on GitHub</a>

@@ -14,8 +14,13 @@ const url = absolute(Astro.url.pathname);
 const parent = /^docs\/protocols\/[^/]+\/[^/]+$/.test(id) ? await getEntry('docs', id.split('/').slice(0, 3).join('/')) : undefined;
 const headline =
 	parent && !entry.data.title.includes(parent.data.title) ? `${parent.data.title}: ${entry.data.title}` : entry.data.title;
+// A protocol's docs overview would otherwise share "Modbus | OT Fabric" with /protocols/modbus/.
+const isProtocolOverview = /^docs\/protocols\/[^/]+$/.test(id);
+const pageTitle = `${isProtocolOverview ? `${entry.data.title} documentation` : headline} | OT Fabric`;
+const titleTag = head.find((tag) => tag.tag === 'title');
+if (titleTag && !isNotFound) titleTag.content = pageTitle;
 const ogTitle = head.find((tag) => tag.tag === 'meta' && tag.attrs?.property === 'og:title');
-if (ogTitle?.attrs) ogTitle.attrs.content = `${headline} | OT Fabric`;
+if (ogTitle?.attrs) ogTitle.attrs.content = pageTitle;
 
 // Pages under /docs/protocols/<id>/ are about the protocol on /protocols/<id>/.
 const protocolId = id.match(/^docs\/protocols\/([^/]+)/)?.[1];
