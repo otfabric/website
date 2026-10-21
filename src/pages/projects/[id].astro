@@ -31,6 +31,17 @@ const releases =
 const media = projectMedia[project.id];
 const screenshotUrl = media?.screenshot && (await getImage({ src: media.screenshot.src, width: 1200, format: 'png' })).src;
 const url = absolute(`/projects/${project.id}/`);
+// Search terms for each kind of project, next to the protocol names.
+const categoryKeywords: Record<typeof data.category, string[]> = {
+	library: ['protocol library', 'client', 'server'],
+	cli: ['command-line tool', 'CLI'],
+	transport: ['transport layer'],
+	discovery: ['network visibility', 'network discovery', 'protocol fingerprinting'],
+	interop: ['interoperability testing', 'reference implementations', 'Docker'],
+	ui: ['desktop app'],
+	mcp: ['Model Context Protocol', 'AI agents'],
+	gateway: ['IT/OT integration', 'data connectors'],
+};
 const schema = [
 	breadcrumbs([
 		{ name: 'Projects', path: '/projects/' },
@@ -48,21 +59,26 @@ const schema = [
 		author: orgRef,
 		publisher: orgRef,
 		isAccessibleForFree: true,
-		keywords: ['OT', 'industrial automation', ...protocols.map((p) => p.data.name)].join(', '),
-		about: protocols.map((p) => ({ '@type': 'Thing', name: p.data.name, url: absolute(`/protocols/${p.id}/`) })),
+		keywords: ['OT', 'industrial automation', ...categoryKeywords[data.category], ...protocols.map((p) => p.data.name)].join(', '),
+		...(protocols.length && {
+			about: protocols.map((p) => ({ '@type': 'Thing', name: p.data.name, url: absolute(`/protocols/${p.id}/`) })),
+		}),
 		mainEntityOfPage: { '@id': `${url}#webpage` },
 	},
-	...(data.category === 'ui'
+	// Tools people download and run also describe themselves as applications.
+	...(releases
 		? [
 				{
 					'@type': 'SoftwareApplication',
+					'@id': `${url}#app`,
 					name: data.name,
 					description: data.description,
 					url,
-					applicationCategory: 'DeveloperApplication',
-					operatingSystem: 'macOS, Windows, Linux',
-					downloadUrl: `${repoUrl(data.repo!)}/releases/latest`,
+					applicationCategory: data.category === 'discovery' ? 'NetworkingApplication' : 'DeveloperApplication',
+					...(data.category === 'ui' && { operatingSystem: 'macOS, Windows, Linux' }),
+					downloadUrl: `${releases}/latest`,
 					offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' },
+					isAccessibleForFree: true,
 					...(screenshotUrl && { screenshot: absolute(screenshotUrl) }),
 					author: orgRef,
 					publisher: orgRef,
