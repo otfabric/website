@@ -1,0 +1,348 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import EcosystemNav from '../../../components/ecosystem/EcosystemNav.astro';
+import AccessList from '../../../components/organizations/AccessList.astro';
+import MembershipTable from '../../../components/organizations/MembershipTable.astro';
+import ProjectGrid from '../../../components/ProjectGrid.astro';
+import { getProjects, getProtocols } from '../../../data/projects';
+import { absolute, breadcrumbs, orgRef } from '../../../data/seo';
+import {
+	REVIEW_DAYS,
+	domainLabels,
+	entryPoint,
+	formatDay,
+	getOrganizations,
+	host,
+	kindLabels,
+	orgPath,
+	programLabels,
+	regionLabels,
+	reviewBy,
+	roleLabels,
+	type Organization,
+} from '../../../data/organizations';
+import { ecosystem } from '../../../data/ecosystem';
+
+export async function getStaticPaths() {
+	const orgs = await getOrganizations();
+	return orgs.filter((o) => o.data.detail).map((org) => ({ params: { id: org.id }, props: { org } }));
+}
+
+interface Props {
+	org: Organization;
+}
+const { org } = Astro.props;
+const d = org.data;
+const orgs = await getOrganizations();
+const byId = Object.fromEntries(orgs.map((o) => [o.id, o]));
+const protocolName = Object.fromEntries((await getProtocols()).map((p) => [p.id, p.data.name]));
+const projects = (await getProjects()).filter((p) => d.relatedProjects.includes(p.id));
+const stacks = new Map(ecosystem.implementations.map((i) => [i.id, i]));
+const path = orgPath(org);
+const url = absolute(path);
+const shortName = d.acronym ?? d.name;
+const description = `${d.name}: how to take part, membership tiers and published fees, certification and interoperability programs, and the protocols it covers, with sources checked ${formatDay(d.verifiedAt)}.`;
+
+const schema = [
+	breadcrumbs([
+		{ name: 'Standards and alliances', path: '/ecosystem/organizations/' },
+		{ name: d.name, path },
+	]),
+	{
+		'@type': 'Organization',
+		'@id': `${url}#subject`,
+		name: d.name,
+		alternateName: d.acronym,
+		url: d.website,
+		description: d.description,
+		knowsAbout: d.protocols.map((p) => protocolName[p]),
+	},
+	{
+		'@type': 'Article',
+		'@id': `${url}#article`,
+		headline: `${d.name}: participation, membership and programs`,
+		description,
+		url,
+		mainEntityOfPage: { '@id': `${url}#webpage` },
+		about: { '@id': `${url}#subject` },
+		author: orgRef,
+		publisher: orgRef,
+		dateModified: d.verifiedAt,
+		inLanguage: 'en',
+		citation: d.sources.map((s) => s.url),
+	},
+];
+---
+
+<BaseLayout title={`${d.name}: membership, fees and programs`} description={description} schema={schema}>
+	<EcosystemNav />
+	<section class="head">
+		<div class="ot-container">
+			<a class="back ot-label" href="/ecosystem/organizations/">← Standards and alliances</a>
+			<span class="ot-label kind">{kindLabels[d.kind]} · {d.domains.map((x) => domainLabels[x]).join(', ')} · {regionLabels[d.region]}</span>
+			<h1>{d.name}{d.acronym && <span class="acr">{d.acronym}</span>}</h1>
+			<p class="lead">{d.description}</p>
+			<dl class="facts">
+				<div><dt class="ot-label">Cheapest way in</dt><dd>{entryPoint(org)}</dd></div>
+				{d.protocols.length > 0 && (
+					<div>
+						<dt class="ot-label">Protocols</dt>
+						<dd>{d.protocols.map((p, i) => <>{i > 0 && ', '}<a href={`/protocols/${p}/`}>{protocolName[p]}</a></>)}</dd>
+					</div>
+				)}
+				<div><dt class="ot-label">Verified</dt><dd>{formatDay(d.verifiedAt)}</dd></div>
+			</dl>
+			<div class="actions">
+				<a class="ot-btn primary" href={d.website} rel="noopener">Official website: {host(d.website)} ↗</a>
+				{d.sources[0] && <a class="ot-btn" href={d.sources[0].url} rel="noopener">{d.sources[0].label} ↗</a>}
+			</div>
+		</div>
+	</section>
+
+	<div class="ot-container body">
+		<p class="neutral">
+			OT Fabric is not affiliated with {d.name}. This profile is independent and based on the organization's own published pages,
+			linked next to each fact. {shortName} is the authority on its terms and fees.
+		</p>
+
+		<section>
+			<h2>What {shortName} does</h2>
+			<ul class="roles">
+				{d.standards.map((s) => (
+					<li>
+						<span class="ot-label">{roleLabels[s.role]}</span>
+						<strong>{s.name}</strong>
+						{s.note && <span>{s.note}</span>}
+					</li>
+				))}
+			</ul>
+		</section>
+
+		<section>
+			<h2>Taking part</h2>
+			<p class="intro">Each question is separate, because "open" and "free" mean different things here. A yes always means open or free to someone who is not a member.</p>
+			<AccessList org={org} />
+		</section>
+
+		<section>
+			<h2>Membership tiers and published fees</h2>
+			<p class="intro">Published examples as listed on the organization's pages on {formatDay(d.verifiedAt)}. Where a page does not say whether a fee recurs, we do not guess.</p>
+			<MembershipTable org={org} />
+		</section>
+
+		{d.programs.length > 0 && (
+			<section>
+				<h2>Certification and interoperability</h2>
+				<ul class="programs">
+					{d.programs.map((p) => (
+						<li>
+							<span class="ot-label">{programLabels[p.kind]} · {p.openToNonMembers === 'yes' ? 'open to non-members' : p.openToNonMembers === 'no' ? 'members only' : 'membership rules not stated'}</span>
+							<strong>{p.url ? <a href={p.url} rel="noopener">{p.name}</a> : p.name}</strong>
+							<span>{p.detail} <a class="src" href={p.source} rel="noopener">{host(p.source)}</a></span>
+						</li>
+					))}
+				</ul>
+			</section>
+		)}
+
+		{d.openSource.length > 0 && (
+			<section>
+				<h2>Open-source implementations</h2>
+				<ul class="oss">
+					{d.openSource.map((s) => {
+						const stack = s.implementation ? stacks.get(s.implementation) : undefined;
+						return (
+							<li>
+								<a href={s.url} rel="noopener">{s.name}</a>
+								{stack && (
+									<span>
+										{stack.languages.join(', ')} · <code>{stack.license}</code> ·{' '}
+										<a href={`/ecosystem/implementations/?stack=${stack.id}`}>on the ecosystem map</a>
+									</span>
+								)}
+							</li>
+						);
+					})}
+				</ul>
+			</section>
+		)}
+
+		<section class="insights">
+			<span class="ot-label accent">OT Fabric's notes</span>
+			<h2>What stands out</h2>
+			{d.insights.map((p) => <p>{p}</p>)}
+		</section>
+
+		{d.related.length > 0 && (
+			<section>
+				<h2>Related organizations</h2>
+				<ul class="related">
+					{d.related.map((r) => (
+						<li><a href={orgPath(byId[r.id])}>{byId[r.id].data.name}</a>: {r.relation}</li>
+					))}
+				</ul>
+			</section>
+		)}
+
+		{projects.length > 0 && (
+			<section>
+				<h2>Related OT Fabric projects</h2>
+				<p class="intro">Independent open-source work on the same protocols. Listing them here does not mean they are certified by or associated with {shortName}.</p>
+				<ProjectGrid projects={projects} />
+			</section>
+		)}
+
+		<section class="sources">
+			<h2>Sources</h2>
+			<ul>
+				{d.sources.map((s) => <li><a href={s.url} rel="noopener">{s.label}</a> <span class="muted">{host(s.url)}</span></li>)}
+				{d.documents.map((s) => <li><a href={s.url} rel="noopener">{s.label}</a> <span class="muted">governance document</span></li>)}
+			</ul>
+			<p class="muted">
+				Verified on {formatDay(d.verifiedAt)}; due for a re-check by {formatDay(reviewBy(d.verifiedAt))} ({REVIEW_DAYS} days). Found
+				something out of date?{' '}
+				<a href={`https://github.com/otfabric/website/issues/new?title=${encodeURIComponent(`Standards and alliances: ${d.name}`)}`}>Report a correction</a>{' '}
+				or <a href="https://github.com/otfabric/website/blob/main/src/data/organizations.json">edit the data on GitHub</a>.
+			</p>
+		</section>
+	</div>
+</BaseLayout>
+
+<style>
+	.head {
+		padding-block: 2.5rem 2.25rem;
+		border-bottom: 1px solid var(--ot-line);
+		background:
+			linear-gradient(to bottom, transparent, var(--ot-bg)),
+			repeating-linear-gradient(90deg, var(--ot-line) 0 1px, transparent 1px 48px),
+			repeating-linear-gradient(0deg, var(--ot-line) 0 1px, transparent 1px 48px);
+	}
+	.back {
+		display: inline-block;
+		margin-bottom: 1.25rem;
+		color: var(--ot-accent);
+		text-decoration: none;
+	}
+	.kind {
+		display: block;
+	}
+	h1 {
+		margin: 0.6rem 0 0;
+		font-size: clamp(2.2rem, 5vw, 3.2rem);
+		font-weight: 700;
+	}
+	.acr {
+		margin-inline-start: 0.75rem;
+		font: 500 1rem/1 var(--ot-font-mono);
+		color: var(--ot-muted);
+	}
+	.lead {
+		max-width: 46rem;
+		margin: 1rem 0 0;
+		font-size: 1.12rem;
+		color: var(--ot-muted);
+	}
+	.facts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem 2.5rem;
+		margin: 1.75rem 0 0;
+	}
+	.facts dd {
+		margin: 0.35rem 0 0;
+		font: 500 0.95rem/1.3 var(--ot-font-mono);
+		color: var(--ot-fg-strong);
+	}
+	.facts a,
+	.body a {
+		color: var(--ot-accent);
+	}
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+		margin-top: 1.75rem;
+	}
+	.actions a {
+		color: inherit;
+	}
+	.actions .primary {
+		color: var(--ot-bg);
+	}
+	.body {
+		padding-top: 2rem;
+		padding-bottom: 4rem;
+		max-width: 60rem;
+	}
+	.body section {
+		margin-top: 3rem;
+	}
+	.body h2 {
+		margin: 0 0 0.75rem;
+		font-size: 1.7rem;
+	}
+	.neutral {
+		margin: 0;
+		padding: 0.75rem 1rem;
+		border-inline-start: 3px solid var(--ot-wire);
+		background: var(--ot-surface);
+		font-size: 0.92rem;
+	}
+	.intro {
+		max-width: 46rem;
+		margin: 0 0 0.75rem;
+		color: var(--ot-muted);
+	}
+	.roles,
+	.programs,
+	.oss,
+	.related,
+	.sources ul {
+		display: grid;
+		gap: 0.85rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.roles li,
+	.programs li,
+	.oss li {
+		display: grid;
+		gap: 0.25rem;
+		margin: 0;
+	}
+	.roles span:last-child:not(.ot-label),
+	.oss span {
+		color: var(--ot-muted);
+		font-size: 0.92rem;
+	}
+	.programs .src {
+		font-size: 0.85rem;
+	}
+	.insights {
+		padding: 1.5rem 1.75rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+		background: var(--ot-surface);
+	}
+	.insights h2 {
+		margin-top: 0.5rem;
+	}
+	.insights p {
+		margin: 0.8rem 0 0;
+	}
+	.accent {
+		color: var(--ot-accent);
+	}
+	.related li,
+	.sources li {
+		margin: 0;
+	}
+	.muted {
+		color: var(--ot-muted);
+		font-size: 0.9rem;
+	}
+	.sources p {
+		margin-top: 1rem;
+	}
+</style>

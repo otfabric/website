@@ -29,7 +29,7 @@ const rows = byProtocol(protocol)
 			{rows.map((i) => (
 				<tr class:list={{ otf: i.otfabric }}>
 					<th scope="row">
-						<a href={`/ecosystem/?stack=${i.id}`}>{i.name}</a>
+						<a href={`/ecosystem/implementations/?stack=${i.id}`}>{i.name}</a>
 					</th>
 					<td>{i.languages.join(', ')}</td>
 					<td><code>{i.license}</code>{i.commercialLicense && <span class="muted"> or commercial</span>}</td>

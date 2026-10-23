@@ -7,7 +7,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check:organizations": "node scripts/check-organizations.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",

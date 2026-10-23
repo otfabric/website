@@ -8,14 +8,18 @@ import { readFileSync, readdirSync } from 'node:fs';
 const site = 'https://otfabric.io';
 
 // Last-modified dates for the sitemap, where the content records one: blog posts
-// (updated, else date) and the ecosystem map (the registry's verification date).
+// (updated, else date), the ecosystem map (the registry's verification date) and the organizations directory.
 const lastmod = new Map();
 for (const file of readdirSync('./src/content/blog')) {
   const frontmatter = readFileSync(`./src/content/blog/${file}`, 'utf8').split('\n---')[0];
   const date = (frontmatter.match(/^updated:\s*(\S+)/m) ?? frontmatter.match(/^date:\s*(\S+)/m))?.[1];
   if (date) lastmod.set(`${site}/blog/${file.replace(/\.mdx?$/, '')}/`, date);
 }
-lastmod.set(`${site}/ecosystem/`, JSON.parse(readFileSync('./src/data/ecosystem.json', 'utf8')).verified);
+lastmod.set(`${site}/ecosystem/implementations/`, JSON.parse(readFileSync('./src/data/ecosystem.json', 'utf8')).verified);
+// The standards and alliances directory: each profile's verification date, and the newest for the list.
+const organizations = JSON.parse(readFileSync('./src/data/organizations.json', 'utf8'));
+for (const org of organizations.filter((o) => o.detail)) lastmod.set(`${site}/ecosystem/organizations/${org.id}/`, org.verifiedAt);
+lastmod.set(`${site}/ecosystem/organizations/`, organizations.map((o) => o.verifiedAt).sort().at(-1));
 const description =
   'Open-source protocol libraries and tools that break down OT data silos, built by people and AI agents together.';
 
@@ -99,6 +103,8 @@ export default defineConfig({
     }),
 
     sitemap({
+      // /ecosystem/ only forwards to /ecosystem/implementations/.
+      filter: (page) => page !== `${site}/ecosystem/`,
       serialize(item) {
         const date = lastmod.get(item.url);
         return date ? { ...item, lastmod: new Date(date).toISOString() } : item;

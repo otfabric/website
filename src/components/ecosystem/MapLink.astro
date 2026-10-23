@@ -7,7 +7,7 @@ interface Props {
 	title?: string;
 }
 const { protocol, title = 'Explore the interactive ecosystem map' } = Astro.props;
-const href = protocol ? `/ecosystem/?protocol=${protocol}` : '/ecosystem/';
+const href = protocol ? `/ecosystem/implementations/?protocol=${protocol}` : '/ecosystem/implementations/';
 ---
 
 <a class="ot-maplink not-content" href={href}>

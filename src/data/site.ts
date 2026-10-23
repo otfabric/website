@@ -14,7 +14,7 @@ export const nav = [
 	{ label: 'Docs', href: '/docs/' },
 	{ label: 'Protocols', href: '/protocols/' },
 	{ label: 'Projects', href: '/projects/' },
-	{ label: 'Ecosystem', href: '/ecosystem/' },
+	{ label: 'Ecosystem', href: '/ecosystem/implementations/', section: '/ecosystem/' },
 	{ label: 'Blog', href: '/blog/' },
 	{ label: 'About', href: '/about/' },
 	{ label: 'Contact', href: '/contact/' },
@@ -31,5 +31,6 @@ export const people = [
 	},
 ];
 
-export const isActive = (pathname: string, href: string) =>
-	pathname === href || pathname.startsWith(href);
+/** A link is current on its own page and, when it heads a section, anywhere in that section. */
+export const isActive = (pathname: string, link: { href: string; section?: string }) =>
+	pathname === link.href || pathname.startsWith(link.section ?? link.href);
