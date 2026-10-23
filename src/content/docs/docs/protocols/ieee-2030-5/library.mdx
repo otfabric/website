@@ -1,0 +1,219 @@
+---
+title: Go library
+description: Use go-ieee20305 to build IEEE 2030.5 clients, device agents and servers in Go, with registration, DER programs and controls, Responses, subscriptions, metering, CSIP-AUS site limits, certificates, the CCM_8 cipher suite, errors and observability.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+[go-ieee20305](/projects/go-ieee20305/) implements both ends of IEEE 2030.5 in Go: a **client** of one server, a device **agent** that gives the client a device's behaviour, and a **server** for every resource of the IEEE 2030.5 WADL, with an operator's API beside it. The resource model is generated from the official IEEE 2030.5-2023 and CSIP-AUS v1.3 schemas. The core module has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ieee20305); [API.md](https://github.com/otfabric/go-ieee20305/blob/main/API.md) in the repository is the map. This page follows v0.5.2.
+
+Before v1.0.0, a minor release may change the API; the [release notes](https://github.com/otfabric/go-ieee20305/blob/main/RELEASE.md) say what changed.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-ieee20305
+```
+
+Go 1.23 or later. The CCM_8 cipher suite is a module of its own, which needs Go 1.26.8:
+
+```sh
+go get github.com/otfabric/go-ieee20305/tlsccm
+```
+
+| Package | What it is |
+|---|---|
+| `ieee20305` | The resource model: every type of IEEE 2030.5-2023 with validation, schema defaults and codecs for both editions; errors, logging, retry policies |
+| `client` | A client of one server: resources, lists, walks, registration, subscriptions and a notification handler |
+| `agent` | The behaviour of a device on a client: registration, polling, events of every function set, Responses, metering, subscriptions |
+| `server` | A server as an `http.Handler`, its `Admin` API and its `Store` |
+| `security` | LFDI and SFDI, certificate verification with HardwareModuleNames, TLS configurations, test certificates |
+| `schedule` | Event scheduling: primacy, supersession, randomization, cancellation |
+| `discovery` | DNS-SD browsing and advertising of `_smartenergy._tcp` |
+| `csipaus`, `csipaus/csipserver`, `csipaus/csipclient` | CSIP-AUS v1.3: its types, site limits, a server of the profile, the connection point of a device |
+| `tlsccm` (module) | The CCM_8 cipher suite for clients and servers |
+
+`client` and `server` do not import each other: a device needs nothing of the server, and the other way round.
+
+## A client
+
+A `client.Client` talks to one server as one device, over mutual TLS. `client.NewHTTPClient` makes an HTTP client with the device's certificate that verifies the server against the CAs you give it, never the system's roots.
+
+```go
+c, err := client.New(client.Config{
+	Server:     "https://utility.example/dcap",
+	HTTPClient: client.NewHTTPClient(deviceCert, serverCAs),
+})
+
+dcap, err := c.DeviceCapability(ctx)
+fmt.Println(dcap.GetPollRate())
+
+// Find or create the EndDevice of this certificate, and check the PIN.
+id := client.IdentityOf(deviceCert.Leaf) // LFDI and SFDI
+ed, created, err := c.Register(ctx, dcap.EndDeviceListLink.Href, id)
+reg, err := c.Registration(ctx, ed)
+if err := client.CheckPIN(reg, 111115); err != nil {
+	log.Fatal(err) // client.ErrPINMismatch: not the server the device was given
+}
+```
+
+| Method | Use |
+|---|---|
+| `Get(ctx, href, v)`, `Fetch(ctx, href)` | Read a resource into `v`, or into the type of its element |
+| `GetList`, `Iterate(ctx, href, pageSize, fn)` | One page of a list, or every item, page by page |
+| `Walk(ctx, root, opts, visit)` | The resource tree, breadth first, each resource once |
+| `Post`, `Put`, `Delete` | Write; `Post` returns the `Location` |
+| `Time(ctx)` | The server's clock and the local clock's offset from it |
+| `Subscribe`, `Unsubscribe` | Subscriptions; `NewNotificationHandler` is the `http.Handler` that receives the notifications |
+
+The client follows links only within its server, and refuses a link or a redirect to another one. It does not repeat a `POST` after a failure unless `Config.RetryPOST` is set, since a lost answer leaves the outcome unknown.
+
+## A device agent
+
+An `agent.Agent` is what a device does with its client: it registers, polls the function set assignments and their programs at the server's `pollRate`, schedules the events of every function set, posts the Responses they ask for, and calls your handlers when something changes.
+
+```go
+a, err := agent.New(agent.Config{
+	Client:    c,
+	Identity:  client.IdentityOf(deviceCert.Leaf),
+	PIN:       111115,
+	VerifyPIN: true,
+	OnDERControl: func(ctx context.Context, t schedule.Transition) error {
+		// t.To is Scheduled, Active, Completed, Cancelled or Superseded.
+		return inverter.Apply(t.Event) // your code
+	},
+	OnDefaultDERControl: func(ctx context.Context, d any) error {
+		return inverter.ApplyDefault(d)
+	},
+	MirrorUsagePoint: mup, // and Readings, PostRate: report metering
+})
+defer a.Close()
+err = a.Run(ctx) // until ctx ends, or an error waiting will not fix
+```
+
+| | |
+|---|---|
+| Handlers | `OnAssignments`, `OnDERControl`, `OnDefaultDERControl`, `OnEndDeviceControl`, `OnTextMessage`, `OnTimeTariffInterval`, `OnSupplyInterruptionOverride`, `OnFlowReservation`, `OnFile` |
+| Scheduling | Primacy, then creation time; supersession by the mode a DER control sets; `randomizeStart` and `randomizeDuration`; cancellation with and without randomization |
+| Responses | Received, started, completed, superseded and cancelled, as each event asks; failed posts are retried, refused ones dropped |
+| Subscriptions | With `NotificationURI`, the agent subscribes to its assignments, programs and controls, serves `NotificationHandler()`, and polls less (`SubscribedPollRate`) |
+| State | `State()`, `Active(agent.DER)`, `Events(fs)`; `Log`, `PutDeviceStatus`, `PutPowerStatus`, `RequestFlowReservation` |
+
+`Run` stops on a PIN mismatch and on errors that waiting does not fix (a refused certificate, a 4xx, a configuration error), and retries the rest with `Config.Backoff`. Handlers are called from the agent's goroutines: return quickly.
+
+## A server
+
+A `server.Server` is an `http.Handler`. Devices see the standard resources; the operator, your code, uses `Admin`:
+
+```go
+srv, err := server.New(server.Config{
+	OnResponse: func(ctx context.Context, href string, r any) { /* a device answered */ },
+})
+defer srv.Close()
+
+a := srv.Admin()
+_ = a.Root(ctx, "DERProgramList", "/derp", a.Document("DERProgramList"))
+
+lfdi := security.CertificateLFDI(deviceCert)
+_, err = a.ProvisionDevice(ctx, server.DeviceSpec{LFDI: lfdi, Register: true, PIN: 111115})
+fsa, err := a.AssignFSA(ctx, lfdi, &ieee20305.FunctionSetAssignments{MRID: ieee20305.MRIDType{1}})
+err = a.NewList(ctx, "DERProgramList", fsa+"/derp", fsa, "DERProgramListLink", lfdi.String())
+program, err := a.Create(ctx, "/derp", &ieee20305.DERProgram{Primacy: 1}, "")
+err = a.AddMember(ctx, fsa+"/derp", program)
+_, err = a.Create(ctx, program+"/derc", control, "") // a *ieee20305.DERControl
+
+hs := &http.Server{Addr: ":8443", Handler: srv, TLSConfig: security.ServerTLSConfig(serverCert, deviceCAs)}
+log.Fatal(hs.ListenAndServeTLS("", ""))
+```
+
+What the server does by itself:
+
+- **Identity and authorization.** Each request is the device of its client certificate. A device reads what is shared and its own resources and changes only its own; an aggregator (`RoleAggregator`) acts for the devices it manages; an operator for everyone.
+- **The WADL.** A method the WADL does not allow for a resource is 405; discouraged methods only with `Config.EnableDiscouraged`. Every document gets its `href`, every ListLink its `all`.
+- **Parts.** Creating an EndDevice creates its lists (FSAs, DERs, log events, subscriptions…); creating a DERProgram its control list, active control list, curves and default control.
+- **The event lifecycle.** The server keeps each event's EventStatus as it starts, ends, is cancelled (`Admin.CancelEvent`) or superseded, and computes the Active lists and the CurrentDERProgram.
+- **Responses and metering.** Responses are stored once per device, event and status. A MirrorUsagePoint becomes a UsagePoint with its readings. `FlowPolicy` answers flow reservation requests.
+- **Notifications.** Every change to a subscribed resource, by a device, by `Admin` or in the `Store`, is delivered as the latest state, retried, and cancelled when undeliverable. Notification URIs on loopback and link-local addresses are refused unless `NotificationURIAllowed` says otherwise.
+- **Editions.** The server encodes for each device in the edition it was provisioned with (`DeviceSpec.Edition`, `Config.DefaultEdition`).
+
+Resources live in memory unless `Config.Store` gives another `Store`; there is no database adapter in the module. `Hooks` replace the default handling of any WADL resource with your own.
+
+## CSIP-AUS
+
+CSIP-AUS adds site limits, the **dynamic operating envelope**, and the connection point of each device. The `csipaus` types embed the IEEE 2030.5 types they extend; `csipaus.Codec{}` reads and writes them.
+
+```go
+// A device of a CSIP-AUS server
+c, err := client.New(client.Config{Server: url, HTTPClient: hc, Codec: csipaus.Codec{}})
+// in a handler: the envelope of a control
+if lim, ok := csipaus.LimitsOf(control); ok {
+	fmt.Println(lim) // export, import, generation and load limits
+}
+ed, err := csipclient.EndDevice(ctx, c, edHref)
+err = csipclient.SetConnectionPoint(ctx, c, ed, "4407123456")
+
+// A server of the profile
+srv, err := server.New(csipserver.Configure(server.Config{}))
+err = csipserver.SetDefaultLimits(ctx, srv.Admin(), program, limits)
+```
+
+`go run ./examples/csipaus` runs both sides with a default limit, an envelope and a connection point.
+
+## Certificates and TLS
+
+| | |
+|---|---|
+| `security.CertificateLFDI(cert)`, `LFDI.SFDI()` | The identifiers of a certificate; `SFDI.Valid()` checks the check digit |
+| `security.Verify`, `VerifyPeerCertificate` | Chain verification that accepts the critical HardwareModuleName that `crypto/x509` refuses |
+| `security.ClientTLSConfig`, `ServerTLSConfig`, `NotificationTLSConfig` | TLS 1.2 or later, mutual authentication, ECDHE-ECDSA suites |
+| `security.TestCA`, `TestServerCert`, `TestDeviceCert`, `TestDeviceCertHMN` | Throwaway certificates for tests and examples |
+
+Go's `crypto/tls` has no CCM_8 ([golang/go#27484](https://github.com/golang/go/issues/27484)), so the core module offers the ECDHE-ECDSA AES-GCM suites, which most servers accept. For a peer that offers nothing but `TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8`, such as the GridAPPS-D server and the EPRI client, use the module `tlsccm`:
+
+```go
+hc := tlsccm.NewHTTPClient(deviceCert, serverCAs, tlsccm.Options{})
+c, err := client.New(client.Config{Server: "https://utility.example:8443", HTTPClient: hc})
+```
+
+On the server side, `tlsccm.NewListener` wraps a listener, and `server.Config.PeerCertificates: tlsccm.PeerCertificates` tells the server where to find the client's certificate. `tlsccm` carries a copy of Go 1.22.0's `crypto/tls` with CCM_8 added, TLS 1.2 only; every `crypto/tls` vulnerability Go has published since is reviewed against it, and a weekly workflow flags new ones.
+
+## Errors
+
+Every error matches one of a few sentinels of the root package with `errors.Is`:
+
+| Sentinel | Meaning |
+|---|---|
+| `ErrNotFound`, `ErrForbidden`, `ErrUnauthorized`, `ErrBadRequest`, `ErrConflict`, `ErrServer`, `ErrUnavailable` | The server answered with that status; the `*StatusError` holds the server's Error document and its `Retry-After` |
+| `ErrTimeout`, `ErrUnavailable` | No answer in time; no connection |
+| `ErrCertificate` | A certificate was refused, by either end |
+| `ErrProtocol`, `ErrInvalid` (`*ValidationError`) | A document that breaks the protocol or the schema |
+| `ErrConfiguration`, `ErrClosed`, `ErrCanceled` | A configuration that cannot work; use after `Close`; a cancelled context |
+
+`ieee20305.Retryable(err)` and `ieee20305.RetryAfter(err)` say whether and when to try again. [ERRORS.md](https://github.com/otfabric/go-ieee20305/blob/main/ERRORS.md) has the full table.
+
+## Logging, metrics and retries
+
+The client, the server and the agent take a `Logger` (`ieee20305.NewSlogLogger` adapts `log/slog`) and a `Metrics` with a few synchronous hooks (requests, responses, retries, notifications, event transitions), silent by default. `ieee20305.ExponentialBackoff` with full jitter is the retry policy of the client, the agent and the notifier, and honours `Retry-After`. Lists and queues are bounded. [OBSERVABILITY.md](https://github.com/otfabric/go-ieee20305/blob/main/OBSERVABILITY.md) has the details, and a Prometheus adapter in a few lines.
+
+## Example programs
+
+```sh
+go run ./examples/quickstart              # a server and a device agent in one process
+go run ./examples/server -pki /tmp/pki    # a server on 127.0.0.1:8443, with a test PKI
+go run ./examples/client -pki /tmp/pki    # a device: register, check the PIN, walk
+go run ./examples/csipaus                 # CSIP-AUS envelopes, default limits, connection point
+go run ./examples/observability           # logging, metrics and retries
+```
+
+## Limitations
+
+- **CCM_8 needs the module `tlsccm`**, on a copy of Go 1.22.0's `crypto/tls`, TLS 1.2 only.
+- **DNS-SD** uses the link-local mDNS groups rather than the site-local xmDNS scope the standard specifies, and is not exercised across implementations, because the interop containers run on networks without multicast.
+- **The server keeps its resources in memory** unless a `Store` is given.
+- **Prepayment, billing and files** are implemented and tested end to end, but no other open implementation has them, so they are not verified across stacks.
+- **No certification.** go-ieee20305 is tested against four independent stacks, not against the SunSpec or UL test harnesses or field devices.
+
+<LinkCard title="go-ieee20305 INTEROPERABILITY.md" description="What is implemented of each edition and profile, and the decisions the library takes where the standard leaves room." href="https://github.com/otfabric/go-ieee20305/blob/main/INTEROPERABILITY.md" />

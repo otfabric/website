@@ -1,0 +1,117 @@
+---
+title: IEEE 2030.5
+description: How IEEE 2030.5 (Smart Energy Profile 2.0) works (servers and clients, resources and links, certificates, LFDI and SFDI, registration and the PIN, function set assignments, programs and events, Responses, polling and subscriptions, metering, editions, CSIP and CSIP-AUS) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+IEEE 2030.5, the Smart Energy Profile 2.0 (SEP 2.0), is the protocol between a utility or an aggregator and distributed energy resources: solar inverters, batteries, EV chargers, meters and the gateways that manage them. It began in the ZigBee Alliance and the HomePlug Alliance as a smart energy profile for the home, became IEEE 2030.5 in 2013, and is now in its 2018 and 2023 editions, both of which the OT Fabric projects implement. Its best-known users are its profiles: **CSIP**, the Common Smart Inverter Profile of California's Rule 21, and **CSIP-AUS** for dynamic connections in Australia. This page explains how IEEE 2030.5 works, as far as it matters for using [go-ieee20305](/projects/go-ieee20305/) and [ieee20305ctl](/projects/ieee20305ctl/).
+
+## Servers and clients
+
+| Role | What it is | In go-ieee20305 | In ieee20305ctl |
+|---|---|---|---|
+| Server | The utility's or the aggregator's head end, often in front of a DERMS: it holds the programs, controls, tariffs and metering of its devices | package `server` (an `http.Handler`) and its `Admin` API | `ieee20305ctl server …` |
+| Client | A device: an inverter, a battery, a charger, a meter, a home energy gateway, or an aggregator acting for many | package `client`, and package `agent` for a device's behaviour | `ieee20305ctl client …` |
+
+The client always opens the connection. A server reaches a device only by answering it, or by posting **notifications** to an HTTPS endpoint the device has subscribed with. An **aggregator** is a client that manages other devices' EndDevices, which is how most fleets of home batteries and inverters connect in practice.
+
+## Resources, links and lists
+
+IEEE 2030.5 is REST over HTTPS, with XML documents of the media type `application/sep+xml` in the namespace `urn:ieee:std:2030.5:ns`. Clients `GET` resources, and `PUT`, `POST` and `DELETE` the ones they may change.
+
+- **Everything starts at DeviceCapability**, usually `/dcap`. It links to the top-level resources the server offers: the EndDeviceList, the DER programs, the tariffs, the metering mirrors, the time.
+- **Links, not paths.** A client finds every resource by following links (`DERProgramListLink`, `TimeLink`, …). Paths below `/dcap` are the server's choice, and two servers rarely agree on them.
+- **Lists** are paged with `s` (start) and `l` (limit), and a **ListLink** tells how many items there are (`all`). Each list has the order the standard gives it.
+- **pollRate.** The server says how often clients should poll; the schema default is 900 seconds.
+
+The resources and the methods each one allows are defined by a schema (`sep.xsd`) and a WADL, which IEEE publishes with the standard. go-ieee20305 generates its types and its table of resources from them.
+
+## Certificates, LFDI and SFDI
+
+There are no user names or passwords: **a device is its certificate.** Every connection is TLS 1.2 with mutual authentication, and both certificates chain to CAs the other side trusts. The standard's cipher suite is `TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8`, with ECDSA P-256 keys.
+
+| Identifier | What it is |
+|---|---|
+| **LFDI** (long-form device identifier) | The leftmost 160 bits of the SHA-256 fingerprint of the certificate, written as 40 hexadecimal digits |
+| **SFDI** (short-form device identifier) | The leftmost 36 bits as a decimal number, followed by a check digit: short enough to print on a label and type in |
+
+Device certificates of real IEEE 2030.5 products carry a **HardwareModuleName** in a critical subjectAltName, which Go's `crypto/x509` refuses by default; go-ieee20305's `security.Verify` accepts it.
+
+## Registration and the PIN
+
+The server keeps an **EndDevice** for each device in its EndDeviceList, found by the LFDI or SFDI of its certificate. A device is known to the server in one of two ways:
+
+- **Out of band**: the installer or the operator provisions it, by its LFDI, before it first connects.
+- **In band**: the device posts its own EndDevice, and the server registers it.
+
+The EndDevice links a **Registration** with a **PIN**. The device was given the same PIN out of band (on a label, by its installer) and checks it before it trusts the server: a PIN that does not match means that this is not the server the device was meant to join.
+
+## Function set assignments and programs
+
+An EndDevice links its **FunctionSetAssignments** (FSAs): which programs apply to this device. Each FSA links the lists of its function sets:
+
+| Function set | What the device receives |
+|---|---|
+| **DER** | DER programs with their controls, default controls and curves (volt-var, frequency-watt, …), and the DER resources the device reports: capability, settings, status, availability |
+| **Demand response and load control** | EndDeviceControls: shed, cycle or offset a load |
+| **Pricing** | Tariffs, rate components and the price of each time interval |
+| **Messaging** | Text messages, with a priority |
+| **Prepayment, billing** | Account balances and bills |
+| **Flow reservation** | Requests to charge or discharge a given energy, and the server's answer |
+| **Files** | Software and firmware to download |
+
+A **program** has a **primacy**: lower wins. A utility's program may have primacy 1, an aggregator's 2.
+
+## Events, controls and Responses
+
+Programs hold time-bound **events**. A DERControl is one: "limit output to 50 % from 14:00 for an hour", "do not export more than 1.5 kW", "disconnect". The device schedules events itself:
+
+- An event is **Scheduled**, then **Active**, then **Completed**; or **Cancelled** by the server, or **Superseded** by another.
+- When two events conflict, primacy decides, then the event created last. DER controls conflict only when they set the same mode, so a power limit and a fixed power factor can be active at once.
+- `randomizeStart` and `randomizeDuration` spread a fleet's reaction, so a thousand batteries do not all start in the same second.
+- A **DefaultDERControl** applies when no event does.
+
+An event with `responseRequired` and a `replyTo` asks the device for **Responses**: when it receives the event, when it starts, when it completes, and when it is cancelled, superseded or opted out of. The server learns from them what each device actually did.
+
+## Polling and subscriptions
+
+Clients poll at the server's `pollRate`. For changes that should arrive sooner, a client posts a **Subscription** to a resource with a URI of its own, and the server posts a **Notification** there when the resource changes. The client's listener is an HTTPS server too, with mutual TLS.
+
+## Metering
+
+A device reports its readings by posting a **MirrorUsagePoint** with its **MirrorMeterReadings**: power, energy, voltage, at the rate the server asks. The server exposes them to other clients as UsagePoints and MeterReadings. A device also posts **LogEvents**, and puts its DERStatus and DERAvailability.
+
+## Editions and profiles
+
+| | What it is |
+|---|---|
+| IEEE 2030.5-2013 | The first edition, from SEP 2.0 |
+| IEEE 2030.5-2018 | The edition most deployments and certification programmes use today |
+| IEEE 2030.5-2023 | Adds optional elements and resources; a server that serves both editions encodes for each device in its edition |
+| **CSIP** | The Common Smart Inverter Profile of California's Rule 21: which DER functions, controls and Responses an inverter or aggregator must support, certified by SunSpec |
+| **CSIP-AUS** | The Australian profile for dynamic connections: **site limits** for export, import, generation and load (the dynamic operating envelope), the **connection point** (NMI) of a site, and its own schema extensions in the namespace `https://csipaus.org/ns/v1.3` |
+
+go-ieee20305 follows IEEE 2030.5-2023 (`sep.xsd` 2.2) and encodes for a 2018 peer without what 2018 does not define. CSIP-AUS v1.3 has its own generated types (`csipaus`).
+
+<Aside type="caution" title="Real equipment">
+A DER control changes what an inverter, a battery or a charger does on the grid. Use ieee20305ctl and go-ieee20305 against servers and devices you own or are authorized to test, and keep the private keys of device certificates as safe as the devices themselves.
+</Aside>
+
+## OT Fabric for IEEE 2030.5
+
+| Project | What it is |
+|---|---|
+| [go-ieee20305](/projects/go-ieee20305/) | IEEE 2030.5 for Go: a client, a device agent and a server for every resource of the WADL, editions 2018 and 2023, CSIP and CSIP-AUS, subscriptions, LFDI and SFDI, DNS-SD, and the CCM_8 cipher suite in the module `tlsccm`. No dependencies outside the standard library in the core module. v0.5.2. |
+| [ieee20305ctl](/projects/ieee20305ctl/) | A command-line tool on go-ieee20305: act as a device, run a device agent, serve a seeded test server and operate it while it runs, and check certificates. v0.2.1. |
+| [ieee20305-interop](/projects/ieee20305-interop/) | Docker images of four independent IEEE 2030.5 implementations behind one container contract, with mutual TLS everywhere and baseline, CSIP and CSIP-AUS fixtures. v0.2.0. |
+
+<CardGrid>
+  <LinkCard title="Go library" description="Clients, device agents and servers, CSIP-AUS and CCM_8 with go-ieee20305." href="/docs/protocols/ieee-2030-5/library/" />
+  <LinkCard title="ieee20305ctl" description="Act as a device, serve a test server, operate it, check certificates." href="/docs/protocols/ieee-2030-5/cli/" />
+  <LinkCard title="Testing and interop" description="Reference stacks, fixtures and what has been validated." href="/docs/protocols/ieee-2030-5/testing/" />
+  <LinkCard title="Ecosystem map" description="Who else implements IEEE 2030.5, in which language and licence." href="/ecosystem/?protocol=ieee-2030-5" />
+</CardGrid>
