@@ -7,16 +7,16 @@ export const ogImage = {
 	src: '/og-image.png',
 	width: 1200,
 	height: 630,
-	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, SunSpec, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP and DNP3.',
+	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, SunSpec, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3 and IEEE 2030.5.',
 };
 
 /** Meta description for the homepage: what OT Fabric is, with the protocols people search for. */
 export const homeDescription =
-	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, SunSpec, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP and DNP3.';
+	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, SunSpec, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3 and IEEE 2030.5.';
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
-	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, SunSpec, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP and DNP3 (IEEE 1815). Built by people and AI agents together.';
+	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, SunSpec, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815) and IEEE 2030.5 (CSIP, CSIP-AUS). Built by people and AI agents together.';
 
 export const absolute = (path: string) => new URL(path, site.url).href;
 
@@ -55,12 +55,15 @@ export const organization = {
 		'OpenADR',
 		'OCPP',
 		'DNP3',
+		'IEEE 2030.5',
+		'Smart Energy Profile 2.0',
 		'SCADA',
 		'Substation automation',
 		'Building automation',
 		'Distributed energy resources (DER)',
 		'Demand response',
 		'EV charging',
+		'Smart inverters (CSIP, CSIP-AUS)',
 		'OT network visibility',
 		'Packet capture analysis',
 		'Protocol interoperability testing',
