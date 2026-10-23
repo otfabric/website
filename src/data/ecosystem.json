@@ -18,43 +18,6 @@
    "commercial": "Established",
    "summary": "The broadest open-source ecosystem in OT, spanning C, Python, Java, .NET, JavaScript, Rust, Go and microcontrollers."
   },
-
-{
-  "id": "openopcua-coreserver",
-  "name": "OpenOpcUa CoreServer",
-  "protocol": "opc-ua",
-  "type": "commercial",
-  "languages": [
-    "C++"
-  ],
-  "license": "Proprietary freeware",
-  "url": "https://www.openopcua.org/oouamiddleware/",
-  "stars": null,
-  "release": null,
-  "roles": [
-    "client",
-    "server",
-    "publisher",
-    "subscriber"
-  ],
-  "capabilities": [
-    "OPC UA TCP Binary",
-    "Security",
-    "OPC UA Information Models",
-    "NodeSet2",
-    "Historical Access",
-    "Alarms & Conditions",
-    "OPC UA PubSub (IEC 62541-14)",
-    "MQTT Transport"
-  ],
-  "maintenance": "n/a",
-  "notes": "Native C++ OPC UA implementation developed by 4CE Industry and used by OOUAMiddleware. Supports runtime execution of OPC UA information models, Historical Access, Alarms & Conditions, and OPC UA PubSub through MQTT Publisher and Subscriber VPIs compliant with IEC 62541-14. Distributed as freeware with commercial integration and support services.",
-  "sources": [
-    "https://www.openopcua.org/oouamiddleware/"
-  ],
-  "verified": "2026-10-22"
-},
- 
   {
    "id": "opc-ua",
    "name": "OPC UA",
@@ -1165,6 +1128,38 @@
     "https://industrial.softing.com/"
    ],
    "verified": "2026-10-18"
+  },
+  {
+   "id": "openopcua-coreserver",
+   "name": "OpenOpcUa CoreServer",
+   "protocol": "opc-ua",
+   "type": "commercial",
+   "languages": [
+    "C / C++"
+   ],
+   "license": "Proprietary freeware",
+   "url": "https://www.openopcua.org/oouamiddleware/",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "NodeSet2 address space",
+    "Historical Access",
+    "Alarms and events",
+    "Redundancy",
+    "MQTT publisher and subscriber"
+   ],
+   "maintenance": "n/a",
+   "notes": "Native C/C++ runtime of OOUAMiddleware by OpenOpcUa, with industrial support through 4CE Industry. It loads information models built in OOUA Configuration Studio and reaches devices and MQTT brokers through VPIs. Available for industrial deployment without licensing fees; the technology stays with its author.",
+   "sources": [
+    "https://www.openopcua.org/oouamiddleware/",
+    "https://www.openopcua.org/ooua-configuration-studio/",
+    "https://www.openopcua.org/download/"
+   ],
+   "verified": "2026-10-23"
   },
   {
    "id": "bacnet-stack",
