@@ -31,7 +31,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 
 SunSpec is the exception: it is a register model on top of Modbus, so go-sunspec is tested through its own server, offline decoding and a weekly comparison with the SunSpec Alliance's model definitions, and its Modbus layer is covered by modbus-interop.
 
-We pick references that are independent of each other and of us, widely used, and written in different languages, so that one shared misreading is unlikely to hide in all of them. The [ecosystem map](/ecosystem/) marks every stack a suite runs.
+We pick references that are independent of each other and of us, widely used, and written in different languages, so that one shared misreading is unlikely to hide in all of them. The [ecosystem map](/ecosystem/implementations/) marks every stack a suite runs.
 
 ## How a suite is built
 

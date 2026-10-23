@@ -5,6 +5,7 @@ import PageHeader from '../../components/site/PageHeader.astro';
 import ProjectGrid from '../../components/ProjectGrid.astro';
 import { getProtocols, projectsFor, repoUrl, type Protocol } from '../../data/projects';
 import { absolute, breadcrumbs, orgRef } from '../../data/seo';
+import { kindLabels, organizationsFor, orgPath } from '../../data/organizations';
 
 export async function getStaticPaths() {
 	const protocols = await getProtocols();
@@ -17,6 +18,7 @@ interface Props {
 const { protocol } = Astro.props;
 const { Content } = await render(protocol);
 const projects = await projectsFor(protocol.id);
+const organizations = await organizationsFor(protocol.id);
 // Link to the detailed docs only once they exist.
 const hasDocs = Boolean(await getEntry('docs', `docs/protocols/${protocol.id}`));
 const url = absolute(`/protocols/${protocol.id}/`);
@@ -75,6 +77,25 @@ const schema = [
 		<h2 class="projects-title">OT Fabric projects for {protocol.data.name}</h2>
 		<ProjectGrid projects={projects} />
 	</div>
+
+	{organizations.length > 0 && (
+		<div class="ot-container">
+			<h2 class="projects-title">Who is behind {protocol.data.name}</h2>
+			<p class="orgs-intro">
+				The organizations that publish, test, certify or host open-source work for {protocol.data.name}. Listed for reference, not as
+				partners. <a href={`/ecosystem/organizations/?protocol=${protocol.id}`}>Compare membership and fees</a>.
+			</p>
+			<ul class="orgs">
+				{organizations.map((o) => (
+					<li>
+						<a href={orgPath(o)}>{o.data.name}</a>
+						<span class="ot-label">{kindLabels[o.data.kind]}</span>
+						<span>{o.data.summary}</span>
+					</li>
+				))}
+			</ul>
+		</div>
+	)}
 </BaseLayout>
 
 <style>
@@ -116,5 +137,37 @@ const schema = [
 	.projects-title {
 		margin: 4rem 0 1.25rem;
 		font-size: 1.8rem;
+	}
+	.orgs-intro {
+		max-width: 46rem;
+		margin: -0.5rem 0 1.25rem;
+		color: var(--ot-muted);
+	}
+	.orgs-intro a,
+	.orgs a {
+		color: var(--ot-accent);
+	}
+	.orgs {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+		gap: 1rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.orgs li {
+		display: grid;
+		gap: 0.35rem;
+		margin: 0;
+		padding: 1rem 1.15rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+		background: var(--ot-surface);
+	}
+	.orgs li a {
+		font: 700 1.2rem/1.2 var(--ot-font-display);
+	}
+	.orgs li span:last-child {
+		font-size: 0.92rem;
 	}
 </style>

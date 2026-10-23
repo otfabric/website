@@ -1,0 +1,685 @@
+[
+	{
+		"id": "sunspec-alliance",
+		"name": "SunSpec Alliance",
+		"kind": "industry-alliance",
+		"summary": "Information models, IEEE 2030.5 / CSIP certification and interoperability programs for distributed energy resources.",
+		"description": "SunSpec Alliance publishes the SunSpec Modbus information models that solar inverters, batteries and meters expose, and runs certification programs for them and for IEEE 2030.5 / CSIP, for products used with California's investor-owned utilities under Rule 21.",
+		"website": "https://sunspec.org/",
+		"region": "global",
+		"domains": ["energy"],
+		"protocols": ["sunspec", "modbus", "ieee-2030-5"],
+		"standards": [
+			{ "name": "SunSpec Modbus and the SunSpec information models", "role": "publishes" },
+			{ "name": "IEEE 2030.5 / CSIP", "role": "certifies", "note": "Publishes the CSIP conformance test procedures; testing runs at Authorized Test Labs." }
+		],
+		"access": {
+			"specifications": { "answer": "yes", "detail": "\"All SunSpec specifications are free to download and use.\" Most downloads ask for a name, company and email.", "source": "https://sunspec.org/specifications/" },
+			"community": { "answer": "partial", "detail": "Webinars and specifications are open; working-group participation starts with Individual membership.", "source": "https://sunspec.org/membership-application/" },
+			"individualFree": { "answer": "no", "detail": "Individual membership is $1,000 a year.", "source": "https://sunspec.org/membership-application/" },
+			"organizationFree": { "answer": "no", "detail": "Company participation starts with Contributing membership at $5,000 a year.", "source": "https://sunspec.org/membership-application/" },
+			"workingGroups": { "answer": "no", "detail": "The membership table marks working groups as not included for non-members.", "source": "https://sunspec.org/membership-application/" },
+			"interopTesting": { "answer": "yes", "detail": "Certification testing runs at Authorized Test Labs, which set their own fees; non-members can certify.", "source": "https://sunspec.org/2030-5-csip/" },
+			"certification": { "answer": "yes", "detail": "Non-members can certify at a $10,000 certification fee; Contributing members pay $5,000.", "source": "https://sunspec.org/membership-application/" },
+			"openSource": { "answer": "partial", "detail": "The SunSpec Modbus model definitions are published on GitHub; the reference implementation needs membership.", "source": "https://sunspec.org/specifications/" }
+		},
+		"memberships": [
+			{ "name": "Non-member", "audience": "anyone", "fee": { "kind": "free" }, "workingGroups": "no", "note": "Free specifications and certification registry; certification fee $10,000.", "source": "https://sunspec.org/membership-application/" },
+			{ "name": "Individual", "audience": "individual", "fee": { "kind": "amount", "amount": 1000, "currency": "USD", "period": "year" }, "eligibility": "Academics, individual researchers, hobbyists, open-source developers and other individuals.", "workingGroups": "yes", "note": "Personal participation; certification fee $10,000.", "source": "https://sunspec.org/membership-application/" },
+			{ "name": "Contributing", "audience": "company", "fee": { "kind": "amount", "amount": 5000, "currency": "USD", "period": "year" }, "workingGroups": "yes", "note": "Unlimited company participation; certification fee $5,000 plus certification and software discounts.", "source": "https://sunspec.org/membership-application/" }
+		],
+		"programs": [
+			{ "kind": "certification", "name": "SunSpec IEEE 2030.5 / CSIP certification", "url": "https://sunspec.org/2030-5-csip/", "detail": "Certifies IEEE 2030.5 clients, gateways, aggregators and servers for California Rule 21. Testing at an Authorized Test Lab; SunSpec evaluates the results against CSIP and its test procedures.", "openToNonMembers": "yes", "source": "https://sunspec.org/membership-application/" }
+		],
+		"openSource": [],
+		"relatedProjects": ["go-sunspec", "sunspecctl", "sunspec-explorer", "go-ieee20305", "ieee20305-interop"],
+		"related": [
+			{ "id": "ieee-sa", "relation": "IEEE SA publishes IEEE 2030.5; SunSpec certifies products against the CSIP profile of it." },
+			{ "id": "modbus-organization", "relation": "SunSpec Modbus runs on the Modbus protocol that the Modbus Organization maintains." }
+		],
+		"sources": [
+			{ "label": "Membership application", "url": "https://sunspec.org/membership-application/" },
+			{ "label": "Specifications", "url": "https://sunspec.org/specifications/" },
+			{ "label": "IEEE 2030.5 / CSIP certification", "url": "https://sunspec.org/2030-5-csip/" }
+		],
+		"verifiedAt": "2026-10-23",
+		"detail": true,
+		"insights": [
+			"SunSpec is a good example of why \"open\" needs splitting up. The specifications are free to download and use, working groups are for members, and certification is open to anyone but costs twice as much without a Contributing membership.",
+			"The Individual tier is aimed at academics, researchers, hobbyists and open-source developers. At $1,000 a year it is a real cost for a lone maintainer, but it is the route into working groups for someone who does not represent a company.",
+			"For IEEE 2030.5, SunSpec is the certification body for California's CSIP profile, not the publisher of the standard: IEEE SA publishes IEEE 2030.5 itself. The certification test procedures are free to download from the specifications page, which makes them a useful public reference for independent implementations."
+		]
+	},
+	{
+		"id": "modbus-organization",
+		"name": "Modbus Organization",
+		"kind": "user-group",
+		"summary": "Maintains the Modbus specifications and runs a conformance self-test and logo program.",
+		"description": "The Modbus Organization maintains the Modbus specifications and implementation guides, with a conformance self-test program and a logo program for members.",
+		"website": "https://www.modbus.org/",
+		"region": "global",
+		"domains": ["industrial", "energy", "buildings"],
+		"protocols": ["modbus"],
+		"standards": [{ "name": "Modbus application protocol, serial line and TCP/IP specifications", "role": "maintains" }],
+		"access": {
+			"specifications": { "answer": "unknown", "detail": "The site offers the current specifications and implementation guides for download, but the pages we checked do not state the access terms.", "source": "https://www.modbus.org/tech.php" },
+			"community": { "answer": "unknown", "detail": "Committees, trade shows and demos are listed as member benefits; participation for non-members is not described." },
+			"individualFree": { "answer": "no", "detail": "Individual membership is $60; Student membership is $35.", "source": "https://www.modbus.org/register" },
+			"organizationFree": { "answer": "no", "detail": "Company memberships start at $500 (Supporting) and $1,500 (General).", "source": "https://www.modbus.org/register" },
+			"workingGroups": { "answer": "unknown", "detail": "Committee participation is listed for every member category; the page does not say whether non-members can join." },
+			"interopTesting": { "answer": "unknown", "detail": "The Conformance Self-Test Program is listed as a General member benefit; non-member access is not stated.", "source": "https://www.modbus.org/register" },
+			"certification": { "answer": "unknown", "detail": "General members get discounts on conformance testing; the page does not say whether non-members can test." },
+			"openSource": { "answer": "unknown", "detail": "The Modbus TCP Developers Toolkit is free to General members and for sale to others; we found no open-source reference stack." }
+		},
+		"memberships": [
+			{ "name": "General", "audience": "company", "fee": { "kind": "amount", "amount": 1500, "max": 3500, "currency": "USD", "period": "unstated" }, "eligibility": "Organizations that supply or use Modbus devices. $1,500 under 99 employees, $2,500 for 100 to 999, $3,500 for 1,000 or more.", "voting": "yes", "workingGroups": "yes", "note": "One vote; Conformance Self-Test Program, logo program and the Modbus TCP Developers Toolkit.", "source": "https://www.modbus.org/register" },
+			{ "name": "Supporting", "audience": "company", "fee": { "kind": "amount", "amount": 500, "currency": "USD", "period": "unstated" }, "eligibility": "Companies providing system integration services with Modbus.", "voting": "unknown", "workingGroups": "yes", "source": "https://www.modbus.org/register" },
+			{ "name": "Education institution", "audience": "academic", "fee": { "kind": "amount", "amount": 500, "currency": "USD", "period": "unstated" }, "workingGroups": "yes", "source": "https://www.modbus.org/register" },
+			{ "name": "Individual", "audience": "individual", "fee": { "kind": "amount", "amount": 60, "currency": "USD", "period": "unstated" }, "workingGroups": "yes", "source": "https://www.modbus.org/register" },
+			{ "name": "Student", "audience": "student", "fee": { "kind": "amount", "amount": 35, "currency": "USD", "period": "unstated" }, "workingGroups": "yes", "source": "https://www.modbus.org/register" }
+		],
+		"programs": [
+			{ "kind": "conformance-testing", "name": "Conformance Self-Test Program", "detail": "A member benefit for General members, with discounts on conformance testing.", "openToNonMembers": "unknown", "source": "https://www.modbus.org/register" }
+		],
+		"openSource": [],
+		"relatedProjects": ["go-modbus", "modbusctl", "modbus-simulator", "modbus-interop"],
+		"related": [{ "id": "sunspec-alliance", "relation": "SunSpec Modbus builds device information models on top of Modbus." }],
+		"sources": [
+			{ "label": "Membership information", "url": "https://www.modbus.org/register" },
+			{ "label": "Technical resources", "url": "https://www.modbus.org/tech.php" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "opc-foundation",
+		"name": "OPC Foundation",
+		"kind": "industry-alliance",
+		"summary": "Develops OPC UA, runs certification test labs and maintains the open-source .NET reference stack.",
+		"description": "The OPC Foundation develops and maintains the OPC UA specifications, publishes them openly, runs accredited certification test labs and compliance test tools, and maintains the UA-.NETStandard reference implementation on GitHub.",
+		"website": "https://opcfoundation.org/",
+		"region": "global",
+		"domains": ["industrial", "energy", "buildings"],
+		"protocols": ["opc-ua"],
+		"standards": [
+			{ "name": "OPC UA specifications", "role": "publishes" },
+			{ "name": "OPC UA certification", "role": "certifies" },
+			{ "name": "UA-.NETStandard reference stack", "role": "hosts-oss" }
+		],
+		"access": {
+			"specifications": { "answer": "yes", "detail": "The benefits table gives non-members access to the OPC UA specifications. OPC Classic specifications are for members.", "source": "https://opcfoundation.org/membership/benefits/" },
+			"community": { "answer": "partial", "detail": "Specifications and the open-source stack are public; working groups need a paid membership.", "source": "https://opcfoundation.org/membership/benefits/" },
+			"individualFree": { "answer": "notApplicable", "detail": "Membership is for organizations; there is no individual category.", "source": "https://opcfoundation.org/membership/benefits/" },
+			"organizationFree": { "answer": "partial", "detail": "The UA Logo membership is $0 for companies that offer OPC UA products. It gives certification access but no voting and no working groups.", "source": "https://opcfoundation.org/membership/benefits/" },
+			"workingGroups": { "answer": "no", "detail": "Working groups are open to Corporate, Startup, End-User and Non-Voting members, not to UA Logo members or non-members.", "source": "https://opcfoundation.org/membership/benefits/" },
+			"interopTesting": { "answer": "unknown", "detail": "Interoperability workshops are listed on the certification pages; we found no published eligibility." },
+			"certification": { "answer": "partial", "detail": "Certification is \"a premium service available to OPC Foundation members and logo members\", so it needs at least the free UA Logo membership.", "source": "https://opcfoundation.org/certification/overview-benefits/" },
+			"openSource": { "answer": "yes", "detail": "Maintains the UA-.NETStandard reference stack on GitHub.", "source": "https://github.com/OPCFoundation/UA-.NETStandard" }
+		},
+		"memberships": [
+			{ "name": "UA Logo", "audience": "company", "fee": { "kind": "free" }, "eligibility": "Companies that offer OPC UA products.", "voting": "no", "workingGroups": "no", "note": "Certification lab access at the logo-member rate; test tools as a service.", "source": "https://opcfoundation.org/membership/benefits/" },
+			{ "name": "Startup", "audience": "startup", "fee": { "kind": "amount", "amount": 500, "currency": "USD", "period": "year" }, "eligibility": "First five years and revenue under $2M.", "voting": "yes", "workingGroups": "yes", "note": "Compliance test tools and certification lab access included.", "source": "https://opcfoundation.org/membership/benefits/" },
+			{ "name": "Non-Voting", "audience": "nonprofit", "fee": { "kind": "amount", "amount": 900, "currency": "USD", "period": "year" }, "eligibility": "Government, research, universities and non-profits that do not build or market OPC products.", "voting": "no", "workingGroups": "yes", "source": "https://opcfoundation.org/membership/benefits/" },
+			{ "name": "End-User", "audience": "end-user", "fee": { "kind": "amount", "amount": 1800, "currency": "USD", "period": "year" }, "eligibility": "Organizations that use OPC-based products.", "voting": "yes", "workingGroups": "yes", "source": "https://opcfoundation.org/membership/benefits/" },
+			{ "name": "Corporate, classes D to A", "audience": "company", "fee": { "kind": "amount", "amount": 3000, "max": 18000, "currency": "USD", "period": "year" }, "eligibility": "By annual sales: Class D under $2M ($3,000), C $2M to $20M ($4,800), B $20M to $100M ($9,600), A $100M to $1B ($18,000).", "voting": "yes", "workingGroups": "yes", "note": "Free compliance test tools; 50% discount at the certification lab.", "source": "https://opcfoundation.org/membership/benefits/" },
+			{ "name": "Corporate, classes AA and AAA", "audience": "company", "fee": { "kind": "unknown" }, "eligibility": "Sales over $1B.", "voting": "yes", "workingGroups": "yes", "note": "The dues table shows two 2027 figures per class without saying which applies, so we do not repeat them here.", "source": "https://opcfoundation.org/membership/benefits/" }
+		],
+		"programs": [
+			{ "kind": "certification", "name": "OPC UA certification", "url": "https://opcfoundation.org/certification/overview-benefits/", "detail": "Testing at an OPC Foundation accredited Certification Test Lab: €900 per day for Corporate members, €1,800 per day for logo members. A server usually takes 3 to 7 days, a client 5 to 10.", "openToNonMembers": "no", "source": "https://opcfoundation.org/certification/overview-benefits/" },
+			{ "kind": "test-tool", "name": "Compliance Test Tool (CTT)", "detail": "Free for Corporate and Startup members; offered as a service to End-User, Non-Voting and UA Logo members.", "openToNonMembers": "no", "source": "https://opcfoundation.org/membership/benefits/" }
+		],
+		"openSource": [{ "name": "UA-.NETStandard", "url": "https://github.com/OPCFoundation/UA-.NETStandard", "implementation": "ua-netstandard" }],
+		"relatedProjects": ["go-opcua", "opcuactl", "opcua-interop"],
+		"related": [
+			{ "id": "eclipse-foundation", "relation": "Hosts Eclipse Milo, an independent open-source OPC UA stack." }
+		],
+		"sources": [
+			{ "label": "Membership benefits and dues", "url": "https://opcfoundation.org/membership/benefits/" },
+			{ "label": "Certification overview", "url": "https://opcfoundation.org/certification/overview-benefits/" },
+			{ "label": "Certification lab registration", "url": "https://opcfoundation.org/lab-registration/costs/" }
+		],
+		"verifiedAt": "2026-10-23",
+		"detail": true,
+		"insights": [
+			"OPC UA is one of the few industrial standards where a non-member can read the current specifications without paying, and where the standards body itself maintains an open-source reference stack. That combination makes independent implementations practical.",
+			"The membership ladder is unusually fine-grained. A company with an OPC UA product can join as a UA Logo member for $0 and certify, a young company can vote and join working groups as a Startup for $500, and research bodies and non-profits get working-group access as Non-Voting members for $900.",
+			"Certification is not open to non-members, but the lowest route to it is the free logo membership. The day rate at the test lab is twice as high for logo members as for Corporate members, so the cheapest route on paper is not always the cheapest in practice."
+		]
+	},
+	{
+		"id": "bacnet-international",
+		"name": "BACnet International",
+		"kind": "industry-alliance",
+		"summary": "Promotes BACnet and runs BTL testing, certification and the PlugFest; free individual participation.",
+		"description": "BACnet International promotes BACnet and runs the BACnet Testing Laboratories (BTL) certification program and the annual PlugFest. It does not publish the BACnet standard; ASHRAE does.",
+		"website": "https://bacnetinternational.org/",
+		"region": "global",
+		"domains": ["buildings"],
+		"protocols": ["bacnet"],
+		"standards": [
+			{ "name": "BTL certification (BACnet Testing Laboratories)", "role": "certifies" },
+			{ "name": "BTL PlugFest", "role": "tests" }
+		],
+		"access": {
+			"specifications": { "answer": "notApplicable", "detail": "BACnet International does not publish the standard; ASHRAE does." },
+			"community": { "answer": "yes", "detail": "\"Individual participation is free\", including a General Interest category open to anyone not tied to a corporate member.", "source": "https://bacnetinternational.org/individual/" },
+			"individualFree": { "answer": "yes", "detail": "Free categories for employees of corporate members, instructors, students and general-interest individuals.", "source": "https://bacnetinternational.org/individual/" },
+			"organizationFree": { "answer": "no", "detail": "Corporate memberships (Platinum, Gold, Silver, Affiliate) are paid; fees are given on request.", "source": "https://bacnetinternational.org/corporate/" },
+			"workingGroups": { "answer": "unknown", "detail": "The individual page does not mention committees or working groups." },
+			"interopTesting": { "answer": "yes", "detail": "\"PlugFest welcomes all developers, at any stage of their product engineering.\" Fees and membership rules are not stated.", "source": "https://bacnetinternational.org/plugfest-faq" },
+			"certification": { "answer": "yes", "detail": "BTL certification does not require membership. Non-members pay an annual listing fee of $2,500 per product; corporate members in good standing are exempt.", "source": "https://btl.org/certification-process/" },
+			"openSource": { "answer": "unknown", "detail": "We found no open-source project maintained by BACnet International." }
+		},
+		"memberships": [
+			{ "name": "Individual participation", "audience": "individual", "fee": { "kind": "free" }, "eligibility": "Employees of corporate members, instructors, full-time students, and anyone interested in BACnet.", "voting": "unknown", "workingGroups": "unknown", "source": "https://bacnetinternational.org/individual/" },
+			{ "name": "Corporate (Platinum, Gold, Silver)", "audience": "company", "fee": { "kind": "onRequest" }, "eligibility": "Manufacturers and OEMs of BACnet software, hardware or related services.", "voting": "unknown", "workingGroups": "unknown", "note": "Half the hourly BTL Lab rate, included or discounted BTL listings, PlugFest discounts and test tool licences.", "source": "https://bacnetinternational.org/corporate/" },
+			{ "name": "Corporate Affiliate", "audience": "company", "fee": { "kind": "onRequest" }, "eligibility": "Manufacturers and OEMs that support BACnet Interest Groups outside the United States.", "voting": "unknown", "workingGroups": "unknown", "source": "https://bacnetinternational.org/corporate/" }
+		],
+		"programs": [
+			{ "kind": "certification", "name": "BTL certification", "url": "https://btl.org/certification-process/", "detail": "Testing at a Recognized BACnet Testing Organization, then a free application and an annual listing fee of $2,500 per product for non-members.", "openToNonMembers": "yes", "source": "https://btl.org/certification-process/" },
+			{ "kind": "plugfest", "name": "BTL PlugFest", "url": "https://bacnetinternational.org/plugfest-faq", "detail": "Interoperability workshop for developers; corporate members get registration discounts.", "openToNonMembers": "yes", "source": "https://bacnetinternational.org/plugfest-faq" }
+		],
+		"openSource": [],
+		"relatedProjects": ["go-bacnet", "bacnetctl", "bacnet-interop"],
+		"related": [{ "id": "ashrae", "relation": "ASHRAE's SSPC 135 develops and maintains the BACnet standard; BACnet International tests and certifies products against it." }],
+		"sources": [
+			{ "label": "Individual participation", "url": "https://bacnetinternational.org/individual/" },
+			{ "label": "Corporate membership", "url": "https://bacnetinternational.org/corporate/" },
+			{ "label": "BTL certification process", "url": "https://btl.org/certification-process/" },
+			{ "label": "PlugFest FAQ", "url": "https://bacnetinternational.org/plugfest-faq" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "ashrae",
+		"name": "ASHRAE",
+		"kind": "standards-body",
+		"summary": "Publishes ANSI/ASHRAE Standard 135 (BACnet) through its BACnet Committee, SSPC 135.",
+		"description": "ASHRAE is the professional society that publishes the BACnet standard, ANSI/ASHRAE 135. Its BACnet Committee (SSPC 135) develops and maintains the standard, with working groups that recruit volunteers.",
+		"website": "https://www.ashrae.org/",
+		"region": "global",
+		"domains": ["buildings"],
+		"protocols": ["bacnet"],
+		"standards": [{ "name": "ANSI/ASHRAE 135 (BACnet), also ISO 16484-5", "role": "publishes" }],
+		"access": {
+			"specifications": { "answer": "partial", "detail": "135-2024 is available as a free, read-only PDF; downloadable copies and other editions are sold through the ASHRAE and ISO stores.", "source": "https://bacnet.org/buy/" },
+			"community": { "answer": "partial", "detail": "SSPC 135 invites volunteers to join its working groups; the pages we checked do not say whether ASHRAE membership is required.", "source": "https://bacnet.org/" },
+			"individualFree": { "answer": "no", "detail": "Membership runs from $30 for students to $290 for full members, with reduced dues in developing economies.", "source": "https://www.ashrae.org/membership/join" },
+			"organizationFree": { "answer": "notApplicable", "detail": "ASHRAE membership is for individuals." },
+			"workingGroups": { "answer": "unknown", "detail": "The BACnet Committee lists 11 working groups and a volunteer page; non-member eligibility is not stated.", "source": "https://bacnet.org/" },
+			"interopTesting": { "answer": "notApplicable", "detail": "Testing and certification are run by BACnet International." },
+			"certification": { "answer": "notApplicable", "detail": "Testing and certification are run by BACnet International." },
+			"openSource": { "answer": "unknown", "detail": "We found no open-source project maintained by ASHRAE." }
+		},
+		"memberships": [
+			{ "name": "Student", "audience": "student", "fee": { "kind": "amount", "amount": 30, "currency": "USD", "period": "year" }, "eligibility": "Enrolled in an approved course of study; $15 in developing economies.", "source": "https://www.ashrae.org/membership/join" },
+			{ "name": "Affiliate", "audience": "individual", "fee": { "kind": "amount", "amount": 75, "max": 145, "currency": "USD", "period": "year" }, "eligibility": "New members under 30 or recent military veterans, for up to three years ($75, $110, $145).", "source": "https://www.ashrae.org/membership/join" },
+			{ "name": "Full Member or Associate", "audience": "individual", "fee": { "kind": "amount", "amount": 290, "currency": "USD", "period": "year" }, "eligibility": "Full Member needs 12 approved years of education and experience; Associate needs HVAC&R work experience. $175 in developing economies.", "source": "https://www.ashrae.org/membership/join" }
+		],
+		"programs": [],
+		"openSource": [],
+		"relatedProjects": ["go-bacnet", "bacnetctl", "bacnet-interop"],
+		"related": [{ "id": "bacnet-international", "relation": "Tests and certifies products against the standard ASHRAE publishes." }],
+		"sources": [
+			{ "label": "BACnet Committee (SSPC 135)", "url": "https://bacnet.org/" },
+			{ "label": "Buying the BACnet standard", "url": "https://bacnet.org/buy/" },
+			{ "label": "ASHRAE membership", "url": "https://www.ashrae.org/membership/join" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "iec",
+		"name": "International Electrotechnical Commission",
+		"acronym": "IEC",
+		"kind": "standards-body",
+		"summary": "Publishes IEC 61850 and IEC 60870-5 through Technical Committee 57; experts join via national committees.",
+		"description": "The IEC is the international standards organization for electrical and electronic technologies. Its Technical Committee 57 (power systems management and associated information exchange) maintains the IEC 61850 substation automation series and the IEC 60870-5 telecontrol protocols, including IEC 60870-5-104.",
+		"website": "https://tc57.iec.ch/",
+		"region": "global",
+		"domains": ["energy"],
+		"protocols": ["iec-61850", "iec-104"],
+		"standards": [
+			{ "name": "IEC 61850 (TC 57 WG 10, power system IED communication)", "role": "publishes" },
+			{ "name": "IEC 60870-5 telecontrol protocols, including 60870-5-104 (TC 57 WG 3)", "role": "publishes" }
+		],
+		"access": {
+			"specifications": { "answer": "no", "detail": "Standards are sold through the IEC webstore. The complete IEC 61850 series pack lists at CHF 26,508.", "source": "https://webstore.iec.ch/en/publication/6028" },
+			"community": { "answer": "no", "detail": "Committee work is done by experts nominated through the national committee of their country.", "source": "https://tc3.iec.ch/get-involved/" },
+			"individualFree": { "answer": "notApplicable", "detail": "The IEC has no individual membership; individuals take part as nominated experts." },
+			"organizationFree": { "answer": "notApplicable", "detail": "Members of the IEC are national committees, not companies." },
+			"workingGroups": { "answer": "no", "detail": "\"Each NC (National Committee) can appoint experts to take part in specific technical work.\" Conditions and costs depend on the national committee.", "source": "https://tc3.iec.ch/get-involved/" },
+			"interopTesting": { "answer": "notApplicable", "detail": "TC 57 writes standards; IEC 61850 interoperability testing is organized by UCAIug." },
+			"certification": { "answer": "notApplicable", "detail": "TC 57 does not certify products." },
+			"openSource": { "answer": "notApplicable", "detail": "TC 57 publishes standards, not software." }
+		},
+		"memberships": [
+			{ "name": "Expert, nominated by a national committee", "audience": "individual", "fee": { "kind": "notPublished" }, "eligibility": "Experts nominated by the national committee of their country of residence, such as the Standards Council of Canada's mirror committee for TC 57.", "workingGroups": "yes", "note": "Whether national participation costs anything depends on the country.", "source": "https://tc3.iec.ch/get-involved/" }
+		],
+		"programs": [],
+		"openSource": [],
+		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop", "go-iec104", "iec104ctl", "iec104-interop"],
+		"related": [
+			{ "id": "uca-international", "relation": "Runs the IEC 61850 user group and interoperability testing; TC 57 writes the standard." },
+			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." }
+		],
+		"sources": [
+			{ "label": "IEC TC 57", "url": "https://tc57.iec.ch/" },
+			{ "label": "How experts get involved", "url": "https://tc3.iec.ch/get-involved/" },
+			{ "label": "IEC 61850 series in the IEC webstore", "url": "https://webstore.iec.ch/en/publication/6028" },
+			{ "label": "SCC mirror committee for TC 57", "url": "https://scc-ccn.ca/standards/committees/mciectc-57-power-systems-management-and-associated-information-exchange" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "uca-international",
+		"name": "UCA International Users Group",
+		"acronym": "UCAIug",
+		"kind": "user-group",
+		"summary": "User groups for IEC 61850, CIM and OpenFMB, and the IEC 61850 interoperability (IOP) testing event.",
+		"description": "The UCA International Users Group is a community of utilities, vendors and labs around utility communication standards. It hosts the 61850, CIM and OpenFMB user groups and organizes IEC 61850 interoperability testing.",
+		"website": "https://ucaiug.org/",
+		"region": "global",
+		"domains": ["energy"],
+		"protocols": ["iec-61850"],
+		"standards": [
+			{ "name": "IEC 61850 user group and IOP testing", "role": "tests" },
+			{ "name": "CIM (IEC 61968 / 61970) user group", "role": "promotes" },
+			{ "name": "OpenFMB", "role": "promotes" }
+		],
+		"access": {
+			"specifications": { "answer": "notApplicable", "detail": "IEC 61850 and CIM are published by the IEC." },
+			"community": { "answer": "partial", "detail": "The user-group sites (CIMug, 61850ug, OpenFMB) are included with membership; the IOP event invites global stakeholders.", "source": "https://ucaiug.org/join/" },
+			"individualFree": { "answer": "notPublished", "detail": "Individual Consultant, University and PUC memberships say \"Ask for pricing\".", "source": "https://ucaiug.org/join/" },
+			"organizationFree": { "answer": "no", "detail": "Corporate membership starts at $1,375 a year.", "source": "https://ucaiug.org/join/" },
+			"workingGroups": { "answer": "no", "detail": "User groups are a membership benefit; the IEC working-group site needs IEC expert approval.", "source": "https://ucaiug.org/join/" },
+			"interopTesting": { "answer": "partial", "detail": "The IEC 61850 IOP invites vendors, utilities, test labs, integrators and standards bodies; the page does not say whether membership is required.", "source": "https://61850ug.org/61850-iop-testing-2024" },
+			"certification": { "answer": "unknown", "detail": "UCA runs a testing program (ucatesting.org); we have not yet verified its membership rules." },
+			"openSource": { "answer": "unknown", "detail": "We have not yet verified open-source activity." }
+		},
+		"memberships": [
+			{ "name": "Corporate, tiers 1 to 8", "audience": "company", "fee": { "kind": "amount", "amount": 1375, "max": 20000, "currency": "USD", "period": "year" }, "eligibility": "By annual revenue: tier 1 under $1M is $1,375 (5 accounts), tier 2 $1M to $10M is $2,750, up to tier 8 over $100B at $20,000.", "voting": "yes", "workingGroups": "yes", "note": "Corporate members vote for the Board of Directors.", "source": "https://ucaiug.org/join/" },
+			{ "name": "Sustaining", "audience": "company", "fee": { "kind": "amount", "amount": 25000, "currency": "USD", "period": "year" }, "eligibility": "Unlimited accounts.", "voting": "yes", "workingGroups": "yes", "source": "https://ucaiug.org/join/" },
+			{ "name": "Individual Consultant", "audience": "individual", "fee": { "kind": "onRequest" }, "eligibility": "One account; apply on letterhead describing your smart grid activities.", "voting": "unknown", "workingGroups": "yes", "source": "https://ucaiug.org/join/" },
+			{ "name": "University", "audience": "academic", "fee": { "kind": "onRequest" }, "eligibility": "Students, educators and researchers; one account.", "voting": "unknown", "workingGroups": "yes", "source": "https://ucaiug.org/join/" },
+			{ "name": "Public utility commission", "audience": "government", "fee": { "kind": "onRequest" }, "eligibility": "Public utility commissions; one account.", "voting": "unknown", "workingGroups": "yes", "source": "https://ucaiug.org/join/" }
+		],
+		"programs": [
+			{ "kind": "interop-event", "name": "IEC 61850 Interoperability Testing (IOP)", "url": "https://61850ug.org/61850-iop-testing-2024", "detail": "Multi-day interoperability event for vendors, utilities, labs, integrators and standards organizations. The 2024 edition ran 12 to 20 September in Birmingham, Alabama.", "openToNonMembers": "unknown", "source": "https://61850ug.org/61850-iop-testing-2024" }
+		],
+		"openSource": [],
+		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop"],
+		"related": [
+			{ "id": "iec", "relation": "IEC TC 57 develops IEC 61850 and CIM; UCAIug supports their users and tests interoperability." },
+			{ "id": "lf-energy", "relation": "LF Energy hosts open-source IEC 61850 tooling such as CoMPAS." }
+		],
+		"sources": [
+			{ "label": "Join UCAIug", "url": "https://ucaiug.org/join/" },
+			{ "label": "61850 IOP testing", "url": "https://61850ug.org/61850-iop-testing-2024" }
+		],
+		"verifiedAt": "2026-10-23",
+		"detail": true,
+		"insights": [
+			"For IEC 61850, the committee that writes the standard and the community that tests it are different bodies. IEC TC 57 develops the standard, and experts reach it through national committees. UCAIug is where utilities, vendors and labs meet to share experience and run the interoperability (IOP) events.",
+			"Corporate membership is priced by revenue and starts at $1,375 a year for companies under $1M. Individual, university and regulator memberships exist but are priced on request, so a solo engineer has to ask.",
+			"The IOP is the main public venue where independent IEC 61850 implementations meet. Its page invites global stakeholders without stating a membership requirement, so it is worth asking the organizers directly before planning around it."
+		]
+	},
+	{
+		"id": "dnp-users-group",
+		"name": "DNP Users Group",
+		"acronym": "DNP-UG",
+		"kind": "user-group",
+		"summary": "Supports DNP3 (IEEE 1815) users, holds the member document library and runs conformance testing.",
+		"description": "The DNP Users Group supports the DNP3 protocol, standardized as IEEE 1815. It keeps the member-only technical document library, runs workshops, and offers conformance testing services at member and non-member rates.",
+		"website": "https://www.dnp.org/",
+		"region": "global",
+		"domains": ["energy"],
+		"protocols": ["dnp3"],
+		"standards": [
+			{ "name": "DNP3 technical documents and conformance test procedures", "role": "maintains" },
+			{ "name": "DNP3 conformance testing", "role": "certifies" }
+		],
+		"access": {
+			"specifications": { "answer": "no", "detail": "Member-only documents, including standards, are reserved for active members. IEEE 1815 itself is sold by IEEE.", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			"community": { "answer": "partial", "detail": "Workshops are included in every membership category, including the $1 academic category.", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			"individualFree": { "answer": "partial", "detail": "Academic membership is $1 for up to three years and Emeritus is $0, both non-commercial. The $400 Individual category is for personal, non-commercial use only.", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			"organizationFree": { "answer": "no", "detail": "Commercial members start with Micro vendor at $500.", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			"workingGroups": { "answer": "unknown", "detail": "The fee guide does not list technical committee access per category." },
+			"interopTesting": { "answer": "unknown", "detail": "We found no public interoperability event." },
+			"certification": { "answer": "yes", "detail": "Non-members can buy conformance test access at $15,000 per project; members get 0 to 100% discounts on the $1,200 (P1) and $2,400 (P2) per-interface services.", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			"openSource": { "answer": "unknown", "detail": "We found no open-source project maintained by the group." }
+		},
+		"memberships": [
+			{ "name": "Academic", "audience": "academic", "fee": { "kind": "amount", "amount": 1, "currency": "USD", "period": "year" }, "eligibility": "Full-time students or faculty, up to three years, non-commercial.", "workingGroups": "unknown", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			{ "name": "Emeritus", "audience": "individual", "fee": { "kind": "free" }, "eligibility": "Retired individuals with at least 10 years of active engagement; non-commercial.", "workingGroups": "unknown", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			{ "name": "Individual", "audience": "individual", "fee": { "kind": "amount", "amount": 400, "currency": "USD", "period": "year" }, "eligibility": "Personal, non-commercial use only. Commercial members must choose a company category.", "workingGroups": "unknown", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			{ "name": "Micro vendor", "audience": "startup", "fee": { "kind": "amount", "amount": 500, "currency": "USD", "period": "year" }, "eligibility": "Vendors with $0 to $1M of DNP3-related revenue; one user.", "workingGroups": "unknown", "note": "50% discount on one P1 conformance test service a year.", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			{ "name": "Vendors, small to large", "audience": "company", "fee": { "kind": "amount", "amount": 2000, "max": 15000, "currency": "USD", "period": "year" }, "eligibility": "Small ($1M to $20M) $2,000, medium ($20M to $100M) $6,000, large (over $100M) or undeclared $15,000.", "workingGroups": "unknown", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			{ "name": "Utilities", "audience": "end-user", "fee": { "kind": "amount", "amount": 1000, "max": 15000, "currency": "USD", "period": "year" }, "eligibility": "Water utilities and small munis or co-ops $1,000, up to very large utilities (over $20B revenue) at $15,000.", "workingGroups": "unknown", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" },
+			{ "name": "Research organization", "audience": "nonprofit", "fee": { "kind": "amount", "amount": 5000, "currency": "USD", "period": "year" }, "eligibility": "Research organizations such as national labs.", "workingGroups": "unknown", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" }
+		],
+		"programs": [
+			{ "kind": "conformance-testing", "name": "DNP3 conformance testing (CCP / CTR)", "detail": "Standard prices are $1,200 for P1 and $2,400 for P2 per device interface; non-members can buy access at $15,000 per project. Fees effective since 1 July 2024.", "openToNonMembers": "yes", "source": "https://dnp.org/Join-Purchase/Member-Fee-Guide" }
+		],
+		"openSource": [],
+		"relatedProjects": ["go-dnp3", "dnp3ctl", "dnp3-interop"],
+		"related": [{ "id": "ieee-sa", "relation": "IEEE SA publishes DNP3 as IEEE 1815; a revision (P1815) is in progress under the Power and Energy Society." }],
+		"sources": [{ "label": "Member fee guide", "url": "https://dnp.org/Join-Purchase/Member-Fee-Guide" }],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "ieee-sa",
+		"name": "IEEE Standards Association",
+		"acronym": "IEEE SA",
+		"kind": "standards-body",
+		"summary": "Publishes IEEE 1815 (DNP3) and IEEE 2030.5; working-group participation is open to everyone.",
+		"description": "The IEEE Standards Association develops IEEE standards, including IEEE 1815 (DNP3) and IEEE 2030.5 (Smart Energy Profile 2.0). Individual-based standards development is open to anyone; membership adds balloting and leadership rights.",
+		"website": "https://standards.ieee.org/",
+		"region": "global",
+		"domains": ["energy"],
+		"protocols": ["dnp3", "ieee-2030-5"],
+		"standards": [
+			{ "name": "IEEE 1815 (DNP3), revision P1815 in progress", "role": "publishes", "note": "Power System Communications and Cybersecurity committee, Power and Energy Society." },
+			{ "name": "IEEE 2030.5-2023", "role": "publishes", "note": "SEP2 working group, Communications Society." }
+		],
+		"access": {
+			"specifications": { "answer": "no", "detail": "IEEE 2030.5-2023 and the P1815 draft are sold or available by subscription. The IEEE GET program does not list either.", "source": "https://standards.ieee.org/ieee/2030.5/11216/" },
+			"community": { "answer": "yes", "detail": "\"Participation in individual-based standards development is open to everyone.\"", "source": "https://standards.ieee.org/faqs/individual-membership/" },
+			"individualFree": { "answer": "partial", "detail": "Working-group participation needs no membership. Balloting does: members ballot freely, others pay a per-ballot fee.", "source": "https://standards.ieee.org/faqs/individual-membership/" },
+			"organizationFree": { "answer": "unknown", "detail": "We have not yet verified entity membership terms." },
+			"workingGroups": { "answer": "yes", "detail": "Individual-based working groups are open to everyone; membership is needed to lead groups.", "source": "https://standards.ieee.org/faqs/individual-membership/" },
+			"interopTesting": { "answer": "notApplicable", "detail": "IEEE SA does not run the testing programs for these standards." },
+			"certification": { "answer": "notApplicable", "detail": "Certification for IEEE 2030.5 / CSIP is run by SunSpec; for DNP3 by the DNP Users Group." },
+			"openSource": { "answer": "notApplicable", "detail": "IEEE SA publishes standards, not software." }
+		},
+		"memberships": [
+			{ "name": "Non-member participant", "audience": "anyone", "fee": { "kind": "free" }, "eligibility": "Anyone can take part in individual-based standards development.", "voting": "partial", "workingGroups": "yes", "note": "Balloting is possible for a per-ballot fee.", "source": "https://standards.ieee.org/faqs/individual-membership/" },
+			{ "name": "IEEE SA, with IEEE membership", "audience": "individual", "fee": { "kind": "amount", "amount": 79, "currency": "USD", "period": "year" }, "eligibility": "Current IEEE or society members. $49 for students, developing nations and affiliates.", "voting": "yes", "workingGroups": "yes", "note": "2027 dues as published.", "source": "https://saforms.ieee.org/about/membership/individuals" },
+			{ "name": "IEEE SA only", "audience": "individual", "fee": { "kind": "amount", "amount": 325, "currency": "USD", "period": "year" }, "eligibility": "Without IEEE membership.", "voting": "yes", "workingGroups": "yes", "note": "2027 dues as published.", "source": "https://saforms.ieee.org/about/membership/individuals" }
+		],
+		"programs": [],
+		"openSource": [],
+		"relatedProjects": ["go-dnp3", "dnp3ctl", "go-ieee20305", "ieee20305ctl"],
+		"related": [
+			{ "id": "dnp-users-group", "relation": "Supports DNP3 users and runs conformance testing." },
+			{ "id": "sunspec-alliance", "relation": "Certifies IEEE 2030.5 products against the CSIP profile." }
+		],
+		"sources": [
+			{ "label": "Individual membership FAQ", "url": "https://standards.ieee.org/faqs/individual-membership/" },
+			{ "label": "Individual membership dues", "url": "https://saforms.ieee.org/about/membership/individuals" },
+			{ "label": "IEEE 2030.5-2023", "url": "https://standards.ieee.org/ieee/2030.5/11216/" },
+			{ "label": "P1815 (DNP3) project", "url": "https://standards.ieee.org/ieee/1815/6177" },
+			{ "label": "IEEE GET program", "url": "https://standards.ieee.org/about/get/" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "openadr-alliance",
+		"name": "OpenADR Alliance",
+		"kind": "industry-alliance",
+		"summary": "Maintains the OpenADR 2.0 and 3.0 specifications and certifies OpenADR products.",
+		"description": "The OpenADR Alliance maintains the OpenADR demand response specifications and runs the certification program for OpenADR products.",
+		"website": "https://www.openadr.org/",
+		"region": "global",
+		"domains": ["energy"],
+		"protocols": ["openadr"],
+		"standards": [
+			{ "name": "OpenADR 2.0 and 3.0", "role": "publishes" },
+			{ "name": "OpenADR certification", "role": "certifies" }
+		],
+		"access": {
+			"specifications": { "answer": "yes", "detail": "\"The specifications are license free but copyright of the OpenADR Alliance.\" Downloads go through a form with terms.", "source": "https://www.openadr.org/specification" },
+			"community": { "answer": "no", "detail": "Committees, task groups and the member forums are for members.", "source": "https://www.openadr.org/join" },
+			"individualFree": { "answer": "notApplicable", "detail": "There is no individual category.", "source": "https://www.openadr.org/join" },
+			"organizationFree": { "answer": "no", "detail": "Contributor and Adopter memberships start at $1,500 a year.", "source": "https://www.openadr.org/join" },
+			"workingGroups": { "answer": "no", "detail": "Committees and task groups are member benefits.", "source": "https://www.openadr.org/join" },
+			"interopTesting": { "answer": "unknown", "detail": "The membership page does not mention plugfests." },
+			"certification": { "answer": "no", "detail": "Contributor and Sponsor members can test and certify products; Adopters cannot.", "source": "https://www.openadr.org/join" },
+			"openSource": { "answer": "unknown", "detail": "Open-source OpenADR stacks exist (OpenLEADR at LF Energy, EPRI's VEN and VTN); we found none maintained by the Alliance." }
+		},
+		"memberships": [
+			{ "name": "Adopter", "audience": "end-user", "fee": { "kind": "amount", "amount": 1500, "currency": "USD", "period": "year" }, "eligibility": "Non-manufacturers: consumers, government, research agencies, test houses and regulators.", "voting": "partial", "workingGroups": "yes", "note": "Votes through committees and task groups; cannot certify products.", "source": "https://www.openadr.org/join" },
+			{ "name": "Contributor", "audience": "company", "fee": { "kind": "amount", "amount": 1500, "max": 7500, "currency": "USD", "period": "year" }, "eligibility": "Vendors of hardware, software or services. Under $1M revenue $1,500, $1M to $10M $3,000, $10M to $100M $5,000, over $100M $7,500.", "voting": "yes", "workingGroups": "yes", "note": "Can test and certify products; IPR use for compliant products.", "source": "https://www.openadr.org/join" },
+			{ "name": "Sponsor", "audience": "company", "fee": { "kind": "amount", "amount": 40000, "currency": "USD", "period": "year" }, "eligibility": "Board-approved stakeholders, limited to the first nine.", "voting": "yes", "workingGroups": "yes", "note": "Board seat; can lead working groups.", "source": "https://www.openadr.org/join" }
+		],
+		"programs": [
+			{ "kind": "certification", "name": "OpenADR certification", "detail": "Conformance testing and certification for Contributor and Sponsor members; test houses can apply for approved status.", "openToNonMembers": "no", "source": "https://www.openadr.org/join" }
+		],
+		"openSource": [],
+		"relatedProjects": ["go-openadr", "openadr-interop"],
+		"related": [{ "id": "lf-energy", "relation": "Hosts OpenLEADR, open-source OpenADR 2.0b and 3.x implementations." }],
+		"sources": [
+			{ "label": "Join the OpenADR Alliance", "url": "https://www.openadr.org/join" },
+			{ "label": "Specification download", "url": "https://www.openadr.org/specification" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "open-charge-alliance",
+		"name": "Open Charge Alliance",
+		"acronym": "OCA",
+		"kind": "industry-alliance",
+		"summary": "Develops OCPP, publishes it free, and runs certification, the OCTT test tool and plugfests.",
+		"description": "The Open Charge Alliance develops the Open Charge Point Protocol (OCPP) between charging stations and management systems. It publishes the specifications for free, runs a certification program with independent test labs, offers the OCPP Compliance Test Tool and organizes plugfests around the world.",
+		"website": "https://openchargealliance.org/",
+		"region": "global",
+		"domains": ["ev-charging", "energy"],
+		"protocols": ["ocpp"],
+		"standards": [
+			{ "name": "OCPP 1.6, 2.0.1 and 2.1", "role": "publishes" },
+			{ "name": "OCPP certification", "role": "certifies" },
+			{ "name": "OCPP plugfests", "role": "tests" }
+		],
+		"access": {
+			"specifications": { "answer": "yes", "detail": "\"OCPP is freely available for everyone to download.\"", "source": "https://openchargealliance.org/faq/" },
+			"community": { "answer": "partial", "detail": "Plugfests welcome everyone in the industry; working and task groups are for members.", "source": "https://openchargealliance.org/ocpp-plugfest/" },
+			"individualFree": { "answer": "no", "detail": "Individual membership is €297 a year.", "source": "https://openchargealliance.org/join-us/" },
+			"organizationFree": { "answer": "partial", "detail": "Liaison membership is free, but only for standards bodies and supportive organizations that fit no other category.", "source": "https://openchargealliance.org/join-us/" },
+			"workingGroups": { "answer": "no", "detail": "The Technical and Compliance working groups are member benefits.", "source": "https://openchargealliance.org/faq/" },
+			"interopTesting": { "answer": "yes", "detail": "\"Everyone from the EV charging industry is welcome to participate\" in plugfests, held several times a year. OCTT Starter is free.", "source": "https://openchargealliance.org/ocpp-plugfest/" },
+			"certification": { "answer": "yes", "detail": "\"Every company involved with an OCPP implementation can get an official independent OCPP Certificate\"; members get discounts.", "source": "https://openchargealliance.org/faq/" },
+			"openSource": { "answer": "unknown", "detail": "Open-source OCPP stacks exist (EVerest and CitrineOS at LF Energy); we found none maintained by OCA." }
+		},
+		"memberships": [
+			{ "name": "Liaison", "audience": "liaison", "fee": { "kind": "free" }, "eligibility": "Standards-setting or defining bodies (SSOs/SDOs) and supportive organizations that fit no other category. IEC experts can join as Liaison Participants.", "voting": "unknown", "workingGroups": "unknown", "source": "https://openchargealliance.org/join-us/" },
+			{ "name": "Individual", "audience": "individual", "fee": { "kind": "amount", "amount": 297, "currency": "EUR", "period": "year" }, "eligibility": "People with a professional interest in developing, distributing, installing, maintaining or using OCA standards.", "voting": "unknown", "workingGroups": "yes", "source": "https://openchargealliance.org/join-us/" },
+			{ "name": "Institutional", "audience": "nonprofit", "fee": { "kind": "amount", "amount": 990, "currency": "EUR", "period": "year" }, "eligibility": "Research and consulting groups, laboratories, regulators and universities.", "voting": "unknown", "workingGroups": "yes", "source": "https://openchargealliance.org/join-us/" },
+			{ "name": "Implementer", "audience": "company", "fee": { "kind": "amount", "amount": 990, "max": 8250, "currency": "EUR", "period": "year" }, "eligibility": "Vendors of hardware or software implementing OCA standards. Revenue under 1M €990, 1M to 10M €2,475, 10M to 50M €4,950, over 50M €8,250.", "voting": "unknown", "workingGroups": "yes", "note": "OCTT Professional at the participant rate.", "source": "https://openchargealliance.org/join-us/" },
+			{ "name": "Adopter", "audience": "end-user", "fee": { "kind": "amount", "amount": 990, "max": 8250, "currency": "EUR", "period": "year" }, "eligibility": "Organizations that deploy charging networks with OCA standards, including grid owners and operators. Same revenue bands as Implementer.", "voting": "unknown", "workingGroups": "yes", "source": "https://openchargealliance.org/join-us/" }
+		],
+		"programs": [
+			{ "kind": "certification", "name": "OCPP certification", "url": "https://openchargealliance.org/certification-program/", "detail": "Run with independent test laboratories, including Dekra, DNV, the Korea Smart Grid Association, KTC and KTL.", "openToNonMembers": "yes", "source": "https://openchargealliance.org/faq/" },
+			{ "kind": "test-tool", "name": "OCPP Compliance Test Tool (OCTT)", "url": "https://openchargealliance.org/test-tool", "detail": "OCTT Starter is free with more than 300 core test cases. OCTT Professional is €7,900 a year for Adopter and Implementer members and €17,900 a year for others.", "openToNonMembers": "yes", "source": "https://openchargealliance.org/test-tool" },
+			{ "kind": "plugfest", "name": "OCPP Plugfest", "url": "https://openchargealliance.org/ocpp-plugfest/", "detail": "Several hands-on testing events a year at partner locations worldwide.", "openToNonMembers": "yes", "source": "https://openchargealliance.org/ocpp-plugfest/" }
+		],
+		"openSource": [],
+		"documents": [{ "label": "OCA Policies and Procedures (March 2025)", "url": "https://openchargealliance.org/wp-content/uploads/2025/04/OCA-Policies_and_Procedures_March-2025-1.pdf" }],
+		"relatedProjects": ["go-ocpp", "ocppctl", "ocpp-interop"],
+		"related": [
+			{ "id": "lf-energy", "relation": "Hosts EVerest and CitrineOS, open-source OCPP implementations." },
+			{ "id": "charin", "relation": "Works on the vehicle-to-charger side of EV charging (CCS, MCS, NACS)." }
+		],
+		"sources": [
+			{ "label": "Join us", "url": "https://openchargealliance.org/join-us/" },
+			{ "label": "FAQ", "url": "https://openchargealliance.org/faq/" },
+			{ "label": "Certification program", "url": "https://openchargealliance.org/certification-program/" },
+			{ "label": "Test tool", "url": "https://openchargealliance.org/test-tool" },
+			{ "label": "OCPP Plugfest", "url": "https://openchargealliance.org/ocpp-plugfest/" }
+		],
+		"verifiedAt": "2026-10-23",
+		"detail": true,
+		"insights": [
+			"OCA is one of the most open organizations in this directory. The specifications are free for everyone, plugfests welcome the whole industry, certification is open to every company with an OCPP implementation, and the Starter edition of the compliance test tool is free.",
+			"Influence over the specification is a different matter: the Technical and Compliance working groups are for members. The cheapest way in is Individual membership at €297 a year; companies pay from €990 by revenue band.",
+			"The price gap that matters most for small vendors is the test tool. OCTT Professional costs €7,900 a year for Adopter and Implementer members and €17,900 for everyone else, which on its own can justify a membership."
+		]
+	},
+	{
+		"id": "charin",
+		"name": "CharIN",
+		"kind": "industry-alliance",
+		"summary": "Promotes the CCS, MCS and NACS charging interfaces, with working groups and Testivals.",
+		"description": "CharIN is an association whose members work on the Combined Charging System (CCS), the Megawatt Charging System (MCS) and NACS for vehicle charging, with member working groups and interoperability Testivals.",
+		"website": "https://www.charin.global/",
+		"region": "global",
+		"domains": ["ev-charging"],
+		"protocols": [],
+		"standards": [{ "name": "CCS, MCS and NACS charging interfaces", "role": "promotes" }],
+		"access": {
+			"specifications": { "answer": "unknown", "detail": "We have not yet verified document access." },
+			"community": { "answer": "unknown", "detail": "Testivals and conferences are promoted publicly; access rules are not stated on the membership page." },
+			"individualFree": { "answer": "notApplicable", "detail": "Members are companies and organizations.", "source": "https://charin.global/community/benefits-membership" },
+			"organizationFree": { "answer": "no", "detail": "Even the startup rate is €5,000 per calendar year.", "source": "https://www.charin.global/media/pages/community/benefits-membership/8445303ce4-1733498134/charin-membership-for-startups.pdf" },
+			"workingGroups": { "answer": "no", "detail": "Regular members join one or more working groups; startups get one.", "source": "https://charin.global/community/benefits-membership" },
+			"interopTesting": { "answer": "unknown", "detail": "Testivals are promoted but the membership page does not say who can attend." },
+			"certification": { "answer": "unknown", "detail": "Not verified yet." },
+			"openSource": { "answer": "unknown", "detail": "Not verified yet." }
+		},
+		"memberships": [
+			{ "name": "Startup", "audience": "startup", "fee": { "kind": "amount", "amount": 5000, "currency": "EUR", "period": "calendar-year" }, "eligibility": "Gross revenue under €3M, registered for less than four years, and not controlled by a Regular or Core member. Moves to the Regular rate from year three.", "workingGroups": "yes", "note": "No initiation fee; access to one working group.", "source": "https://www.charin.global/media/pages/community/benefits-membership/8445303ce4-1733498134/charin-membership-for-startups.pdf" },
+			{ "name": "Regular", "audience": "company", "fee": { "kind": "notPublished" }, "eligibility": "Suppliers, utilities, public authorities, IT firms and non-profits.", "workingGroups": "yes", "note": "Fees are in a dues schedule linked from the membership page, not on the page itself.", "source": "https://charin.global/community/benefits-membership" },
+			{ "name": "Core", "audience": "company", "fee": { "kind": "notPublished" }, "eligibility": "Founding members, and members that meet further criteria.", "workingGroups": "yes", "source": "https://charin.global/community/benefits-membership" }
+		],
+		"programs": [],
+		"openSource": [],
+		"relatedProjects": [],
+		"related": [{ "id": "open-charge-alliance", "relation": "OCPP covers the charger-to-back-office link; CharIN's interfaces cover the vehicle-to-charger side." }],
+		"sources": [
+			{ "label": "Membership benefits", "url": "https://charin.global/community/benefits-membership" },
+			{ "label": "Membership for startups (PDF)", "url": "https://www.charin.global/media/pages/community/benefits-membership/8445303ce4-1733498134/charin-membership-for-startups.pdf" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "lf-energy",
+		"name": "LF Energy",
+		"kind": "oss-foundation",
+		"summary": "Linux Foundation home for open-source energy software, including EVerest, CitrineOS, OpenLEADR and CoMPAS.",
+		"description": "LF Energy is the Linux Foundation's foundation for open-source energy software, standards and data. It hosts projects such as EVerest and CitrineOS (EV charging and OCPP), OpenLEADR (OpenADR), CoMPAS (IEC 61850 tooling) and SEAPATH (digital substations), with special interest groups that anyone can join.",
+		"website": "https://lfenergy.org/",
+		"region": "global",
+		"domains": ["energy", "ev-charging"],
+		"protocols": ["ocpp", "openadr", "iec-61850"],
+		"standards": [
+			{ "name": "EVerest and CitrineOS (OCPP)", "role": "hosts-oss" },
+			{ "name": "OpenLEADR (OpenADR 2.0b and 3.x)", "role": "hosts-oss" },
+			{ "name": "CoMPAS and SEAPATH (IEC 61850, digital substations)", "role": "hosts-oss" }
+		],
+		"access": {
+			"specifications": { "answer": "notApplicable", "detail": "LF Energy does not publish the protocols in this directory." },
+			"community": { "answer": "yes", "detail": "\"You can use every project, contribute to any of them, and never pay a cent.\"", "source": "https://lfenergy.org/join/" },
+			"individualFree": { "answer": "yes", "detail": "Contributing to projects and joining SIGs needs no membership.", "source": "https://tac.lfenergy.org/process/sigs.html" },
+			"organizationFree": { "answer": "partial", "detail": "Associate membership is free for eligible open-source projects, non-profits, academic institutions and government research bodies, subject to Governing Board approval.", "source": "https://lfenergy.org/join/" },
+			"workingGroups": { "answer": "yes", "detail": "\"SIGs are open for anyone to participate in.\"", "source": "https://tac.lfenergy.org/process/sigs.html" },
+			"interopTesting": { "answer": "notApplicable", "detail": "LF Energy does not run protocol test events." },
+			"certification": { "answer": "notApplicable", "detail": "LF Energy does not certify products." },
+			"openSource": { "answer": "yes", "detail": "Hosts 39 projects, including EVerest, CitrineOS, openLEADR, CoMPAS and SEAPATH.", "source": "https://lfenergy.org/our-projects/" }
+		},
+		"memberships": [
+			{ "name": "Contributor, no membership", "audience": "anyone", "fee": { "kind": "free" }, "eligibility": "Anyone: use and contribute to every project, and join SIGs.", "workingGroups": "yes", "source": "https://lfenergy.org/join/" },
+			{ "name": "Associate", "audience": "nonprofit", "fee": { "kind": "free" }, "eligibility": "Open-source projects, non-profits, academic institutions and government research bodies, with Governing Board approval.", "voting": "unknown", "workingGroups": "yes", "source": "https://lfenergy.org/join/" },
+			{ "name": "General", "audience": "company", "fee": { "kind": "amount", "amount": 5000, "max": 70000, "currency": "USD", "period": "unstated" }, "eligibility": "By employee count: $10,000 (up to 99) to $70,000 (5,000+) for organizations not yet in the Linux Foundation; $5,000 to $50,000 for current LF members.", "voting": "partial", "workingGroups": "yes", "note": "Eligible to stand for the Governing Board.", "source": "https://lfenergy.org/join/" },
+			{ "name": "Strategic", "audience": "company", "fee": { "kind": "amount", "amount": 150000, "max": 170000, "currency": "USD", "period": "unstated" }, "eligibility": "$170,000, or $150,000 for current Linux Foundation members.", "voting": "yes", "workingGroups": "yes", "note": "Seats on the Governing Board, the Technical Advisory Council and the LFESS Steering Committee.", "source": "https://lfenergy.org/join/" }
+		],
+		"programs": [],
+		"openSource": [
+			{ "name": "EVerest", "url": "https://github.com/EVerest/EVerest", "implementation": "everest" },
+			{ "name": "libocpp (EVerest)", "url": "https://github.com/EVerest/libocpp", "implementation": "everest-libocpp" },
+			{ "name": "CitrineOS", "url": "https://github.com/citrineos/citrineos-core", "implementation": "citrineos" },
+			{ "name": "OpenLEADR (Python)", "url": "https://github.com/OpenLEADR/openleadr-python", "implementation": "openleadr-python" },
+			{ "name": "OpenLEADR (Rust)", "url": "https://github.com/OpenLEADR/openleadr-rs", "implementation": "openleadr-rs" }
+		],
+		"relatedProjects": ["go-ocpp", "ocpp-interop", "go-openadr", "openadr-interop", "go-iec61850"],
+		"related": [
+			{ "id": "open-charge-alliance", "relation": "Publishes OCPP, which EVerest and CitrineOS implement." },
+			{ "id": "openadr-alliance", "relation": "Publishes OpenADR, which OpenLEADR implements." },
+			{ "id": "uca-international", "relation": "IEC 61850 user community; CoMPAS is open-source IEC 61850 tooling." }
+		],
+		"sources": [
+			{ "label": "Join LF Energy", "url": "https://lfenergy.org/join/" },
+			{ "label": "Special interest groups", "url": "https://tac.lfenergy.org/process/sigs.html" },
+			{ "label": "Projects", "url": "https://lfenergy.org/our-projects/" },
+			{ "label": "openLEADR project", "url": "https://lfenergy.org/projects/openleadr/" }
+		],
+		"verifiedAt": "2026-10-23",
+		"detail": true,
+		"insights": [
+			"LF Energy is mostly the opposite of a protocol standards body: its projects are software, and everything it hosts is free to use and contribute to. The SIGs, including Edge Interoperability and Flexibility, are open to anyone.",
+			"Several projects on our ecosystem map live here: EVerest and CitrineOS for OCPP, and OpenLEADR for OpenADR. They are independent of the organizations that publish those protocols, which is exactly why this directory separates standards publishers from open-source foundations.",
+			"Paid membership buys governance, not access. General membership starts at $10,000 (or $5,000 for existing Linux Foundation members) and makes a company eligible for the Governing Board; Associate membership is free for open-source projects, non-profits and research bodies, with board approval."
+		]
+	},
+	{
+		"id": "eclipse-foundation",
+		"name": "Eclipse Foundation",
+		"kind": "oss-foundation",
+		"summary": "Open-source foundation hosting Eclipse Milo (OPC UA); committer membership is free.",
+		"description": "The Eclipse Foundation is an open-source foundation whose projects include Eclipse Milo, an open-source OPC UA stack for Java.",
+		"website": "https://www.eclipse.org/",
+		"region": "global",
+		"domains": ["industrial"],
+		"protocols": ["opc-ua"],
+		"standards": [{ "name": "Eclipse Milo (OPC UA)", "role": "hosts-oss" }],
+		"access": {
+			"specifications": { "answer": "notApplicable", "detail": "The foundation hosts software, not protocol specifications." },
+			"community": { "answer": "unknown", "detail": "The membership page does not say whether non-members can contribute; we have not yet checked the contributor terms." },
+			"individualFree": { "answer": "partial", "detail": "\"There is no cost to being a Committer member\", for committers whose employer is not already a member.", "source": "https://eclipse.org/membership/" },
+			"organizationFree": { "answer": "partial", "detail": "Associate membership is €0 for government, research, academic and user-group organizations.", "source": "https://eclipse.org/membership/" },
+			"workingGroups": { "answer": "unknown", "detail": "Industry working groups have their own participation agreements; not verified yet." },
+			"interopTesting": { "answer": "notApplicable", "detail": "The foundation does not run protocol test events." },
+			"certification": { "answer": "notApplicable", "detail": "The foundation does not certify OPC UA products." },
+			"openSource": { "answer": "yes", "detail": "Hosts Eclipse Milo (iot.milo).", "source": "https://projects.eclipse.org/projects/iot.milo/governance" }
+		},
+		"memberships": [
+			{ "name": "Committer", "audience": "individual", "fee": { "kind": "free" }, "eligibility": "Committers on Eclipse projects whose employer is not a member.", "source": "https://eclipse.org/membership/" },
+			{ "name": "Associate", "audience": "nonprofit", "fee": { "kind": "amount", "amount": 0, "max": 25000, "currency": "EUR", "period": "year" }, "eligibility": "€0 for governments, research, NGOs, academia and user groups; companies pay by revenue, from €1,500 (under €1M and fewer than 10 employees) to €25,000.", "source": "https://eclipse.org/membership/" },
+			{ "name": "Contributing", "audience": "company", "fee": { "kind": "amount", "amount": 1000, "max": 25000, "currency": "EUR", "period": "year" }, "eligibility": "€1,000 for academic and user-group organizations; companies pay by revenue, from €1,500 (under €1M and fewer than 10 employees) to €25,000.", "source": "https://eclipse.org/membership/" },
+			{ "name": "Strategic", "audience": "company", "fee": { "kind": "amount", "amount": 30000, "max": 300000, "currency": "EUR", "period": "year" }, "eligibility": "By revenue, from €30,000 to €300,000.", "voting": "yes", "source": "https://eclipse.org/membership/" }
+		],
+		"programs": [],
+		"openSource": [{ "name": "Eclipse Milo", "url": "https://github.com/eclipse-milo/milo", "implementation": "milo" }],
+		"relatedProjects": ["go-opcua", "opcua-interop"],
+		"related": [{ "id": "opc-foundation", "relation": "Publishes OPC UA, which Eclipse Milo implements independently." }],
+		"sources": [
+			{ "label": "Membership and fees", "url": "https://eclipse.org/membership/" },
+			{ "label": "Eclipse Milo project", "url": "https://projects.eclipse.org/projects/iot.milo/governance" }
+		],
+		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "isa",
+		"name": "International Society of Automation",
+		"acronym": "ISA",
+		"kind": "professional-society",
+		"summary": "Publishes the ISA/IEC 62443 OT security series; standards committees are open without membership.",
+		"description": "ISA is the professional society for automation. Its standards committees, including ISA99 behind the ISA/IEC 62443 industrial cybersecurity series, are open to interested parties without ISA membership.",
+		"website": "https://www.isa.org/",
+		"region": "global",
+		"domains": ["industrial"],
+		"protocols": [],
+		"standards": [{ "name": "ISA/IEC 62443 industrial automation and control systems security (ISA99)", "role": "publishes" }],
+		"access": {
+			"specifications": { "answer": "partial", "detail": "Members get online viewing of more than 150 ISA standards; the page does not name 62443 specifically.", "source": "https://www.isa.org/membership/join" },
+			"community": { "answer": "yes", "detail": "Standards committee participation \"shall be open to all parties who are directly and materially interested\".", "source": "https://www.isa.org/standards-and-publications/isa-standards/join-a-standards-committee" },
+			"individualFree": { "answer": "partial", "detail": "Committee participation needs only a free ISA account; membership itself starts at $15 for students and $170 for professionals.", "source": "https://www.isa.org/standards-and-publications/isa-standards/join-a-standards-committee" },
+			"organizationFree": { "answer": "notApplicable", "detail": "ISA membership is for individuals." },
+			"workingGroups": { "answer": "yes", "detail": "\"ISA membership is not a requirement for participation in standards committees.\" New members usually start as non-voting information members.", "source": "https://www.isa.org/standards-and-publications/isa-standards/join-a-standards-committee" },
+			"interopTesting": { "answer": "notApplicable", "detail": "ISA does not run protocol interoperability events." },
+			"certification": { "answer": "unknown", "detail": "We have not verified product certification against 62443 yet." },
+			"openSource": { "answer": "unknown", "detail": "Not verified yet." }
+		},
+		"memberships": [
+			{ "name": "Committee participant", "audience": "anyone", "fee": { "kind": "free" }, "eligibility": "Anyone directly and materially interested, with a free ISA account.", "voting": "partial", "workingGroups": "yes", "note": "New members usually join as non-voting information members.", "source": "https://www.isa.org/standards-and-publications/isa-standards/join-a-standards-committee" },
+			{ "name": "Student", "audience": "student", "fee": { "kind": "amount", "amount": 15, "currency": "USD", "period": "year" }, "source": "https://www.isa.org/membership/join" },
+			{ "name": "Professional", "audience": "individual", "fee": { "kind": "amount", "amount": 170, "currency": "USD", "period": "year" }, "eligibility": "$85 in eligible countries.", "source": "https://www.isa.org/membership/join" }
+		],
+		"programs": [],
+		"openSource": [],
+		"relatedProjects": [],
+		"related": [{ "id": "iec", "relation": "The 62443 series is published jointly as ISA/IEC 62443." }],
+		"sources": [
+			{ "label": "Join ISA", "url": "https://www.isa.org/membership/join" },
+			{ "label": "Join a standards committee", "url": "https://www.isa.org/standards-and-publications/isa-standards/join-a-standards-committee" }
+		],
+		"verifiedAt": "2026-10-23"
+	}
+]

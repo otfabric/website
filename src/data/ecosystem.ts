@@ -1,6 +1,6 @@
 // The industrial protocol stack registry (src/data/ecosystem.json): every known
 // implementation of the protocols OT Fabric covers, with its source and the date
-// it was verified. It drives the landscape blog post and the /ecosystem/ map.
+// it was verified. It drives the landscape blog post and the /ecosystem/implementations/ map.
 import registry from './ecosystem.json';
 
 export type ImplType = 'independent' | 'derived' | 'commercial' | 'legacy';

@@ -1,0 +1,83 @@
+---
+// Membership tiers with who can join, the published fee, voting and working-group access.
+import Answer from './Answer.astro';
+import { formatFee, host, type Organization } from '../../data/organizations';
+
+interface Props {
+	org: Organization;
+}
+const { org } = Astro.props;
+---
+
+<div class="table-wrap">
+	<table>
+		<thead>
+			<tr>
+				<th scope="col">Tier</th>
+				<th scope="col">Published fee</th>
+				<th scope="col">Who can join</th>
+				<th scope="col">Votes</th>
+				<th scope="col">Working groups</th>
+				<th scope="col">Source</th>
+			</tr>
+		</thead>
+		<tbody>
+			{org.data.memberships.map((t) => (
+				<tr>
+					<th scope="row">{t.name}</th>
+					<td class="fee">{formatFee(t.fee)}</td>
+					<td>
+						{t.eligibility ?? '–'}
+						{t.note && <span class="note">{t.note}</span>}
+					</td>
+					<td>{t.voting ? <Answer answer={t.voting} /> : <Answer answer="unknown" />}</td>
+					<td>{t.workingGroups ? <Answer answer={t.workingGroups} /> : <Answer answer="unknown" />}</td>
+					<td><a href={t.source} rel="noopener">{host(t.source)}</a></td>
+				</tr>
+			))}
+		</tbody>
+	</table>
+</div>
+
+<style>
+	.table-wrap {
+		overflow-x: auto;
+	}
+	table {
+		width: 100%;
+		min-width: 44rem;
+		border-collapse: collapse;
+		font-size: 0.88rem;
+	}
+	th,
+	td {
+		padding: 0.6rem 0.75rem 0.6rem 0;
+		border-bottom: 1px solid var(--ot-line);
+		text-align: left;
+		vertical-align: top;
+	}
+	thead th {
+		font: 500 0.7rem/1.2 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--ot-muted);
+	}
+	tbody th {
+		font-weight: 600;
+		color: var(--ot-fg-strong);
+		min-width: 8rem;
+	}
+	.fee {
+		font-family: var(--ot-font-mono);
+		white-space: nowrap;
+		color: var(--ot-fg-strong);
+	}
+	.note {
+		display: block;
+		margin-top: 0.3rem;
+		color: var(--ot-muted);
+	}
+	a {
+		color: var(--ot-accent);
+	}
+</style>

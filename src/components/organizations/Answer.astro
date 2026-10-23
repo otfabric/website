@@ -1,0 +1,52 @@
+---
+// One answer to an access question: a symbol with its meaning, coloured by openness.
+import { answerLabels, answerSymbols, type Answer } from '../../data/organizations';
+
+interface Props {
+	answer: Answer;
+	/** Show the word next to the symbol. */
+	label?: boolean;
+	title?: string;
+}
+const { answer, label = false, title } = Astro.props;
+---
+
+<span class:list={['ans', `a-${answer}`]} title={title ?? answerLabels[answer]}>
+	<span aria-hidden="true">{answerSymbols[answer]}</span>
+	{label ? <span>{answerLabels[answer]}</span> : <span class="sr-only">{answerLabels[answer]}</span>}
+</span>
+
+<style>
+	.ans {
+		/* Keeps the visually hidden label inside scrolling tables. */
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		min-width: 1.6rem;
+		justify-content: center;
+		padding: 0.1rem 0.45rem;
+		border-radius: 0.25rem;
+		border: 1px solid var(--ot-line);
+		font: 500 0.78rem/1.3 var(--ot-font-mono);
+		white-space: nowrap;
+		color: var(--ot-muted);
+	}
+	.a-yes {
+		border-color: var(--ot-accent);
+		background: var(--ot-accent-soft);
+		color: var(--ot-accent);
+	}
+	.a-partial {
+		border-color: var(--ot-wire);
+		color: var(--ot-wire);
+	}
+	.a-no {
+		color: var(--ot-fg);
+	}
+	.a-unknown,
+	.a-notPublished,
+	.a-notApplicable {
+		border-style: dashed;
+	}
+</style>

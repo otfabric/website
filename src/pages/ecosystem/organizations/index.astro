@@ -1,0 +1,734 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import EcosystemNav from '../../../components/ecosystem/EcosystemNav.astro';
+import Answer from '../../../components/organizations/Answer.astro';
+import AccessList from '../../../components/organizations/AccessList.astro';
+import MembershipTable from '../../../components/organizations/MembershipTable.astro';
+import { getProtocols } from '../../../data/projects';
+import { absolute, breadcrumbs, orgRef } from '../../../data/seo';
+import {
+	REVIEW_DAYS,
+	answerLabels,
+	domainLabels,
+	entryPoint,
+	formatDay,
+	getOrganizations,
+	host,
+	kindLabels,
+	lastVerified,
+	orgPath,
+	programLabels,
+	questions,
+	reviewBy,
+} from '../../../data/organizations';
+
+const orgs = await getOrganizations();
+const protocols = await getProtocols();
+const protocolName = Object.fromEntries(protocols.map((p) => [p.id, p.data.name]));
+const covered = protocols.filter((p) => orgs.some((o) => o.data.protocols.includes(p.id as never)));
+const kinds = Object.keys(kindLabels).filter((k) => orgs.some((o) => o.data.kind === k)) as (keyof typeof kindLabels)[];
+const domains = Object.keys(domainLabels) as (keyof typeof domainLabels)[];
+const verified = lastVerified(orgs);
+const open = (a: string) => a === 'yes' || a === 'partial';
+const stats = {
+	organizations: orgs.length,
+	protocols: covered.length,
+	fees: orgs.reduce((n, o) => n + o.data.memberships.filter((t) => t.fee.kind === 'amount' || t.fee.kind === 'free').length, 0),
+	freeIndividual: orgs.filter((o) => open(o.data.access.individualFree.answer) || open(o.data.access.community.answer)).length,
+};
+// The four answers shown on every card; the rest are in the details.
+const cardQuestions = questions.filter((q) => ['specifications', 'individualFree', 'workingGroups', 'certification'].includes(q.key));
+
+const pairs = [
+	{
+		protocol: 'IEC 61850',
+		ids: ['iec', 'uca-international'],
+		text: 'IEC Technical Committee 57 writes the standard, with experts nominated by national committees. UCAIug is the user community: it hosts the 61850 user group and organizes the interoperability (IOP) testing events.',
+	},
+	{
+		protocol: 'BACnet',
+		ids: ['ashrae', 'bacnet-international'],
+		text: 'ASHRAE publishes the standard through its BACnet Committee, SSPC 135. BACnet International promotes it and runs BTL testing, certification and the PlugFest.',
+	},
+	{
+		protocol: 'DNP3',
+		ids: ['ieee-sa', 'dnp-users-group'],
+		text: 'IEEE SA publishes DNP3 as IEEE 1815. The DNP Users Group keeps the member document library and runs conformance testing.',
+	},
+	{
+		protocol: 'IEEE 2030.5',
+		ids: ['ieee-sa', 'sunspec-alliance'],
+		text: 'IEEE SA publishes IEEE 2030.5. SunSpec Alliance certifies products against CSIP, the profile used with California utilities under Rule 21.',
+	},
+];
+const byId = Object.fromEntries(orgs.map((o) => [o.id, o]));
+
+const pageUrl = absolute('/ecosystem/organizations/');
+const schema = [
+	breadcrumbs([{ name: 'Ecosystem: standards and alliances', path: '/ecosystem/organizations/' }]),
+	{
+		'@type': 'ItemList',
+		'@id': `${pageUrl}#list`,
+		name: 'Industrial protocol standards and alliances',
+		numberOfItems: orgs.length,
+		itemListElement: orgs.map((o, i) => ({
+			'@type': 'ListItem',
+			position: i + 1,
+			url: o.data.detail ? absolute(orgPath(o)) : undefined,
+			item: { '@type': 'Organization', name: o.data.name, alternateName: o.data.acronym, url: o.data.website, description: o.data.summary },
+		})),
+	},
+	{
+		'@type': 'Dataset',
+		'@id': `${pageUrl}#dataset`,
+		name: 'Industrial protocol standards and alliances directory',
+		description: `A source-backed dataset of ${orgs.length} standards bodies, industry alliances, user groups and open-source foundations behind industrial communication protocols, with membership tiers, published fees, participation rules and interoperability programs. Every fact cites the official page it came from.`,
+		url: pageUrl,
+		dateModified: verified,
+		license: 'https://opensource.org/licenses/MIT',
+		isAccessibleForFree: true,
+		creator: orgRef,
+		publisher: orgRef,
+		keywords: ['industrial protocol alliances', 'standards bodies', 'OT interoperability', 'membership fees', 'certification', ...covered.map((p) => p.data.name)],
+		variableMeasured: ['organization type', 'protocols', 'membership tiers', 'published fees', 'specification access', 'working-group access', 'certification', 'interoperability testing', 'open source'],
+		distribution: { '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: absolute('/ecosystem/organizations.json') },
+	},
+];
+---
+
+<BaseLayout
+	title="Industrial protocol standards and alliances"
+	description={`Who develops, tests and certifies industrial protocols: ${orgs.length} standards bodies, alliances, user groups and open-source foundations, with membership fees, free routes in and interoperability programs, each sourced.`}
+	pageType="CollectionPage"
+	schema={schema}
+>
+	<EcosystemNav />
+	<section class="head">
+		<div class="ot-container">
+			<span class="ot-label accent">Standards and alliances · verified {formatDay(verified)}</span>
+			<h1>Industrial protocol standards and alliances</h1>
+			<p class="lead">
+				Find the organizations that develop, maintain, test and promote industrial communication protocols. Compare how to take part,
+				what it costs and which interoperability programs are open to you, with the official source for every fact.
+			</p>
+			<dl class="stats">
+				<div><dt>Organizations</dt><dd>{stats.organizations}</dd></div>
+				<div><dt>Protocols covered</dt><dd>{stats.protocols}</dd></div>
+				<div><dt>Published fees and free tiers</dt><dd>{stats.fees}</dd></div>
+				<div><dt>Free or open routes for individuals</dt><dd>{stats.freeIndividual}</dd></div>
+			</dl>
+			<p class="neutral">
+				An independent, community-maintained reference. Listing an organization does not mean OT Fabric is a member of it, endorsed by it
+				or working with it. Fees are the published examples on the date shown, not quotes.
+			</p>
+		</div>
+	</section>
+
+	<div class="ot-container dir" id="dir">
+		<form class="filters" aria-label="Filter organizations" onsubmit="return false">
+			<fieldset class="domains">
+				<legend class="sr-only">Domain</legend>
+				<label><input type="radio" name="domain" value="" checked /><span>All</span></label>
+				{domains.map((d) => <label><input type="radio" name="domain" value={d} /><span>{domainLabels[d]}</span></label>)}
+			</fieldset>
+			<div class="row">
+				<label class="search">
+					<span class="sr-only">Search</span>
+					<input type="search" name="q" placeholder="Search name, protocol, program…" autocomplete="off" />
+				</label>
+				<label>
+					<span class="ot-label">Type</span>
+					<select name="kind">
+						<option value="">Any</option>
+						{kinds.map((k) => <option value={k}>{kindLabels[k]}</option>)}
+					</select>
+				</label>
+				<label>
+					<span class="ot-label">Protocol</span>
+					<select name="protocol">
+						<option value="">Any</option>
+						{covered.map((p) => <option value={p.id}>{p.data.name}</option>)}
+					</select>
+				</label>
+			</div>
+			<div class="row checks">
+				<label><input type="checkbox" name="individualFree" /><span>Free for individuals</span></label>
+				<label><input type="checkbox" name="organizationFree" /><span>Free for organizations</span></label>
+				<label><input type="checkbox" name="workingGroups" /><span>Open working groups</span></label>
+				<label><input type="checkbox" name="certification" /><span>Certify without joining</span></label>
+			</div>
+		</form>
+
+		<p class="count" aria-live="polite"><span>{orgs.length}</span> organizations</p>
+
+		<div class="cards">
+			{orgs.map((o) => (
+				<article
+					class="card"
+					id={`org-${o.id}`}
+					data-domains={o.data.domains.join(' ')}
+					data-kind={o.data.kind}
+					data-protocols={o.data.protocols.join(' ')}
+					data-individual-free={o.data.access.individualFree.answer}
+					data-organization-free={o.data.access.organizationFree.answer}
+					data-working-groups={o.data.access.workingGroups.answer}
+					data-certification={o.data.access.certification.answer}
+					data-search={[o.data.name, o.data.acronym, o.data.summary, kindLabels[o.data.kind], ...o.data.protocols.map((p) => protocolName[p]), ...o.data.standards.map((s) => s.name), ...o.data.programs.map((p) => p.name)].filter(Boolean).join(' ').toLowerCase()}
+				>
+					<header>
+						<span class="ot-label">{kindLabels[o.data.kind]} · {o.data.domains.map((d) => domainLabels[d]).join(', ')}</span>
+						<h2>
+							{o.data.detail ? <a href={orgPath(o)}>{o.data.name}</a> : o.data.name}
+							{o.data.acronym && <span class="acr">{o.data.acronym}</span>}
+						</h2>
+					</header>
+					<p class="summary">{o.data.summary}</p>
+					{o.data.protocols.length > 0 && (
+						<p class="chips">
+							{o.data.protocols.map((p) => <a class="chip" href={`/protocols/${p}/`}>{protocolName[p]}</a>)}
+						</p>
+					)}
+					<p class="entry">{entryPoint(o)}</p>
+					<ul class="quick">
+						{cardQuestions.map((q) => (
+							<li><Answer answer={o.data.access[q.key].answer} title={`${q.short}: ${o.data.access[q.key].detail}`} /> {q.short}</li>
+						))}
+					</ul>
+					<details>
+						<summary>Membership, programs and sources</summary>
+						<h3>Participation</h3>
+						<AccessList org={o} />
+						<h3>Membership tiers</h3>
+						<MembershipTable org={o} />
+						{o.data.programs.length > 0 && (
+							<>
+								<h3>Certification and interoperability</h3>
+								<ul class="programs">
+									{o.data.programs.map((p) => (
+										<li>
+											<span class="ot-label">{programLabels[p.kind]}</span>
+											<strong>{p.url ? <a href={p.url} rel="noopener">{p.name}</a> : p.name}</strong>
+											<span>{p.detail}</span>
+										</li>
+									))}
+								</ul>
+							</>
+						)}
+						<p class="src ot-label">
+							Verified {formatDay(o.data.verifiedAt)} · re-check by {formatDay(reviewBy(o.data.verifiedAt))} ·{' '}
+							{o.data.sources.map((s, i) => <>{i > 0 && ' · '}<a href={s.url} rel="noopener">{s.label}</a></>)}
+						</p>
+					</details>
+					<footer>
+						<a class="ot-btn small" href={o.data.website} rel="noopener">{host(o.data.website)} ↗</a>
+						{o.data.detail && <a class="ot-btn small primary" href={orgPath(o)}>Full profile →</a>}
+					</footer>
+				</article>
+			))}
+		</div>
+		<p class="empty" hidden>No organization matches these filters.</p>
+
+		<section class="compare" aria-labelledby="compare-title">
+			<h2 id="compare-title">Participation at a glance</h2>
+			<p class="intro">
+				"Open" and "free" mean different things at different organizations. Each column is a separate question, and ✓ always means open
+				or free to someone who is not a member. Hover a symbol for the detail; the source is in each organization's details.
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th scope="col">Organization</th>
+							{questions.map((q) => <th scope="col" title={q.label}>{q.short}</th>)}
+						</tr>
+					</thead>
+					<tbody>
+						{orgs.map((o) => (
+							<tr data-org={o.id}>
+								<th scope="row"><a href={orgPath(o)}>{o.data.acronym ?? o.data.name}</a></th>
+								{questions.map((q) => <td><Answer answer={o.data.access[q.key].answer} title={o.data.access[q.key].detail} /></td>)}
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+			<ul class="legend" aria-label="Legend">
+				{(Object.keys(answerLabels) as (keyof typeof answerLabels)[]).map((a) => (
+					<li><Answer answer={a} /> {answerLabels[a]}</li>
+				))}
+			</ul>
+		</section>
+
+		<section class="pairs" aria-labelledby="pairs-title">
+			<h2 id="pairs-title">Who writes the standard, and who tests it</h2>
+			<p class="intro">For several protocols the body that publishes the standard is not the one that tests or certifies products against it.</p>
+			<div class="pair-grid">
+				{pairs.map((p) => (
+					<div class="pair">
+						<span class="ot-label">{p.protocol}</span>
+						<p class="names">{p.ids.map((id, i) => <>{i > 0 && <span aria-hidden="true"> → </span>}<a href={orgPath(byId[id])}>{byId[id].data.acronym ?? byId[id].data.name}</a></>)}</p>
+						<p>{p.text}</p>
+					</div>
+				))}
+			</div>
+		</section>
+
+		<section class="method">
+			<div>
+				<span class="ot-label accent">How this directory works</span>
+				<h2>Sourced, dated and open to corrections</h2>
+				<p>
+					Every record is one entry in a JSON file in our website repository, checked against a schema on every build. Each answer that
+					states a fact links the official page it came from. We distinguish <strong>unknown</strong> (we could not establish it),
+					<strong>not published</strong> (the organization does not publish it) and <strong>not applicable</strong>.
+				</p>
+				<p>
+					Fees are checked by hand at the source and flagged for a re-check after {REVIEW_DAYS} days. We never copy prices
+					automatically: membership terms can have contractual weight, and an organization's own page is the only authority.
+				</p>
+				<p>
+					Spotted an outdated fee, a missing organization or a wrong answer? Open an issue or a pull request with the source, and we
+					review it before it is published.
+				</p>
+			</div>
+			<div class="actions">
+				<a class="ot-btn primary" href="https://github.com/otfabric/website/blob/main/src/data/organizations.json">Edit the data on GitHub</a>
+				<a class="ot-btn" href="https://github.com/otfabric/website/issues/new?title=Standards%20and%20alliances%3A%20">Report a correction</a>
+				<a class="ot-btn" href="/ecosystem/organizations.json">Download the dataset (JSON)</a>
+				<a class="ot-btn" href="/ecosystem/implementations/">Software implementations map</a>
+			</div>
+		</section>
+	</div>
+</BaseLayout>
+
+<script>
+	const root = document.getElementById('dir')!;
+	const form = root.querySelector<HTMLFormElement>('.filters')!;
+	const cards = [...root.querySelectorAll<HTMLElement>('.card')];
+	const rows = [...root.querySelectorAll<HTMLTableRowElement>('.compare tbody tr')];
+	const count = root.querySelector<HTMLElement>('.count span')!;
+	const empty = root.querySelector<HTMLElement>('.empty')!;
+	const open = (a?: string) => a === 'yes' || a === 'partial';
+
+	function matches(card: HTMLElement) {
+		const f = new FormData(form);
+		const q = String(f.get('q') ?? '').trim().toLowerCase();
+		const d = card.dataset;
+		if (q && !d.search!.includes(q)) return false;
+		if (f.get('domain') && !d.domains!.split(' ').includes(String(f.get('domain')))) return false;
+		if (f.get('kind') && d.kind !== f.get('kind')) return false;
+		if (f.get('protocol') && !d.protocols!.split(' ').includes(String(f.get('protocol')))) return false;
+		if (f.get('individualFree') && !open(d.individualFree)) return false;
+		if (f.get('organizationFree') && !open(d.organizationFree)) return false;
+		if (f.get('workingGroups') && !open(d.workingGroups)) return false;
+		if (f.get('certification') && !open(d.certification)) return false;
+		return true;
+	}
+
+	function apply() {
+		const shown = new Set<string>();
+		for (const card of cards) {
+			const visible = matches(card);
+			card.hidden = !visible;
+			if (visible) shown.add(card.id.replace(/^org-/, ''));
+		}
+		for (const row of rows) row.hidden = !shown.has(row.dataset.org!);
+		count.textContent = String(shown.size);
+		empty.hidden = shown.size > 0;
+	}
+
+	form.addEventListener('input', apply);
+	const params = new URLSearchParams(location.search);
+	for (const name of ['q', 'kind', 'protocol']) {
+		const value = params.get(name);
+		const field = form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+		if (value && field) field.value = value;
+	}
+	const domain = params.get('domain');
+	if (domain) form.querySelector<HTMLInputElement>(`input[name=domain][value="${CSS.escape(domain)}"]`)?.click();
+	apply();
+	// Open the details of an organization linked by its anchor.
+	const linked = location.hash.startsWith('#org-') ? document.getElementById(location.hash.slice(1)) : null;
+	linked?.querySelector('details')?.setAttribute('open', '');
+</script>
+
+<style>
+	.head {
+		padding-block: 3rem 2.25rem;
+		border-bottom: 1px solid var(--ot-line);
+		background:
+			radial-gradient(60rem 26rem at 85% 10%, color-mix(in srgb, var(--ot-wire) 12%, transparent), transparent 70%),
+			linear-gradient(to bottom, transparent, var(--ot-bg)),
+			repeating-linear-gradient(90deg, var(--ot-line) 0 1px, transparent 1px 48px),
+			repeating-linear-gradient(0deg, var(--ot-line) 0 1px, transparent 1px 48px);
+	}
+	.accent {
+		color: var(--ot-accent);
+	}
+	h1 {
+		margin: 0.6rem 0 0;
+		max-width: 48rem;
+		font-size: clamp(2.2rem, 5.5vw, 3.4rem);
+		font-weight: 700;
+	}
+	.lead {
+		max-width: 46rem;
+		margin: 1rem 0 0;
+		font-size: 1.15rem;
+		color: var(--ot-muted);
+	}
+	.stats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem 2.5rem;
+		margin: 2rem 0 0;
+	}
+	.stats dt {
+		font: 500 0.72rem/1.2 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--ot-muted);
+	}
+	.stats dd {
+		margin: 0.35rem 0 0;
+		font: 700 2rem/1 var(--ot-font-display);
+		color: var(--ot-fg-strong);
+	}
+	.neutral {
+		max-width: 46rem;
+		margin: 1.75rem 0 0;
+		padding: 0.75rem 1rem;
+		border-inline-start: 3px solid var(--ot-wire);
+		background: var(--ot-surface);
+		font-size: 0.92rem;
+		color: var(--ot-fg);
+	}
+	.dir {
+		padding-top: 2rem;
+		padding-bottom: 4rem;
+	}
+
+	/* Filters */
+	.filters {
+		display: grid;
+		gap: 0.9rem;
+	}
+	.domains {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+	.domains input {
+		position: absolute;
+		opacity: 0;
+	}
+	.domains span {
+		display: inline-block;
+		padding: 0.45rem 0.9rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 999px;
+		font-size: 0.9rem;
+		cursor: pointer;
+	}
+	.domains input:checked + span {
+		border-color: var(--ot-accent);
+		background: var(--ot-accent-soft);
+		color: var(--ot-accent);
+	}
+	.domains input:focus-visible + span {
+		outline: 2px solid var(--ot-accent);
+		outline-offset: 2px;
+	}
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: end;
+		gap: 0.75rem 1rem;
+	}
+	.row label {
+		display: grid;
+		gap: 0.35rem;
+	}
+	.search {
+		flex: 1 1 16rem;
+	}
+	.filters input[type='search'],
+	.filters select {
+		width: 100%;
+		padding: 0.55rem 0.75rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.3rem;
+		background: var(--ot-surface);
+		color: var(--ot-fg);
+		font: inherit;
+		font-size: 0.92rem;
+	}
+	.checks label {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-size: 0.9rem;
+	}
+	.checks input {
+		accent-color: var(--ot-accent);
+	}
+	.count {
+		margin: 1.5rem 0 0.75rem;
+		font: 500 0.75rem/1 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--ot-muted);
+	}
+
+	/* Cards */
+	.cards {
+		display: grid;
+		gap: 1rem;
+	}
+	@media (min-width: 56rem) {
+		.cards {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
+		padding: 1.15rem 1.25rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+		background: var(--ot-surface);
+		scroll-margin-top: 6rem;
+	}
+	.card[hidden] {
+		display: none;
+	}
+	.card:target {
+		border-color: var(--ot-accent);
+	}
+	.card h2 {
+		margin: 0.4rem 0 0;
+		font-size: 1.45rem;
+	}
+	.card h2 a {
+		color: var(--ot-fg-strong);
+		text-decoration: none;
+	}
+	.card h2 a:hover {
+		color: var(--ot-accent);
+	}
+	.acr {
+		margin-inline-start: 0.5rem;
+		font: 500 0.8rem/1 var(--ot-font-mono);
+		color: var(--ot-muted);
+	}
+	.summary {
+		margin: 0;
+		color: var(--ot-fg);
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin: 0;
+	}
+	.chip {
+		padding: 0.15rem 0.5rem;
+		border-radius: 0.25rem;
+		background: var(--ot-accent-soft);
+		color: var(--ot-accent);
+		font: 500 0.78rem/1.4 var(--ot-font-mono);
+		text-decoration: none;
+	}
+	.entry {
+		margin: 0;
+		font: 500 0.95rem/1.3 var(--ot-font-mono);
+		color: var(--ot-fg-strong);
+	}
+	.quick {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 1rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.85rem;
+		color: var(--ot-muted);
+	}
+	.quick li {
+		margin: 0;
+	}
+	details {
+		border-top: 1px solid var(--ot-line);
+		padding-top: 0.6rem;
+	}
+	summary {
+		cursor: pointer;
+		font-size: 0.9rem;
+		color: var(--ot-accent);
+	}
+	details h3 {
+		margin: 1.25rem 0 0.25rem;
+		font-size: 1.05rem;
+	}
+	.programs {
+		display: grid;
+		gap: 0.75rem;
+		margin: 0.5rem 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.9rem;
+	}
+	.programs li {
+		display: grid;
+		gap: 0.25rem;
+		margin: 0;
+	}
+	.programs a,
+	.src a {
+		color: var(--ot-accent);
+	}
+	.src {
+		margin: 1rem 0 0;
+		line-height: 1.7;
+		text-transform: none;
+		letter-spacing: 0.02em;
+	}
+	.card footer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: auto;
+		padding-top: 0.4rem;
+	}
+	.ot-btn.small {
+		padding: 0.4rem 0.85rem;
+		font-size: 0.85rem;
+	}
+	.empty {
+		margin: 1rem 0;
+		color: var(--ot-muted);
+	}
+
+	/* Comparison */
+	.compare,
+	.pairs,
+	.method {
+		margin-top: 4rem;
+	}
+	.compare h2,
+	.pairs h2,
+	.method h2 {
+		margin: 0;
+		font-size: 1.9rem;
+	}
+	.intro {
+		max-width: 46rem;
+		margin: 0.75rem 0 1.25rem;
+		color: var(--ot-muted);
+	}
+	.table-wrap {
+		overflow-x: auto;
+	}
+	.compare table {
+		width: 100%;
+		min-width: 52rem;
+		border-collapse: collapse;
+		font-size: 0.88rem;
+	}
+	.compare th,
+	.compare td {
+		padding: 0.55rem 0.5rem;
+		border-bottom: 1px solid var(--ot-line);
+		text-align: center;
+	}
+	.compare thead th {
+		font: 500 0.68rem/1.25 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--ot-muted);
+		vertical-align: bottom;
+	}
+	.compare tbody th,
+	.compare thead th:first-child {
+		text-align: left;
+	}
+	.compare tbody th a {
+		color: var(--ot-fg-strong);
+		text-decoration: none;
+	}
+	.compare tbody th a:hover {
+		color: var(--ot-accent);
+	}
+	.compare tr[hidden] {
+		display: none;
+	}
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1.25rem;
+		margin: 1rem 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.85rem;
+		color: var(--ot-muted);
+	}
+
+	/* Who does what */
+	.pair-grid {
+		display: grid;
+		gap: 1rem;
+	}
+	@media (min-width: 48rem) {
+		.pair-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.pair {
+		padding: 1rem 1.15rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+	}
+	.pair p {
+		margin: 0.5rem 0 0;
+		font-size: 0.92rem;
+	}
+	.pair .names {
+		font: 600 1.1rem/1.3 var(--ot-font-display);
+	}
+	.pair .names a {
+		color: var(--ot-accent);
+	}
+
+	/* Method */
+	.method {
+		display: grid;
+		gap: 1.5rem;
+		padding: 1.75rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+		background: var(--ot-surface);
+	}
+	@media (min-width: 60rem) {
+		.method {
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: start;
+		}
+	}
+	.method h2 {
+		margin-top: 0.5rem;
+	}
+	.method p {
+		max-width: 44rem;
+		margin: 0.8rem 0 0;
+	}
+	.method .actions {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.6rem;
+	}
+</style>
