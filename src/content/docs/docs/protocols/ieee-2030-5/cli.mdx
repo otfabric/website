@@ -1,0 +1,260 @@
+---
+title: ieee20305ctl
+description: Installing and using ieee20305ctl, the IEEE 2030.5 command-line tool to act as a device, run a device agent, serve a seeded test server and operate it while it runs, check certificates and validate documents, with CSIP-AUS and CCM_8.
+sidebar:
+  label: ieee20305ctl
+  order: 2
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+[ieee20305ctl](https://github.com/otfabric/ieee20305ctl) is a command-line tool for IEEE 2030.5 in both roles, built on [go-ieee20305](/docs/protocols/ieee-2030-5/library/). As a **device** it reads a server's DeviceCapability, registers and checks the PIN, lists the DER programs, controls and tariffs the server assigns, answers events, reports metering and DER status, and subscribes to notifications; `client run` is a whole device agent. As a **server** it serves every resource of the IEEE 2030.5 WADL from a YAML seed, and an operator issues and cancels controls while it runs. It also makes a test PKI and checks certificates the way an IEEE 2030.5 peer does. Output is text, a table or JSON, with stable exit codes. This page follows v0.2.1.
+
+<Aside type="caution" title="Responsible use">
+A device certificate is the identity of a real device: what ieee20305ctl sends with it, the server attributes to that device. `client respond`, `report`, `der put`, `put`, `post` and `delete` change what the server holds, and the operator commands change what devices receive. Use ieee20305ctl against servers you run or are authorized to test, with certificates issued for testing.
+</Aside>
+
+It is meant for integrating a device or an aggregator with a utility server, checking what a server assigns a device, developing and testing a server or a DERMS integration without hardware, and troubleshooting certificates.
+
+## Install
+
+Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/ieee20305ctl/releases), with SHA-256 checksums. One static binary, no runtime dependencies.
+
+<Tabs>
+  <TabItem label="Linux">
+```sh
+VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/ieee20305ctl/releases/latest | sed 's|.*/v||')
+case "$(uname -m)" in x86_64) ARCH=amd64 ;; aarch64|arm64) ARCH=arm64 ;; armv7l) ARCH=armv7 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
+FILE="ieee20305ctl-${VERSION}-linux-${ARCH}.tar.gz"
+BASE="https://github.com/otfabric/ieee20305ctl/releases/download/v${VERSION}"
+curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/ieee20305ctl-${VERSION}-checksums.txt"
+grep "${FILE}" "ieee20305ctl-${VERSION}-checksums.txt" | sha256sum -c -
+mkdir -p ieee20305ctl-dl && tar -xzf "${FILE}" -C ieee20305ctl-dl
+sudo install -m 0755 "$(find ieee20305ctl-dl -type f -name 'ieee20305ctl*' | head -n1)" /usr/local/bin/ieee20305ctl
+```
+  </TabItem>
+  <TabItem label="macOS">
+```sh
+VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/ieee20305ctl/releases/latest | sed 's|.*/v||')
+case "$(uname -m)" in arm64) ARCH=arm64 ;; x86_64) ARCH=amd64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
+FILE="ieee20305ctl-${VERSION}-darwin-${ARCH}.tar.gz"
+BASE="https://github.com/otfabric/ieee20305ctl/releases/download/v${VERSION}"
+curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/ieee20305ctl-${VERSION}-checksums.txt"
+grep "${FILE}" "ieee20305ctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
+mkdir -p ieee20305ctl-dl && tar -xzf "${FILE}" -C ieee20305ctl-dl
+sudo install -m 0755 "$(find ieee20305ctl-dl -type f -name 'ieee20305ctl*' | head -n1)" /usr/local/bin/ieee20305ctl
+```
+  </TabItem>
+  <TabItem label="Go">
+```sh
+go install github.com/otfabric/ieee20305ctl@latest
+```
+  </TabItem>
+</Tabs>
+
+Building from source needs Go 1.26.8 or later, which the CCM_8 module requires. The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/ieee20305ctl#windows-powershell). Check the install with `ieee20305ctl version`.
+
+## Command tree
+
+```
+ieee20305ctl
+├── client
+│   ├── discover            find servers with DNS-SD
+│   ├── dcap                the DeviceCapability and its links
+│   ├── time                the server's clock and the local offset
+│   ├── register            find or create the EndDevice; check the PIN
+│   ├── get, walk           any resource as XML; the whole tree
+│   ├── programs, controls  DER programs, default controls and controls
+│   ├── respond             answer a control
+│   ├── der show, der put   DERCapability, DERSettings, DERStatus, DERAvailability
+│   ├── report, log-event   metering mirrors; log events
+│   ├── pricing             tariffs, rate components, intervals and prices
+│   ├── flow-reservation    ask for a flow reservation
+│   ├── put, post, delete   write any resource from a file
+│   ├── subscribe           an HTTPS listener that streams notifications
+│   ├── connection-point    the CSIP-AUS connection point of the device
+│   └── run                 a device agent
+├── server
+│   ├── start               serve IEEE 2030.5 from a seed
+│   ├── generate-config     write an example seed
+│   ├── devices, get        read the running server
+│   ├── issue-control, cancel, set-default
+│   └── provision, register
+├── cert generate, inspect, lfdi, verify
+├── validate                check XML documents against the schema
+└── completion, version
+```
+
+Every command has `--help` with examples, and `--format text|table|json`.
+
+## A test PKI
+
+IEEE 2030.5 is mutual TLS throughout, so everything starts with certificates:
+
+```console
+$ ieee20305ctl cert generate --out pki --devices 2
+Wrote to pki:
+
+ROLE    CERTIFICATE   KEY           LFDI                                      SFDI
+ca      ca.pem        ca.key        1007D2EA618C97F53D45E40E56E91700AB44A995  43031712388
+server  server.pem    server.key    E530AA8E10410B599277CA3281F3F4FE212D0245  615227496657
+device  device-1.pem  device-1.key  518C61748B9C454A99D44A5260F0E8996E5F89B7  218904717524
+device  device-2.pem  device-2.key  2C2E719BCEC2D37A1D297B0A03FF2DE7FDCFB6C9  118598599005
+```
+
+`--hmn` gives the device certificates a HardwareModuleName, as real device certificates have. `cert lfdi` prints the identifiers of any certificate, `cert inspect` the whole certificate, and `cert verify` checks a chain the way an IEEE 2030.5 peer does.
+
+## Connecting to a server
+
+A client command connects to `--url`, an `https://` URL of the DeviceCapability or `host[:port]` for `https://host:port/dcap`, as the device of `--cert` and `--key`, and verifies the server with `--ca`. It never falls back to the system's roots. Every connection flag can come from the environment, so a shell session sets the device once:
+
+```sh
+export IEEE20305CTL_URL=https://127.0.0.1:8443/dcap
+export IEEE20305CTL_CERT=pki/device-1.pem IEEE20305CTL_KEY=pki/device-1.key IEEE20305CTL_CA=pki/ca.pem
+```
+
+| Flag | Variable | Use |
+|---|---|---|
+| `--ccm8` | `IEEE20305CTL_CCM8` | Offer TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, for servers that offer nothing else |
+| `--profile csipaus` | `IEEE20305CTL_PROFILE` | Read and write CSIP-AUS documents: site limits, connection points |
+| `--edition 2018` | `IEEE20305CTL_EDITION` | The edition of the documents sent |
+| `--timeout` | `IEEE20305CTL_TIMEOUT` | How long to wait for an answer |
+
+## Reading as a device
+
+```console
+$ ieee20305ctl client register --pin 111115
+EndDevice /edev/1 (found)
+  LFDI 518C61748B9C454A99D44A5260F0E8996E5F89B7
+  SFDI 218904717524
+  registered, PIN 111115 matches
+
+$ ieee20305ctl client programs
+/derp/1  primacy 1  "Utility program"
+  default   opModConnect=true opModMaxLimW=100.00 %
+  controls  2 (1 active)
+
+$ ieee20305ctl client controls
+/derp/1/derc/1  Active  "Limit to 50 %"
+  2026-10-22T23:05:16Z for 1h0m0s (program /derp/1)
+  opModMaxLimW=50.00 %
+  responses 03 to /rsps/1/rsp
+/derp/1/derc/2  Scheduled  "Disconnect"
+  2026-10-23T00:05:16Z for 30m0s (program /derp/1)
+  opModConnect=false
+  responses 03 to /rsps/1/rsp
+```
+
+A PIN that does not match exits 6: the server is not the one the device was given. `client time` shows the offset of the local clock from the server's, by which devices schedule events. `client pricing` lists tariffs with the price of each interval, `client get <href>` reads any resource as XML, and `client walk` visits everything the server offers the device.
+
+## Answering, reporting and subscribing
+
+```sh
+# Tell the server the control has started
+ieee20305ctl client respond /derp/1/derc/1 --status started
+
+# Metering, a log event, a flow reservation
+ieee20305ctl client report --power 4200
+ieee20305ctl client log-event --code 1 --id 7 --details over-temperature
+ieee20305ctl client flow-reservation --energy 20000 --power 7000 --start 1h --duration 4h
+
+# DER resources, from XML files checked against the schema before they are sent
+ieee20305ctl client der show
+ieee20305ctl client der put --settings derg.xml --capability dercap.xml
+
+# Serve a listener, subscribe to a resource, print one notification
+ieee20305ctl client subscribe /derp/1/derc --listen 127.0.0.1:18444 --count 1
+```
+
+The server must reach the listener of `client subscribe`: give `--notify-url` when `--listen` is not that address.
+
+## Running a device agent
+
+`client run` is a device: it registers, polls at the server's rate (or `--poll-rate`), schedules every event with primacy, supersession and randomization, posts the Responses each one asks for, and with `--report-power` mirrors its metering. Each step is a record (abridged from the guide):
+
+```console
+$ ieee20305ctl client run --pin 111115 --poll-rate 2s --report-power 4200
+23:24:13.334 started        /edev/1 lfdi 518C61748B9C454A99D44A5260F0E8996E5F89B7 registered with PIN 111115
+23:24:13.335 der_control    Scheduled resource /derp/1 mrid 7A131FCAD343422FF1771A5473ADF761 opModMaxLimW=50.00 % 23:24:11..00:24:11
+23:24:13.336 response       received resource DER 1
+23:24:13.336 der_control    Active resource /derp/1 mrid 7A131FCAD343422FF1771A5473ADF761 opModMaxLimW=50.00 % 23:24:11..00:24:11
+23:24:13.337 response       started resource DER 2
+23:24:17.350 der_control    Active resource /derp/1 mrid F1150A42246F91B46A128DD3213D6C54 opModMaxLimW=30.00 % 23:24:17..23:34:17
+23:24:17.351 der_control    Superseded resource /derp/1 mrid 7A131FCAD343422FF1771A5473ADF761 opModMaxLimW=50.00 % 23:24:11..00:24:11
+23:24:17.351 response       superseded resource DER 7
+```
+
+The 30 % limit an operator issued conflicts with the 50 % limit of the same program, so the newer one wins and the agent tells the server with Response 7, superseded. With `--notify-listen` the agent subscribes and polls less; with `--format json` each record is a JSON line.
+
+## Serving and operating a test server
+
+```sh
+ieee20305ctl server generate-config --output seed.yaml   # devices with PINs, programs, controls, tariffs
+ieee20305ctl server start --listen 127.0.0.1:8443 --cert pki/server.pem --key pki/server.key \
+    --ca pki/ca.pem --config seed.yaml --control-socket /tmp/ieee20305.sock
+```
+
+The server serves every resource of the WADL, keeps the event lifecycle and the Responses, sends notifications, and writes a record for everything that happens. `--profile csipaus` serves CSIP-AUS, `--ccm8` offers CCM_8 first, `--in-band` lets unknown devices register themselves, and `--advertise` announces it with DNS-SD. The [seed file](https://github.com/otfabric/ieee20305ctl/blob/main/docs/server-config.md) is YAML or JSON.
+
+While it runs, the operator commands act on it through the control socket. Those that change what devices receive need `--yes`:
+
+```sh
+export IEEE20305CTL_CONTROL_SOCKET=/tmp/ieee20305.sock
+ieee20305ctl server devices
+ieee20305ctl server issue-control --set opModMaxLimW=30 --duration 30m --description Curtail --yes
+ieee20305ctl server cancel /derp/1/derc/3 --yes
+ieee20305ctl server set-default --set opModConnect=true --set opModMaxLimW=80 --yes
+ieee20305ctl server provision --cert pki/device-2.pem --pin 222226
+```
+
+It is a test and development server: its state is in memory, and a restart begins from the seed again.
+
+## Real servers: CCM_8 and CSIP-AUS
+
+The [guide](https://github.com/otfabric/ieee20305ctl/blob/main/docs/guide.md) records ieee20305ctl against the reference servers of [ieee20305-interop](/docs/protocols/ieee-2030-5/testing/). The GridAPPS-D server offers only CCM_8, which Go's TLS stack lacks:
+
+```console
+$ ieee20305ctl client dcap
+error: the TLS handshake failed: … remote error: tls: handshake failure (the server may refuse the certificate, or offer only CCM_8: try --ccm8)
+$ ieee20305ctl client programs --ccm8
+/edev/59471700/fsa/0C08DE8C76C2481D68F4A8D4BB2E951D/derp/derp-22e309bfbb900388  primacy 1  "CSIP utility program"
+  default   opModConnect=true opModMaxLimW=100.00 %
+  controls  2 (1 active)
+```
+
+Against Envoy, a CSIP-AUS server, `--profile csipaus` shows the site limits of each control and sets the connection point:
+
+```console
+$ export IEEE20305CTL_PROFILE=csipaus IEEE20305CTL_EDITION=2018
+$ ieee20305ctl client controls --active
+/edev/1/derp/1/derc/1  Active  "2026-10-22T23:19:14+00:00"
+  2026-10-22T23:19:14Z for 1h0m0s (program /edev/1/derp/1)
+  opModExpLimW=5000 W opModImpLimW=10000 W
+  responses 03 to /edev/1/rsps/site_control/rsp
+$ ieee20305ctl client connection-point --set 4407123456
+connection point /edev/1/cp: 4407123456
+```
+
+## Output formats and exit codes
+
+Results go to stdout as text, `--format table` or `--format json`, whose fields are a stable contract ([json-output.md](https://github.com/otfabric/ieee20305ctl/blob/main/docs/json-output.md)). The streams (`client run`, `subscribe`, `walk`, `discover`, `server start`) write a record per event, JSON Lines with `--format json`. Diagnostics go to stderr; `--debug` shows the causes of an error.
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 2 | Usage: an unknown command or flag, a change without `--yes` |
+| 3 | Invalid input: nothing was sent |
+| 4 | Transport: no connection, a failed TLS handshake |
+| 5 | Timeout; `outcome_unknown` when the request may have changed the server, which is never sent again by itself |
+| 6 | The server refused (4xx, 5xx), broke the protocol, or has another PIN |
+| 10 | Output or internal error |
+
+With `--format json`, a failure is an object with `error.kind`, a stable `error.code` and the HTTP detail. [exitcodes.md](https://github.com/otfabric/ieee20305ctl/blob/main/docs/exitcodes.md) lists every code.
+
+## Limitations
+
+- **The server keeps its state in memory**: it is a test and development server, not a head end.
+- **Curves** (`opModVoltVar`, …) are read and shown, but neither the seed nor `issue-control` creates them.
+- **DNS-SD** needs multicast on the local network; it finds nothing across routers or in most container networks.
+
+<LinkCard title="The ieee20305ctl guide" description="Every scenario with real output: a test PKI, registering, answering controls, a device agent, an operator, subscriptions, GridAPPS-D over CCM_8 and Envoy with CSIP-AUS." href="https://github.com/otfabric/ieee20305ctl/blob/main/docs/guide.md" />

@@ -171,6 +171,19 @@
 		"icon": "go-dnp3"
 	},
 	{
+		"id": "go-ieee20305",
+		"name": "go-ieee20305",
+		"repo": "go-ieee20305",
+		"category": "library",
+		"protocols": [
+			"ieee-2030-5"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-ieee20305",
+		"description": "IEEE 2030.5 (Smart Energy Profile 2.0) client, device agent and server for every function set, editions 2018 and 2023, CSIP and CSIP-AUS, and CCM_8. No dependencies.",
+		"icon": "go-ieee20305"
+	},
+	{
 		"id": "modbusctl",
 		"name": "modbusctl",
 		"repo": "modbusctl",
@@ -291,6 +304,18 @@
 		"status": "available",
 		"description": "Poll, monitor and operate DNP3 outstations, synchronize their clocks, transfer files, find them on a subnet, or simulate one from a YAML model.",
 		"icon": "go-dnp3"
+	},
+	{
+		"id": "ieee20305ctl",
+		"name": "ieee20305ctl",
+		"repo": "ieee20305ctl",
+		"category": "cli",
+		"protocols": [
+			"ieee-2030-5"
+		],
+		"status": "available",
+		"description": "Act as an IEEE 2030.5 device, run a device agent, serve a seeded test server and operate it while it runs, and check certificates, with CSIP-AUS and CCM_8.",
+		"icon": "go-ieee20305"
 	},
 	{
 		"id": "go-cotp",
@@ -470,6 +495,18 @@
 		"status": "available",
 		"description": "DNP3 reference stacks: Step Function I/O dnp3, opendnp3, DSC go-dnp3 and dnp3py as masters and outstations, over TCP, TLS, UDP and serial.",
 		"icon": "go-dnp3"
+	},
+	{
+		"id": "ieee20305-interop",
+		"name": "ieee20305-interop",
+		"repo": "ieee20305-interop",
+		"category": "interop",
+		"protocols": [
+			"ieee-2030-5"
+		],
+		"status": "available",
+		"description": "IEEE 2030.5 reference stacks: ANU Envoy, GridAPPS-D, DER Security py20305 and the EPRI client, with mutual TLS and baseline, CSIP and CSIP-AUS fixtures.",
+		"icon": "go-ieee20305"
 	},
 	{
 		"id": "sunspec-explorer",

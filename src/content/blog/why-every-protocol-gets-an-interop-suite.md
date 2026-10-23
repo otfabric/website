@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Nine interop suites package 30 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Ten interop suites package 34 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
-updated: 2026-10-21
+updated: 2026-10-23
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Nine OT Fabric interop suites and their 30 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP and OpenADR, each with the open-source implementations its suite runs and their languages.
+  alt: Ten OT Fabric interop suites and their 34 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Nine suites, 30 reference stacks
+## Ten suites, 34 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -27,6 +27,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [DNP3](/protocols/dnp3/) | [dnp3-interop](/projects/dnp3-interop/) | Step Function I/O dnp3 (Rust), opendnp3 (C++), DSC go-dnp3 (Go), dnp3py (Python) |
 | [OCPP](/protocols/ocpp/) | [ocpp-interop](/projects/ocpp-interop/) | The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), ocpp-go (Go), EVerest libocpp (C++), CitrineOS (TypeScript) |
 | [OpenADR](/protocols/openadr/) | [openadr-interop](/projects/openadr-interop/) | OpenLEADR (Rust), ElaadNL openadr3-client (Python), plus a specification-driven conformance suite |
+| [IEEE 2030.5](/protocols/ieee-2030-5/) | [ieee20305-interop](/projects/ieee20305-interop/) | ANU Envoy (Python), GridAPPS-D (Go), DER Security py20305 (Python), EPRI client (C) |
 
 SunSpec is the exception: it is a register model on top of Modbus, so go-sunspec is tested through its own server, offline decoding and a weekly comparison with the SunSpec Alliance's model definitions, and its Modbus layer is covered by modbus-interop.
 
@@ -65,6 +66,7 @@ A library runs its own scenarios against the images, in both roles: our client a
 - **go-bacnet**: 206 scenarios pass and 11 skip for features a stack does not have.
 - **go-openadr**: 24 of 24 scenarios of the openadr-interop conformance suite.
 - **go-dnp3**: master against every reference outstation and every reference master against its outstation, over TCP, TLS, UDP and serial.
+- **go-ieee20305**: its client and device agent against the Envoy and GridAPPS-D servers, and the GridAPPS-D, py20305 and EPRI clients against its server, in both editions and with the CSIP and CSIP-AUS fixtures.
 
 Each protocol's *Testing and interop* page in the [documentation](/docs/protocols/) has the full matrix, and what has not been validated yet.
 
@@ -74,7 +76,7 @@ The suites earn their keep by finding things nobody was looking for, on both sid
 
 In our own code: the go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. go-ocpp lost frames on close and refused `20000.0` for an integer field. Each was fixed in a release.
 
-In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. Each suite's `COMPATIBILITY.md` lists them, so anyone building on those stacks can see them too.
+In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
 
 ## What interop is not
 
@@ -82,4 +84,4 @@ Interoperability with several independent stacks is strong evidence, but it is n
 
 ## Usable by anyone
 
-The suites are client-neutral. They live in their own repositories, contain no library under test, and do not depend on our code, so any implementation in any language can use them. If you maintain a Modbus, OPC UA, BACnet, S7, IEC 104, IEC 61850, DNP3, OCPP or OpenADR stack, try them, and if your stack belongs in one, open an issue.
+The suites are client-neutral. They live in their own repositories, contain no library under test, and do not depend on our code, so any implementation in any language can use them. If you maintain a Modbus, OPC UA, BACnet, S7, IEC 104, IEC 61850, DNP3, OCPP, OpenADR or IEEE 2030.5 stack, try them, and if your stack belongs in one, open an issue.

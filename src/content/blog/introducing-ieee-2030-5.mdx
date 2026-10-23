@@ -1,0 +1,85 @@
+---
+title: 'IEEE 2030.5 joins OT Fabric: go-ieee20305, ieee20305ctl and four reference stacks'
+description: IEEE 2030.5 is how utilities and aggregators tell inverters, batteries and chargers what to do, and the protocol California and Australia require for it. go-ieee20305 implements client, device agent and server under MIT, ieee20305ctl puts them on the command line, and ieee20305-interop tests both against four independent implementations.
+date: 2026-10-23
+authors: [OT Fabric]
+tags: [announcement, ieee-2030-5, der, energy, interop]
+featured: true
+cover:
+  alt: go-ieee20305 in the middle, connected to the reference clients of GridAPPS-D, py20305 and the EPRI client on the left and the reference servers Envoy and GridAPPS-D on the right, over mutual TLS with CCM_8.
+  image: ../../assets/blog/ieee20305-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+When a utility in California limits the output of a rooftop inverter, or an Australian distributor tells a home battery how much it may export for the next five minutes, the message is very likely IEEE 2030.5. Known as the Smart Energy Profile 2.0, it is the protocol between a utility or an aggregator and distributed energy resources: a REST API over HTTPS where every device is identified by its certificate, receives programs of time-bound controls and prices, schedules them itself, and reports back what it did.
+
+Today IEEE 2030.5 becomes the eleventh protocol in OT Fabric, with the same three pieces as every other: a library, a command-line tool and an interoperability suite.
+
+## Why IEEE 2030.5, and why now
+
+OT Fabric is about connecting the devices that run energy and infrastructure, and the fastest-growing group of them sits behind the meter:
+
+- **The grid edge needs a control channel.** Millions of inverters, batteries and chargers now decide how much power flows on the low-voltage grid. A utility that wants to host more of them needs to limit, schedule and price them, and to know what each one did. IEEE 2030.5 was built for exactly that: programs with a primacy, events with a start and a duration, a default control when no event applies, and a Response for every step.
+- **From option to requirement.** California's Rule 21 makes IEEE 2030.5 the default protocol between utilities and smart inverters, through the Common Smart Inverter Profile (CSIP) that SunSpec certifies. Australian distributors use CSIP-AUS for dynamic connections, where a site's export and import limits follow the capacity of the local network through the day. IEEE 1547-2018 names it as one of the interfaces of every grid-connected inverter, next to [SunSpec Modbus](/protocols/sunspec/) and [DNP3](/protocols/dnp3/).
+- **Aggregators sit in the middle.** Most home batteries and chargers reach the utility through an aggregator's cloud, which speaks IEEE 2030.5 upwards and its own protocols downwards. That is the chain OT Fabric is built for: IEEE 2030.5 or [OpenADR](/protocols/openadr/) from the utility, [OCPP](/protocols/ocpp/) to the chargers, SunSpec and [Modbus](/protocols/modbus/) to the inverter, battery and meter on site.
+
+The open-source field is younger and thinner than these mandates suggest. Our [research for the ecosystem map](#who-else-implements-ieee-20305) found serious projects, from ANU's CSIP-AUS server Envoy to PNNL's GridAPPS-D, but most implement one role and one profile, and the EPRI client, long the open reference for California, has not changed since 2018. go-ieee20305 adds an MIT-licensed library with client, device agent and server, both editions and both profiles, tested against the established stacks.
+
+## go-ieee20305
+
+[go-ieee20305](/projects/go-ieee20305/) implements both ends of IEEE 2030.5, generated from the official IEEE 2030.5-2023 and CSIP-AUS v1.3 schemas, with no dependencies outside the standard library.
+
+- **A client and a device agent.** The client reads, walks, pages and writes any resource of one server. The agent is a device's behaviour on top of it: registration with the PIN check, polling at the server's rate, every event of every function set scheduled by primacy with randomization, the Responses each one asks for, default controls, metering mirrors and subscriptions.
+- **A server for every resource of the WADL**, as an embeddable `http.Handler`: provisioning and in-band registration, aggregators and operators, an event lifecycle that keeps EventStatus and the Active lists, Responses, retried and coalesced notifications, metering mirrors and flow reservations, and an `Admin` API to publish programs, controls and tariffs.
+- **Both editions and both profiles.** IEEE 2030.5-2018 and 2023, with each device served in its own edition; CSIP, and CSIP-AUS site limits, dynamic operating envelopes and connection points.
+- **Certificates done properly.** LFDI and SFDI, verification of device certificates with a HardwareModuleName, DNS-SD, and the CCM_8 cipher suite the standard mandates, which Go's TLS stack lacks, in a separate module, `tlsccm`.
+- **Built to run in production:** `context.Context` everywhere, one taxonomy of errors, retry policies that honour `Retry-After`, structured logging, metrics hooks, and bounded lists and queues.
+
+It is a protocol library, not a DERMS or a head end. What a control does to an inverter, and where a server keeps its resources, stay in your code, and five example programs show how.
+
+## ieee20305ctl
+
+[ieee20305ctl](/projects/ieee20305ctl/) puts go-ieee20305 on the command line, in both roles, for the people who integrate devices with utility servers and the people who build those servers.
+
+```sh
+# A test PKI, and a seeded server with a DER program
+ieee20305ctl cert generate --out pki --devices 1
+ieee20305ctl server start --cert pki/server.pem --key pki/server.key --ca pki/ca.pem \
+    --config seed.yaml --control-socket /tmp/ieee20305.sock
+
+# As the device: register, check the PIN, see what the server asks
+ieee20305ctl client register --pin 111115
+ieee20305ctl client controls --active
+
+# A device agent that schedules and answers every event
+ieee20305ctl client run --pin 111115
+
+# As the operator: issue a 30 % limit for half an hour
+ieee20305ctl server issue-control --set opModMaxLimW=30 --duration 30m --yes
+```
+
+It also reports metering and DER status, subscribes to notifications, reads tariffs, validates documents against the schema and checks certificate chains the way a peer does. `--ccm8` reaches servers that offer nothing else, and `--profile csipaus` an Australian one. Output is text, a table or JSON with stable exit codes. The [ieee20305ctl guide](/docs/protocols/ieee-2030-5/cli/) walks through it.
+
+## Tested against four independent stacks
+
+[ieee20305-interop](/projects/ieee20305-interop/) packages four independent IEEE 2030.5 implementations as containers behind one contract: ANU Envoy (Python, a CSIP-AUS server), GridAPPS-D (Go, server and client), DER Security py20305 (Python, client) and the EPRI client (C). Every connection is mutual TLS with certificates generated per run, servers are seeded from baseline, CSIP and CSIP-AUS fixtures, and every client is first tested against every server.
+
+go-ieee20305 is tested in both directions on every push. Its client and device agent run against Envoy and GridAPPS-D: registration and the PIN, programs, default controls and controls, the agent scheduling them, Responses, metering, DER resources, tariffs, flow reservations, the CSIP-AUS connection point and notifications, over CCM_8 and AES-GCM, and refusal of unknown devices and foreign CAs. The GridAPPS-D, py20305 and EPRI clients run every operation they have against its server, and the effect of each is checked on the server. The [coverage matrix](/docs/protocols/ieee-2030-5/testing/) shows each feature per reference. The references taught us things too: the EPRI client still writes documents in the namespace of a draft schema, and py20305 misses an element CSIP-AUS 1.3 requires in a tariff interval. Each is recorded with its evidence.
+
+<Callout type="note" title="Interoperability, not certification">
+go-ieee20305 v0.5.2 and ieee20305ctl v0.2.1 are pre-1.0 and interoperability tested, not SunSpec CSIP or CSIP-AUS certified. Prepayment, billing, files and messaging are tested end to end but have no independent counterpart in the suite yet, and no real inverter or utility head end is in it. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/ieee-2030-5/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the IEEE 2030.5 projects are built by people and AI agents together. The resource model is generated from the official schemas and checked against them on every push, the documentation was reviewed claim by claim against the code, and the comparisons with other stacks against those stacks' own sources. The tests, the interop matrix and the list of limitations are public, so you can judge the result yourself.
+
+## Who else implements IEEE 2030.5
+
+The [ecosystem map](/ecosystem/?protocol=ieee-2030-5) now covers IEEE 2030.5: 16 implementations, from the stacks we interop test against to a Rust client library, a CSIP-AUS export controller for home solar, the CACTUS test harnesses and commercial clients and test systems, with language, licence, roles and latest release.
+
+<MapLink protocol="ieee-2030-5" title="Explore IEEE 2030.5 on the ecosystem map" />
+
+Start with the [IEEE 2030.5 overview](/docs/protocols/ieee-2030-5/), or `go get github.com/otfabric/go-ieee20305`.

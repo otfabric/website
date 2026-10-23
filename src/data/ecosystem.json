@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-20",
+ "verified": "2026-10-23",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -89,6 +89,15 @@
    "maturity": "Mature, with few active open stacks",
    "commercial": "Very established",
    "summary": "The long-standing open-source reference, opendnp3, is archived and its best-known successor is source-available, so the actively maintained, permissively licensed field is small and young."
+  },
+  {
+   "id": "ieee-2030-5",
+   "name": "IEEE 2030.5",
+   "standard": "IEEE 2030.5-2018 and 2030.5-2023 (Smart Energy Profile 2.0)",
+   "focus": "Utility and aggregator servers to DER clients over HTTPS with mutual TLS, with the CSIP and CSIP-AUS profiles",
+   "maturity": "Young, growing open field",
+   "commercial": "Certification-driven",
+   "summary": "Mandates in California and Australia drive it, so most open stacks are CSIP or CSIP-AUS projects of a research lab, a utility programme or one developer, and few cover both roles across both editions."
   }
  ],
  "implementations": [
@@ -4416,6 +4425,597 @@
     "https://github.com/otfabric/go-dnp3"
    ],
    "verified": "2026-10-20"
+  },
+  {
+   "id": "anu-envoy",
+   "name": "Envoy (ANU)",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/bsgip/envoy",
+   "repo": "bsgip/envoy",
+   "stars": 27,
+   "forks": 24,
+   "historySince": "2023",
+   "lastCommit": "2026-09-18",
+   "release": {
+    "version": "v2.5.0",
+    "date": "2026-09-18",
+    "source": "Git tag",
+    "url": "https://github.com/bsgip/envoy/tree/v2.5.0"
+   },
+   "roles": [
+    "server"
+   ],
+   "capabilities": [
+    "2018",
+    "CSIP-AUS"
+   ],
+   "interop": "ieee20305-interop",
+   "maintenance": "active",
+   "notes": "CSIP-AUS utility server from the Battery Storage and Grid Integration Program at the Australian National University: FastAPI on PostgreSQL, with an admin API for sites, programs, envelopes and tariffs. The v2 line targets CSIP-AUS 1.3 on its own branch; v1 releases on main target 1.1a and 1.2. Subscriptions are for aggregator certificates only.",
+   "sources": [
+    "https://github.com/bsgip/envoy",
+    "https://github.com/bsgip/envoy/tree/v2.5.0"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "gridappsd-2030-5-server-go",
+   "name": "GridAPPS-D server",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Battelle BSD",
+   "url": "https://github.com/GRIDAPPSD/ieee-2030_5-server-go",
+   "repo": "GRIDAPPSD/ieee-2030_5-server-go",
+   "stars": 0,
+   "forks": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-22",
+   "release": {
+    "version": "v0.18.0",
+    "date": "2026-10-21",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-server-go/@v/v0.18.0.info"
+   },
+   "roles": [
+    "server"
+   ],
+   "capabilities": [
+    "2018",
+    "2023",
+    "CSIP",
+    "Subscriptions",
+    "CCM_8"
+   ],
+   "interop": "ieee20305-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "Go server from PNNL's GridAPPS-D project (sep2server), with an inverter simulator client, an admin dashboard and a CSIP conformance harness. Uses a fork of crypto/tls and offers only the CCM_8 cipher suite. Tagged releases without GitHub Releases.",
+   "sources": [
+    "https://github.com/GRIDAPPSD/ieee-2030_5-server-go",
+    "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-server-go/@latest"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "gridappsd-2030-5-client-go",
+   "name": "GridAPPS-D client",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Battelle BSD",
+   "url": "https://github.com/GRIDAPPSD/ieee-2030_5-client-go",
+   "repo": "GRIDAPPSD/ieee-2030_5-client-go",
+   "stars": 0,
+   "forks": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-21",
+   "release": {
+    "version": "v0.1.0",
+    "date": "2026-10-21",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-client-go/@v/v0.1.0.info"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "2018",
+    "2023",
+    "CSIP",
+    "Subscriptions",
+    "CCM_8"
+   ],
+   "interop": "ieee20305-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "DER client and inverter simulator (inverterclient) with synthetic, GridLAB-D and SunSpec Modbus device backends. Its notification listener needs CCM_8 and a client certificate.",
+   "sources": [
+    "https://github.com/GRIDAPPSD/ieee-2030_5-client-go",
+    "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-client-go/@latest"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "py20305",
+   "name": "py20305 (DER Security)",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/DERSecurity/py20305",
+   "repo": "DERSecurity/py20305",
+   "stars": 4,
+   "forks": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-21",
+   "release": {
+    "version": "0.16.0",
+    "date": "2026-10-21",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/py20305/0.16.0/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "2018",
+    "2023",
+    "CSIP",
+    "CSIP-AUS",
+    "Subscriptions",
+    "CCM_8"
+   ],
+   "interop": "ieee20305-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pypi.org/project/py20305/",
+   "notes": "Open IEEE 2030.5 and CSIP client of Project Satori, with CSIP-AUS dynamic operating envelopes and its own notification server. Ships both schemas and generates its bindings from 2023. States that it is not SunSpec CSIP certified.",
+   "sources": [
+    "https://github.com/DERSecurity/py20305",
+    "https://pypi.org/pypi/py20305/json",
+    "https://open-satori.org"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "sep2-client-rust",
+   "name": "sep2_client",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/ethanndickson/sep2_client",
+   "repo": "ethanndickson/sep2_client",
+   "stars": 23,
+   "forks": 12,
+   "historySince": "2023",
+   "lastCommit": "2026-09-22",
+   "release": {
+    "version": "0.1.0",
+    "date": "2024-03-19",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/sep2_client/0.1.0"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "CSIP-AUS",
+    "Subscriptions"
+   ],
+   "maintenance": "active",
+   "package": "https://crates.io/crates/sep2_client",
+   "notes": "Async (tokio) client library from a university thesis project, with an event scheduler for DER, DRLC, messaging and pricing and a small test server. Its resource types live in the companion crate sep2_common (0.2.0, May 2026), which also covers the CSIP-AUS extensions. Marked work in progress.",
+   "sources": [
+    "https://github.com/ethanndickson/sep2_client",
+    "https://crates.io/api/v1/crates/sep2_client",
+    "https://crates.io/api/v1/crates/sep2_common"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "open-dynamic-export",
+   "name": "open-dynamic-export",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "TypeScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/longzheng/open-dynamic-export",
+   "repo": "longzheng/open-dynamic-export",
+   "stars": 54,
+   "forks": 15,
+   "historySince": "2024",
+   "lastCommit": "2026-07-16",
+   "release": {
+    "version": "v0.20.0",
+    "date": "2026-07-16",
+    "source": "Git tag",
+    "url": "https://github.com/longzheng/open-dynamic-export/tree/v0.20.0"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "CSIP-AUS"
+   ],
+   "maintenance": "active",
+   "notes": "Node.js application for dynamic export control of home solar and batteries: its own CSIP-AUS client (registration, DER reporting, control scheduling and metering mirrors) drives SunSpec Modbus inverters and meters. The README states certification by SA Power Networks in October 2024.",
+   "sources": [
+    "https://github.com/longzheng/open-dynamic-export",
+    "https://opendynamicexport.com/csip-aus/"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "volttron-ieee-2030-5",
+   "name": "VOLTTRON 2030.5 agent",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/VOLTTRON/volttron/tree/main/services/core/IEEE_2030_5",
+   "repo": "VOLTTRON/volttron",
+   "stars": 501,
+   "forks": 283,
+   "historySince": "2013",
+   "lastCommit": "2026-09-23",
+   "release": {
+    "version": "9.2.0",
+    "date": "2026-10-15",
+    "source": "Git tag",
+    "url": "https://github.com/VOLTTRON/volttron/tree/9.2.0"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "2018"
+   ],
+   "maintenance": "active",
+   "notes": "Agent of PNNL's VOLTTRON platform that connects the devices of its platform driver to an IEEE 2030.5 server: it posts metering mirrors and readings and publishes DER controls on the message bus. Stars and forks are those of the whole VOLTTRON repository; the last commit is that of the agent's directory.",
+   "sources": [
+    "https://github.com/VOLTTRON/volttron/tree/main/services/core/IEEE_2030_5",
+    "https://volttron.readthedocs.io/en/main/volttron-api/services/IEEE_2030_5/README.html"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "aio2030dot5",
+   "name": "aio2030dot5",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/ismell/aio2030dot5",
+   "repo": "ismell/aio2030dot5",
+   "stars": 0,
+   "forks": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-18",
+   "release": {
+    "version": "0.4.0",
+    "date": "2026-10-18",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/aio2030dot5/0.4.0/"
+   },
+   "roles": [
+    "client"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pypi.org/project/aio2030dot5/",
+   "notes": "Async client for smart meters with a local IEEE 2030.5 (HAN) interface, built and tested against Itron Gen5 Riva meters: one TLS connection at a time, session resumption and bounded retries for fragile meters.",
+   "sources": [
+    "https://github.com/ismell/aio2030dot5",
+    "https://pypi.org/pypi/aio2030dot5/json"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "gridappsd-2030-5-python",
+   "name": "gridappsd-2030_5",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/GRIDAPPSD/gridappsd-2030_5",
+   "repo": "GRIDAPPSD/gridappsd-2030_5",
+   "stars": 2,
+   "forks": 3,
+   "historySince": "2021",
+   "lastCommit": "2024-11-05",
+   "release": null,
+   "prerelease": {
+    "version": "0.0.2a37",
+    "date": "2024-09-17",
+    "source": "PyPI"
+   },
+   "roles": [
+    "server"
+   ],
+   "capabilities": [
+    "2018",
+    "CSIP"
+   ],
+   "maintenance": "slowing",
+   "package": "https://pypi.org/project/gridappsd-2030-5/",
+   "notes": "The earlier, Python CSIP server of GridAPPS-D, with in-band and out-of-band registration; the VOLTTRON agent's demo runs against it. Only alpha releases on PyPI, where the package declares BSD-3-Clause while the repository's LICENSE is Apache-2.0.",
+   "sources": [
+    "https://github.com/GRIDAPPSD/gridappsd-2030_5",
+    "https://pypi.org/pypi/gridappsd-2030-5/json"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "envoy-schema",
+   "name": "envoy-schema",
+   "protocol": "ieee-2030-5",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/bsgip/envoy-schema",
+   "repo": "bsgip/envoy-schema",
+   "stars": 14,
+   "forks": 4,
+   "historySince": "2023",
+   "lastCommit": "2026-09-18",
+   "release": {
+    "version": "2.7.0",
+    "date": "2026-09-18",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/envoy-schema/2.7.0/"
+   },
+   "capabilities": [
+    "2018",
+    "CSIP-AUS"
+   ],
+   "upstream": [
+    "anu-envoy"
+   ],
+   "relation": "The document models of Envoy",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/envoy-schema/",
+   "notes": "Pydantic models of the IEEE 2030.5 and CSIP-AUS documents and the admin API of Envoy; versions 2.x follow CSIP-AUS 1.3. Used by Envoy and the CACTUS test tools, and usable by any Python client.",
+   "sources": [
+    "https://github.com/bsgip/envoy-schema",
+    "https://pypi.org/pypi/envoy-schema/json"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "cactus-client",
+   "name": "CACTUS client",
+   "protocol": "ieee-2030-5",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/bsgip/cactus-client",
+   "repo": "bsgip/cactus-client",
+   "stars": 3,
+   "forks": 5,
+   "historySince": "2025",
+   "lastCommit": "2026-10-15",
+   "release": {
+    "version": "1.3.3",
+    "date": "2026-10-15",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/cactus-client/1.3.3/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "CSIP-AUS"
+   ],
+   "upstream": [
+    "envoy-schema"
+   ],
+   "relation": "CSIP-AUS server test harness built on envoy-schema",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/cactus-client/",
+   "notes": "Test tool that evaluates a CSIP-AUS server as a virtual client, running the server test procedures of cactus-test-definitions (YAML, also on PyPI).",
+   "sources": [
+    "https://github.com/bsgip/cactus-client",
+    "https://pypi.org/pypi/cactus-client/json",
+    "https://github.com/bsgip/cactus-test-definitions"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "cactus-runner",
+   "name": "CACTUS runner",
+   "protocol": "ieee-2030-5",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/bsgip/cactus-runner",
+   "repo": "bsgip/cactus-runner",
+   "stars": 7,
+   "forks": 4,
+   "historySince": "2025",
+   "lastCommit": "2026-09-24",
+   "release": {
+    "version": "v2.10.0",
+    "date": "2026-09-24",
+    "source": "Git tag",
+    "url": "https://github.com/bsgip/cactus-runner/tree/v2.10.0"
+   },
+   "roles": [
+    "server"
+   ],
+   "capabilities": [
+    "CSIP-AUS"
+   ],
+   "upstream": [
+    "anu-envoy"
+   ],
+   "relation": "CSIP-AUS client test harness built on Envoy",
+   "maintenance": "active",
+   "notes": "The client test harness of CACTUS: runs the client test procedures of cactus-test-definitions against a device, with an Envoy server and database underneath. Major version 2 targets CSIP-AUS 1.3.",
+   "sources": [
+    "https://github.com/bsgip/cactus-runner",
+    "https://github.com/bsgip/cactus-test-definitions"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "epri-2030-5-client",
+   "name": "EPRI IEEE 2030.5 Client",
+   "protocol": "ieee-2030-5",
+   "type": "legacy",
+   "languages": [
+    "C"
+   ],
+   "license": "BSD-3-Clause",
+   "url": "https://github.com/epri-dev/IEEE-2030.5-Client",
+   "repo": "epri-dev/IEEE-2030.5-Client",
+   "stars": 95,
+   "forks": 56,
+   "historySince": "2018",
+   "lastCommit": "2018-07-27",
+   "release": {
+    "version": "v0.2.11",
+    "date": "2018-07-25",
+    "source": "Git tag",
+    "url": "https://github.com/epri-dev/IEEE-2030.5-Client/tree/v0.2.11"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "CCM_8"
+   ],
+   "interop": "ieee20305-interop",
+   "maintenance": "quiet",
+   "notes": "Lightweight C framework from EPRI's certified open-source client project for California Rule 21, on OpenSSL, with DNS-SD, an XML and EXI codec and DER examples. Unmaintained since 2018 and built against the draft sep.xsd 2.0.4, whose namespace IEEE 2030.5-2018 servers refuse. Its original author offers support and updates commercially.",
+   "sources": [
+    "https://github.com/epri-dev/IEEE-2030.5-Client",
+    "https://www.epri.com/research/products/000000003002014087",
+    "https://markslicker.github.io/"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "kitu-spark",
+   "name": "Kitu Spark",
+   "protocol": "ieee-2030-5",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.kitu.io/spark",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "CSIP",
+    "CSIP-AUS"
+   ],
+   "maintenance": "n/a",
+   "notes": "Embedded IEEE 2030.5 client agent for energy devices, part of Kitu Systems' Grid Action Platform; Kitu reports SunSpec CSIP certification. Languages, platforms and licensing terms are not published.",
+   "sources": [
+    "https://www.kitu.io/spark",
+    "https://www.kitu.io/press/kitu-sunspec-csip-certification"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "qualitylogic-2030-5",
+   "name": "QualityLogic test system",
+   "protocol": "ieee-2030-5",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.qualitylogic.com/industries/smart-energy/smart-energy-test-tool-solutions/ieee-2030-5-test-tools/",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "CSIP",
+    "CSIP-AUS"
+   ],
+   "maintenance": "n/a",
+   "notes": "Test tools rather than a stack: functional test suites for CSIP and CSIP-AUS certification, and ad hoc client and server testers that are themselves conformant implementations. Not licensed as an SDK as far as the vendor publishes.",
+   "sources": [
+    "https://www.qualitylogic.com/industries/smart-energy/smart-energy-test-tool-solutions/ieee-2030-5-test-tools/",
+    "https://www.qualitylogic.com/industries/smart-energy/smart-energy-test-tool-solutions/csip-australia-test-tools-and-services/"
+   ],
+   "verified": "2026-10-23"
+  },
+  {
+   "id": "otfabric-go-ieee20305",
+   "name": "go-ieee20305",
+   "protocol": "ieee-2030-5",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-ieee20305",
+   "repo": "otfabric/go-ieee20305",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-23",
+   "release": {
+    "version": "v0.5.2",
+    "date": "2026-10-23",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-ieee20305/@v/v0.5.2.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "2018",
+    "2023",
+    "CSIP",
+    "CSIP-AUS",
+    "Subscriptions",
+    "CCM_8"
+   ],
+   "interop": "ieee20305-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-ieee20305",
+   "notes": "Client, device agent and server for every resource of the WADL, with no dependencies outside the standard library; CCM_8 in the separate module tlsccm. Tested against the four ieee20305-interop references.",
+   "sources": [
+    "https://github.com/otfabric/go-ieee20305"
+   ],
+   "verified": "2026-10-23"
   }
  ]
 }
