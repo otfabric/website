@@ -1,13 +1,15 @@
 ---
 name: "OPC UA"
 standard: "IEC 62541"
-summary: "The interoperability standard of industrial automation, with a browsable address space and built-in security."
+summary: "The interoperability standard of industrial automation: a browsable address space, built-in security, and PubSub for data that fans out."
 order: 2
 facts:
-  - { label: 'Transport', value: 'UA-TCP (opc.tcp)' }
+  - { label: 'Transport', value: 'UA-TCP, WebSockets, HTTPS' }
+  - { label: 'PubSub', value: 'UDP, Ethernet, MQTT, AMQP' }
   - { label: 'Default port', value: '4840' }
   - { label: 'Library', value: 'go-opcua' }
   - { label: 'CLI', value: 'opcuactl' }
+  - { label: 'Interop', value: 'opcua-interop v0.14.0' }
 icon: go-opcua
 docs: /docs/protocols/opc-ua/
 ---
@@ -16,13 +18,14 @@ import Callout from '../../components/Callout.astro';
 
 
 
-OPC Unified Architecture (OPC UA) is the interoperability standard of industrial automation. A server exposes an **address space**: a graph of nodes (objects, variables, methods) identified by NodeIds. Clients browse that graph, read and write values, call methods, and subscribe to data changes and events, over secure channels with X.509 certificates.
+OPC Unified Architecture (OPC UA) is the interoperability standard of industrial automation. A server exposes an **address space**: a graph of nodes (objects, variables, methods) identified by NodeIds. Clients browse that graph, read and write values, call methods, and subscribe to data changes, events and alarms, over secure channels with X.509 certificates. **PubSub** (Part 14) adds a second model without sessions: publishers send DataSets over UDP, Ethernet or an MQTT or AMQP broker to any number of subscribers.
 
 ## Where you meet it
 
 - PLCs and controllers from most major vendors
 - SCADA, MES and historian servers
 - Industrial gateways that translate fieldbus protocols into a single OPC UA model
+- PubSub over MQTT or AMQP to cloud and IIoT platforms, and over UDP or Ethernet between controllers
 
 ## Quickstart
 
@@ -42,6 +45,12 @@ opcuactl get value -e opc.tcp://localhost:4840 -n i=2258
 
 # Monitor live value changes
 opcuactl monitor value -e opc.tcp://localhost:4840 -n i=2258
+
+# List active alarms (ConditionRefresh)
+opcuactl alarms list -e opc.tcp://localhost:4840
+
+# Listen to OPC UA PubSub (UADP) on a UDP multicast group
+opcuactl pubsub subscribe --url opc.udp://224.0.0.22:4840
 ```
 
 For production servers, connect securely with endpoint auto-selection:
@@ -99,12 +108,13 @@ func main() {
 
 | | |
 |---|---|
-| Roles | Client and server |
-| Transport | UA-TCP (`opc.tcp://`), including reverse connect. HTTPS and WebSockets are not supported. |
-| Encoding | OPC UA Binary on the wire; JSON and XML for values |
-| Security | None, Sign and SignAndEncrypt; RSA policies from Basic128Rsa15 to Aes256Sha256RsaPss, and ECC nistP256, nistP384 and curve25519 |
-| Services | Browse, read, write, subscriptions, events, method calls, historical access |
-| Not implemented | PubSub; brainpool and curve448 ECC policies |
+| Roles | Client and server; PubSub publisher and subscriber, standalone or inside the server |
+| Transport | UA-TCP (`opc.tcp://`) with reverse connect, WebSockets (`opc.wss://`) and HTTPS (`opc.https://`), all with OPC UA Binary |
+| PubSub | UADP and JSON over UDP (unicast and multicast), raw Ethernet, MQTT 3.1.1 and 5.0, and AMQP 1.0; message security with a Security Key Service; chunks, discovery and Actions |
+| Security | None, Sign and SignAndEncrypt; RSA policies from Basic128Rsa15 to Aes256Sha256RsaPss, and every ECC policy: nistP256, nistP384, brainpoolP256r1, brainpoolP384r1, curve25519 and curve448, plus the AES-GCM and ChaCha20-Poly1305 variants |
+| Services | Every client/server service set: discovery, attribute, view, method, query, node management, subscriptions and monitored items, history read and update |
+| Beyond the services | Alarms and Conditions (Part 9, with the 1.05 methods), server diagnostics, GDS certificate management by the push and pull models (Part 12), a Local Discovery Server with mDNS, NodeSet2 import |
+| Not implemented | JSON over HTTPS and WebSockets, time-scheduled (TSN) Ethernet, historical events in the built-in historian |
 | Go version | 1.26 or later |
 
 <Callout type="caution">
@@ -113,4 +123,4 @@ func main() {
 
 ## Interoperability
 
-[opcua-interop](https://github.com/otfabric/opcua-interop) runs go-opcua in all applicable client and server directions against open62541 (C) and Eclipse Milo (Java).
+[opcua-interop](https://github.com/otfabric/opcua-interop) runs go-opcua in every applicable client and server direction against six independent stacks: open62541 (C), Eclipse Milo (Java), async-opcua (Rust), the OPC Foundation's UA-.NETStandard (C#), node-opcua (TypeScript) and opcua-asyncio (Python). PubSub is tested against open62541 and UA-.NETStandard, and the GDS pull model against the UA-.NETStandard Global Discovery Server. The [testing page](/docs/protocols/opc-ua/testing/) has the evidence and what is still open.

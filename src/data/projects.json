@@ -49,7 +49,7 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-opcua",
-		"description": "OPC UA client and server: secure channels, subscriptions, events, methods and historical access.",
+		"description": "OPC UA client and server over TCP, WebSockets and HTTPS: RSA and ECC security, subscriptions, alarms and conditions, history, GDS certificate management and PubSub.",
 		"icon": "go-opcua"
 	},
 	{
@@ -230,7 +230,7 @@
 			"opc-ua"
 		],
 		"status": "available",
-		"description": "Discover, browse, read, write, call methods, monitor, read history and export from OPC UA servers.",
+		"description": "Discover, browse, read, write, call methods, monitor, handle alarms, manage certificates, read history and diagnostics, and work with OPC UA PubSub.",
 		"icon": "go-opcua"
 	},
 	{
@@ -409,7 +409,7 @@
 			"opc-ua"
 		],
 		"status": "available",
-		"description": "OPC UA reference clients and servers based on open62541 and Eclipse Milo.",
+		"description": "OPC UA reference clients and servers: open62541, Eclipse Milo, async-opcua, UA-.NETStandard (with its GDS), node-opcua and opcua-asyncio.",
 		"icon": "go-opcua"
 	},
 	{

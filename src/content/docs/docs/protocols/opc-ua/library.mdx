@@ -1,6 +1,6 @@
 ---
 title: Go library
-description: Use go-opcua to connect to OPC UA servers securely, read, write, browse and subscribe, and to build your own OPC UA server in pure Go.
+description: Use go-opcua to connect to OPC UA servers securely over TCP, WebSockets or HTTPS, read, write, browse, subscribe and handle alarms, manage certificates, and build your own OPC UA server in pure Go.
 sidebar:
   label: Go library
   order: 1
@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[go-opcua](https://github.com/otfabric/go-opcua) is a pure Go OPC UA client and server over UA-TCP with the OPC UA Binary encoding. It has no cgo; cryptography is the Go standard library plus ChaCha20-Poly1305 from `golang.org/x/crypto`.
+[go-opcua](https://github.com/otfabric/go-opcua) is a pure Go OPC UA client and server over UA-TCP, WebSockets and HTTPS with the OPC UA Binary encoding, with PubSub publishers and subscribers in the same module. It has no cgo. Cryptography is the Go standard library, plus ChaCha20-Poly1305 from `golang.org/x/crypto`, Ed448 and X448 from `cloudflare/circl`, and the Brainpool curves from `ProtonMail/go-crypto`. This page describes v1.23.1.
 
 ## Install
 
@@ -26,7 +26,10 @@ Go 1.26 or later is required. The packages you will use most:
 | `monitor` | Callback and channel based subscriptions (`NodeMonitor`) |
 | `errors` | Sentinel errors for `errors.Is` |
 | `id` | Well-known NodeID constants |
-| `uacp`, `uasc`, `uapolicy` | Transport, secure channel, security policies (advanced use) |
+| `gds` | Certificate management clients: push (`gds.New`) and pull from a Global Discovery Server (`gds.NewPullClient`) |
+| `gds/gdsserver` | A Global Discovery Server: application directory and certificate authority |
+| `pubsub` | PubSub runtime, with `pubsub/transport/{udp,eth,mqtt,amqp}`, `pubsub/sks` and `pubsub/remote`; see [PubSub](/docs/protocols/opc-ua/pubsub/) |
+| `uacp`, `uasc`, `uapolicy` | Transport, secure channel, security policies, certificates and PFX files (advanced use) |
 
 ## Connecting
 
@@ -92,6 +95,18 @@ Go 1.26 or later is required. The packages you will use most:
     )
     ```
   </TabItem>
+  <TabItem label="WebSocket or HTTPS">
+    ```go
+    // opc.wss:// or opc.https://: the URL picks the transport.
+    pool := x509.NewCertPool()
+    pool.AppendCertsFromPEM(tlsCAPEM) // roots for the server's TLS certificate
+
+    c, err := opcua.NewClient("opc.wss://server:4843",
+        opcua.SecurityMode(ua.MessageSecurityModeNone), // TLS protects the connection
+        opcua.TLSConfig(&tls.Config{RootCAs: pool}),
+    )
+    ```
+  </TabItem>
   <TabItem label="Reverse connect">
     ```go
     // The server dials this client. The URL is the endpoint the server announces.
@@ -107,7 +122,7 @@ Go 1.26 or later is required. The packages you will use most:
   </TabItem>
 </Tabs>
 
-Policies can be named by short name or full URI (`http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256`). `opcua.SelectEndpoint` skips policies the library does not implement and secured endpoints whose policy does not fit the certificate's key type; with an empty certificate only unsecured endpoints remain. With reverse connect, create the client with `""` to accept whatever endpoint URL the server announces. `GetEndpoints`, `FindServers` and `FindServersOnNetwork` accept the same `ReverseConnect` option.
+Policies can be named by short name or full URI (`http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256`). `opcua.SelectEndpoint` skips policies the library does not implement and secured endpoints whose policy does not fit the certificate's key type; with an empty certificate only unsecured endpoints remain. `SelectEndpoint` prefers `opc.tcp` endpoints; `SelectEndpointForTransport` picks among the endpoints of one transport profile. The TLS certificate of an `opc.wss` or `opc.https` server is checked against `TLSConfig` and the host name, separately from its application certificate. Over HTTPS there is no SecureChannel: the policy only signs the session, and a Publish is a long poll. With reverse connect, create the client with `""` to accept whatever endpoint URL the server announces. `GetEndpoints`, `FindServers` and `FindServersOnNetwork` accept the same `ReverseConnect` option.
 
 ## A complete client
 
@@ -243,7 +258,82 @@ for dv, err := range c.ReadHistoryAll(ctx, nodeID, start, end) { // pages raw hi
 }
 ```
 
-For services without a helper, use `Client.Send`.
+For services without a helper, use `Client.Send`. `HistoryReadEvent`, the modified, processed and at-time reads, and HistoryUpdate (insert, replace, delete) have their own helpers.
+
+**Alarms and conditions.** Subscribe to events on the Server object with `opcua.NewConditionEventFilter()`, call `ConditionRefresh` to get the retained conditions, and answer each event with its EventId:
+
+```go
+sub, ch, err := c.NewSubscription().
+    Interval(200*time.Millisecond).
+    MonitorEvents(opcua.NewConditionEventFilter(), ua.NewNumericNodeID(0, id.Server)).
+    Start(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+if err := sub.ConditionRefresh(ctx); err != nil {
+    log.Fatal(err)
+}
+for msg := range ch {
+    enl, ok := msg.Value.(*ua.EventNotificationList)
+    if !ok {
+        continue
+    }
+    for _, f := range enl.Events {
+        ev, err := opcua.ParseConditionEvent(f)
+        if err != nil || ev.ConditionID == nil { // RefreshStart and RefreshEnd have none
+            continue
+        }
+        if ev.Acked != nil && !*ev.Acked {
+            _ = c.Acknowledge(ctx, ev.ConditionID, ev.EventID, "seen")
+        }
+    }
+}
+```
+
+`Confirm`, `AddComment`, `EnableCondition` and `DisableCondition`, timed and one-shot shelving, and the OPC UA 1.05 methods (`Suppress`, `RemoveFromService`, `Silence`, `Reset`, `Respond` for dialogs, and their `*2` variants with a comment) are client methods too. `ParseConditionEvent` also reports branches and the 1.05 states, `ReadAlarmMetrics` reads alarm metrics, and `NewAuditConditionEventFilter` streams the audit events of who called which method; `opcua.WithAuditEntryID(ctx, id)` tags your own calls.
+
+**Server diagnostics.** `ServerDiagnosticsSummary`, `SessionDiagnostics`, `SubscriptionDiagnostics` and `SamplingIntervalDiagnostics` read what the server counts. `opcua.ReturnDiagnostics(ua.ReturnDiagnosticsAll)` asks for DiagnosticInfos; a failed request then returns an `*opcua.ServiceError` with the resolved diagnostic, which still matches its status with `errors.Is`.
+
+## Certificate management
+
+Package `gds` manages certificates by both models of Part 12. The **push** client needs a session with the SecurityAdmin role over SignAndEncrypt; it works against go-opcua, open62541, UA-.NETStandard and node-opcua servers:
+
+```go
+g := gds.New(c)
+
+tl, _ := g.ReadTrustList(ctx, ua.TrustListMasksAll)
+tl.TrustedCertificates = append(tl.TrustedCertificates, newClientCA)
+required, _ := g.WriteTrustList(ctx, tl)
+
+csr, _ := g.CreateSigningRequest(ctx, &gds.SigningRequest{
+    CertificateType: gds.RsaSha256ApplicationCertificateType,
+})
+issued := myCA.Sign(csr) // your CA
+required, _ = g.UpdateCertificate(ctx, &gds.CertificateUpdate{
+    CertificateType:    gds.RsaSha256ApplicationCertificateType,
+    Certificate:        issued,
+    IssuerCertificates: [][]byte{myCA.Cert},
+})
+if required {
+    _ = g.ApplyChanges(ctx)
+}
+```
+
+`WithTrustList` selects the trust list of another certificate group (HTTPS, user tokens or a group of the application); `GetCertificates`, `CreateSelfSignedCertificate`, `DeleteCertificate`, `ResetToServerDefaults` and `TransactionDiagnostics` cover the rest of Part 12 1.05.
+
+The **pull** client talks to a Global Discovery Server. `Enroll` registers or finds the application, requests a certificate, waits until it is issued and reads the trust list; the result plugs straight into a client or a server:
+
+```go
+pc := gds.NewPullClient(c) // a session with the GDS over SignAndEncrypt
+e, err := pc.Enroll(ctx, &gds.EnrollRequest{
+    Record:          &gds.ApplicationRecord{ApplicationURI: uri, ApplicationType: ua.ApplicationTypeClient, ApplicationNames: names, ProductURI: product},
+    CertificateType: gds.EccNistP256ApplicationCertificateType,
+    Key:             key, // nil: the GDS generates the key pair
+})
+opts, err := e.ClientOptions() // certificate, key and trusted CAs for opcua.NewClient
+```
+
+Requests work for every key type (RSA, NIST and Brainpool ECDSA, Ed25519, Ed448), and keys the GDS generates come as PEM or PFX. The pull model is verified against the Global Discovery Server of UA-.NETStandard.
 
 ## Security in practice
 
@@ -268,7 +358,7 @@ For services without a helper, use `Client.Send`.
         -addext "subjectAltName=URI:urn:otfabric:opcua:client,DNS:localhost"
     ```
 
-    Use `-newkey ed25519` for `ECC_curve25519`. RSA keys need 2048 bits or more for every RSA policy; 4096 bits also works. Key files may be PKCS #1, PKCS #8 or SEC 1, PEM or DER. In production use certificates from your own CA and keep private keys at mode `0600`.
+    Use `-newkey ed25519` for `ECC_curve25519`, `-newkey ed448` for `ECC_curve448`, and `ec_paramgen_curve:brainpoolP384r1` for both Brainpool policies. RSA keys need 2048 bits or more for every RSA policy; 4096 bits also works. Key files may be PKCS #1, PKCS #8 or SEC 1, PEM or DER. In production use certificates from your own CA and keep private keys at mode `0600`.
 
 2. **Trust the server.** Pass the server's CA (or self-signed certificate) with `TrustedCertificates`. It is merged with the system pool; the client checks the chain, validity period, key usage and, with `SecurityFromEndpoint`, the ApplicationUri. `InsecureSkipVerify()` disables all of this and is for development only.
 
@@ -278,7 +368,7 @@ For services without a helper, use `Client.Send`.
 
 </Steps>
 
-Mismatches are caught early: an RSA certificate on an ECC policy (or the reverse) fails with `ErrInvalidSecurityConfig` before anything is sent, and an unimplemented policy fails with `ErrUnsupportedSecurityPolicy`. Keys in a hardware security module work for ECC through any `crypto.Signer` (`PrivateKeySigner`); RSA keys must be `*rsa.PrivateKey`.
+Mismatches are caught early: an RSA certificate on an ECC policy (or the reverse) fails with `ErrInvalidSecurityConfig` before anything is sent, and an unknown policy such as `ECC_nistP521` fails with `ErrUnsupportedSecurityPolicy`. Brainpool and Ed448 certificates, which `crypto/x509` cannot parse, are read by `uapolicy`; the Brainpool implementation is not constant time, so prefer the NIST or AEAD policies where the peer offers them. Keys in a hardware security module work for ECC through any `crypto.Signer` (`PrivateKeySigner`); RSA keys must be `*rsa.PrivateKey`.
 
 <Aside type="note" title="ECC Sign mode with other stacks">
 In `Sign` mode the ECC key derivation follows open62541 v1.5.9, not the later text of OPC UA 1.05.07 that the OPC Foundation .NET stack follows. Prefer `SignAndEncrypt` with other stacks.
@@ -327,9 +417,17 @@ func main() {
 }
 ```
 
-After changing a value, call `srv.ChangeNotification(nodeID)` so subscribers are sampled. `server.NewMapNamespace` is a simpler key/value namespace that notifies on `SetValue`. `RegisterMethod` adds method handlers, `ImportNodeSetXML` loads NodeSet2 models, `EmitBaseEvent` emits events, and `SetHistorian(server.NewHistorian())` enables HistoryRead.
+After changing a value, call `srv.ChangeNotification(nodeID)` so subscribers are sampled. `server.NewMapNamespace` is a simpler key/value namespace that notifies on `SetValue`. `RegisterMethod` adds method handlers, `ImportNodeSetXML` loads NodeSet2 models, `EmitBaseEvent` emits events, and `SetHistorian(server.NewHistorian())` enables HistoryRead (raw, modified, at-time and processed) and HistoryUpdate.
 
-For a secured server, add `server.Certificate` and `server.PrivateKey` (RSA), `server.ApplicationIdentity(cert, key)` once per ECC key type, and `EnableSecurity` per policy and mode. `WithClientCertificateTrustList(caDER...)` rejects untrusted client certificates at OpenSecureChannel with `BadCertificateUntrusted`. `WithUsernameValidator` and `WithX509UserValidator` check user tokens during ActivateSession, and `WithAccessController` decides each read, write, browse and call. The `DefaultAccessController` allows everything. `AllowUsernameOnNone()` exists for test deployments only.
+**More of the server.**
+
+- **Transports:** `server.WebSocketEndPoint(host, port)` and `server.HTTPSEndPoint(host, port)` add `opc.wss` and `opc.https` listeners next to `opc.tcp`; `server.TLSConfig` sets their TLS certificate.
+- **Alarms:** `srv.AddCondition(server.ConditionConfig{...})` creates conditions and limit alarms with acknowledge, confirm, shelving, the 1.05 states, dialogs, branches, alarm groups and metrics. The application drives the state (`SetActive`, `EvaluateLimits`); clients call the methods through the Call service and the access controller.
+- **Discovery:** `WithLocalDiscoveryServer` makes the server an LDS, `WithMulticastDiscovery` announces it with mDNS, and `WithReverseConnect` dials listening clients.
+- **Certificates:** `WithPushManagement` serves the ServerConfiguration push model, and `gds/gdsserver` is a complete Global Discovery Server with a memory or file store.
+- **PubSub:** `server.WithPubSub(cfg)` publishes variables and events of the address space and writes received fields to variables; clients can reconfigure it through `Server/PublishSubscribe`. See [PubSub](/docs/protocols/opc-ua/pubsub/).
+
+For a secured server, add `server.Certificate` and `server.PrivateKey` (RSA), `server.ApplicationIdentity(cert, key)` once per ECC key type, and `EnableSecurity` per policy and mode. `WithClientCertificateTrustList(caDER...)` rejects untrusted client certificates at OpenSecureChannel with `BadCertificateUntrusted`. `WithUsernameValidator` and `WithX509UserValidator` check user tokens during ActivateSession, and `WithAccessController` decides each read, write, browse and call, and can be implemented outside the package (it receives a read-only `*server.Session` with the identity and roles). The `DefaultAccessController` allows everything; `RBACAccessController` checks roles. `AllowUsernameOnNone()` exists for test deployments only.
 
 ## Errors
 
@@ -360,8 +458,12 @@ The library is silent by default. `opcua.WithLogger(*slog.Logger)` and `server.S
 
 ## Limitations
 
-- Client/server over UA-TCP only: no HTTPS, WebSockets or PubSub.
-- `ECC_brainpoolP256r1`, `ECC_brainpoolP384r1` and `ECC_curve448` are not implemented.
-- Alarms and Conditions are deferred (not implemented).
-- The built-in historian: historical events are not supported, and `returnBounds` is accepted but bounding and interpolation are not implemented.
+- No JSON over HTTPS or WebSockets (`https-uajson`, `wss-uajson`): use the binary `opc.https` and `opc.wss` transports.
+- The built-in historian stores data only, not historical events, and accepts `returnBounds` without computing bounding values.
+- Custom structures are decoded through registered Go types, not dynamically from the server's DataTypeDefinition.
+- PubSub has no time-scheduled (TSN) Ethernet and no AMQP over WebSockets.
+- The push model has no file-based certificate store in the library: implement `server.CertificateStore` to persist pushed certificates.
+- Brainpool policies are not constant time; ECC `Sign` mode follows open62541 v1.5.9 where it differs from OPC UA 1.05.07.
 - Not certified by the OPC Foundation.
+
+The go-opcua repository keeps a list of these gaps, and of the peer deviations you may meet, in [Interop gaps and workarounds](https://github.com/otfabric/go-opcua/blob/main/docs/interop-gaps.md).
