@@ -1,6 +1,6 @@
 ---
 title: OPC UA
-description: How OPC Unified Architecture works on the wire and in the address space, how its security model fits together, and which OT Fabric projects implement it.
+description: How OPC Unified Architecture works on the wire and in the address space, how its security model, alarms, certificate management and PubSub fit together, and which OT Fabric projects implement it.
 sidebar:
   label: Overview
   order: 0
@@ -8,9 +8,9 @@ sidebar:
 
 import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-OPC Unified Architecture (OPC UA) is the client/server interoperability standard of industrial automation. A server exposes an object model of a machine, line or plant (its *address space*); a client discovers the server, opens a secured channel, creates a session and then reads, writes, browses, calls methods, subscribes to changes and events, and reads history. The same standard defines the wire encoding, the services, the information model and the security model, so two independent implementations can talk without a vendor driver in between.
+OPC Unified Architecture (OPC UA) is the interoperability standard of industrial automation. A server exposes an object model of a machine, line or plant (its *address space*); a client discovers the server, opens a secured channel, creates a session and then reads, writes, browses, calls methods, subscribes to changes and events, and reads history. The same standard defines the wire encoding, the services, the information model and the security model, so two independent implementations can talk without a vendor driver in between.
 
-This page explains the protocol as the OT Fabric projects implement it: client/server over UA-TCP (`opc.tcp://`) with the OPC UA Binary encoding.
+The standard has two communication models. **Client/server** is the session-based model described above. **PubSub** (Part 14) sends DataSets from publishers to any number of subscribers without sessions, over UDP, Ethernet or a message broker. This page explains both as the OT Fabric projects implement them: client/server over UA-TCP (`opc.tcp://`), WebSockets (`opc.wss://`) and HTTPS (`opc.https://`) with the OPC UA Binary encoding, and PubSub with the UADP and JSON message mappings.
 
 ## Layers and transport
 
@@ -26,7 +26,9 @@ An endpoint URL looks like `opc.tcp://host:4840/path`; 4840 is the well-known Lo
 
 **Reverse connect** (OPC UA Part 6 §7.1.3) turns the TCP connection around for servers behind a firewall or NAT: the server dials a listening client and announces itself with a ReverseHello message carrying its ServerUri and EndpointUrl.
 
-HTTPS, WebSockets and PubSub are not implemented by OT Fabric. JSON and XML are supported as encodings of values only; the wire stays UA-TCP with OPC UA Binary.
+**WebSockets and HTTPS** (Part 6 §7.5 and §7.4) carry the same binary messages for networks where only web ports are open. `opc.wss://` runs the secure conversation inside a TLS WebSocket (profile wss-uasc-uabinary). `opc.https://` sends each request as an HTTPS POST (https-uabinary): there is no SecureChannel, TLS protects the connection, the security policy only signs the session, and a Publish is a long poll. In both cases the TLS server certificate is checked separately from the OPC UA application certificate.
+
+JSON and XML are supported as encodings of values (for exchange with other stacks and in PubSub), not as client/server wire encodings: the `https-uajson` and `wss-uajson` profiles are not implemented.
 
 ## Address space
 
@@ -62,6 +64,34 @@ A **SecureChannel** protects messages between two applications. A **Session** ru
 A **subscription** is the push mechanism. The client creates a subscription with a *publishing interval*, then adds **monitored items** to it. Each item has its own *sampling interval* (how often the server samples the source), a *queue size* and a discard policy. The server delivers queued notifications in Publish responses at the publishing interval and sends keep-alives when nothing changed. A **DataChangeFilter** narrows what counts as a change: the trigger (Status, StatusValue or StatusValueTimestamp) and an absolute or percent deadband, where percent refers to the variable's `EURange` property. **Event** monitored items use an EventFilter with SelectClauses (which fields to return) and a WhereClause (which events to deliver).
 
 Notifications carry sequence numbers, so after a connection loss a client can move its subscriptions to a new session (TransferSubscriptions) and fetch missed ones (Republish).
+
+## Alarms and Conditions
+
+Alarms and Conditions (Part 9) model alarms as **condition** nodes with state machines that clients see as events. A condition has an EnabledState, an ActiveState, an AckedState and, if required, a ConfirmedState; alarms can also be shelved (timed or one-shot). A client subscribes to events on the Server object with a filter that selects the condition fields, then calls **ConditionRefresh**: the server replays every *retained* condition between a RefreshStart and a RefreshEnd event, and live changes follow. Acknowledge, Confirm and AddComment take the **EventId** of the event they answer, so an operator never acknowledges a state they did not see.
+
+OPC UA 1.05 adds suppression, out-of-service, silence and latched states with their methods, dialog conditions that ask an operator a question, **branches** (an earlier occurrence kept until it is acknowledged), alarm groups, on- and off-delays, re-alarming, alarm metrics, and audit events that record who called which method. go-opcua implements all of this on both sides; opcuactl exposes it as the `alarms` commands.
+
+## Certificate management
+
+Every secured application needs an application instance certificate and a trust list, and both change over time. Part 12 defines two ways to manage them remotely:
+
+- **Push model.** A server's ServerConfiguration object lets an administrator (the SecurityAdmin role, over SignAndEncrypt) read and write its trust lists, have it create a signing request, install a certificate issued by a CA, and apply the changes as one transaction. OPC UA 1.05 adds certificate groups for HTTPS and user tokens, self-signed certificates, deletion and transaction diagnostics.
+- **Pull model.** A **Global Discovery Server** (GDS) is a directory of applications and a certificate authority. An application registers, requests a certificate (from a signing request or as a new key pair), collects it once it is approved, and reads its trust list.
+
+go-opcua has clients for both models, push management in its server, and a complete GDS (`gds/gdsserver`); opcuactl has the `gds` and `gds pull` commands.
+
+## PubSub
+
+PubSub decouples the sender of data from its receivers. A **publisher** samples a *PublishedDataSet* (a list of variables, or events) and a **DataSetWriter** sends it as a DataSetMessage at the publishing interval of its **WriterGroup**, packed into a *NetworkMessage*. A **subscriber** has ReaderGroups with **DataSetReaders** that pick messages by PublisherId, WriterGroupId and DataSetWriterId and write the fields to target variables.
+
+| Concern | Options |
+|---|---|
+| Message mapping | UADP (compact binary) or JSON |
+| Transport | UDP unicast and multicast (`opc.udp://`), raw Ethernet (`opc.eth://`, UADP only), MQTT and AMQP brokers (UADP or JSON) |
+| Metadata | UADP carries no field names: readers need the DataSetMetaData, configured, announced or fetched |
+| Security | UADP messages are signed and encrypted with PubSub-Aes128-CTR or PubSub-Aes256-CTR; keys come from a **Security Key Service** (SKS) that hands them out per SecurityGroup over a secured client/server session |
+
+The [PubSub page](/docs/protocols/opc-ua/pubsub/) covers delta frames, chunks, discovery, Actions, diagnostics and remote configuration, with examples for go-opcua and opcuactl.
 
 ## Security
 
@@ -99,12 +129,15 @@ The **security policy** decides the algorithms. These are the ones go-opcua impl
 | ECC_nistP256_AesGcm | AES-128-GCM | ECDSA P-256 or P-384 | OPC UA 1.05.07, authenticated encryption |
 | ECC_nistP256_ChaChaPoly | ChaCha20-Poly1305 | ECDSA P-256 or P-384 | OPC UA 1.05.07, authenticated encryption |
 | ECC_curve25519 | ChaCha20-Poly1305 | Ed25519 | OPC UA 1.05.07, authenticated encryption |
+| ECC_curve448 | ChaCha20-Poly1305 | Ed448 | OPC UA 1.05.07, authenticated encryption |
+| ECC_brainpoolP256r1 | AES-128-CBC, HMAC-SHA256 | ECDSA brainpoolP256r1 or P384r1 | OPC UA 1.05; not constant time in go-opcua |
+| ECC_brainpoolP384r1 | AES-256-CBC, HMAC-SHA384 | ECDSA brainpoolP384r1 | OPC UA 1.05; not constant time in go-opcua |
 
-`ECC_brainpoolP256r1`, `ECC_brainpoolP384r1` and `ECC_curve448` exist in the specification but are not implemented by go-opcua; a client refuses them by name.
+The Brainpool curves come from a pure Go implementation that is not constant time, so prefer the NIST or AEAD policies where the peer offers them. Policies outside this table, such as `ECC_nistP521`, are refused by name.
 
 **How the channel keys are made.** With the RSA policies, the OpenSecureChannel messages are signed and encrypted with the certificates' RSA keys and carry random nonces from which both sides derive the symmetric keys. With the ECC policies those messages are signed but not encrypted, the nonces are ephemeral elliptic-curve Diffie-Hellman (ECDH) public keys, and the keys come from HKDF over the shared secret. Fresh ephemeral keys for every security token give the ECC policies forward secrecy; the RSA policies have none. The authenticated-encryption policies replace padding and HMAC with a 16-byte tag per chunk.
 
-The certificate's key type must fit the policy: an RSA certificate cannot open an ECC channel, and an ECDSA certificate cannot open `ECC_curve25519`. A server that offers RSA and ECC endpoints therefore needs one application certificate per key type.
+The certificate's key type must fit the policy: an RSA certificate cannot open an ECC channel, and an ECDSA certificate cannot open `ECC_curve25519` (Ed25519) or `ECC_curve448` (Ed448). A server that offers RSA and ECC endpoints therefore needs one application certificate per key type.
 
 **Renewal.** A security token has a lifetime negotiated at OpenSecureChannel. Before it expires the client renews the channel, which yields a new TokenId and new keys; the old token remains valid until it expires.
 
@@ -141,14 +174,14 @@ A ReverseHello is neither signed nor encrypted: anyone who reaches a listening c
 
 ## Where OPC UA is used
 
-OPC UA connects PLCs, industrial gateways, SCADA servers and industrial IoT applications, in energy installations as elsewhere. Typical tasks are commissioning (is every tag reachable, with the right type and access level), troubleshooting, integration of supervisory software with controllers, and data collection.
+OPC UA connects PLCs, industrial gateways, SCADA servers and industrial IoT applications, in energy installations as elsewhere. Typical tasks are commissioning (is every tag reachable, with the right type and access level), troubleshooting, integration of supervisory software with controllers, alarm handling, certificate rollover, and data collection, increasingly with PubSub over MQTT into IT and cloud systems.
 
 ## OT Fabric for OPC UA
 
 <CardGrid>
-  <LinkCard title="go-opcua" description="Pure Go client and server library: RSA and ECC security, subscriptions, events, methods, history, discovery and reverse connect." href="/projects/go-opcua/" />
-  <LinkCard title="opcuactl" description="Command-line client for discovery, browse, read, write, method calls, monitoring, history and export." href="/projects/opcuactl/" />
-  <LinkCard title="opcua-interop" description="Dockerized open62541 and Eclipse Milo reference clients and servers with shared fixtures and a test PKI." href="/projects/opcua-interop/" />
+  <LinkCard title="go-opcua" description="Pure Go client, server and PubSub library: TCP, WebSockets and HTTPS, RSA and ECC security, alarms, history, GDS certificate management, discovery and reverse connect." href="/projects/go-opcua/" />
+  <LinkCard title="opcuactl" description="Command-line client for discovery, browse, read, write, method calls, monitoring, alarms, diagnostics, certificate management, history, export and PubSub." href="/projects/opcuactl/" />
+  <LinkCard title="opcua-interop" description="Dockerized reference clients and servers of six independent stacks, plus a Global Discovery Server, with shared fixtures and a test PKI." href="/projects/opcua-interop/" />
 </CardGrid>
 
-Source code: [otfabric/go-opcua](https://github.com/otfabric/go-opcua), [otfabric/opcuactl](https://github.com/otfabric/opcuactl), [otfabric/opcua-interop](https://github.com/otfabric/opcua-interop). Continue with the [Go library](/docs/protocols/opc-ua/library/) or the [opcuactl](/docs/protocols/opc-ua/cli/) guide.
+Source code: [otfabric/go-opcua](https://github.com/otfabric/go-opcua), [otfabric/opcuactl](https://github.com/otfabric/opcuactl), [otfabric/opcua-interop](https://github.com/otfabric/opcua-interop). Continue with the [Go library](/docs/protocols/opc-ua/library/), the [opcuactl](/docs/protocols/opc-ua/cli/) guide or [PubSub](/docs/protocols/opc-ua/pubsub/).

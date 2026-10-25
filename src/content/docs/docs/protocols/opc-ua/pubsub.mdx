@@ -1,0 +1,165 @@
+---
+title: PubSub
+description: How OPC UA PubSub (Part 14) works, and how to publish, subscribe, secure and configure it over UDP, Ethernet, MQTT and AMQP with go-opcua and opcuactl.
+sidebar:
+  label: PubSub
+  order: 3
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+OPC UA PubSub (IEC 62541-14, "Part 14") sends data from publishers to any number of subscribers without sessions. A publisher samples a set of values at a fixed interval and sends it as a message over UDP, raw Ethernet or a message broker; subscribers take the messages they are interested in from what arrives. It complements client/server: PubSub fans data out to many receivers, and into IT and cloud systems through MQTT or AMQP, while client/server stays the way to browse, write, call methods and configure.
+
+[go-opcua](/projects/go-opcua/) implements both sides, standalone or inside its server, and [opcuactl](/projects/opcuactl/) has a `pubsub` command group to listen, publish, discover and configure from a terminal. This page describes go-opcua v1.23.1 and opcuactl v0.8.0.
+
+## The model
+
+| Term | Meaning |
+|---|---|
+| PublishedDataSet | What is published: a list of variables (PublishedDataItems), events, or an Action |
+| DataSetMetaData | Names, types and version of the fields of a DataSet |
+| DataSetWriter | Turns one PublishedDataSet into DataSetMessages, identified by a DataSetWriterId |
+| WriterGroup | Writers that send together at one publishing interval, with one security setting, identified by a WriterGroupId |
+| NetworkMessage | What goes on the wire: a header with the PublisherId, plus one or more DataSetMessages |
+| ReaderGroup, DataSetReader | The subscriber side: a reader filters on PublisherId, WriterGroupId and DataSetWriterId and writes the fields to target variables |
+| PubSubConnection | One transport address shared by groups, with the PublisherId of the application |
+
+A DataSetMessage is a **key frame** with every field, a **delta frame** with only the fields that changed, a **keep-alive** when nothing changed, or an **event**. Readers discard duplicate and stale messages by sequence number and merge delta frames onto the last key frame.
+
+## Message mappings and transports
+
+| | UADP | JSON |
+|---|---|---|
+| Format | Compact binary; fields as Variant, DataValue or RawData | Self-describing JSON (`ua-data`, `ua-metadata`, `ua-status`) |
+| Field names | Not in the message: a reader needs the DataSetMetaData | In the message |
+| Security | Sign or SignAndEncrypt with PubSub-Aes128-CTR or PubSub-Aes256-CTR | None at the message level; rely on the broker's TLS |
+| Transports | UDP, Ethernet, MQTT, AMQP | MQTT, AMQP |
+
+| Transport | URL | What go-opcua supports |
+|---|---|---|
+| UDP | `opc.udp://host:port` | Unicast and multicast |
+| Ethernet | `opc.eth://MAC[:VID[.PCP]]` | UADP in Ethernet II frames (EtherType 0xB62C), VLAN tags; Linux, macOS and FreeBSD, with raw socket privileges. No time-scheduled (TSN) sending |
+| MQTT | `mqtt://`, `mqtts://` | MQTT 3.1.1 and 5.0, QoS 0 to 2; on 5.0 the content type and UAMessageType of each message, and gzip compressed JSON |
+| AMQP 1.0 | `amqp://`, `amqps://` | Its own AMQP 1.0 client: SASL, TLS, flow control and reconnection; tested through RabbitMQ 4 and ActiveMQ Artemis. Not over WebSockets |
+
+On a broker, topics (MQTT) or addresses (AMQP) are the QueueName of a writer or reader, and publishers can send their DataSetMetaData to a metadata queue so subscribers that start later find it.
+
+## Publish and subscribe with go-opcua
+
+The configuration is the standard `ua.PubSubConfigurationDataType`, with builders for common setups, so a configuration built in Go can be sent to another server and one read from another stack can be loaded.
+
+<Tabs>
+  <TabItem label="Publisher">
+    ```go
+    values := pubsub.NewMemoryDataSource()
+    counter := ua.NewStringNodeID(1, "counter")
+
+    pds := pubsub.PublishedDataItems("Measurements",
+        pubsub.Var("Counter", counter, ua.TypeIDUint32))
+    group := pubsub.WriterGroup("Group", 100, 100*time.Millisecond,
+        pubsub.DataSetWriter("Writer", 1, "Measurements"))
+    cfg := pubsub.NewConfiguration([]*ua.PublishedDataSetDataType{pds},
+        pubsub.AttachWriterGroups(
+            pubsub.UDPConnection("UDP", "opc.udp://224.0.0.22:4840", uint16(2234)), group))
+
+    ps, err := pubsub.New(cfg, pubsub.WithDataSource(values))
+    if err != nil {
+        log.Fatal(err)
+    }
+    if err := ps.Start(ctx); err != nil {
+        log.Fatal(err)
+    }
+    defer ps.Close()
+
+    _ = values.Set(counter, uint32(42)) // published with the next interval
+    ```
+  </TabItem>
+  <TabItem label="Subscriber">
+    ```go
+    md := pubsub.MetaData("Measurements",
+        pubsub.Field{Name: "Counter", Type: ua.TypeIDUint32})
+    reader := pubsub.DataSetReader("Reader", uint16(2234), 100, 1, md)
+
+    cfg := pubsub.NewConfiguration(nil,
+        pubsub.AttachReaderGroups(
+            pubsub.UDPConnection("UDP", "opc.udp://224.0.0.22:4840", nil),
+            pubsub.ReaderGroup("Group", reader)))
+
+    ps, err := pubsub.New(cfg, pubsub.WithDataSetHandler(func(ds *pubsub.ReceivedDataSet) {
+        log.Printf("#%d Counter=%v", ds.SequenceNumber, ds.Field("Counter").Value)
+    }))
+    ```
+  </TabItem>
+  <TabItem label="MQTT and JSON">
+    ```go
+    conn := pubsub.MQTTConnection("Broker", "mqtt://broker:1883", "urn:my:publisher", pubsub.MappingJSON)
+    pubsub.SetMQTTVersion(conn, pubsub.MQTTVersion5) // or MQTTVersionBestAvailable
+    group := pubsub.JSONWriterGroup("Group", 1, time.Second, "plant/line1",
+        pubsub.DataSetWriter("Writer", 1, "Measurements"))
+    ```
+  </TabItem>
+</Tabs>
+
+`DataSource` is an interface, so values can come from anywhere. `KeyFrameCount` on a writer sends delta frames between key frames, and `KeepAliveTime` on a group sends keep-alives. go-opcua speaks MQTT 3.1.1 unless asked for 5.0; `BestAvailable` tries 5.0 and falls back.
+
+**Inside a server.** `server.WithPubSub(cfg)` runs the runtime in a go-opcua server: PublishedDataItems read variables of the address space, PublishedEvents publish the events the server emits, and readers with TargetVariables write received fields to variables. The configuration appears under `Objects/Server/PublishSubscribe`, where clients can change it with the standard methods (AddConnection, AddWriterGroup, AddDataSetWriter and so on) and read the PubSubConfiguration file. The library's `examples/pubsub/server` publishes a variable and subscribes to it again.
+
+## Security and keys
+
+UADP messages are secured per WriterGroup: Sign or SignAndEncrypt with PubSub-Aes128-CTR or PubSub-Aes256-CTR, using the keys of a **SecurityGroup**. Keys rotate, so they are not configured once but served:
+
+| Key source | Use |
+|---|---|
+| Static key ring | Fixed keys, or keys pushed with SetSecurityKeys |
+| Security Key Service (SKS) | A server hands out the current and future keys of a SecurityGroup with GetSecurityKeys, over a SignAndEncrypt session and, by default, not to anonymous users |
+| SKS pull client | Fetches the keys from a remote SKS and refreshes them before they rotate |
+
+A go-opcua server becomes an SKS with `EnableSecurityKeyService` and accepts pushed keys with `EnableSecurityKeyPush`. A secured writer group sends nothing until it has keys; a reader refuses messages with unknown tokens, bad signatures or weaker security than its group requires.
+
+<Aside type="caution" title="JSON has no message security">
+JSON NetworkMessages are never signed or encrypted by PubSub. Over a broker, protect them with TLS (`mqtts://`, `amqps://`) and the broker's access control.
+</Aside>
+
+## Chunks, discovery and Actions
+
+- **Chunks.** A UADP message larger than the transport allows is split into chunks, each secured on its own, and reassembled by the subscriber within strict limits on size, count, pending bytes and time.
+- **Discovery.** On UDP and Ethernet, subscribers probe for the DataSetMetaData and writer configuration they lack, and publishers answer and announce. go-opcua follows the layout of the OPC Foundation .NET stack where the specification is ambiguous; open62541 1.5.9 neither sends nor answers these messages.
+- **Actions.** PubSub Actions (Part 14 1.05) are request and response over PubSub: a Requestor sends an ActionRequest and a Responder runs the Action and answers. go-opcua's Responder runs Go handlers or the Methods of its server; Actions work over UDP, MQTT and AMQP, with UADP (secured) or JSON.
+- **Diagnostics.** Every connection, group, writer and reader has the Part 14 diagnostics object with its counters (sent and received messages, decryption errors, state changes) and live values.
+
+## PubSub from the command line
+
+opcuactl runs go-opcua's PubSub runtime, so it can listen, publish and configure without writing code:
+
+```sh
+# Everything on a UDP multicast group, one line per DataSetMessage
+opcuactl pubsub subscribe --url opc.udp://224.0.0.22:4840
+
+# Name the fields (UADP carries no names), or take them from the publishing server
+opcuactl pubsub subscribe --url opc.udp://224.0.0.22:4840 --field Temperature:Double --field Time:DateTime
+opcuactl pubsub subscribe --url opc.udp://224.0.0.22:4840 -e opc.tcp://plc:4840 --metadata-node "ns=2;i=175"
+
+# JSON through an MQTT broker
+opcuactl pubsub subscribe --url mqtt://broker:1883 --topic 'plant/#' --show-metadata
+
+# A test publisher: 10 messages, one every 500 ms
+opcuactl pubsub publish --url opc.udp://224.0.0.22:4840 --publisher-id 2234 --writer-group-id 100 --writer-id 1 \
+  --field Counter:UInt32=42 --field Temp:Double=21.5 --count 10 --interval 500ms
+
+# Who publishes here?
+opcuactl pubsub discover --url opc.udp://224.0.0.22:4840
+
+# The PubSub configuration of a server, and a new connection on it
+opcuactl pubsub config show -e opc.tcp://localhost:4840
+opcuactl pubsub config add-connection -e opc.tcp://localhost:4840 --name Diag --url opc.udp://224.0.0.22:4840 --publisher-id 2234
+```
+
+`--security-group` with a session to the SKS (`-e` and the usual security flags) decrypts secured groups, `pubsub sks get-keys` fetches keys, `pubsub decode` decodes captured messages, `pubsub call` and `pubsub respond` exercise Actions, and `--diagnostics` prints the Part 14 counters. The [opcuactl page](/docs/protocols/opc-ua/cli/#pubsub) and the opcuactl README list every flag.
+
+<Aside type="caution" title="Publishing reaches real subscribers">
+A test publisher on a production multicast group or broker topic feeds whatever listens there. Use your own group, PublisherId and topic for tests.
+</Aside>
+
+## Interoperability
+
+go-opcua's PubSub is interop-tested in both directions against open62541 v1.5.9 (UDP unicast and multicast, Ethernet, MQTT through Mosquitto, the SKS and the PublishSubscribe methods) and the Opc.Ua.PubSub runtime of UA-.NETStandard 2.0.1 (UDP, MQTT, message security, chunks, UADP discovery), using the PubSub support of the [opcua-interop](/projects/opcua-interop/) images. AMQP is tested go-opcua to go-opcua through RabbitMQ 4 and ActiveMQ Artemis, because no reference stack in the suite has AMQP. Eclipse Milo, async-opcua and opcua-asyncio have no PubSub in the suite, and PubSub is a commercial add-on for node-opcua. Details are on the [testing page](/docs/protocols/opc-ua/testing/).

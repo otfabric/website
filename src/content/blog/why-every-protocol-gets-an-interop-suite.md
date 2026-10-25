@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Ten interop suites package 34 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Ten interop suites package 38 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
-updated: 2026-10-23
+updated: 2026-10-25
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Ten OT Fabric interop suites and their 34 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
+  alt: Ten OT Fabric interop suites and their 38 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,12 +14,12 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Ten suites, 34 reference stacks
+## Ten suites, 38 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
 | [Modbus](/protocols/modbus/) | [modbus-interop](/projects/modbus-interop/) | libmodbus (C), PyModbus (Python), digitalpetri/modbus (Java), NModbus (C#), tokio-modbus (Rust) |
-| [OPC UA](/protocols/opc-ua/) | [opcua-interop](/projects/opcua-interop/) | open62541 (C), Eclipse Milo (Java) |
+| [OPC UA](/protocols/opc-ua/) | [opcua-interop](/projects/opcua-interop/) | open62541 (C), Eclipse Milo (Java), async-opcua (Rust), UA-.NETStandard (C#), node-opcua (TypeScript), opcua-asyncio (Python) |
 | [BACnet/IP](/protocols/bacnet/) | [bacnet-interop](/projects/bacnet-interop/) | BACnet Stack (C), BACpypes3 (Python), BACnet4J (Java), System.IO.BACnet (C#), worldiety/bacnet (Go) |
 | [Siemens S7](/protocols/s7/) | [snap7-interop](/projects/snap7-interop/) | Snap7 (C++), python-snap7 (Python) |
 | [IEC 60870-5-104](/protocols/iec-104/) | [iec104-interop](/projects/iec104-interop/) | lib60870 (C), OpenMUC j60870 (Java), wendy512/iec104 (Go) |
@@ -66,6 +66,7 @@ A library runs its own scenarios against the images, in both roles: our client a
 - **go-bacnet**: 206 scenarios pass and 11 skip for features a stack does not have.
 - **go-openadr**: 24 of 24 scenarios of the openadr-interop conformance suite.
 - **go-dnp3**: master against every reference outstation and every reference master against its outstation, over TCP, TLS, UDP and serial.
+- **go-opcua**: client and server against all six OPC UA stacks in both directions, with 1131 verified ledger rows, plus PubSub against open62541 and UA-.NETStandard and the GDS pull model against the UA-.NETStandard Global Discovery Server.
 - **go-ieee20305**: its client and device agent against the Envoy and GridAPPS-D servers, and the GridAPPS-D, py20305 and EPRI clients against its server, in both editions and with the CSIP and CSIP-AUS fixtures.
 
 Each protocol's *Testing and interop* page in the [documentation](/docs/protocols/) has the full matrix, and what has not been validated yet.

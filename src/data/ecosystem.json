@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-23",
+ "verified": "2026-10-25",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -745,6 +745,7 @@
     "PubSub",
     "Security"
    ],
+   "interop": "opcua-interop",
    "maintenance": "active",
    "package": "https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua",
    "notes": "The OPC Foundation reference stack. Licensed under the OPC Foundation MIT License 1.00; contributions need the Foundation CLA.",
@@ -768,10 +769,10 @@
    "forks": 517,
    "repoCreated": "2014-01-22",
    "historySince": "2014",
-   "lastCommit": "2026-10-15",
+   "lastCommit": "2026-10-25",
    "release": {
-    "version": "2.187.9",
-    "date": "2026-10-15",
+    "version": "2.187.16",
+    "date": "2026-10-25",
     "source": "npm",
     "url": "https://www.npmjs.com/package/node-opcua"
    },
@@ -783,13 +784,14 @@
     "Binary TCP",
     "Security"
    ],
+   "interop": "opcua-interop",
    "maintenance": "active",
    "package": "https://www.npmjs.com/package/node-opcua",
    "notes": "Maintained by Sterfive, which also sells support and extensions.",
    "sources": [
     "https://github.com/node-opcua/node-opcua"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-10-25"
   },
   {
    "id": "opcua-asyncio",
@@ -821,6 +823,7 @@
     "Binary TCP",
     "Security"
    ],
+   "interop": "opcua-interop",
    "maintenance": "active",
    "package": "https://pypi.org/project/asyncua/",
    "notes": "The maintained Python successor of python-opcua; git history starts in the python-opcua code base (2015).",
@@ -937,6 +940,7 @@
     "locka99-opcua"
    ],
    "relation": "Continues the locka99/opcua code base",
+   "interop": "opcua-interop",
    "maintenance": "active",
    "package": "https://crates.io/crates/async-opcua",
    "notes": "Git history starts with locka99/opcua in January 2017; the repository itself was created in December 2024.",
@@ -1032,12 +1036,12 @@
    "stars": 0,
    "repoCreated": "2026-03-10",
    "historySince": "2026",
-   "lastCommit": "2026-10-12",
+   "lastCommit": "2026-10-25",
    "release": {
-    "version": "v1.6.0",
-    "date": "2026-10-12",
+    "version": "v1.23.1",
+    "date": "2026-10-25",
     "source": "GitHub release",
-    "url": "https://github.com/otfabric/go-opcua/releases/tag/v1.6.0"
+    "url": "https://github.com/otfabric/go-opcua/releases/tag/v1.23.1"
    },
    "roles": [
     "client",
@@ -1045,8 +1049,12 @@
    ],
    "capabilities": [
     "Binary TCP",
+    "HTTPS and WebSockets",
     "PubSub",
-    "Security"
+    "Security",
+    "Alarms and events",
+    "Historical Access",
+    "GDS"
    ],
    "upstream": [
     "gopcua"
@@ -1058,7 +1066,7 @@
    "sources": [
     "https://github.com/otfabric/go-opcua"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-10-25"
   },
   {
    "id": "unified-automation",

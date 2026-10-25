@@ -2,7 +2,7 @@
 title: The industrial protocol stack landscape
 description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3 and IEEE 2030.5? 134 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
-updated: 2026-10-23
+updated: 2026-10-25
 authors: [OT Fabric]
 tags: [ecosystem, research, open-source]
 featured: true
@@ -64,7 +64,7 @@ libmodbus, PyModbus, NModbus, digitalpetri/modbus and tokio-modbus are the refer
 
 <LandscapeTable protocol="opc-ua" />
 
-open62541, Eclipse Milo, the OPC Foundation .NET stack, node-opcua and the FreeOpcUa family are the essential open-source references. Two lineages are worth knowing: python-opcua is deprecated in favour of opcua-asyncio, and the Rust code base started by locka99/opcua continues as async-opcua. Unified Automation, Prosys and Softing are the established commercial SDK vendors. OpenOpcUa CoreServer, the native C/C++ runtime behind 4CE Industry's OOUAMiddleware, takes another route: closed source, but free to deploy without licensing fees.
+open62541, Eclipse Milo, the OPC Foundation .NET stack, node-opcua and the FreeOpcUa family are the essential open-source references, and six of them run in our [opcua-interop](https://github.com/otfabric/opcua-interop) suite: open62541, Eclipse Milo, UA-.NETStandard, node-opcua, opcua-asyncio and async-opcua. Their PubSub support differs sharply: open62541 and the .NET stack implement it, Milo, async-opcua and opcua-asyncio do not, and for node-opcua it is a commercial add-on. Two lineages are worth knowing: python-opcua is deprecated in favour of opcua-asyncio, and the Rust code base started by locka99/opcua continues as async-opcua. Unified Automation, Prosys and Softing are the established commercial SDK vendors. OpenOpcUa CoreServer, the native C/C++ runtime behind 4CE Industry's OOUAMiddleware, takes another route: closed source, but free to deploy without licensing fees.
 
 <MapLink protocol="opc-ua" title="See the OPC UA lineages on the map" />
 
