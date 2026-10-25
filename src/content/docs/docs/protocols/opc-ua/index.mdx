@@ -28,7 +28,7 @@ An endpoint URL looks like `opc.tcp://host:4840/path`; 4840 is the well-known Lo
 
 **WebSockets and HTTPS** (Part 6 §7.5 and §7.4) carry the same binary messages for networks where only web ports are open. `opc.wss://` runs the secure conversation inside a TLS WebSocket (profile wss-uasc-uabinary). `opc.https://` sends each request as an HTTPS POST (https-uabinary): there is no SecureChannel, TLS protects the connection, the security policy only signs the session, and a Publish is a long poll. In both cases the TLS server certificate is checked separately from the OPC UA application certificate.
 
-JSON and XML are supported as encodings of values (for exchange with other stacks and in PubSub), not as client/server wire encodings: the `https-uajson` and `wss-uajson` profiles are not implemented.
+JSON and XML are supported as encodings of values (for exchange with other stacks and in PubSub), not as client/server wire encodings: UA JSON encoding over HTTPS and WebSockets (`https-uajson`, `wss-uajson`) is not implemented, while UA Binary over both is supported.
 
 ## Address space
 

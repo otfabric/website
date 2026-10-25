@@ -458,7 +458,7 @@ The library is silent by default. `opcua.WithLogger(*slog.Logger)` and `server.S
 
 ## Limitations
 
-- No JSON over HTTPS or WebSockets (`https-uajson`, `wss-uajson`): use the binary `opc.https` and `opc.wss` transports.
+- No UA JSON encoding over HTTPS or WebSockets (`https-uajson`, `wss-uajson`). UA Binary over both is supported: use `opc.https` and `opc.wss`.
 - The built-in historian stores data only, not historical events, and accepts `returnBounds` without computing bounding values.
 - Custom structures are decoded through registered Go types, not dynamically from the server's DataTypeDefinition.
 - PubSub has no time-scheduled (TSN) Ethernet and no AMQP over WebSockets.
