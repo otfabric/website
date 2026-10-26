@@ -1907,6 +1907,49 @@
    "verified": "2026-10-18"
   },
   {
+   "id": "cb-sigma-iec60870",
+   "name": "iec60870 (cB-Sigma)",
+   "protocol": "iec-104",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/iec60870",
+   "repo": "cB-Sigma/iec60870",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-10-11",
+   "release": {
+    "version": "v0.3.0",
+    "date": "2026-10-11",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/iec60870/@v/v0.3.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 104",
+    "IEC 101",
+    "TLS",
+    "IEC 62351-5",
+    "File transfer",
+    "Redundancy"
+   ],
+   "interop": "iec104-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/iec60870",
+   "notes": "Pure Go IEC 104 and IEC 101 stations written for the SigmaM2M oneM2M platform, with a 101-to-104 gateway and the A-Profile of IEC 62351-5 (IEC TS 60870-5-7), the only open-source implementation of that edition. TLS comes in through its companion module iotsec. The iec104-interop reference for application-layer security.",
+   "sources": [
+    "https://github.com/cB-Sigma/iec60870",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/iec60870/@latest"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
    "id": "otfabric-go-iec104",
    "name": "go-iec104",
    "protocol": "iec-104",
@@ -1920,12 +1963,12 @@
    "stars": 1,
    "repoCreated": "2026-10-09",
    "historySince": "2026",
-   "lastCommit": "2026-10-10",
+   "lastCommit": "2026-10-26",
    "release": {
-    "version": "v0.0.3",
-    "date": "2026-10-10",
-    "source": "GitHub release",
-    "url": "https://github.com/otfabric/go-iec104/releases/tag/v0.0.3"
+    "version": "v0.0.5",
+    "date": "2026-10-26",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-iec104/@v/v0.0.5.info"
    },
    "roles": [
     "client",
@@ -1933,16 +1976,20 @@
    ],
    "capabilities": [
     "IEC 104",
-    "TLS"
+    "TLS",
+    "IEC 62351-5",
+    "File transfer",
+    "Redundancy"
    ],
    "interop": "iec104-interop",
    "maintenance": "active",
    "emerging": true,
    "otfabric": true,
    "sources": [
-    "https://github.com/otfabric/go-iec104"
+    "https://github.com/otfabric/go-iec104",
+    "https://proxy.golang.org/github.com/otfabric/go-iec104/@latest"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-10-26"
   },
   {
    "id": "tmw-iec60870",

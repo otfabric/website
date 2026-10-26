@@ -106,6 +106,7 @@ The type name encodes direction and time tag. `M_` types travel in monitor direc
 | 1..40 | Process information, monitor direction | `M_SP_NA_1` (1) single point, `M_DP_NA_1` (3) double point, `M_ME_NC_1` (13) short floating point measured value, `M_IT_NA_1` (15) integrated totals, `M_SP_TB_1` (30) single point with CP56Time2a |
 | 45..64 | Process information, control direction | `C_SC_NA_1` (45) single command, `C_DC_NA_1` (46) double command, `C_SE_NC_1` (50) floating point set point, `C_SC_TA_1` (58) single command with CP56Time2a |
 | 70 | System information, monitor direction | `M_EI_NA_1` end of initialization |
+| 81..91 | Security (IEC TS 60870-5-7:2025) | `S_AQ_NA_1` (81) association request, `S_KH_NA_1` (88) session key change request, `S_SD_NA_1` (91) secure data |
 | 100..107 | System information, control direction | `C_IC_NA_1` (100) interrogation, `C_CI_NA_1` (101) counter interrogation, `C_RD_NA_1` (102) read, `C_CS_NA_1` (103) clock synchronization, `C_TS_TA_1` (107) test command |
 | 110..113 | Parameters | `P_ME_NC_1` (112), `P_AC_NA_1` (113) parameter activation |
 | 120..127 | File transfer | `F_FR_NA_1` (120) file ready, `F_SG_NA_1` (125) segment, `F_DR_TA_1` (126) directory |
@@ -129,6 +130,7 @@ The cause of transmission (COT) says why an ASDU was sent. The ones you meet dai
 | activation termination | The end of a procedure (an interrogation, an executed command) |
 | 11 return information, remote command | The state change caused by a command |
 | 13 file transfer | File transfer ASDUs |
+| 14 data protection, 15 session key, 16 association, 17 not authorized | IEC 62351-5 (IEC TS 60870-5-7); 17 refuses a request the station's roles do not permit |
 | 20 interrogated by station, 21..36 groups 1..16 | Answers to a general or group interrogation |
 | 37 requested by general counter request | Answers to a counter interrogation |
 | 44..47 | Unknown type identification, cause, common address or information object address |
@@ -164,11 +166,20 @@ Two standards add security:
 
 | | IEC 62351-3 (TLS) | IEC 62351-5 (application layer) |
 |---|---|---|
-| What it protects | The TCP connection: encryption, server and client certificates | Individual ASDUs: challenge and reply, session and update keys, message authentication codes |
+| What it protects | The TCP connection: encryption, server and client certificates | Individual ASDUs: station certificates, session keys, message authentication or encryption, roles |
 | Default port | 19998 | Runs inside the IEC 104 connection; IEC TS 60870-5-7 says how it applies to IEC 60870-5-101 and -104 |
-| OT Fabric support | Yes, client and server, with mutual authentication | **No.** The type identifications and causes are named and carried as raw payload; the procedures are not implemented |
+| OT Fabric support | Yes, client and server, with mutual authentication | **Yes**, the A-Profile of the 2023 edition with IEC TS 60870-5-7:2025, both roles, alone or combined with TLS |
 
-TLS authenticates the connection, not the individual command. With TLS and client certificates the station knows which control centre is connected, and authorizes commands by that certificate. The OT Fabric projects document why IEC 62351-5 is not implemented yet: the 2023 edition with IEC TS 60870-5-7:2025 differs from the 2013 one, and none of the three open-source stacks they test against has an implementation to verify against.
+TLS authenticates the connection, not the individual command. With TLS and client certificates the station knows which control centre is connected, and authorizes commands by that certificate.
+
+IEC 62351-5 protects each ASDU end to end, inside the IEC 104 connection, and authorizes each request. In its A-Profile:
+
+- **Station association.** After STARTDT the two stations exchange X.509 certificates, each checked against a trust list of pinned self-signed certificates or of authorities, and agree on update keys with ECDH (secp256r1 or Curve25519).
+- **Session keys.** The controlling station sends fresh session keys, wrapped with AES-256 key wrap, at every connection and again after a time or a number of uses.
+- **Secure data.** Every application ASDU then travels inside `S_SD_NA_1` with a sequence number against replay, authenticated with HMAC-SHA-256 or HMAC-SHA3-256, or encrypted and authenticated with AES-256-GCM. An unprotected ASDU is discarded.
+- **Roles.** The station grants each controlling station roles from IEC TS 60870-5-7 (viewer, operator, engineer, installer and the security roles) and refuses a request no role permits with cause 17, *not authorized*.
+
+The 2023 edition differs from the 2013 one, and the security type identifications 81..91 mean different things in each. The standards are not freely available: go-iec104 was derived from [cB-Sigma/iec60870](https://github.com/cB-Sigma/iec60870), the only open-source implementation of the 2023 edition, and is tested for interoperability with it, not for conformance. See [Testing and interop](/docs/protocols/iec-104/testing/).
 
 ## Where it is used
 
@@ -181,9 +192,9 @@ IEC 104 is the telecontrol protocol of power system SCADA:
 ## OT Fabric for IEC 60870-5-104
 
 <CardGrid>
-  <LinkCard title="go-iec104" description="Pure Go client and server: the full APCI machine, 67 type identifications, file transfer, redundancy groups, TLS." href="/projects/go-iec104/" />
-  <LinkCard title="iec104ctl" description="Command-line tool: interrogate, monitor, command, transfer files, or simulate a station from YAML." href="/projects/iec104ctl/" />
-  <LinkCard title="iec104-interop" description="Reference stations in containers: lib60870-C, OpenMUC j60870 and wendy512/iec104." href="/projects/iec104-interop/" />
+  <LinkCard title="go-iec104" description="Pure Go client and server: the full APCI machine, 67 type identifications, file transfer, redundancy groups, TLS and IEC 62351-5." href="/projects/go-iec104/" />
+  <LinkCard title="iec104ctl" description="Command-line tool: interrogate, monitor, command, transfer files, or simulate a station from YAML, with TLS or IEC 62351-5." href="/projects/iec104ctl/" />
+  <LinkCard title="iec104-interop" description="Reference stations in containers: lib60870-C, OpenMUC j60870, wendy512/iec104 and cB-Sigma/iec60870." href="/projects/iec104-interop/" />
 </CardGrid>
 
 Source code: [go-iec104](https://github.com/otfabric/go-iec104), [iec104ctl](https://github.com/otfabric/iec104ctl), [iec104-interop](https://github.com/otfabric/iec104-interop). Read on in the [Go library](/docs/protocols/iec-104/library/), [iec104ctl](/docs/protocols/iec-104/cli/) and [testing and interop](/docs/protocols/iec-104/testing/) pages.

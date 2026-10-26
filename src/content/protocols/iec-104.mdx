@@ -5,6 +5,7 @@ summary: "Telecontrol between grid control centres, substations and generation o
 order: 4
 facts:
   - { label: 'Transport', value: 'TCP, optional TLS' }
+  - { label: 'Security', value: 'TLS (IEC 62351-3), IEC 62351-5' }
   - { label: 'Default port', value: '2404' }
   - { label: 'Library', value: 'go-iec104' }
   - { label: 'CLI', value: 'iec104ctl' }
@@ -48,6 +49,16 @@ iec104ctl client command --ip 127.0.0.1 --type double --ioa 5001 --value off --m
 
 # Is the link alive, and how fast?
 iec104ctl client ping --ip 127.0.0.1
+```
+
+With IEC 62351-5, both ends authenticate with certificates and every ASDU is authenticated, or encrypted with AES-256-GCM:
+
+```sh
+iec104ctl server start --secure --security-cert station.pem --security-key station.key \
+  --security-trust scada.pem --roles viewer
+
+iec104ctl client interrogate --ip 127.0.0.1 --secure --security-cert scada.pem \
+  --security-key scada.key --security-trust station.pem --dpa aes-256-gcm
 ```
 
 ### From Go
@@ -112,7 +123,8 @@ func main() {
 | Client | STARTDT/STOPDT, general and counter interrogation, read, clock sync, commands with select-before-operate, test command, automatic reconnect |
 | Server | Many sessions, routing by type identification, redundancy groups with an acknowledged event queue |
 | Link layer | Full APCI state machine: I/S/U frames, `k`/`w` windows, `t0`–`t3` timers |
-| Security | TLS (IEC 62351-3). IEC 62351-5 application-layer security is not implemented. |
+| Security | TLS (IEC 62351-3), and the IEC 62351-5 A-Profile of IEC TS 60870-5-7:2025: station association with X.509 certificates, session keys, every ASDU authenticated (HMAC) or encrypted (AES-256-GCM), role-based access control. Alone or combined with TLS |
+| Files | Download, upload and the file directory, in both roles |
 | Dependencies | Go standard library only |
 
 <Callout type="caution">
@@ -121,4 +133,4 @@ func main() {
 
 ## Interoperability
 
-[iec104-interop](https://github.com/otfabric/iec104-interop) tests go-iec104 against MZ Automation lib60870-C, OpenMUC j60870 and wendy512/iec104, as both client and server. It has not been tested against certified test equipment.
+[iec104-interop](https://github.com/otfabric/iec104-interop) tests go-iec104 against four independent stacks, as both client and server: MZ Automation lib60870-C, OpenMUC j60870, wendy512/iec104 and cB-Sigma/iec60870. cB-Sigma is the only open-source implementation of IEC 62351-5 in its 2023 edition, and the application-layer security is tested against it in both directions. That makes it interoperable with cB-Sigma, not conformance-tested: no certified test equipment or third implementation has been used, so keep TLS with client certificates where both ends support it.
