@@ -1,12 +1,12 @@
 ---
-title: 'EtherNet/IP joins OT Fabric: go-ethernetip, ethernetipctl and four reference stacks'
-description: EtherNet/IP is how PLCs talk to the I/O, drives and controllers on the factory floor. go-ethernetip implements client, scanner and adapter under MIT, with Logix tags and EDS files, ethernetipctl puts them on the command line, and ethernetip-interop tests both against four independent implementations.
+title: 'EtherNet/IP joins OT Fabric: go-ethernetip, ethernetipctl and eleven reference stacks'
+description: EtherNet/IP is how PLCs talk to the I/O, drives and controllers on the factory floor. go-ethernetip implements client, scanner and adapter under MIT, with Logix tags and EDS files, ethernetipctl puts them on the command line, and ethernetip-interop tests both against eleven independent implementations in eight languages.
 date: 2026-10-26
 authors: [OT Fabric]
 tags: [announcement, ethernet-ip, automation, interop]
 featured: true
 cover:
-  alt: go-ethernetip in the middle, connected to the reference originators EIPScanner, pycomm3 and cpppo on the left and the reference targets OpENer and cpppo on the right.
+  alt: go-ethernetip in the middle, connected to ten reference originators on the left (EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip and EEIP.NET) and the reference targets OpENer, cpppo, libplctag and gologix on the right.
   image: ../../assets/blog/ethernetip-interop-matrix.svg
 ---
 
@@ -34,7 +34,7 @@ go-ethernetip adds an MIT-licensed library with client, scanner and adapter, Log
 - **A client** for explicit messages: sessions, unconnected requests, Multiple Service Packet, routing through a controller's backplane, Class 3 connections, and discovery with one ListIdentity datagram.
 - **A scanner** for cyclic I/O: Class 1 and Class 0 connections to a device's assemblies, exclusive owner, input only and listen only, point-to-point and multicast, configuration data, run and idle, timeout detection and automatic reopening.
 - **An adapter** with the standard objects and objects of your own, the ownership rules of the Connection Manager with every refusal's extended status, shared multicast production and resource limits.
-- **Rockwell Logix tags**, kept apart as the vendor extension they are: reads and writes by name, fragmented transfers, bit writes, the tag list, templates and structures, and an emulated controller that pycomm3 and cpppo accept, for tests and simulators.
+- **Rockwell Logix tags**, kept apart as the vendor extension they are: reads and writes by name, fragmented transfers, bit writes, the tag list, templates and structures, and an emulated controller that pycomm3, pylogix, libplctag, eip-rs and node-ethernet-ip accept, for tests and simulators.
 - **Electronic Data Sheets**: a parser, validation, a writer and a builder, and a generator that turns a vendor's EDS into Go constants, assembly structs and scanner configurations.
 - **Built to run in production:** `context.Context` on every call, typed errors with the peer's CIP status, structured logging, metrics hooks, bounded allocations on every decoder, and EtherNet/IP over TLS for explicit messaging.
 
@@ -64,16 +64,16 @@ ethernetipctl tag read 192.168.1.10 Program:Main.Counts[2] --count 5 --route 1/0
 
 It also reads and writes any attribute, lists a device's objects, tests a Forward_Open and closes a connection by its triad, validates EDS files for CI and generates them from a live device. Every command that changes a device needs `--yes`, and it never scans address ranges. Output is text, a table or JSON with stable exit codes. The [ethernetipctl guide](/docs/protocols/ethernet-ip/cli/) walks through it.
 
-## Tested against four independent stacks
+## Tested against eleven independent stacks
 
-[ethernetip-interop](/projects/ethernetip-interop/) packages four independent EtherNet/IP implementations as containers behind one contract: OpENer (C, an adapter, the only reference with Class 1 I/O as a target), EIPScanner (C++, a scanner with Class 1 I/O), pycomm3 (Python, generic CIP and Logix) and cpppo (Python, a Logix-style simulator and a client). Every originator is first tested against every target.
+[ethernetip-interop](/projects/ethernetip-interop/) packages eleven independent EtherNet/IP implementations, in eight languages, as containers behind one contract. Four are targets: OpENer (C, the only open adapter with multicast and listen-only), cpppo (Python, a Logix-style simulator), libplctag's ab_server (C) and gologix (Go, a Logix tag server with Class 1 I/O). Ten are originators: EIPScanner (C++) and EEIP.NET (C#) as scanners with Class 1 I/O, and pycomm3, pylogix, cpppo, libplctag, gologix, etherip (Java, from the EPICS world), eip-rs (Rust) and node-ethernet-ip (TypeScript) for generic CIP and Logix tags. Every originator is first tested against every target.
 
-go-ethernetip runs in both directions on every push. Its originator runs against OpENer and cpppo: identity, attributes, errors, Class 3, Large_Forward_Open, Class 1 I/O with configuration data, multicast with a listen-only connection next to its owner, and Logix tags through a routed path. EIPScanner, pycomm3 and cpppo run against its adapter and its emulated controller: Class 1 I/O, refusals, Multiple Service Packet, routing, and pycomm3's Logix driver opening a session and reading and writing structures, STRINGs and bits. **63 cases pass, none fail**, and 13 are not applicable because a reference has the role but not the feature. The [coverage matrix](/docs/protocols/ethernet-ip/testing/) shows each feature per reference.
+go-ethernetip runs in both directions on every push. Its originator runs against OpENer, cpppo, ab_server and gologix: identity, attributes, errors, Class 3, Large_Forward_Open, Class 1 I/O with configuration data, multicast with a listen-only connection next to its owner, and Logix reads and writes. The ten reference originators run against its adapter and its emulated controller: Class 1 I/O from EIPScanner and EEIP.NET, refusals, Multiple Service Packet, routing, and the Logix drivers of pycomm3, pylogix, libplctag, eip-rs and node-ethernet-ip opening a session, listing the tags and reading and writing tags and bits, with structures and STRINGs from pycomm3, eip-rs and node-ethernet-ip. **173 cases pass, none fail**, and 129 are not applicable because a reference has the role but not the feature. The [coverage matrix](/docs/protocols/ethernet-ip/testing/) shows what each reference covers.
 
-The references taught us things too. OpENer drops a first request with sequence 0 as a repeat, EIPScanner sends I/O from an ephemeral port, pycomm3 sends each Write Tag twice in one message, and cpppo closes the session on an unknown tag. Each is recorded with how it is handled.
+The references taught us things too. OpENer drops a first request with sequence 0 as a repeat, EIPScanner sends I/O from an ephemeral port, pycomm3 sends each Write Tag twice in one message, cpppo closes the session on an unknown tag, and gologix's server panics on a Forward_Open with 16-bit segments. They also found three bugs of our own, fixed in go-ethernetip v0.3.0: pylogix, node-ethernet-ip and libplctag read the last member name of a structure template two octets short, a large Logix read did not fit a small Class 3 connection, and node-ethernet-ip packs about 220 requests into one Multiple Service Packet where we allowed 200. Each is recorded with how it is handled.
 
 <Callout type="note" title="Interoperability, not conformance">
-go-ethernetip v0.2.1 and ethernetipctl v0.2.1 are pre-1.0 and interoperability tested, not ODVA conformance tested, and they make no conformance claim. EtherNet/IP over TLS has no independent counterpart in the suite yet, DTLS and the CIP Security objects are not implemented, and no real controller or drive is in it. A product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/ethernet-ip/testing/).
+go-ethernetip v0.3.0 and ethernetipctl v0.2.2 are pre-1.0 and interoperability tested, not ODVA conformance tested, and they make no conformance claim. EtherNet/IP over TLS has no independent counterpart in the suite yet, DTLS and the CIP Security objects are not implemented, and no real controller or drive is in it. A product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/ethernet-ip/testing/).
 </Callout>
 
 ## Built with AI agents
