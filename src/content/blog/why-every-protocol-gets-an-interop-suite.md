@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Eleven interop suites package 43 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Eleven interop suites package 50 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
 updated: 2026-10-26
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Eleven OT Fabric interop suites and their 43 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP, OpenADR, IEEE 2030.5 and EtherNet/IP, each with the open-source implementations its suite runs and their languages.
+  alt: Eleven OT Fabric interop suites and their 50 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP, OpenADR, IEEE 2030.5 and EtherNet/IP, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Eleven suites, 43 reference stacks
+## Eleven suites, 50 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -28,7 +28,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [OCPP](/protocols/ocpp/) | [ocpp-interop](/projects/ocpp-interop/) | The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), ocpp-go (Go), EVerest libocpp (C++), CitrineOS (TypeScript) |
 | [OpenADR](/protocols/openadr/) | [openadr-interop](/projects/openadr-interop/) | OpenLEADR (Rust), ElaadNL openadr3-client (Python), plus a specification-driven conformance suite |
 | [IEEE 2030.5](/protocols/ieee-2030-5/) | [ieee20305-interop](/projects/ieee20305-interop/) | ANU Envoy (Python), GridAPPS-D (Go), DER Security py20305 (Python), EPRI client (C) |
-| [EtherNet/IP](/protocols/ethernet-ip/) | [ethernetip-interop](/projects/ethernetip-interop/) | OpENer (C), EIPScanner (C++), pycomm3 (Python), cpppo (Python) |
+| [EtherNet/IP](/protocols/ethernet-ip/) | [ethernetip-interop](/projects/ethernetip-interop/) | OpENer (C), EIPScanner (C++), pycomm3 (Python), cpppo (Python), libplctag (C), gologix (Go), pylogix (Python), etherip (Java), eip-rs (Rust), node-ethernet-ip (TypeScript), EEIP.NET (C#) |
 
 SunSpec is the exception: it is a register model on top of Modbus, so go-sunspec is tested through its own server, offline decoding and a weekly comparison with the SunSpec Alliance's model definitions, and its Modbus layer is covered by modbus-interop.
 
@@ -70,7 +70,7 @@ A library runs its own scenarios against the images, in both roles: our client a
 - **go-opcua**: client and server against all six OPC UA stacks in both directions, with 1280 verified ledger rows, plus PubSub against open62541 and UA-.NETStandard, UA JSON over HTTPS and WebSockets against UA-.NETStandard, the GDS pull model against the UA-.NETStandard Global Discovery Server, and event history and certificate management from every peer client.
 - **go-ieee20305**: its client and device agent against the Envoy and GridAPPS-D servers, and the GridAPPS-D, py20305 and EPRI clients against its server, in both editions and with the CSIP and CSIP-AUS fixtures.
 - **go-iec104**: client and server against lib60870, j60870, wendy512/iec104 and cB-Sigma in both roles, and IEC 62351-5 application-layer security against cB-Sigma in both directions: certificates from an authority or pinned, HMAC and AES-256-GCM, and role-based refusals.
-- **go-ethernetip**: 63 cases pass against OpENer, EIPScanner, pycomm3 and cpppo in both roles, none fail, with Class 1 I/O, multicast with a listen-only connection, and pycomm3's Logix driver reading and writing structures on its emulated controller.
+- **go-ethernetip**: 173 cases pass against eleven stacks in eight languages, in both roles, none fail, with Class 1 I/O against OpENer, EIPScanner and EEIP.NET, multicast with a listen-only connection, and the Logix drivers of pycomm3, eip-rs and node-ethernet-ip reading and writing structures on its emulated controller.
 
 Each protocol's *Testing and interop* page in the [documentation](/docs/protocols/) has the full matrix, and what has not been validated yet.
 

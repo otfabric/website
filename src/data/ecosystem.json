@@ -5128,10 +5128,10 @@
    "historySince": "2026",
    "lastCommit": "2026-10-26",
    "release": {
-    "version": "v0.2.1",
+    "version": "v0.3.0",
     "date": "2026-10-26",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.2.1.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.3.0.info"
    },
    "roles": [
     "scanner",
@@ -5151,7 +5151,7 @@
    "emerging": true,
    "otfabric": true,
    "package": "https://pkg.go.dev/github.com/otfabric/go-ethernetip",
-   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the four ethernetip-interop references.",
+   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the eleven ethernetip-interop references.",
    "sources": [
     "https://github.com/otfabric/go-ethernetip",
     "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@latest"
@@ -5344,6 +5344,7 @@
     "Omron NJ/NX",
     "Modbus TCP"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "active",
    "notes": "C library for reading and writing PLC tags: ControlLogix, CompactLogix, Micro800, PCCC over EtherNet/IP for PLC-5, SLC 500 and MicroLogix, and Omron NJ/NX, plus Modbus TCP. Wrappers exist for .NET, Java, Python, Go, Rust and more.",
    "sources": [
@@ -5424,6 +5425,7 @@
     "Logix tags",
     "Discovery"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "active",
    "package": "https://pypi.org/project/pylogix/",
    "notes": "Dependency-free Python driver for tags in ControlLogix, CompactLogix and Micro800 controllers, also on MicroPython. Discovery finds other devices, but only Logix-style controllers are supported for data.",
@@ -5463,6 +5465,7 @@
     "Class 3",
     "Class 1 I/O"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "active",
    "package": "https://pkg.go.dev/github.com/danomagnum/gologix",
    "notes": "Pure Go driver for Logix tags, modelled on pylogix, with a server that receives MSG instructions from a controller (Class 3) or acts as a Class 1 I/O adapter, and an L5X parser. Only beta versions are published.",
@@ -5500,6 +5503,7 @@
     "Class 3",
     "Logix tags"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "quiet",
    "package": "https://crates.io/crates/rseip",
    "notes": "Asynchronous pure Rust client for generic CIP and Logix tag services (fragmented reads and writes, Read-Modify-Write, tag list, templates).",
@@ -5537,6 +5541,7 @@
     "Class 3",
     "Logix tags"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "active",
    "package": "https://www.npmjs.com/package/ethernet-ip",
    "notes": "Client for ControlLogix and CompactLogix tags, rewritten in TypeScript for 2.0 with connected messaging, structures, tag lists and subscriptions.",
@@ -5617,6 +5622,7 @@
     "Class 1 I/O",
     "Discovery"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "active",
    "package": "https://www.nuget.org/packages/EEIP",
    "notes": "Rossmann Engineering's .NET library: explicit messaging, an I/O scanner and discovery, with examples for Wago, Allen-Bradley Point I/O, Turck and Keyence devices.",
@@ -5687,6 +5693,7 @@
    "capabilities": [
     "Logix tags"
    ],
+   "interop": "ethernetip-interop",
    "maintenance": "slowing",
    "notes": "The Java counterpart of EPICS ether_ip from ORNL: reads and writes ControlLogix and CompactLogix tags and generic CIP attributes; used by CS-Studio and Phoebus.",
    "sources": [
