@@ -1,0 +1,91 @@
+---
+title: 'EtherNet/IP joins OT Fabric: go-ethernetip, ethernetipctl and four reference stacks'
+description: EtherNet/IP is how PLCs talk to the I/O, drives and controllers on the factory floor. go-ethernetip implements client, scanner and adapter under MIT, with Logix tags and EDS files, ethernetipctl puts them on the command line, and ethernetip-interop tests both against four independent implementations.
+date: 2026-10-26
+authors: [OT Fabric]
+tags: [announcement, ethernet-ip, automation, interop]
+featured: true
+cover:
+  alt: go-ethernetip in the middle, connected to the reference originators EIPScanner, pycomm3 and cpppo on the left and the reference targets OpENer and cpppo on the right.
+  image: ../../assets/blog/ethernetip-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+Walk along a packaging line or a bottling plant and much of what you see, from the controller in the cabinet to the I/O blocks, drives, valve islands and barcode readers, is likely to be talking EtherNet/IP. It is the industrial Ethernet protocol of the Common Industrial Protocol (CIP): a PLC opens connections to its devices and exchanges their inputs and outputs every few milliseconds over UDP, and any tool can ask a device who it is, read its diagnostics or change its settings with request and response messages over TCP.
+
+Today EtherNet/IP becomes the twelfth protocol in OT Fabric, with the same three pieces as every other: a library, a command-line tool and an interoperability suite.
+
+## Why EtherNet/IP, and why now
+
+OT Fabric started with the protocols of energy and infrastructure, and kept running into the factory floor:
+
+- **The controllers are already there.** Battery systems, water treatment, building plant and manufacturing lines are often run by the same Rockwell Automation, Omron or Schneider Electric controllers, and EtherNet/IP is how you reach them. Getting their data into an energy management system or a historian usually means reading controller tags without a programming tool.
+- **The open field is mostly tag clients.** Our [research for the ecosystem map](#who-else-implements-ethernetip) found mature, well-loved libraries in Python, C, .NET and JavaScript, but most read and write Logix tags only. Open stacks that also do cyclic I/O are few, and OpENer, released by Rockwell Automation in 2009, is still the only widely used open adapter.
+- **Gateways need both roles.** An IT-to-OT gateway that collects data, or a test bench that stands in for a missing device, needs to be a scanner on one side and an adapter on the other. That is the kind of building block OT Fabric is for, next to [Modbus](/protocols/modbus/), [OPC UA](/protocols/opc-ua/) and [Siemens S7](/protocols/s7/) on the same plant network.
+
+go-ethernetip adds an MIT-licensed library with client, scanner and adapter, Logix tags and EDS files in one place, tested against the established stacks.
+
+## go-ethernetip
+
+[go-ethernetip](/projects/go-ethernetip/) implements EtherNet/IP and CIP in both roles, with no dependencies outside the standard library.
+
+- **A client** for explicit messages: sessions, unconnected requests, Multiple Service Packet, routing through a controller's backplane, Class 3 connections, and discovery with one ListIdentity datagram.
+- **A scanner** for cyclic I/O: Class 1 and Class 0 connections to a device's assemblies, exclusive owner, input only and listen only, point-to-point and multicast, configuration data, run and idle, timeout detection and automatic reopening.
+- **An adapter** with the standard objects and objects of your own, the ownership rules of the Connection Manager with every refusal's extended status, shared multicast production and resource limits.
+- **Rockwell Logix tags**, kept apart as the vendor extension they are: reads and writes by name, fragmented transfers, bit writes, the tag list, templates and structures, and an emulated controller that pycomm3 and cpppo accept, for tests and simulators.
+- **Electronic Data Sheets**: a parser, validation, a writer and a builder, and a generator that turns a vendor's EDS into Go constants, assembly structs and scanner configurations.
+- **Built to run in production:** `context.Context` on every call, typed errors with the peer's CIP status, structured logging, metrics hooks, bounded allocations on every decoder, and EtherNet/IP over TLS for explicit messaging.
+
+It is built from public documents and the behaviour of independent implementations, without ODVA's specifications, and lists every code it uses with its public source. Behaviour that only the specification defines and no reference exercises is not guessed: it is listed as not implemented.
+
+## ethernetipctl
+
+[ethernetipctl](/projects/ethernetipctl/) puts go-ethernetip on the command line, for commissioning, troubleshooting and test setups without hardware.
+
+```sh
+# No device at hand? A simulated adapter with Logix tags
+ethernetipctl adapter --listen 127.0.0.1 --echo --logix
+
+# Which devices answer on this segment, and who is this one?
+ethernetipctl discover --address 255.255.255.255
+ethernetipctl identify 192.168.1.10
+
+# Check a device step by step: TCP, session, identity, TCP/IP, link, connections
+ethernetipctl diagnose 192.168.1.10
+
+# Watch the inputs of an I/O connection without writing outputs
+ethernetipctl io 192.168.1.10 --config 151 --output 152 --input 100 --input-size 32 --rpi 20ms
+
+# A controller tag behind the backplane
+ethernetipctl tag read 192.168.1.10 Program:Main.Counts[2] --count 5 --route 1/0
+```
+
+It also reads and writes any attribute, lists a device's objects, tests a Forward_Open and closes a connection by its triad, validates EDS files for CI and generates them from a live device. Every command that changes a device needs `--yes`, and it never scans address ranges. Output is text, a table or JSON with stable exit codes. The [ethernetipctl guide](/docs/protocols/ethernet-ip/cli/) walks through it.
+
+## Tested against four independent stacks
+
+[ethernetip-interop](/projects/ethernetip-interop/) packages four independent EtherNet/IP implementations as containers behind one contract: OpENer (C, an adapter, the only reference with Class 1 I/O as a target), EIPScanner (C++, a scanner with Class 1 I/O), pycomm3 (Python, generic CIP and Logix) and cpppo (Python, a Logix-style simulator and a client). Every originator is first tested against every target.
+
+go-ethernetip runs in both directions on every push. Its originator runs against OpENer and cpppo: identity, attributes, errors, Class 3, Large_Forward_Open, Class 1 I/O with configuration data, multicast with a listen-only connection next to its owner, and Logix tags through a routed path. EIPScanner, pycomm3 and cpppo run against its adapter and its emulated controller: Class 1 I/O, refusals, Multiple Service Packet, routing, and pycomm3's Logix driver opening a session and reading and writing structures, STRINGs and bits. **63 cases pass, none fail**, and 13 are not applicable because a reference has the role but not the feature. The [coverage matrix](/docs/protocols/ethernet-ip/testing/) shows each feature per reference.
+
+The references taught us things too. OpENer drops a first request with sequence 0 as a repeat, EIPScanner sends I/O from an ephemeral port, pycomm3 sends each Write Tag twice in one message, and cpppo closes the session on an unknown tag. Each is recorded with how it is handled.
+
+<Callout type="note" title="Interoperability, not conformance">
+go-ethernetip v0.2.1 and ethernetipctl v0.2.1 are pre-1.0 and interoperability tested, not ODVA conformance tested, and they make no conformance claim. EtherNet/IP over TLS has no independent counterpart in the suite yet, DTLS and the CIP Security objects are not implemented, and no real controller or drive is in it. A product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/ethernet-ip/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the EtherNet/IP projects are built by people and AI agents together. Every CIP code the library knows comes from a catalog that names its public source, the comparison with other stacks was checked against their own code and documentation, and the documentation of ethernetipctl is regenerated from real runs against the simulated adapter. The tests, the interop matrix and the list of limitations are public, so you can judge the result yourself.
+
+## Who else implements EtherNet/IP
+
+The [ecosystem map](/ecosystem/implementations/?protocol=ethernet-ip) now covers EtherNet/IP: 21 implementations, from OpENer, libplctag and pylogix to Rust, Go, Java and Node.js libraries, the EPICS driver used at particle accelerators, and commercial stacks and firmware from RTA, Hilscher, Pyramid Solutions, CODESYS and Beckhoff, with language, licence, roles and latest release.
+
+<MapLink protocol="ethernet-ip" title="Explore EtherNet/IP on the ecosystem map" />
+
+Who maintains the standard, what it costs to license and certify a product, and where to test it against other vendors' devices is in [ODVA's entry](/ecosystem/organizations/odva/) in the standards and alliances directory.
+
+Start with the [EtherNet/IP overview](/docs/protocols/ethernet-ip/), or `go get github.com/otfabric/go-ethernetip`.

@@ -1,6 +1,6 @@
 ---
 title: The industrial protocol stack landscape
-description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3 and IEEE 2030.5? 134 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
+description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP? 155 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
 updated: 2026-10-26
 authors: [OT Fabric]
@@ -17,7 +17,7 @@ import Callout from '../../components/Callout.astro';
 
 Nobody connects a plant, a substation or a building with one library. Every integration leans on stacks written by other people: a C library in a gateway, a Python tool on a laptop, a Java server in a SCADA system, a vendor SDK inside a controller. OT Fabric only makes sense as part of that ecosystem, which is why each of our protocols ships with an interop suite that tests against the established implementations.
 
-So we mapped the ecosystem. This post is the research: ten protocol families, 134 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol, filter by language, licence and activity, and jump straight to the source.
+So we mapped the ecosystem. This post is the research: eleven protocol families, 155 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol, filter by language, licence and activity, and jump straight to the source.
 
 <MapLink />
 
@@ -132,6 +132,14 @@ opendnp3, for a decade the default open-source stack, was archived in September 
 
 The Australian side is the most active: ANU's Envoy is a complete CSIP-AUS utility server, with its document models and the CACTUS test harnesses built around it, and open-dynamic-export is a CSIP-AUS client that drives home solar and batteries. In the US, PNNL's GridAPPS-D, whose Python server never got past alpha releases, published a Go server and client in 2026, DER Security's py20305 is a new client for CSIP and CSIP-AUS, and VOLTTRON has an agent that connects its devices to a server. The EPRI client, written for California's certified open-source programme, is the oldest open stack and has not changed since 2018. Four of them run in [ieee20305-interop](https://github.com/otfabric/ieee20305-interop): Envoy, GridAPPS-D (server and client), py20305 and the EPRI client. Commercially, embedded clients such as Kitu's sit next to the test systems that certification runs on, and few vendors publish versions.
 
+## EtherNet/IP
+
+**Mature for tag access, thin for I/O.** EtherNet/IP carries CIP, the Common Industrial Protocol that ODVA maintains, between PLCs and the I/O adapters, drives and devices they scan, and it is the native network of Rockwell Automation's ControlLogix and CompactLogix controllers. The commercial side is very established: source code stacks, chip firmware and controller runtimes from RTA, Hilscher, Pyramid Solutions, CODESYS and Beckhoff sit behind thousands of certified products.
+
+<LandscapeTable protocol="ethernet-ip" />
+
+Most of the open field reads and writes Logix tags: libplctag (C, with a .NET wrapper and many others), pylogix, pycomm3, node-ethernet-ip, rseip and gologix, and ORNL's EPICS driver and its Java counterpart, which have connected accelerator control systems to Logix controllers for two decades. Open stacks with cyclic I/O are fewer: OpENer, first released by Rockwell Automation and still the only widely used open adapter, EIPScanner and EEIP.NET as scanners, gologix's adapter and the alpha I/O scanner of st-ethernet-ip. Four of them run in [ethernetip-interop](https://github.com/otfabric/ethernetip-interop): OpENer, EIPScanner, pycomm3 and cpppo. None of the open stacks documents an ODVA conformance test; the specifications are sold by subscription, so open implementers work from public documents and from each other's behaviour.
+
 ## The picture across protocols
 
 | Protocol | Open source | Commercial SDKs | Primary references |
@@ -146,6 +154,7 @@ The Australian side is the most active: ANU's Envoy is a complete CSIP-AUS utili
 | OCPP | Mature for 1.6J, maturing for 2.x | Established | The Mobility House ocpp, Java-OCA-OCPP, ocpp-go, EVerest libocpp, CitrineOS, SteVe |
 | DNP3 | Mature, few active open stacks | Very established | opendnp3 (archived), Step Function I/O dnp3 (source-available), DSC go-dnp3, dnp3py |
 | IEEE 2030.5 | Young, growing, profile-driven | Certification-driven | Envoy, GridAPPS-D, py20305, EPRI client (unmaintained) |
+| EtherNet/IP | Mature for tag access, thin for I/O | Very established | OpENer, libplctag, pylogix, pycomm3, EIPScanner |
 
 These are judgements about maturity and visibility, not measured conformance, security or quality. Our interop suites are where we test behaviour; this map is where we record who is out there.
 
