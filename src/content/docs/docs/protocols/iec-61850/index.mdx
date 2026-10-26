@@ -12,6 +12,8 @@ IEC 61850 is the communication standard for substation automation. It does two t
 
 This page covers the client/server (MMS) part of IEC 61850, which is what OT Fabric implements. GOOSE and Sampled Values are covered briefly at the end, because they are out of scope.
 
+The object model below is summarized only as far as communication needs it. The model itself, defined once for every mapping and published by IEC as machine-readable NSD files, has its own guide: the [IEC 61850 information model](/docs/models/iec-61850/), implemented without a transport in go-iec61850-model.
+
 ## The object model
 
 A device that speaks IEC 61850 is an **IED** (Intelligent Electronic Device): a protection relay, bay controller, meter or RTU. Inside it the model is a strict hierarchy:
@@ -157,6 +159,7 @@ OT Fabric does not implement GOOSE or Sampled Values: no publishing, no subscrip
   <LinkCard title="go-mms" description="MMS (ISO 9506) client and server, with the ISO upper-layer stack." href="/projects/go-mms/" />
   <LinkCard title="iec61850ctl" description="Command-line client, SCL tools and local MMS server." href="/projects/iec61850ctl/" />
   <LinkCard title="mms-interop" description="Docker adapter images for libiec61850 and IEC61850bean, used by the interop tests." href="/projects/mms-interop/" />
+  <LinkCard title="go-iec61850-model" description="The IEC 61850 information model from the official NSD files, with nsdctl. No transport; used next to the libraries above." href="/models/iec-61850/" />
 </CardGrid>
 
 | Project | Role | Source |

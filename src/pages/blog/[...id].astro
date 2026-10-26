@@ -4,7 +4,7 @@ import { Image } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getImage } from 'astro:assets';
 import { formatDate, getPosts, readingTime, type Post } from '../../data/blog';
-import { getProtocols } from '../../data/projects';
+import { getStandards, standardPath } from '../../data/standards';
 import { absolute, breadcrumbs, ogImage, orgRef } from '../../data/seo';
 
 export async function getStaticPaths() {
@@ -29,8 +29,8 @@ const cover =
 		? (await getImage({ src: data.cover.image, width: 1200, format: 'png' })).src
 		: undefined;
 const url = absolute(`/blog/${post.id}/`);
-// Tags that name a protocol tie the post to that protocol's page.
-const protocols = (await getProtocols()).filter((p) => data.tags.includes(p.id));
+// Tags that name a protocol or model tie the post to that standard's page.
+const standards = (await getStandards()).filter((s) => data.tags.includes(s.id));
 const schema = [
 	breadcrumbs([
 		{ name: 'Blog', path: '/blog/' },
@@ -49,8 +49,8 @@ const schema = [
 		publisher: orgRef,
 		image: absolute(cover ?? ogImage.src),
 		keywords: data.tags.join(', '),
-		...(protocols.length && {
-			about: protocols.map((p) => ({ '@type': 'Thing', name: p.data.name, url: absolute(`/protocols/${p.id}/`) })),
+		...(standards.length && {
+			about: standards.map((s) => ({ '@type': 'Thing', name: s.data.name, url: absolute(standardPath(s)) })),
 		}),
 		wordCount: (post.body ?? '').split(/\s+/).length,
 		inLanguage: 'en',

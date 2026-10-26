@@ -1,4 +1,5 @@
 ---
+kind: protocol
 name: "IEEE 2030.5"
 standard: "IEEE 2030.5-2018 and 2030.5-2023 (Smart Energy Profile 2.0)"
 summary: "The protocol between utilities or aggregators and distributed energy resources: inverters, batteries, EV chargers and meters register over mutual TLS and receive export limits, schedules and prices, with the CSIP profile for California and CSIP-AUS for Australia."
@@ -23,7 +24,7 @@ What a device receives are **events**: "limit export to 1.5 kW from 14:00 for 30
 
 - California: Rule 21 makes IEEE 2030.5 the default protocol between utilities and smart inverters, through the Common Smart Inverter Profile (**CSIP**), certified by SunSpec
 - Australia: distributors use **CSIP-AUS** for dynamic connections, where a solar or battery site receives its **dynamic operating envelope**: export and import limits that change through the day with the capacity of the local network
-- Elsewhere: IEEE 1547-2018 names it as one of the interfaces of a grid-connected inverter, next to [SunSpec Modbus](/protocols/sunspec/) and [DNP3](/protocols/dnp3/); aggregators of batteries, home energy systems and EV chargers speak it towards the utility
+- Elsewhere: IEEE 1547-2018 names it as one of the interfaces of a grid-connected inverter, next to [SunSpec Modbus](/models/sunspec/) and [DNP3](/protocols/dnp3/); aggregators of batteries, home energy systems and EV chargers speak it towards the utility
 
 ## Quickstart
 

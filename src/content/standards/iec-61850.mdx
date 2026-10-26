@@ -1,7 +1,8 @@
 ---
+kind: protocol
 name: "IEC 61850 / MMS"
 standard: "IEC 61850-8-1 over MMS (ISO 9506)"
-summary: "The data model and communication standard for substation automation, carried over MMS on TCP port 102."
+summary: "IEC 61850 client/server communication for substation automation: the abstract services mapped onto MMS (IEC 61850-8-1) on TCP port 102."
 order: 5
 facts:
   - { label: 'Transport', value: 'MMS over ISO-on-TCP' }
@@ -10,11 +11,28 @@ facts:
   - { label: 'CLI', value: 'iec61850ctl' }
 icon: go-iec61850
 docs: /docs/protocols/iec-61850/
+layers:
+  - label: 'Information model'
+    items:
+      - { name: 'Logical nodes, data objects, CDCs, data attributes', id: iec-61850-model, note: 'go-iec61850-model' }
+  - label: 'Abstract services'
+    items:
+      - { name: 'ACSI (7-2)', note: 'go-iec61850' }
+  - label: 'Communication mappings'
+    items:
+      - { name: 'MMS, client/server (8-1)', id: iec-61850, note: 'go-iec61850, go-mms' }
+      - { name: 'GOOSE (8-1)', note: 'Not implemented by OT Fabric' }
+      - { name: 'Sampled Values (9-2)', note: 'Not implemented by OT Fabric' }
+  - label: 'Transport'
+    items:
+      - { name: 'ISO-on-TCP: COTP over TPKT (RFC 1006)', note: 'go-cotp, go-tpkt' }
 ---
 
 import Callout from '../../components/Callout.astro';
 
 IEC 61850 describes a substation as a model: an **IED** (intelligent electronic device) holds **logical devices**, each with **logical nodes** such as `MMXU` (measurements) or `XCBR` (circuit breaker), which hold **data objects** and **data attributes** grouped by functional constraint (`MX`, `ST`, `CO`, `CF` and so on). On the wire, client/server communication is mapped onto MMS (Manufacturing Message Specification). Devices and their configuration are described in **SCL** files (`.icd`, `.cid`, `.scd`).
+
+This page covers communication: the client/server services and their mapping onto MMS. The classes, data objects and attributes themselves are the [IEC 61850 information model](/models/iec-61850/), which OT Fabric implements separately, without a transport, in go-iec61850-model. GOOSE and Sampled Values are further mappings of the same model that OT Fabric does not implement.
 
 ## Where you meet it
 

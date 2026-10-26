@@ -1,0 +1,9 @@
+# Permanent redirects, served by Cloudflare before static assets.
+# SunSpec Modbus is an information model carried over Modbus, not a protocol of its own (2026-10).
+/protocols/sunspec /models/sunspec/ 301
+/protocols/sunspec/ /models/sunspec/ 301
+/docs/protocols/sunspec /docs/models/sunspec/ 301
+/docs/protocols/sunspec/* /docs/models/sunspec/:splat 301
+# The information models are a section of the shared catalog page.
+/models /protocols/#models 302
+/models/ /protocols/#models 302

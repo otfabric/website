@@ -1,0 +1,25 @@
+---
+title: Information model documentation
+description: Guides for the standard information models OT Fabric supports, SunSpec Modbus and the IEC 61850 information model, and how they relate to the protocols that carry them.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+An **information model** defines what device data means: which devices, measurements and controls exist, what they are called, their types and units, and how they are structured. A **communication protocol** defines how that data moves: messages, services, addressing and transport. The two are often confused because a model is usually met through one protocol, but they are separate layers, and one model can be carried by more than one mapping.
+
+| Information model | What it defines | Carried over | OT Fabric |
+|---|---|---|---|
+| [SunSpec Modbus](/docs/models/sunspec/) | Standard models for inverters, meters, batteries and other DER, and their layout in Modbus registers | [Modbus](/docs/protocols/modbus/) | go-sunspec, sunspecctl, SunSpec Explorer |
+| [IEC 61850 information model](/docs/models/iec-61850/) | Logical nodes, data objects, common data classes, data attributes and functional constraints, published as NSD files | [IEC 61850 over MMS](/docs/protocols/iec-61850/), and GOOSE and Sampled Values, which OT Fabric does not implement | go-iec61850-model, nsdctl |
+
+A model library builds on, or sits next to, the protocol library: go-sunspec reads and writes registers through go-modbus, and go-iec61850-model describes the model that go-iec61850 reads and writes over MMS, without depending on it.
+
+Profiles that define how a protocol is used for one application, such as Sparkplug B on top of MQTT, are a third kind of standard. OT Fabric has none yet. For a short introduction to each model, start with the [protocols and information models](/protocols/#models) overview.
+
+<CardGrid>
+  <LinkCard title="SunSpec Modbus" description="The SunS marker, the model chain, point types, scale factors and groups. go-sunspec, sunspecctl." href="/docs/models/sunspec/" />
+  <LinkCard title="IEC 61850 information model" description="Logical nodes, CDCs, NSD files, references and semantic mapping. go-iec61850-model, nsdctl." href="/docs/models/iec-61850/" />
+</CardGrid>

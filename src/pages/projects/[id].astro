@@ -4,7 +4,8 @@ import PageHeader from '../../components/site/PageHeader.astro';
 import ProjectGrid from '../../components/ProjectGrid.astro';
 import Video from '../../components/Video.astro';
 import { Image, getImage } from 'astro:assets';
-import { categories, getProjects, getProtocols, repoUrl, type Project } from '../../data/projects';
+import { categories, getProjects, repoUrl, type Project } from '../../data/projects';
+import { getStandards, kindOf, standardPath } from '../../data/standards';
 import { projectMedia } from '../../data/project-media';
 import { absolute, breadcrumbs, orgRef } from '../../data/seo';
 
@@ -19,9 +20,14 @@ interface Props {
 const { project } = Astro.props;
 const { data } = project;
 const category = categories.find((c) => c.id === data.category)!;
-const protocols = (await getProtocols()).filter((p) => data.protocols.includes(p.id as never));
+const standards = await getStandards();
+// What the project implements, and what it builds on or works with, each in the project's own order.
+const pick = (ids: string[]) => ids.map((id) => standards.find((s) => s.id === id)!);
+const implemented = pick(data.standards);
+const worksWith = pick(data.related);
+const own = [...data.standards, ...data.related];
 const related = (await getProjects()).filter(
-	(p) => p.id !== project.id && p.data.status === 'available' && p.data.protocols.some((id) => data.protocols.includes(id)),
+	(p) => p.id !== project.id && p.data.status === 'available' && [...p.data.standards, ...p.data.related].some((id) => own.includes(id)),
 );
 // Tools ship release binaries; libraries are installed with go get.
 const releases =
@@ -33,7 +39,9 @@ const screenshotUrl = media?.screenshot && (await getImage({ src: media.screensh
 const url = absolute(`/projects/${project.id}/`);
 // Search terms for each kind of project, next to the protocol names.
 const categoryKeywords: Record<typeof data.category, string[]> = {
-	library: ['protocol library', 'client', 'server'],
+	protocol: ['protocol library', 'client', 'server'],
+	'information-model': ['information model', 'data model', 'semantics'],
+	'application-profile': ['application profile', 'messaging'],
 	cli: ['command-line tool', 'CLI'],
 	transport: ['transport layer'],
 	discovery: ['network visibility', 'network discovery', 'protocol fingerprinting'],
@@ -47,6 +55,9 @@ const what: Record<string, string> = {
 	'go-modbus-capture': 'Modbus capture format (MBCAP)',
 	'go-modbus-trace': 'Modbus/TCP packet trace reader',
 	'go-mms': 'MMS (ISO 9506) library',
+	'go-iec61850-model': 'IEC 61850 information model and NSD library',
+	nsdctl: 'IEC 61850 NSD and information model CLI',
+	'go-sunspec': 'SunSpec Modbus information model library',
 	'modbus-simulator': 'Modbus device simulator',
 	'go-cotp': 'COTP (ISO 8073) transport',
 	'go-tpkt': 'TPKT (RFC 1006) framing',
@@ -55,8 +66,8 @@ const what: Record<string, string> = {
 	'lan-tracker': 'OT network visibility',
 	'modbus-trace-explorer': 'Modbus/TCP trace viewer',
 };
-const kind = { library: 'library', cli: 'command-line tool', interop: 'interop test suite', ui: 'desktop app' } as Record<string, string>;
-const topic = protocols.find((p) => p.id === data.protocols[0])?.data.name;
+const kind = { protocol: 'library', 'information-model': 'library', 'application-profile': 'library', cli: 'command-line tool', interop: 'interop test suite', ui: 'desktop app' } as Record<string, string>;
+const topic = implemented[0]?.data.name;
 const pageTitle = what[project.id] ?? (topic && kind[data.category] ? `${data.name}: ${topic} ${kind[data.category]}` : data.name);
 const fullName = pageTitle.startsWith(data.name) ? pageTitle : `${data.name}: ${pageTitle}`;
 const schema = [
@@ -76,9 +87,12 @@ const schema = [
 		author: orgRef,
 		publisher: orgRef,
 		isAccessibleForFree: true,
-		keywords: ['OT', 'industrial automation', ...categoryKeywords[data.category], ...protocols.map((p) => p.data.name)].join(', '),
-		...(protocols.length && {
-			about: protocols.map((p) => ({ '@type': 'Thing', name: p.data.name, url: absolute(`/protocols/${p.id}/`) })),
+		keywords: ['OT', 'industrial automation', ...categoryKeywords[data.category], ...implemented.map((s) => s.data.name)].join(', '),
+		...(implemented.length && {
+			about: implemented.map((s) => ({ '@type': 'Thing', name: s.data.name, url: absolute(standardPath(s)) })),
+		}),
+		...(worksWith.length && {
+			mentions: worksWith.map((s) => ({ '@type': 'Thing', name: s.data.name, url: absolute(standardPath(s)) })),
 		}),
 		mainEntityOfPage: { '@id': `${url}#webpage` },
 	},
@@ -146,11 +160,19 @@ const schema = [
 				<pre><code>{data.install}</code></pre>
 			</>
 		)}
-		{protocols.length > 0 && (
+		{implemented.length > 0 && (
 			<>
-				<h2>Protocols</h2>
+				<h2>{implemented.every((s) => s.data.kind === 'protocol') ? 'Protocols' : 'Standards'}</h2>
 				<ul>
-					{protocols.map((p) => <li><a href={`/protocols/${p.id}/`}>{p.data.name}</a>: {p.data.summary}</li>)}
+					{implemented.map((s) => <li><a href={standardPath(s)}>{s.data.name}</a>{s.data.kind !== 'protocol' && ` (${kindOf(s.data.kind).label.toLowerCase()})`}: {s.data.summary}</li>)}
+				</ul>
+			</>
+		)}
+		{worksWith.length > 0 && (
+			<>
+				<h2>Works with</h2>
+				<ul>
+					{worksWith.map((s) => <li><a href={standardPath(s)}>{s.data.name}</a>{s.data.kind !== 'protocol' && ` (${kindOf(s.data.kind).label.toLowerCase()})`}: {s.data.summary}</li>)}
 				</ul>
 			</>
 		)}

@@ -1,0 +1,95 @@
+---
+title: nsdctl
+description: Use nsdctl, the CLI included with go-iec61850-model, to look up IEC 61850 logical nodes, explain references, decode enumerations, compare namespaces and inspect, validate and generate from NSD packages.
+sidebar:
+  label: nsdctl
+  order: 2
+---
+
+`nsdctl` is the command-line tool included with [go-iec61850-model](/projects/go-iec61850-model/). It answers integration questions from the official IEC 61850 information model embedded in it, with no download or setup, and works on NSD packages you obtained yourself. It does not talk to devices: for that, use [iec61850ctl](/docs/protocols/iec-61850/cli/).
+
+## Install
+
+Download a binary for Linux, macOS or Windows from the [go-iec61850-model releases](https://github.com/otfabric/go-iec61850-model/releases); each release carries a SHA-256 checksum file. With a Go toolchain:
+
+```sh
+go install github.com/otfabric/go-iec61850-model/cmd/nsdctl@latest
+nsdctl version
+```
+
+`nsdctl completion bash|zsh|fish|powershell` prints a shell completion script.
+
+## What a logical node holds
+
+```sh
+nsdctl model show MMXU            # every data object, inherited ones included, with CDC and presence
+nsdctl model measurements MMXU    # what each measurement means, per phase, with the expected unit
+nsdctl model leaves MMXU.TotW --fc MX
+```
+
+The last command lists the attributes a client reads for total active power (output from the go-iec61850-model use cases):
+
+```text
+PATH                 TYPE       KIND        FC
+MMXU.TotW.instMag.i  INT32      BASIC       MX
+MMXU.TotW.instMag.f  FLOAT32    BASIC       MX
+MMXU.TotW.mag.i      INT32      BASIC       MX
+MMXU.TotW.mag.f      FLOAT32    BASIC       MX
+MMXU.TotW.range      RangeKind  ENUMERATED  MX
+MMXU.TotW.q          Quality    BASIC       MX
+MMXU.TotW.t          Timestamp  BASIC       MX
+```
+
+## What a reference means
+
+```sh
+nsdctl model describe 'LD0/MMXU1.PhV.phsA.cVal.mag.f[MX]'
+nsdctl model show 'LD0/MMXU1.PhV.phsA.cVal.mag.f[MX]'
+```
+
+`describe` prints the semantic descriptor (voltage, phase A, line to ground, magnitude, expected in V) with the rule it came from. `show` resolves the reference step by step, with the type, functional constraint, presence and declaring namespace of every element. A reference the model does not define fails with exit code 1 and names the element that is wrong. Quote references in shells that glob brackets, such as zsh.
+
+## Decode raw values
+
+```sh
+nsdctl model show SIUnitKind        # 38 is W
+nsdctl model show MultiplierKind    # 3 is k
+nsdctl model show BehaviourModeKind # 5 is off
+```
+
+## Two namespaces, one name
+
+```sh
+nsdctl -p extended model show DBAT --ns 90-9
+nsdctl catalog overlaps --left IEC_61850-7-420 --right IEC_TR_61850-90-9
+```
+
+Without `--ns`, a name that two namespaces of the profile define fails as ambiguous. `catalog overlaps` classifies every shared name as identical, a compatible extension or conflicting.
+
+## Work with NSD packages
+
+```sh
+nsdctl sources fetch                         # official packages into .nsd-cache/, digests verified
+nsdctl sources check --packages .nsd-cache   # coverage of the tracked packages
+nsdctl validate .nsd-cache
+nsdctl -s .nsd-cache model show MMXU
+nsdctl diff --exit-code ./old/ ./new/
+nsdctl -s .nsd-cache generate go -o .generated/go --package iec61850names
+```
+
+Without `--source` (`-s`), the `model` and `catalog` commands use the embedded catalog; `-p` selects a named profile (`default`, `extended`) or a namespace release. Apart from `sources fetch`, nsdctl never downloads anything. Output generated from NSD packages stays local unless the lock file permits publishing it.
+
+## Output and exit codes
+
+Every command prints text, or JSON with `--json`, so the model can feed scripts, tag lists and UIs directly.
+
+| Code | Meaning |
+|---|---|
+| 0 | OK |
+| 1 | Usage error, or a name or reference the model does not define |
+| 2 | Source error |
+| 3 | Validation error |
+| 4 | Differences found (`diff --exit-code`) |
+| 5 | Refused by the licence policy |
+
+The [command reference](https://github.com/otfabric/go-iec61850-model/blob/main/docs/cli.md) and the [use cases](https://github.com/otfabric/go-iec61850-model/blob/main/docs/use-cases.md) in the repository have every command with real output.

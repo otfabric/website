@@ -1,0 +1,143 @@
+---
+kind: information-model
+name: "IEC 61850 information model"
+short: "IEC 61850 model"
+urlSlug: iec-61850
+title: "IEC 61850 information model: NSD library and nsdctl"
+standard: "IEC 61850-7-2, 7-3, 7-4 and 7-4xx · NSD per IEC 61850-7-7"
+summary: "The standard semantics of IEC 61850: logical node classes, data objects, common data classes, data attributes and functional constraints, read from the official NSD files and usable without any transport."
+order: 2
+facts:
+  - { label: 'Category', value: 'Information model' }
+  - { label: 'Machine-readable form', value: 'NSD (IEC 61850-7-7)' }
+  - { label: 'Standards organization', value: 'IEC TC 57' }
+  - { label: 'Library', value: 'go-iec61850-model' }
+  - { label: 'CLI', value: 'nsdctl' }
+  - { label: 'Communication', value: 'go-iec61850, go-mms' }
+icon: go-iec61850
+docs: /docs/models/iec-61850/
+carriedBy: [iec-61850]
+layers:
+  - label: 'Information model'
+    items:
+      - { name: 'Logical nodes, data objects, CDCs, data attributes (7-3, 7-4, 7-4xx)', id: iec-61850-model, note: 'go-iec61850-model, nsdctl' }
+  - label: 'Abstract services'
+    items:
+      - { name: 'ACSI: associations, read and write, reports, controls, files (7-2)', note: 'Implemented over MMS by go-iec61850' }
+  - label: 'Communication mappings'
+    items:
+      - { name: 'MMS, client/server (8-1)', id: iec-61850, note: 'go-iec61850, go-mms' }
+      - { name: 'GOOSE (8-1)', note: 'Not implemented by OT Fabric' }
+      - { name: 'Sampled Values (9-2)', note: 'Not implemented by OT Fabric' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+The IEC 61850 information model is the part of IEC 61850 that says what the data in a power system device **means**, independent of how it travels. It is not a communication protocol. A breaker position, a three-phase voltage or a battery's state of charge has the same name, type and structure whether a client reads it over MMS, a device publishes it in GOOSE, or an engineering tool only looks it up.
+
+## What the model defines
+
+| Concept | What it is | Example |
+|---|---|---|
+| Logical node class | A function of a device, named by four letters; the first letter is its group | `MMXU` measurement unit, `XCBR` circuit breaker, `DBAT` battery |
+| Data object | A named piece of information inside a logical node, with a presence condition (mandatory, optional, conditional) | `MMXU.Hz` frequency, `XCBR.Pos` position |
+| Common data class (CDC) | The structure of a data object: which attributes it has | `MV` measured value, `WYE` three-phase values, `DPC` controllable double point |
+| Data attribute | A typed leaf or structure inside a CDC | `mag.f` (FLOAT32), `q` (Quality), `t` (Timestamp), `stVal` |
+| Functional constraint (FC) | What an attribute is for, and which services may use it | `MX` measurands, `ST` status, `CO` control, `CF` configuration, `SP` settings |
+| Enumerations and basic types | The allowed values and primitive types | `SIUnit`, `BehaviourModeKind`, `INT32`, `FLOAT32` |
+
+IEC 61850-7-3 defines the common data classes, IEC 61850-7-4 the core logical nodes, and domain parts such as IEC 61850-7-420 (DER, inverters, storage) and 7-410 (hydropower) add their own. IEC 61850-7-2 defines the abstract services (ACSI) that act on this model.
+
+A device reference ties the levels together: in `LD0/MMXU1.PhV.phsA.cVal.mag.f[MX]`, `LD0` is a logical device on the IED, `MMXU1` an instance of the `MMXU` class, `PhV` a data object of CDC `WYE`, and `phsA.cVal.mag.f` the path down to a FLOAT32, read with functional constraint `MX`.
+
+## NSD: the model in machine-readable form
+
+IEC 61850-7-7 defines **NSD** (namespace definition) files, the XML form in which IEC publishes each namespace: its classes, data objects, CDCs, types, enumerations and the dependencies between namespaces. NSD files are versioned per namespace release (for example `IEC 61850-7-4:2007B6`), so two editions of a part can be loaded and compared side by side.
+
+## Normative model, device instance and interpretation
+
+Three things are easy to confuse, and go-iec61850-model keeps them apart:
+
+1. **Normative model.** What a namespace release defines: `MMXU` has an optional data object `Hz` of CDC `MV`. This is what the NSD files say, and what go-iec61850-model implements.
+2. **Device instance.** What one IED actually implements: `LD0/MMXU1.Hz` exists on this device. That comes from its SCL file or from browsing it over MMS with [go-iec61850](/projects/go-iec61850/). A reference that resolves against the model is valid, but it does not prove a device has it.
+3. **Semantic inference.** What a value means in engineering terms, such as "line-to-ground voltage, phase A, expected in volts". go-iec61850-model derives this from explicit, documented rules, marks it as OT Fabric's interpretation with the rule and confidence, and never changes the normative model with it. Application-specific mappings, for example into a historian's tag names, belong in this layer too.
+
+## Quickstart
+
+### From the command line
+
+`nsdctl` is included with go-iec61850-model. Download it from [GitHub Releases](https://github.com/otfabric/go-iec61850-model/releases) or `go install github.com/otfabric/go-iec61850-model/cmd/nsdctl@latest`. The official catalog is embedded, so it needs no files:
+
+```sh
+# What does a logical node hold, inherited data objects included?
+nsdctl model show MMXU
+
+# What does this reference mean, and what type is it?
+nsdctl model describe 'LD0/MMXU1.PhV.phsA.cVal.mag.f[MX]'
+nsdctl model show 'LD0/MMXU1.PhV.phsA.cVal.mag.f[MX]'
+
+# Which attributes does a client read for total active power?
+nsdctl model leaves MMXU.TotW --fc MX
+
+# The same name in two namespaces: compare instead of merging
+nsdctl catalog overlaps --left IEC_61850-7-420 --right IEC_TR_61850-90-9
+```
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-iec61850-model
+```
+
+Look up a class and resolve a reference down to its basic type with the embedded catalog (from the go-iec61850-model README):
+
+```go title="main.go"
+p, err := official.Default() // IEC 61850-7-2, 7-3, 7-4, 7-410 and 7-420
+if err != nil {
+	log.Fatal(err)
+}
+dos, _ := p.DataObjects("MMXU") // what MMXU holds, inherited data objects included
+res, _ := resolver.New(p).ResolveString("LD0/MMXU1.Hz.mag.f[MX]")
+fmt.Println(len(dos), res.Type()) // FLOAT32
+
+d, _ := semantic.Describe(p, "MMXU.PNV.phsA.cVal.mag.f")
+fmt.Println(d.Quantity, d.Phase, d.Reference, d.UnitHint) // voltage A line-neutral V
+```
+
+## What go-iec61850-model supports
+
+The library is pre-release (v0.1.x). Its own status table is the reference; this is a summary.
+
+| | |
+|---|---|
+| NSD importer | Reads NSD and NSDoc XML and ZIP packages, treated as untrusted input; tested against the 14 tracked official packages with no validation errors |
+| Embedded catalog | The 12 official NSD namespaces (7-2, 7-3, 7-4, 7-410, 7-420 and the technical reports 90-3, 90-4, 90-6, 90-9, 90-11, 90-14, 90-21), with a `default` and an `extended` profile |
+| Editions | Several releases of a namespace in one catalog, explicit profiles, never a silent "latest"; names defined by two namespaces fail as ambiguous until you choose |
+| References | Parsing compatible with go-iec61850's `ParseRef`, and validation against the model |
+| Type resolution | Paths down to basic types, with inheritance, parameterized CDCs, multi-instance data objects and FC checks |
+| Semantic mapping | Quantity, phase, reference, component and unit hints from explicit rules for `MMXU`, `MMXN` and `MMTR`, with overrides |
+| Ontology helpers | A typed concept graph with traversal and JSON export |
+| Generated code | Typed Go constants for every class, data object, CDC and enumeration of the default profile |
+| Coverage | 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages |
+| Not covered | MMS, GOOSE, Sampled Values and any other communication; an SCL runtime; the service namespace of IEC 61850-8-1, which is recognized but not modeled; an NSD update monitor (planned) |
+| Go version | 1.24 or later, standard library only (nsdctl adds cobra) |
+
+## Communication is a separate layer
+
+Using the information model does not mean speaking every IEC 61850 communication mapping. The model is defined once; IEC 61850-8-1 maps it onto MMS for client/server communication and onto GOOSE for fast peer-to-peer events, and IEC 61850-9-2 onto Sampled Values. OT Fabric's projects split along the same line:
+
+| Project | Layer | What it does |
+|---|---|---|
+| [go-iec61850-model](/projects/go-iec61850-model/) | Information model | The normative catalog from NSD: lookups, validation, resolution, semantics. No transport. |
+| [go-iec61850](/projects/go-iec61850/) | Communication, MMS mapping | IEC 61850 client and SCL-driven server over MMS: browse, read, write, datasets, reports, controls, files. No GOOSE or Sampled Values. |
+| [go-mms](/projects/go-mms/) | Protocol | MMS (ISO 9506) client and server, the transport underneath go-iec61850. |
+
+go-iec61850-model imports neither go-iec61850 nor go-mms, and go-iec61850 does not depend on it today. See [IEC 61850 / MMS](/protocols/iec-61850/) for the communication side.
+
+## Standards and licensing
+
+The IEC 61850 parts are published by the [IEC](https://webstore.iec.ch/) through TC 57, and the official NSD packages are [IEC code components](https://iec61850.dvl.iec.ch/61850-resources/61850-code-components/) under the IEC Code Components licence. go-iec61850-model is MIT-licensed. It ships no NSD files and no text from the standards: its embedded catalog, generated constants and model reference hold identifiers, types and structure derived from the official packages, published under the IEC Code Components licence with IEC attribution. Nothing in the repository grants rights to the standards themselves; you still need them to implement IEC 61850 correctly.
+
+<Callout type="note">
+The model tells you what a reference means and whether it is valid. Whether a device implements it, and how to reach it, is the job of its SCL file and of the communication stack.
+</Callout>

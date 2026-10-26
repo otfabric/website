@@ -1,5 +1,5 @@
 ---
-title: SunSpec
+title: SunSpec Modbus
 description: How SunSpec Modbus works (the SunS marker, the model chain, point types, scale factors and groups) and which OT Fabric projects read and serve it.
 sidebar:
   label: Overview
@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-SunSpec is an open standard from the [SunSpec Alliance](https://sunspec.org/) that defines how solar inverters, energy meters, batteries and other distributed energy resources (DER) lay out their data in Modbus registers. It is not a separate wire protocol. A SunSpec device is a Modbus server, and you read it with ordinary Modbus function codes. What SunSpec adds is a standard, self-describing register map, so the same client code can read an inverter from one manufacturer and a meter from another.
+SunSpec is an open standard from the [SunSpec Alliance](https://sunspec.org/) that defines how solar inverters, energy meters, batteries and other distributed energy resources (DER) lay out their data in Modbus registers. It is an information model and its Modbus register mapping, not a separate wire protocol. A SunSpec device is a Modbus server, and you read it with ordinary Modbus function codes. What SunSpec adds is a standard, self-describing register map, so the same client code can read an inverter from one manufacturer and a meter from another.
 
 If Modbus itself is new to you, read the [Modbus overview](/docs/protocols/modbus/) first. This page assumes you know what holding registers, unit IDs and function codes are.
 
@@ -107,9 +107,9 @@ The settings and immediate-control models in the 120-145 range and the 7xx DER c
 | [modbusctl](/projects/modbusctl/) | `modbusctl client sunspec detect`, `models`, `map` and `probe` for transport-level discovery, and `client scan --algo sunspec` to capture every model to an MBCAP file that `modbusctl server` can replay. |
 
 <CardGrid>
-  <LinkCard title="Go library" description="Discover and decode SunSpec devices with go-sunspec." href="/docs/protocols/sunspec/library/" />
-  <LinkCard title="sunspecctl" description="Detect, list, read and poll SunSpec devices from the terminal, and serve simulated ones." href="/docs/protocols/sunspec/cli/" />
-  <LinkCard title="Testing" description="How go-sunspec is tested without hardware, and how to test your own code." href="/docs/protocols/sunspec/testing/" />
+  <LinkCard title="Go library" description="Discover and decode SunSpec devices with go-sunspec." href="/docs/models/sunspec/library/" />
+  <LinkCard title="sunspecctl" description="Detect, list, read and poll SunSpec devices from the terminal, and serve simulated ones." href="/docs/models/sunspec/cli/" />
+  <LinkCard title="Testing" description="How go-sunspec is tested without hardware, and how to test your own code." href="/docs/models/sunspec/testing/" />
   <LinkCard title="go-sunspec on GitHub" description="github.com/otfabric/go-sunspec" href="https://github.com/otfabric/go-sunspec" />
   <LinkCard title="sunspecctl on GitHub" description="github.com/otfabric/sunspecctl" href="https://github.com/otfabric/sunspecctl" />
   <LinkCard title="SunSpec Explorer" description="See every model of a SunSpec device decoded, in a window or a browser." href="/projects/sunspec-explorer/" />

@@ -186,7 +186,7 @@ func (r reader) ReadRawBytes(ctx context.Context, unitID uint8, addr, byteCount 
 result, err := sunspec.Discover(ctx, reader{client}, &sunspec.Options{UnitID: 1, RegType: sunspec.HoldingRegister})
 ```
 
-For decoded, scaled SunSpec points, use [go-sunspec](/docs/protocols/sunspec/).
+For decoded, scaled SunSpec points, use [go-sunspec](/docs/models/sunspec/).
 
 ## Server
 

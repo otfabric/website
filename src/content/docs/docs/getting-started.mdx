@@ -5,7 +5,7 @@ description: What the OT Fabric ecosystem covers, from protocol libraries and fi
 
 import { LinkCard, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-OT Fabric is an open-source ecosystem for industrial connectivity and interoperability. It gives the people who build, operate and integrate industrial systems one consistent toolkit across the protocols that run factories, grids, buildings and EV charging: Modbus, SunSpec, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP.
+OT Fabric is an open-source ecosystem for industrial connectivity and interoperability. It gives the people who build, operate and integrate industrial systems one consistent toolkit across the protocols that run factories, grids, buildings and EV charging: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP, and the information models carried over them, SunSpec Modbus and the IEC 61850 information model.
 
 Everything is MIT-licensed and public on GitHub, built by people and AI agents together, and the protocol stacks are proven against independent implementations, not only against their own tests.
 
@@ -14,6 +14,7 @@ Everything is MIT-licensed and public on GitHub, built by people and AI agents t
 | Part | What it gives you | Examples |
 |---|---|---|
 | **Protocol libraries** | Client and server implementations to embed in gateways, services and products. Pure Go, no cgo | [go-modbus](/projects/go-modbus/), [go-opcua](/projects/go-opcua/), [go-ocpp](/projects/go-ocpp/), [go-dnp3](/projects/go-dnp3/), [go-ieee20305](/projects/go-ieee20305/), [go-ethernetip](/projects/go-ethernetip/) |
+| **Information-model libraries** | Standard device and data models on top of a protocol: discovery, decoding, validation and serving | [go-sunspec](/projects/go-sunspec/), [go-iec61850-model](/projects/go-iec61850-model/) |
 | **Command-line tools** | One tool per protocol to discover, read, write, monitor, simulate and diagnose devices in the field, with JSON output for scripts and CI | [modbusctl](/projects/modbusctl/), [opcuactl](/projects/opcuactl/), [ocppctl](/projects/ocppctl/), [dnp3ctl](/projects/dnp3ctl/), [ieee20305ctl](/projects/ieee20305ctl/), [ethernetipctl](/projects/ethernetipctl/) |
 | **Interoperability suites** | Independent reference stacks in containers behind one contract, so any implementation, ours or yours, can be tested against the established ones | [modbus-interop](/projects/modbus-interop/), [ocpp-interop](/projects/ocpp-interop/), [dnp3-interop](/projects/dnp3-interop/), [ieee20305-interop](/projects/ieee20305-interop/), [ethernetip-interop](/projects/ethernetip-interop/) |
 | **Network visibility** | What is connected to an OT network, what changed, and which protocols it speaks | [LAN Tracker](/projects/lan-tracker/), [go-otfp](/projects/go-otfp/) |
@@ -69,6 +70,7 @@ These tools send real requests to real equipment. Start with read-only commands,
 
 <CardGrid>
   <LinkCard title="Protocols" description="How each protocol works, with quickstarts for the library and the CLI." href="/docs/protocols/" />
+  <LinkCard title="Information models" description="SunSpec Modbus and the IEC 61850 information model, and the protocols that carry them." href="/docs/models/" />
   <LinkCard title="Project catalog" description="Every library, CLI, app, interop suite and building block." href="/projects/" />
   <LinkCard title="Ecosystem map" description="Who else implements each protocol, with licence, roles and latest release." href="/ecosystem/implementations/" />
 </CardGrid>

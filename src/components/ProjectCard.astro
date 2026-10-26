@@ -3,19 +3,23 @@ import { repoUrl, type Project } from '../data/projects';
 
 interface Props {
 	project: Project;
-	protocolNames: Record<string, string>;
+	names: Record<string, string>;
 }
 
-const { project, protocolNames } = Astro.props;
+const { project, names } = Astro.props;
 const { data } = project;
-const labels = data.protocols.map((id) => protocolNames[id] ?? id);
+// Solid tags for the standards a project implements, outlined ones for those it only works with.
+const tags = [
+	...data.standards.map((id) => ({ label: names[id] ?? id, related: false })),
+	...data.related.map((id) => ({ label: names[id] ?? id, related: true })),
+];
 const href = data.status === 'available' ? `/projects/${project.id}/` : undefined;
 ---
 
 <article
 	class:list={['ot-project', { 'is-planned': data.status === 'planned' }]}
 	data-category={data.category}
-	data-protocols={data.protocols.join(' ')}
+	data-standards={[...data.standards, ...data.related].join(' ')}
 >
 	<header>
 		{data.icon && <img class="ot-icon" src={`/icons/${data.icon}.svg`} alt="" width="32" height="32" />}
@@ -25,9 +29,9 @@ const href = data.status === 'available' ? `/projects/${project.id}/` : undefine
 	<p>{data.description}</p>
 	{data.install && <code class="ot-install">{data.install}</code>}
 	<footer>
-		{labels.length > 0 && (
-			<ul class="ot-tags" aria-label="Protocols">
-				{labels.map((label) => <li>{label}</li>)}
+		{tags.length > 0 && (
+			<ul class="ot-tags" aria-label="Standards">
+				{tags.map((t) => (t.related ? <li class="related" title={`Works with ${t.label}`}><span class="sr-only">Works with </span>{t.label}</li> : <li>{t.label}</li>))}
 			</ul>
 		)}
 		{data.repo && <a class="ot-repo" href={repoUrl(data.repo)}>GitHub</a>}
@@ -112,6 +116,11 @@ const href = data.status === 'available' ? `/projects/${project.id}/` : undefine
 		border-radius: 0.2rem;
 		background: var(--ot-accent-soft);
 		color: var(--ot-accent-strong);
+	}
+	.ot-tags li.related {
+		background: transparent;
+		box-shadow: inset 0 0 0 1px var(--ot-line);
+		color: var(--ot-muted);
 	}
 	.ot-repo {
 		font-size: 0.8rem;

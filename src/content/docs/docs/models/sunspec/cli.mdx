@@ -256,7 +256,7 @@ Values are written the way you read them:
 
 Unknown members, a point given twice and point names the model does not have are errors, so a typo does not silently serve an empty value.
 
-The format is go-sunspec's [`devicefile`](/docs/protocols/sunspec/library/#device-files) package, shared with SunSpec Explorer, and has a JSON Schema for editors and other tools: `devicefile/devicefile.schema.json` in go-sunspec, published at [otfabric.io/schemas/sunspec/devicefile-1.schema.json](/schemas/sunspec/devicefile-1.schema.json), its `$id`. To get completion and validation while you write a device file, map the schema to your device files in the editor settings (`json.schemas` in VS Code). Do not add a `$schema` member to the file itself: device files refuse unknown members.
+The format is go-sunspec's [`devicefile`](/docs/models/sunspec/library/#device-files) package, shared with SunSpec Explorer, and has a JSON Schema for editors and other tools: `devicefile/devicefile.schema.json` in go-sunspec, published at [otfabric.io/schemas/sunspec/devicefile-1.schema.json](/schemas/sunspec/devicefile-1.schema.json), its `$id`. To get completion and validation while you write a device file, map the schema to your device files in the editor settings (`json.schemas` in VS Code). Do not add a `$schema` member to the file itself: device files refuse unknown members.
 
 ### Getting a device file
 

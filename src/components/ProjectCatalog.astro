@@ -1,24 +1,34 @@
 ---
-import { categories, getProjects, getProtocols } from '../data/projects';
+import { categories, getProjects } from '../data/projects';
+import { getStandards, kinds, shortName } from '../data/standards';
 import ProjectGrid from './ProjectGrid.astro';
 
 const projects = await getProjects();
-const protocols = await getProtocols();
+const standards = await getStandards();
+// One filter row, the standards grouped by kind; kinds without standards are left out.
+const groups = kinds.map((k) => ({ kind: k, items: standards.filter((s) => s.data.kind === k.id) })).filter((g) => g.items.length);
+// Categories without projects yet (application-profile libraries) stay out of the catalog.
+const sections = categories.filter((c) => projects.some((p) => p.data.category === c.id));
 ---
 
 <div class="ot-catalog not-content">
-	<div class="ot-filters" role="group" aria-label="Filter by protocol">
-		<span class="ot-label">Protocol</span>
+	<div class="ot-filters" role="group" aria-label="Filter by protocol or information model">
+		<span class="ot-label">Standard</span>
 		<button type="button" data-filter="" aria-pressed="true">All</button>
-		{protocols.map((p) => <button type="button" data-filter={p.id} aria-pressed="false">{p.data.name}</button>)}
+		{groups.map((g) => (
+			<>
+				<span class="ot-filter-kind">{g.kind.plural}</span>
+				{g.items.map((s) => <button type="button" data-filter={s.id} aria-pressed="false">{shortName(s)}</button>)}
+			</>
+		))}
 	</div>
 
-	{categories.map((category) => (
+	{sections.map((category) => (
 		<section class="ot-group">
 			<h2 id={category.id}>{category.label}</h2>
 			<p class="ot-group-desc">{category.description}</p>
 			<ProjectGrid projects={projects.filter((p) => p.data.category === category.id)} />
-			<p class="ot-empty" hidden>No {category.label.toLowerCase()} for this protocol yet.</p>
+			<p class="ot-empty" hidden>No {category.label.toLowerCase()} for this standard yet.</p>
 		</section>
 	))}
 </div>
@@ -32,7 +42,7 @@ const protocols = await getProtocols();
 		root?.querySelectorAll<HTMLElement>('.ot-group').forEach((group) => {
 			let visible = 0;
 			group.querySelectorAll<HTMLElement>('.ot-project').forEach((card) => {
-				const match = !filter || (card.dataset.protocols ?? '').split(' ').includes(filter);
+				const match = !filter || (card.dataset.standards ?? '').split(' ').includes(filter);
 				card.hidden = !match;
 				if (match) visible++;
 			});
@@ -54,6 +64,11 @@ const protocols = await getProtocols();
 	}
 	.ot-filters .ot-label {
 		margin-right: 0.4rem;
+	}
+	.ot-filter-kind {
+		margin: 0 0.1rem 0 0.6rem;
+		font-size: 0.75rem;
+		color: var(--ot-muted);
 	}
 	.ot-filters button {
 		font: 500 0.8rem/1 var(--ot-font-body);

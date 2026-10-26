@@ -21,10 +21,11 @@ The website pages are plain Astro; the documentation under `/docs/` is Starlight
 |---|---|
 | `/` | `src/pages/index.astro` |
 | `/about/` | `src/pages/about.mdx` |
-| `/protocols/`, `/protocols/<id>/` | `src/content/protocols/*.mdx` (content collection) |
+| `/protocols/`, `/protocols/<id>/`, `/models/<id>/`, `/profiles/<id>/` | `src/content/standards/*.mdx` (content collection). `kind` decides the section: `protocol`, `information-model` or `application-profile` (see `src/data/standards.ts`). `/protocols/` lists all three |
 | `/projects/`, `/projects/<id>/` | `src/data/projects.json` (content collection) |
 | `/blog/`, `/blog/<id>/`, `/blog/tags/<tag>/`, `/blog/rss.xml` | `src/content/blog/*.{md,mdx}` (content collection) |
-| `/docs/...` | `src/content/docs/docs/` (Starlight) |
+| `/docs/...` | `src/content/docs/docs/` (Starlight); protocols under `docs/protocols/`, information models under `docs/models/` |
+| Moved pages | `public/_redirects` (301 on Cloudflare) and `redirects` in `astro.config.mjs` (fallback pages for dev and preview) |
 
 Shared pieces:
 

@@ -4,7 +4,8 @@ import EcosystemNav from '../../../components/ecosystem/EcosystemNav.astro';
 import AccessList from '../../../components/organizations/AccessList.astro';
 import MembershipTable from '../../../components/organizations/MembershipTable.astro';
 import ProjectGrid from '../../../components/ProjectGrid.astro';
-import { getProjects, getProtocols } from '../../../data/projects';
+import { getProjects } from '../../../data/projects';
+import { getStandards, standardPath } from '../../../data/standards';
 import { absolute, breadcrumbs, orgRef } from '../../../data/seo';
 import {
 	REVIEW_DAYS,
@@ -35,7 +36,8 @@ const { org } = Astro.props;
 const d = org.data;
 const orgs = await getOrganizations();
 const byId = Object.fromEntries(orgs.map((o) => [o.id, o]));
-const protocolName = Object.fromEntries((await getProtocols()).map((p) => [p.id, p.data.name]));
+const byStandard = Object.fromEntries((await getStandards()).map((s) => [s.id, s]));
+const protocolName = Object.fromEntries(Object.values(byStandard).map((s) => [s.id, s.data.name]));
 const projects = (await getProjects()).filter((p) => d.relatedProjects.includes(p.id));
 const stacks = new Map(ecosystem.implementations.map((i) => [i.id, i]));
 const path = orgPath(org);
@@ -86,8 +88,8 @@ const schema = [
 				<div><dt class="ot-label">Cheapest way in</dt><dd>{entryPoint(org)}</dd></div>
 				{d.protocols.length > 0 && (
 					<div>
-						<dt class="ot-label">Protocols</dt>
-						<dd>{d.protocols.map((p, i) => <>{i > 0 && ', '}<a href={`/protocols/${p}/`}>{protocolName[p]}</a></>)}</dd>
+						<dt class="ot-label">Standards</dt>
+						<dd>{d.protocols.map((p, i) => <>{i > 0 && ', '}<a href={standardPath(byStandard[p])}>{protocolName[p]}</a></>)}</dd>
 					</div>
 				)}
 				<div><dt class="ot-label">Verified</dt><dd>{formatDay(d.verifiedAt)}</dd></div>

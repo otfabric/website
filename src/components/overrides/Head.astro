@@ -4,27 +4,27 @@
 import { getEntry } from 'astro:content';
 import Default from '@astrojs/starlight/components/Head.astro';
 import { absolute, breadcrumbs, jsonLd, ogImage, organization, orgRef, website, websiteRef } from '../../data/seo';
+import { standardForDoc, standardPath } from '../../data/standards';
 
 const { entry, id, head } = Astro.locals.starlightRoute;
 const isNotFound = id === '404';
 const url = absolute(Astro.url.pathname);
 
-// Protocol subpages share short titles ("Go library", "Testing and interop"), so the
-// social title and headline name the protocol too: "Modbus: Go library | OT Fabric".
-const parent = /^docs\/protocols\/[^/]+\/[^/]+$/.test(id) ? await getEntry('docs', id.split('/').slice(0, 3).join('/')) : undefined;
+// Protocol and model subpages share short titles ("Go library", "Testing and interop"), so the
+// social title and headline name the standard too: "Modbus: Go library | OT Fabric".
+const parent = /^docs\/(protocols|models)\/[^/]+\/[^/]+$/.test(id) ? await getEntry('docs', id.split('/').slice(0, 3).join('/')) : undefined;
 const headline =
 	parent && !entry.data.title.includes(parent.data.title) ? `${parent.data.title}: ${entry.data.title}` : entry.data.title;
 // A protocol's docs overview would otherwise share "Modbus | OT Fabric" with /protocols/modbus/.
-const isProtocolOverview = /^docs\/protocols\/[^/]+$/.test(id);
+const isProtocolOverview = /^docs\/(protocols|models)\/[^/]+$/.test(id);
 const pageTitle = `${isProtocolOverview ? `${entry.data.title} documentation` : headline} | OT Fabric`;
 const titleTag = head.find((tag) => tag.tag === 'title');
 if (titleTag && !isNotFound) titleTag.content = pageTitle;
 const ogTitle = head.find((tag) => tag.tag === 'meta' && tag.attrs?.property === 'og:title');
 if (ogTitle?.attrs) ogTitle.attrs.content = pageTitle;
 
-// Pages under /docs/protocols/<id>/ are about the protocol on /protocols/<id>/.
-const protocolId = id.match(/^docs\/protocols\/([^/]+)/)?.[1];
-const protocol = protocolId ? await getEntry('protocols', protocolId) : undefined;
+// Pages under a standard's docs (/docs/protocols/modbus/, /docs/models/sunspec/) are about that standard's page.
+const standard = await standardForDoc(id);
 
 let schema: string | undefined;
 if (!isNotFound) {
@@ -48,7 +48,7 @@ if (!isNotFound) {
 		publisher: orgRef,
 		inLanguage: 'en',
 		image: absolute(ogImage.src),
-		...(protocol && { about: { '@type': 'Thing', name: protocol.data.name, url: absolute(`/protocols/${protocol.id}/`) } }),
+		...(standard && { about: { '@type': 'Thing', name: standard.data.name, url: absolute(standardPath(standard)) } }),
 		...(entry.data.lastUpdated instanceof Date ? { dateModified: entry.data.lastUpdated.toISOString() } : {}),
 	});
 }

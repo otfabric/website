@@ -1,0 +1,218 @@
+---
+// The page of one standard: /protocols/<slug>/, /models/<slug>/ or /profiles/<slug>/.
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../site/PageHeader.astro';
+import ProjectGrid from '../ProjectGrid.astro';
+import StandardLayers from './StandardLayers.astro';
+import { projectsFor, repoUrl } from '../../data/projects';
+import { carriedOver, getStandards, hasDocs, kindOf, standardPath, type Standard } from '../../data/standards';
+import { absolute, breadcrumbs, orgRef } from '../../data/seo';
+import { kindLabels, organizationsFor, orgPath } from '../../data/organizations';
+
+interface Props {
+	standard: Standard;
+}
+const { standard } = Astro.props;
+const { data } = standard;
+const kind = kindOf(data.kind);
+const { Content } = await render(standard);
+const projects = await projectsFor(standard.id);
+const organizations = await organizationsFor(standard.id);
+// Link to the detailed docs only once they exist.
+const docs = (await hasDocs(standard)) ? data.docs : undefined;
+const path = standardPath(standard);
+const url = absolute(path);
+// Both directions of "carried by": SunSpec Modbus runs over Modbus; Modbus carries SunSpec Modbus.
+const all = await getStandards();
+const carriers = all.filter((s) => data.carriedBy.includes(s.id as never));
+const carried = await carriedOver(standard.id);
+// Overview of this kind of standard on the shared catalog page.
+const overview = data.kind === 'protocol' ? '/protocols/' : `/protocols/#${kind.section}`;
+const schema = [
+	breadcrumbs([
+		{ name: kind.plural, path: overview },
+		{ name: data.name, path },
+	]),
+	{
+		'@type': 'TechArticle',
+		'@id': `${url}#article`,
+		headline: data.name,
+		description: data.summary,
+		url,
+		mainEntityOfPage: { '@id': `${url}#webpage` },
+		author: orgRef,
+		publisher: orgRef,
+		inLanguage: 'en',
+		about: {
+			'@type': 'DefinedTerm',
+			name: data.name,
+			description: data.summary,
+			inDefinedTermSet: data.standard,
+		},
+		...(docs ? { relatedLink: absolute(docs) } : {}),
+		mentions: [
+			...projects.map((p) => ({ '@type': 'SoftwareSourceCode', name: p.data.name, codeRepository: repoUrl(p.data.repo!) })),
+			...[...carriers, ...carried].map((s) => ({ '@type': 'DefinedTerm', name: s.data.name, url: absolute(standardPath(s)) })),
+		],
+	},
+];
+---
+
+<BaseLayout title={data.title ?? `${data.name}: open-source library and tools`} description={data.summary} schema={schema}>
+	<PageHeader label={data.standard} title={data.name} lead={data.summary}>
+		<dl class="facts">
+			{data.facts.map((fact) => (
+				<div>
+					<dt class="ot-label">{fact.label}</dt>
+					<dd>{fact.value}</dd>
+				</div>
+			))}
+		</dl>
+	</PageHeader>
+
+	<div class="ot-container layout">
+		<article class="ot-prose">
+			<Content />
+		</article>
+		<aside class="side">
+			{docs && <a class="ot-btn primary" href={docs}>Read the {data.name} docs →</a>}
+			<a class="ot-btn" href={overview}>{data.kind === 'protocol' ? 'All protocols' : `All ${kind.plural.toLowerCase()}`}</a>
+			{(carriers.length > 0 || carried.length > 0) && (
+				<dl class="relations">
+					{carriers.length > 0 && (
+						<div>
+							<dt class="ot-label">Carried over</dt>
+							<dd>{carriers.map((s, i) => <>{i > 0 && ', '}<a href={standardPath(s)}>{s.data.name}</a></>)}</dd>
+						</div>
+					)}
+					{carried.length > 0 && (
+						<div>
+							<dt class="ot-label">Carries</dt>
+							<dd>
+								{carried.map((s, i) => <>{i > 0 && ', '}<a href={standardPath(s)}>{s.data.name}</a> <span class="kind">({kindOf(s.data.kind).label.toLowerCase()})</span></>)}
+							</dd>
+						</div>
+					)}
+				</dl>
+			)}
+			{data.layers.length > 0 && <StandardLayers name={data.name} self={standard.id} layers={data.layers} />}
+		</aside>
+	</div>
+
+	<div class="ot-container">
+		<h2 class="projects-title">OT Fabric projects for {data.name}</h2>
+		<ProjectGrid projects={projects} />
+	</div>
+
+	{organizations.length > 0 && (
+		<div class="ot-container">
+			<h2 class="projects-title">Who is behind {data.name}</h2>
+			<p class="orgs-intro">
+				The organizations that publish, test, certify or host open-source work for {data.name}. Listed for reference, not as
+				partners. <a href={`/ecosystem/organizations/?protocol=${standard.id}`}>Compare membership and fees</a>.
+			</p>
+			<ul class="orgs">
+				{organizations.map((o) => (
+					<li>
+						<a href={orgPath(o)}>{o.data.name}</a>
+						<span class="ot-label">{kindLabels[o.data.kind]}</span>
+						<span>{o.data.summary}</span>
+					</li>
+				))}
+			</ul>
+		</div>
+	)}
+</BaseLayout>
+
+<style>
+	.facts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem 2.5rem;
+		margin: 2rem 0 0;
+	}
+	.facts dt {
+		margin-bottom: 0.35rem;
+	}
+	.facts dd {
+		margin: 0;
+		font-family: var(--ot-font-mono);
+		font-size: 0.9rem;
+		color: var(--ot-fg-strong);
+	}
+	.layout {
+		display: grid;
+		gap: 2rem;
+	}
+	.side {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+	@media (min-width: 64rem) {
+		.layout {
+			grid-template-columns: minmax(0, 46rem) 1fr;
+		}
+		.side {
+			position: sticky;
+			top: 6rem;
+			align-self: start;
+		}
+	}
+	.relations {
+		display: grid;
+		gap: 0.9rem;
+		margin: 0.75rem 0 0;
+		font-size: 0.92rem;
+	}
+	.relations dt {
+		margin-bottom: 0.3rem;
+	}
+	.relations dd {
+		margin: 0;
+	}
+	.relations a {
+		color: var(--ot-accent);
+	}
+	.relations .kind {
+		color: var(--ot-muted);
+	}
+	.projects-title {
+		margin: 4rem 0 1.25rem;
+		font-size: 1.8rem;
+	}
+	.orgs-intro {
+		max-width: 46rem;
+		margin: -0.5rem 0 1.25rem;
+		color: var(--ot-muted);
+	}
+	.orgs-intro a,
+	.orgs a {
+		color: var(--ot-accent);
+	}
+	.orgs {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+		gap: 1rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.orgs li {
+		display: grid;
+		gap: 0.35rem;
+		margin: 0;
+		padding: 1rem 1.15rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+		background: var(--ot-surface);
+	}
+	.orgs li a {
+		font: 700 1.2rem/1.2 var(--ot-font-display);
+	}
+	.orgs li span:last-child {
+		font-size: 0.92rem;
+	}
+</style>

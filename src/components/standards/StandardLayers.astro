@@ -1,0 +1,108 @@
+---
+// "How it fits": the layers a standard sits in, top to bottom. Layers name standards;
+// each item's note says which OT Fabric project covers it, or that none does.
+import { getStandards, standardPath } from '../../data/standards';
+
+interface Props {
+	name: string;
+	self: string;
+	layers: { label: string; items: { name: string; id?: string; note?: string }[] }[];
+}
+const { name, self, layers } = Astro.props;
+const paths = Object.fromEntries((await getStandards()).map((s) => [s.id, standardPath(s)]));
+---
+
+<figure class="ot-layers" aria-labelledby="layers-title">
+	<figcaption id="layers-title" class="ot-label">How {name} fits</figcaption>
+	<ol>
+		{layers.map((layer) => (
+			<li>
+				<span class="layer">{layer.label}</span>
+				<ul>
+					{layer.items.map((item) => (
+						<li class:list={{ self: item.id === self }}>
+							{item.id && item.id !== self ? <a href={paths[item.id]}>{item.name}</a> : <span>{item.name}</span>}
+							{item.note && <small>{item.note}</small>}
+						</li>
+					))}
+				</ul>
+			</li>
+		))}
+	</ol>
+	<p class="legend">Relationships between standards. The small print names the OT Fabric project for each part, where there is one.</p>
+</figure>
+
+<style>
+	.ot-layers {
+		width: 100%;
+		margin: 1rem 0 0;
+		padding: 1rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.4rem;
+		background: var(--ot-surface);
+	}
+	figcaption {
+		display: block;
+		margin-bottom: 0.8rem;
+	}
+	ol,
+	ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	ol {
+		display: grid;
+		gap: 0.35rem;
+	}
+	ol > li {
+		margin: 0;
+	}
+	ol > li + li::before {
+		content: '';
+		display: block;
+		width: 1px;
+		height: 0.5rem;
+		margin: 0 0 0.35rem 1rem;
+		background: var(--ot-line);
+	}
+	.layer {
+		display: block;
+		margin-bottom: 0.3rem;
+		font: 500 0.66rem/1 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--ot-muted);
+	}
+	ul {
+		display: grid;
+		gap: 0.3rem;
+	}
+	ul li {
+		display: grid;
+		gap: 0.15rem;
+		margin: 0;
+		padding: 0.45rem 0.6rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.25rem;
+		background: var(--ot-bg);
+		font-size: 0.85rem;
+		line-height: 1.35;
+	}
+	ul li.self {
+		border-color: var(--ot-accent);
+		box-shadow: inset 3px 0 0 var(--ot-accent);
+	}
+	ul li a {
+		color: var(--ot-accent);
+	}
+	small {
+		font-size: 0.75rem;
+		color: var(--ot-muted);
+	}
+	.legend {
+		margin: 0.8rem 0 0;
+		font-size: 0.75rem;
+		color: var(--ot-muted);
+	}
+</style>

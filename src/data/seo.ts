@@ -7,16 +7,16 @@ export const ogImage = {
 	src: '/og-image.png',
 	width: 1200,
 	height: 630,
-	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, SunSpec, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP.',
+	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP, and the SunSpec Modbus and IEC 61850 information models.',
 };
 
-/** Meta description for the homepage: what OT Fabric is, with the protocols people search for. */
+/** Meta description for the homepage: what OT Fabric is, with the protocols and models people search for. */
 export const homeDescription =
-	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, SunSpec, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP.';
+	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP, plus SunSpec Modbus and IEC 61850 information models.';
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
-	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, SunSpec, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS) and EtherNet/IP (CIP). Built by people and AI agents together.';
+	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS) and EtherNet/IP (CIP), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD). Built by people and AI agents together.';
 
 export const absolute = (path: string) => new URL(path, site.url).href;
 
@@ -45,12 +45,15 @@ export const organization = {
 		'Operational technology (OT)',
 		'Industrial automation',
 		'Industrial interoperability',
+		'Industrial information models',
 		'Modbus',
-		'SunSpec',
+		'SunSpec Modbus',
 		'OPC UA',
 		'BACnet',
 		'IEC 60870-5-104',
 		'IEC 61850',
+		'IEC 61850 information model',
+		'IEC 61850 NSD (IEC 61850-7-7)',
 		'Siemens S7',
 		'OpenADR',
 		'OCPP',

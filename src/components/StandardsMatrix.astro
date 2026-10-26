@@ -1,0 +1,107 @@
+---
+// "At a glance" for one kind of standard. Protocols list their library, CLI and interop
+// suite; information models and profiles list the protocol that carries them instead of
+// an interop suite, since they have no transport of their own.
+import { getProjects, type Project } from '../data/projects';
+import { getStandards, kindOf, standardPath, type StandardKind } from '../data/standards';
+
+interface Props {
+	kind?: StandardKind;
+}
+const { kind = 'protocol' } = Astro.props;
+const projects = (await getProjects()).filter((p) => p.data.status === 'available');
+const all = await getStandards();
+const standards = all.filter((s) => s.data.kind === kind);
+
+// A project belongs to the row of its primary (first) standard.
+const of = (id: string, category: string) => projects.filter((p) => p.data.category === category && p.data.standards[0] === id);
+const projectCell = (category: string) => (id: string) => ({ projects: of(id, category) });
+const columns: { label: string; cell: (id: string) => { projects?: Project[]; links?: { name: string; href: string }[] } }[] =
+	kind === 'protocol'
+		? [
+				{ label: 'Library', cell: projectCell('protocol') },
+				{ label: 'CLI', cell: projectCell('cli') },
+				{ label: 'Interop suite', cell: projectCell('interop') },
+			]
+		: [
+				{
+					label: 'Carried over',
+					cell: (id) => ({
+						links: all.filter((s) => standards.find((x) => x.id === id)!.data.carriedBy.includes(s.id as never)).map((s) => ({ name: s.data.name, href: standardPath(s) })),
+					}),
+				},
+				{ label: 'Library', cell: projectCell(kind) },
+				{ label: 'CLI', cell: projectCell('cli') },
+				{ label: 'UI app', cell: projectCell('ui') },
+			];
+const rows = standards.map((standard) => ({ standard, cells: columns.map((c) => c.cell(standard.id)) }));
+---
+
+<div class="ot-matrix not-content">
+	<table>
+		<thead>
+			<tr>
+				<th scope="col">{kindOf(kind).label}</th>
+				{columns.map((c) => <th scope="col">{c.label}</th>)}
+			</tr>
+		</thead>
+		<tbody>
+			{rows.map((row) => (
+				<tr>
+					<th scope="row"><a href={standardPath(row.standard)}>{row.standard.data.name}</a></th>
+					{row.cells.map((cell) => (
+						<td>
+							{cell.links
+								? cell.links.map((l, i) => <>{i > 0 && ', '}<a href={l.href}>{l.name}</a></>)
+								: cell.projects!.length === 0
+									? <span class="ot-none">–</span>
+									: cell.projects!.map((p, i) => <>{i > 0 && ', '}<a href={`/projects/${p.id}/`}><code>{p.data.name}</code></a></>)}
+						</td>
+					))}
+				</tr>
+			))}
+		</tbody>
+	</table>
+</div>
+
+<style>
+	.ot-matrix {
+		overflow-x: auto;
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.9rem;
+	}
+	th,
+	td {
+		text-align: left;
+		padding: 0.65rem 0.9rem 0.65rem 0;
+		border-bottom: 1px solid var(--ot-line);
+		white-space: nowrap;
+	}
+	thead th {
+		font: 500 0.72rem/1 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--ot-muted);
+	}
+	tbody th {
+		font-weight: 600;
+	}
+	tbody th a {
+		color: var(--ot-fg-strong) !important;
+	}
+	td a {
+		text-decoration: none;
+	}
+	code {
+		font-size: 0.85em;
+		background: none;
+		border: 0;
+		padding: 0;
+	}
+	.ot-none {
+		color: var(--ot-muted);
+	}
+</style>

@@ -1,14 +1,15 @@
 import { getPosts } from '../data/blog';
 import { docSection, getDocs, mdxToMarkdown, organizationSection, postSection, projectSection, protocolSection } from '../data/llms';
 import { getOrganizations } from '../data/organizations';
-import { getProjects, getProtocols } from '../data/projects';
+import { getProjects } from '../data/projects';
+import { getStandards } from '../data/standards';
 import { longDescription } from '../data/seo';
 import { site } from '../data/site';
 import about from './about.mdx?raw';
 
 // Every page's text in one file, each section headed by its title and canonical URL.
 export async function GET() {
-	const protocols = await Promise.all((await getProtocols()).map(protocolSection));
+	const protocols = await Promise.all((await getStandards()).map(protocolSection));
 	const docs = await getDocs();
 	const projects = (await getProjects()).filter((p) => p.data.status === 'available').map(projectSection);
 	const posts = (await getPosts()).map(postSection);
