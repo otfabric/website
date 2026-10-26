@@ -1036,12 +1036,12 @@
    "stars": 0,
    "repoCreated": "2026-03-10",
    "historySince": "2026",
-   "lastCommit": "2026-10-25",
+   "lastCommit": "2026-10-26",
    "release": {
-    "version": "v1.23.1",
-    "date": "2026-10-25",
+    "version": "v1.27.0",
+    "date": "2026-10-26",
     "source": "GitHub release",
-    "url": "https://github.com/otfabric/go-opcua/releases/tag/v1.23.1"
+    "url": "https://github.com/otfabric/go-opcua/releases/tag/v1.27.0"
    },
    "roles": [
     "client",
@@ -1066,7 +1066,7 @@
    "sources": [
     "https://github.com/otfabric/go-opcua"
    ],
-   "verified": "2026-10-25"
+   "verified": "2026-10-26"
   },
   {
    "id": "unified-automation",

@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[go-opcua](https://github.com/otfabric/go-opcua) is a pure Go OPC UA client and server over UA-TCP, WebSockets and HTTPS with the OPC UA Binary encoding, with PubSub publishers and subscribers in the same module. It has no cgo. Cryptography is the Go standard library, plus ChaCha20-Poly1305 from `golang.org/x/crypto`, Ed448 and X448 from `cloudflare/circl`, and the Brainpool curves from `ProtonMail/go-crypto`. This page describes v1.23.1.
+[go-opcua](https://github.com/otfabric/go-opcua) is a pure Go OPC UA client and server over UA-TCP, WebSockets and HTTPS, with the OPC UA Binary encoding and the UA JSON mappings of WebSockets and HTTPS, with PubSub publishers and subscribers in the same module. It has no cgo. Cryptography is the Go standard library, plus ChaCha20-Poly1305 from `golang.org/x/crypto`, Ed448 and X448 from `cloudflare/circl`, and the Brainpool curves from `ProtonMail/go-crypto`. This page describes v1.27.0.
 
 ## Install
 
@@ -107,6 +107,24 @@ Go 1.26 or later is required. The packages you will use most:
     )
     ```
   </TabItem>
+  <TabItem label="UA JSON">
+    ```go
+    // wss-uajson or https-uajson: JSON service messages, TLS as the only protection.
+    eps, err := opcua.GetEndpoints(ctx, "opc.wss://server:4843", opcua.TLSConfig(tlsCfg))
+    if err != nil {
+        log.Fatal(err)
+    }
+    ep, err := opcua.SelectEndpointForTransport(eps, ua.TransportProfileWSSJSON,
+        "None", ua.MessageSecurityModeNone, nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+    c, err := opcua.NewClient(ep.EndpointURL,
+        opcua.TLSConfig(tlsCfg),
+        opcua.SecurityFromEndpoint(ep, ua.UserTokenTypeAnonymous), // selects wss-uajson
+    )
+    ```
+  </TabItem>
   <TabItem label="Reverse connect">
     ```go
     // The server dials this client. The URL is the endpoint the server announces.
@@ -122,7 +140,7 @@ Go 1.26 or later is required. The packages you will use most:
   </TabItem>
 </Tabs>
 
-Policies can be named by short name or full URI (`http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256`). `opcua.SelectEndpoint` skips policies the library does not implement and secured endpoints whose policy does not fit the certificate's key type; with an empty certificate only unsecured endpoints remain. `SelectEndpoint` prefers `opc.tcp` endpoints; `SelectEndpointForTransport` picks among the endpoints of one transport profile. The TLS certificate of an `opc.wss` or `opc.https` server is checked against `TLSConfig` and the host name, separately from its application certificate. Over HTTPS there is no SecureChannel: the policy only signs the session, and a Publish is a long poll. With reverse connect, create the client with `""` to accept whatever endpoint URL the server announces. `GetEndpoints`, `FindServers` and `FindServersOnNetwork` accept the same `ReverseConnect` option.
+Policies can be named by short name or full URI (`http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256`). `opcua.SelectEndpoint` skips policies the library does not implement and secured endpoints whose policy does not fit the certificate's key type; with an empty certificate only unsecured endpoints remain. `SelectEndpoint` prefers `opc.tcp` endpoints; `SelectEndpointForTransport` picks among the endpoints of one transport profile. The TLS certificate of an `opc.wss` or `opc.https` server is checked against `TLSConfig` and the host name, separately from its application certificate. Over HTTPS there is no SecureChannel: the policy only signs the session, and a Publish is a long poll. The UA JSON mappings share the `opc.wss` and `opc.https` URLs with UA Binary, so the client uses them only when `opcua.TransportProfile` says so, which `SecurityFromEndpoint` sets from a JSON endpoint. wss-uajson is always security mode None, because a WebSocket cannot name a policy. UA-.NETStandard 2.0.1 takes JSON over HTTPS only as `application/opcua+uajson`: add `opcua.HTTPSJSONContentType(uasc.HTTPSJSONContentTypeLegacy)` for it. With reverse connect, create the client with `""` to accept whatever endpoint URL the server announces. `GetEndpoints`, `FindServers` and `FindServersOnNetwork` accept the same `ReverseConnect` option.
 
 ## A complete client
 
@@ -258,7 +276,27 @@ for dv, err := range c.ReadHistoryAll(ctx, nodeID, start, end) { // pages raw hi
 }
 ```
 
-For services without a helper, use `Client.Send`. `HistoryReadEvent`, the modified, processed and at-time reads, and HistoryUpdate (insert, replace, delete) have their own helpers.
+`ReadHistory` and `ReadHistoryAll` follow continuation points and release the one of a read that stops early. Historical events work the same way, with an EventFilter that selects the fields:
+
+```go
+filter := ua.NewEventFilter().
+    Select("EventId", "Time", "Message", "Severity").
+    SelectPaths("2:Temperature"). // "ns:Name" segments name other namespaces
+    Build()
+
+// Up to 50 events, newest first: a start after the end reads backward
+events, err := c.ReadEventHistory(ctx, notifier, end, start, filter, 50)
+
+// Every event of the range, 100 per HistoryRead
+for ev, err := range c.ReadEventHistoryAll(ctx, notifier, start, end, filter, 100) {
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(ev.EventFields[1].Value(), ev.EventFields[2].Value())
+}
+```
+
+`HistoryUpdateEvents` and `HistoryDeleteEvents` change event history, and `HistoryReleaseContinuationPoints` releases the points of a low-level `HistoryReadEvent` you do not finish. For services without a helper, use `Client.Send`. The modified, processed and at-time reads and HistoryUpdate of values (insert, replace, delete) have their own helpers. The browse helpers return a Bad browse status, such as `BadNodeIdUnknown` for a node that does not exist, as their error.
 
 **Alarms and conditions.** Subscribe to events on the Server object with `opcua.NewConditionEventFilter()`, call `ConditionRefresh` to get the retained conditions, and answer each event with its EventId:
 
@@ -417,11 +455,12 @@ func main() {
 }
 ```
 
-After changing a value, call `srv.ChangeNotification(nodeID)` so subscribers are sampled. `server.NewMapNamespace` is a simpler key/value namespace that notifies on `SetValue`. `RegisterMethod` adds method handlers, `ImportNodeSetXML` loads NodeSet2 models, `EmitBaseEvent` emits events, and `SetHistorian(server.NewHistorian())` enables HistoryRead (raw, modified, at-time and processed) and HistoryUpdate.
+After changing a value, call `srv.ChangeNotification(nodeID)` so subscribers are sampled. `server.NewMapNamespace` is a simpler key/value namespace that notifies on `SetValue`. `RegisterMethod` adds method handlers, `ImportNodeSetXML` loads NodeSet2 models, `EmitBaseEvent` emits events, and `SetHistorian(server.NewHistorian())` enables HistoryRead (raw, modified, at-time and processed) and HistoryUpdate. `Node.SetMethodArguments` gives a method its InputArguments and OutputArguments, which the Call service then checks.
 
 **More of the server.**
 
-- **Transports:** `server.WebSocketEndPoint(host, port)` and `server.HTTPSEndPoint(host, port)` add `opc.wss` and `opc.https` listeners next to `opc.tcp`; `server.TLSConfig` sets their TLS certificate.
+- **Transports:** `server.WebSocketEndPoint(host, port)` and `server.HTTPSEndPoint(host, port)` add `opc.wss` and `opc.https` listeners next to `opc.tcp`; `server.TLSConfig` sets their TLS certificate. `server.EnableUAJSON()` serves wss-uajson and https-uajson on the same listeners, advertised as twins of the binary endpoints.
+- **Event history:** `srv.EnableEventHistory(notifier, server.EventHistoryOptions{Writable: true})` makes an Object a HistoricalEventNode. Every event reported on it, conditions and audit events included, goes to the historian (`Historian.EnableEvents(notifier, maxEvents)`, 1000 per notifier by default), which serves HistoryRead of events with filters, paging and continuation points, and inserts, replaces, updates and deletes events. An `EventHistoryProvider` of your own can replace it.
 - **Alarms:** `srv.AddCondition(server.ConditionConfig{...})` creates conditions and limit alarms with acknowledge, confirm, shelving, the 1.05 states, dialogs, branches, alarm groups and metrics. The application drives the state (`SetActive`, `EvaluateLimits`); clients call the methods through the Call service and the access controller.
 - **Discovery:** `WithLocalDiscoveryServer` makes the server an LDS, `WithMulticastDiscovery` announces it with mDNS, and `WithReverseConnect` dials listening clients.
 - **Certificates:** `WithPushManagement` serves the ServerConfiguration push model, and `gds/gdsserver` is a complete Global Discovery Server with a memory or file store.
@@ -458,8 +497,8 @@ The library is silent by default. `opcua.WithLogger(*slog.Logger)` and `server.S
 
 ## Limitations
 
-- No UA JSON encoding over HTTPS or WebSockets (`https-uajson`, `wss-uajson`). UA Binary over both is supported: use `opc.https` and `opc.wss`.
-- The built-in historian stores data only, not historical events, and accepts `returnBounds` without computing bounding values.
+- The built-in historian accepts `returnBounds` without computing bounding values. Event history answers ReadEventDetails2 with ReadModified and ReadEventDetailsSorted with `BadHistoryOperationUnsupported`.
+- wss-uajson has security mode None only, because a WebSocket cannot name a security policy; TLS protects it.
 - Custom structures are decoded through registered Go types, not dynamically from the server's DataTypeDefinition.
 - PubSub has no time-scheduled (TSN) Ethernet and no AMQP over WebSockets.
 - The push model has no file-based certificate store in the library: implement `server.CertificateStore` to persist pushed certificates.
