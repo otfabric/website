@@ -75,7 +75,7 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-iec104",
-		"description": "IEC 60870-5-104 controlling and controlled station, with the full APCI state machine and redundancy groups.",
+		"description": "IEC 60870-5-104 controlling and controlled station, with the full APCI state machine, redundancy groups, TLS and IEC 62351-5 application-layer security.",
 		"icon": "go-iec104"
 	},
 	{
@@ -267,7 +267,7 @@
 			"iec-104"
 		],
 		"status": "available",
-		"description": "Interrogate, monitor and command IEC 104 stations, transfer files, or simulate an RTU from YAML.",
+		"description": "Interrogate, monitor and command IEC 104 stations over TLS or IEC 62351-5, transfer files, or simulate an RTU from YAML.",
 		"icon": "go-iec104"
 	},
 	{
@@ -458,7 +458,7 @@
 			"iec-104"
 		],
 		"status": "available",
-		"description": "IEC 104 reference stations: lib60870, OpenMUC j60870 and wendy512.",
+		"description": "IEC 104 reference stations: lib60870, OpenMUC j60870, wendy512 and cB-Sigma, the last with IEC 62351-5.",
 		"icon": "go-iec104"
 	},
 	{

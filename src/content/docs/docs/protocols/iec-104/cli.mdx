@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[iec104ctl](https://github.com/otfabric/iec104ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files. As a controlled station it simulates an RTU from a YAML model. It is built on [go-iec104](/docs/protocols/iec-104/library/). The first release is v0.1.0.
+[iec104ctl](https://github.com/otfabric/iec104ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files, over TCP, TLS or the application-layer security of IEC 62351-5. As a controlled station it simulates an RTU from a YAML model. It is built on [go-iec104](/docs/protocols/iec-104/library/). This page describes v0.2.0, which adds IEC 62351-5 and is built on go-iec104 v0.0.4.
 
 <Aside type="caution" title="Responsible use">
 iec104ctl sends real telecontrol requests. Use it only on stations and networks you own or are authorized to test. A station often accepts few connections and sends its events on only one: connecting to a station in service can take its events away from the control centre.
@@ -117,6 +117,29 @@ Every `client` command takes the station as a URL, or as an address and port. Th
 ```sh
 iec104ctl client interrogate --url tls://rtu.example.net --tls-ca ca.pem --tls-cert scada.pem --tls-key scada.key
 ```
+
+### Application-layer security (IEC 62351-5)
+
+`--secure` runs the A-Profile of IEC 62351-5, as IEC TS 60870-5-7 applies it to IEC 104. After STARTDT the client and the station agree on keys in a Station Association authenticated with their certificates, then on session keys. From then on every ASDU travels as Secure Data (`S_SD_NA_1`), authenticated with an HMAC, or encrypted and authenticated with AES-256-GCM, and numbered against replay. The command starts only once the session is secure. It works over TCP and over TLS.
+
+| Flag | Meaning |
+|---|---|
+| `--secure` | Run the A-Profile. The other flags of this table need it, and it needs the next three |
+| `--security-cert` | PEM file with the own station certificate: P-256, or X25519 signed by an authority |
+| `--security-key` | PEM file with its private key |
+| `--security-trust` | PEM file with the stations to trust. A CA certificate is an **authority**: every station certificate it signed is accepted. Any other certificate is **pinned**: that station's self-signed certificate is accepted |
+| `--association-id` | The AIM, this controlling station's half of the association ID, 1-65535 (default 1) |
+| `--mal` | MAC algorithm: `hmac-sha-256` (default), `hmac-sha-256/8`, `hmac-sha3-256`, `hmac-sha3-256/8`, by name or code |
+| `--dpa` | Data protection: a MAC algorithm as for `--mal`, or `aes-256-gcm` to encrypt as well (default: `--mal`) |
+
+With a plant authority that signs both certificates, each side trusts the authority alone:
+
+```sh
+iec104ctl server start --secure --security-cert station.pem --security-key station.key --security-trust ca.pem --roles viewer
+iec104ctl client interrogate --ip 127.0.0.1 --secure --security-cert scada.pem --security-key scada.key --security-trust ca.pem --dpa aes-256-gcm
+```
+
+The README has the openssl commands for pinned self-signed certificates and for a plant authority. A refused certificate, an algorithm the station does not accept, or no answer to the key management ends the command with exit code 4 and the error code `security_failed`, before anything else is sent. A request the station's roles do not permit is refused with cause 17 (`not-authorized`), exit code 6. A client without `--secure` gets no answer from a secure station (exit code 5). `--debug` traces the security events (`STAS_PROC_SUCC`, `NODE_NOT_AUTR`, ...) and the algorithms of the session with the frames.
 
 Protocol parameters default to the standard: `--k` 12, `--w` 8, `--t0` 30, `--t1` 15, `--t2` 10, `--t3` 20 (seconds). A station behind an IEC 60870-5-101 gateway may use shorter address fields: `--cot-size` (1 or 2), `--ca-size` (1 or 2) and `--ioa-size` (1 to 3). If every value looks scrambled, or the station closes the connection on the first request, check these first. `--timezone` (`utc`, `local` or an IANA name such as `Europe/Brussels`) says which zone the station keeps its clock in.
 
@@ -251,9 +274,9 @@ iec104ctl client file get --ip 192.168.1.10 --ioa 30000 --name 1 --output record
 | 0 | Success |
 | 2 | Usage: unknown command or flag, missing required flag |
 | 3 | Invalid input: nothing was sent |
-| 4 | Transport: cannot connect, connection lost, TLS failure |
+| 4 | Transport: cannot connect, connection lost, TLS failure, IEC 62351-5 session not established (`security_failed`) |
 | 5 | Timeout: no answer, or no acknowledgement within t1 |
-| 6 | The station refused the request, or a protocol error |
+| 6 | The station refused the request (including cause 17 under IEC 62351-5), or a protocol error |
 | 7 | Partial success: a valid result that holds failures (a refused address in `read`, a failed test in `ping`) |
 | 10 | Output or internal error |
 
@@ -305,13 +328,22 @@ uploads:
 
 The station answers general, group and counter interrogations, read, clock synchronization, the test command and the reset process command. It executes commands on their `target` point, direct or select-before-operate (`select_required`, `select_timeout` default 30 s), and reports the change with cause 11. Values with `simulate` change by themselves (`toggle`, `ramp`, `sine`, `random`, `count`). State changes are queued until a controlling station acknowledges them; measured values are not kept. It serves any number of connections, and queued events go to the one that started data transfer last. It serves one common address per instance.
 
+With `--secure` and the certificate, key and trust flags, every controlling station must associate with a certificate `--security-trust` accepts, and each one (each AIM) gets its own association; `--association-id` is the station's AIS. `--roles viewer,operator,...` gives every controlling station those roles of IEC TS 60870-5-7 (`viewer`, `operator`, `engineer`, `installer`, `secadm`, `secaud`, `rbacmnt`), and a request no role permits is refused with cause 17. The station logs `secured` when a controlling station has associated, `security-refused` when an association is refused, and `refused` for a request its roles do not permit.
+
+```sh
+# Controlling stations may look, not operate
+iec104ctl server start --config station.yaml --secure --security-cert station.pem --security-key station.key --security-trust ca.pem --roles viewer
+```
+
 <Aside type="caution">
-`server start` listens on all interfaces and accepts any client by default. Use `--listen`, `--allow` (addresses or CIDR prefixes) and `--max-sessions`, or TLS with `--tls-cert`, `--tls-key` and `--tls-client-ca`. `--duration` stops it after a number of seconds, for test pipelines.
+`server start` listens on all interfaces and accepts any client by default. Use `--listen`, `--allow` (addresses or CIDR prefixes) and `--max-sessions`, TLS with `--tls-cert`, `--tls-key` and `--tls-client-ca`, or `--secure`. `--duration` stops it after a number of seconds, for test pipelines.
 </Aside>
 
 ## Limitations
 
-- IEC 62351-5 application-layer authentication is not implemented; its types are recognized by name only.
+- IEC 62351-5 associations are kept in memory: every run of iec104ctl associates anew, and the simulated station forgets its associations when it stops.
+- The simulated station gives every controlling station the same trust and roles. The timers and key usage limits of IEC 62351-5 are the library's defaults and have no flags.
+- secp256k1, Curve448, brainpoolP256r1 and BLAKE2s are not supported. IEC 62351-5 is tested for interoperability with cB-Sigma/iec60870, not for conformance.
 - No serial link layer: IEC 60870-5-101 is not spoken, only its field sizes over IEC 104.
 - The simulated station serves one common address per instance.
 - No parameter commands in `client command`.

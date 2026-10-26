@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-[go-iec104](https://github.com/otfabric/go-iec104) is a pure Go implementation of IEC 60870-5-104 with both roles: a **client** (controlling station) and a **server** (controlled station). It has no cgo and no dependencies outside the standard library. The current release is v0.0.3. The license is MIT.
+[go-iec104](https://github.com/otfabric/go-iec104) is a pure Go implementation of IEC 60870-5-104 with both roles: a **client** (controlling station) and a **server** (controlled station). It has no cgo and no dependencies outside the standard library. With v0.0.4 it adds the application-layer security of IEC 62351-5. The current release is v0.0.5. The license is MIT.
 
 ## Install
 
@@ -25,6 +25,7 @@ Requires **Go 1.23** or later.
 | `server` | `.../server` | The controlled station, sessions, `Mux`, `FileServer` |
 | `asdu` | `.../asdu` | ASDU model and codec, independent of the transport and reusable for IEC 60870-5-101 |
 | `apci` | `.../apci` | APDU framing, sequence arithmetic and the `k`/`w`/`t0`..`t3` parameters |
+| `sec` | `.../sec` | IEC 62351-5 application-layer security: identities, trust, the security endpoint and its messages |
 
 ## Client: connect, interrogate, command
 
@@ -201,7 +202,7 @@ _ = srv.Enqueue(asdu.New(asdu.CauseSpontaneous, 1,
 
 The queue holds 1024 events per group by default and drops the oldest when full; `Pending(group)` and `Dropped(group)` report its state. The queue is in memory: it survives an absent control centre, not a restart of the station.
 
-Other server options: `WithMaxSessions`, `WithAccept` (filter by address before any exchange), `WithStateHandler`, `WithTLS`, `WithParams`. File transfer is served by `server.NewFileServer`, registered with `mux.Handle(server.NewFileServer(source), server.FileTypes...)`.
+Other server options: `WithMaxSessions`, `WithAccept` (filter by address before any exchange), `WithStateHandler`, `WithTLS`, `WithSecurity`, `WithParams`. File transfer is served by `server.NewFileServer`, registered with `mux.Handle(server.NewFileServer(source), server.FileTypes...)`.
 
 ### Redundancy on the client side
 
@@ -223,9 +224,58 @@ A select and its execute must use the same connection: select again after a swit
 
 `client.WithTLS` and `server.WithTLS` take a standard `*tls.Config` that the library does not weaken. Set `MinVersion` to TLS 1.2 or later. For mutual authentication set `ClientAuth: tls.RequireAndVerifyClientCert` and `ClientCAs` on the server and `Certificates` on the client. Without it, a TLS server still accepts commands from any client. In a handler, `Session.Conn()` returns the `*tls.Conn`, whose `ConnectionState().PeerCertificates` identifies the controlling station. The `tls` example shows both sides.
 
+TLS protects the connection. The application-layer security below protects every ASDU and authorizes every request; the two combine.
+
+## Application-layer security (IEC 62351-5)
+
+Package `sec` implements the A-Profile of IEC 62351-5:2023 as IEC TS 60870-5-7:2025 applies it to IEC 104, for both roles. `client.WithSecurity` and `server.WithSecurity` switch it on. After STARTDT the stations run a **Station Association** with X.509 certificates (ECDH on secp256r1 or Curve25519, HKDF), then a **Session Key Change** (AES-256 key wrap), and from then on every application ASDU travels as **Secure Data** (`S_SD_NA_1`) with a sequence number. One `sec.Endpoint` holds one association:
+
+```go
+ep, err := sec.New(sec.Config{
+	Role: sec.Controlling, AssociationID: 1,
+	Identity: id,                                  // sec.LoadIdentity("scada.pem", "scada.key")
+	Trust:    sec.Trust{Authorities: []*x509.Certificate{plantCA}},
+	DataProtection: sec.AES256GCM,                 // or HMAC only, the default
+	Store:    sec.FileStore{Path: "/var/lib/scada/station1.keys"},
+})
+c, err := client.Dial(ctx, "10.0.0.5:2404", client.WithSecurity(ep)) // returns with the session established
+```
+
+On the station, `server.WithSecurity` takes a function that makes the endpoint of each controlling station by its AIM (the controlling station's half of the association ID), or refuses it. Give each AIM a `Trust` that accepts only its own station, and the `Roles` it may use:
+
+```go
+srv, err := server.New(mux, server.WithCommonAddrs(1),
+	server.WithSecurity(func(group string, aim uint16) (*sec.Endpoint, error) {
+		if aim != 1 {
+			return nil, fmt.Errorf("no association for controlling station %d", aim)
+		}
+		return sec.New(sec.Config{
+			Role: sec.Controlled, AssociationID: 1, Identity: stationID, Trust: centreOnly,
+			CommonAddr: 1,
+			Roles:      []sec.AccessRole{sec.RoleViewer}, // may look, not operate
+		})
+	}))
+```
+
+| Item | Support |
+|---|---|
+| Procedures | Station Association, Session Key Change, Secure Data, Session Initiation Request; segmentation of long security messages |
+| Trust | Pinned self-signed certificates or public keys, or Central Authorities with an optional list of subjects |
+| MAC algorithms | HMAC-SHA-256 with 16 (default) or 8 octets, HMAC-SHA3-256 (built with Go 1.24 or later) |
+| Data protection | The MAC algorithms, or AES-256-GCM, which also encrypts |
+| Access control | The seven roles of IEC TS 60870-5-7; a request no role permits is answered with cause 17 and never reaches the handler. The client reports it as `*iec104.NegativeError` |
+| Several controlling stations | One association per AIM; the connections of a client redundancy group share theirs |
+| Keys at rest | `sec.FileStore` keeps an association over a restart (mode 0600), or implement `sec.KeyStore` against a vault or HSM |
+| Observability | The counters (`Endpoint.Statistics`) and events with their mnemonics (`Config.OnEvent`) of IEC 62351-5 |
+| Not implemented | secp256k1, X448 and brainpool curves, BLAKE2s, the broadcast session key of IEC 60870-5-101, IEC 62351-8 access tokens, certificate revocation lists |
+
+The server discards unprotected ASDUs. `Session.Security` returns the association of the session's controlling station, so a handler can see who sent a request.
+
 <Aside type="note">
-IEC 62351-5 application-layer security is **not implemented**. Its type identifications (`asdu.S_CH_NA_1` .. `asdu.S_UC_NA_1`, `asdu.S_IT_TC_1`) and causes are named and carried as `ASDU.Raw`; the library neither creates nor checks them.
+The IEC documents are not freely available and were not used. The message formats, algorithms and state machines were derived from [cB-Sigma/iec60870](https://github.com/cB-Sigma/iec60870) (Apache-2.0) and implemented anew, and the two are tested against each other in both roles. Treat the A-Profile as interoperable with cB-Sigma, not as conformance-tested, and keep TLS with client certificates where both ends support it. One difference is deliberate: acknowledging a file download needs the file read role here, where cB-Sigma asks for file write.
 </Aside>
+
+v0.0.4 renamed the security type identifications to those of the 2025 edition (`asdu.S_AQ_NA_1` .. `asdu.S_KP_NA_1`, `asdu.S_SD_NA_1`), which reuse the numbers 81..91 differently, and the causes to `CauseDataProtection` (14), `CauseSessionKey` (15), `CauseAssociation` (16) and `CauseNotAuthorized` (17). Code that only printed them needs no change.
 
 ## Protocol parameters
 
@@ -243,7 +293,7 @@ Always test with `errors.Is` and `errors.As`.
 
 | Situation | Error | Connection |
 |---|---|---|
-| Station refuses (P/N = 1 or cause 44..47) | `*iec104.NegativeError`; `Cause()` tells why | stays up |
+| Station refuses (P/N = 1, cause 44..47, or 17 *not authorized* under IEC 62351-5) | `*iec104.NegativeError`; `Cause()` tells why | stays up |
 | No answer before the deadline | wraps `context.DeadlineExceeded` | stays up |
 | Identical request pending | `iec104.ErrBusy` | stays up |
 | Request method called from a client handler | `iec104.ErrInHandler` | stays up |
@@ -303,7 +353,7 @@ Log entries are constant messages with fields (`component`, `remote`, `state`, `
 
 ## Examples
 
-Seven examples are self-contained (station and client in one process over loopback):
+Eight examples are self-contained (station and client in one process over loopback):
 
 ```sh
 go run ./examples/quickstart      # the smallest station and client
@@ -312,14 +362,15 @@ go run ./examples/files           # download, upload and directory
 go run ./examples/events          # event queue, broadcast, end of initialization
 go run ./examples/redundancy      # redundancy group, switchover, failover
 go run ./examples/tls             # TLS with certificates on both sides
+go run ./examples/secure          # IEC 62351-5: association, Secure Data, roles
 go run ./examples/observability   # logs, states, metrics, retries, reconnect
 ```
 
 ## Limitations
 
-- No IEC 62351-5 application-layer security; use TLS with client certificates.
+- IEC 62351-5 is tested against one other implementation, cB-Sigma/iec60870, which it was derived from; no third implementation or certified test equipment has checked it.
 - No IEC 60870-5-101 serial link layer. The `asdu` package takes the 101 field sizes, so a separate module could add it.
 - No combined station (both directions on one connection); run a client and a server side by side.
 - File upload and the directory are verified by the repository's own tests only: no reference stack offers them through the interop images yet. File deletion and the query log have their types in the codec but no procedure.
 - A client waiting for a command confirmation does not also wait for the activation termination; the termination reaches the handler.
-- Verified against lib60870-C, j60870 and wendy512/iec104, not against certified test equipment or field devices. See [Testing and interop](/docs/protocols/iec-104/testing/).
+- Verified against lib60870-C, j60870, wendy512/iec104 and cB-Sigma/iec60870, not against certified test equipment or field devices. See [Testing and interop](/docs/protocols/iec-104/testing/).
