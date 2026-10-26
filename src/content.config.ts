@@ -3,7 +3,7 @@ import { file, glob } from 'astro/loaders';
 import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 
-const protocolIds = ['modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'sunspec', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5'] as const;
+const protocolIds = ['modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'sunspec', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5', 'ethernet-ip'] as const;
 
 // Standards and alliances directory (src/data/organizations.json). "Open" and "free"
 // are split into separate questions, and every answer that states a fact must cite

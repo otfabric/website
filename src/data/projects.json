@@ -184,6 +184,19 @@
 		"icon": "go-ieee20305"
 	},
 	{
+		"id": "go-ethernetip",
+		"name": "go-ethernetip",
+		"repo": "go-ethernetip",
+		"category": "library",
+		"protocols": [
+			"ethernet-ip"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-ethernetip",
+		"description": "EtherNet/IP and CIP client, scanner and adapter: Class 1 and Class 3 connections, multicast, Rockwell Logix tags, EDS files and code generation, TLS. No dependencies.",
+		"icon": "go-ethernetip"
+	},
+	{
 		"id": "modbusctl",
 		"name": "modbusctl",
 		"repo": "modbusctl",
@@ -316,6 +329,18 @@
 		"status": "available",
 		"description": "Act as an IEEE 2030.5 device, run a device agent, serve a seeded test server and operate it while it runs, and check certificates, with CSIP-AUS and CCM_8.",
 		"icon": "go-ieee20305"
+	},
+	{
+		"id": "ethernetipctl",
+		"name": "ethernetipctl",
+		"repo": "ethernetipctl",
+		"category": "cli",
+		"protocols": [
+			"ethernet-ip"
+		],
+		"status": "available",
+		"description": "Discover and identify EtherNet/IP devices, read and write attributes, stream I/O, diagnose, read and write Logix tags, check EDS files, or simulate an adapter.",
+		"icon": "go-ethernetip"
 	},
 	{
 		"id": "go-cotp",
@@ -507,6 +532,18 @@
 		"status": "available",
 		"description": "IEEE 2030.5 reference stacks: ANU Envoy, GridAPPS-D, DER Security py20305 and the EPRI client, with mutual TLS and baseline, CSIP and CSIP-AUS fixtures.",
 		"icon": "go-ieee20305"
+	},
+	{
+		"id": "ethernetip-interop",
+		"name": "ethernetip-interop",
+		"repo": "ethernetip-interop",
+		"category": "interop",
+		"protocols": [
+			"ethernet-ip"
+		],
+		"status": "available",
+		"description": "EtherNet/IP reference stacks: OpENer, EIPScanner, pycomm3 and cpppo as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
+		"icon": "go-ethernetip"
 	},
 	{
 		"id": "sunspec-explorer",

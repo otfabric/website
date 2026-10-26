@@ -1,0 +1,116 @@
+---
+title: EtherNet/IP
+description: How EtherNet/IP and CIP work (scanners and adapters, encapsulation and sessions, objects, classes, instances and attributes, explicit and implicit messaging, connections, assemblies, routing, Logix tags, EDS files and CIP Security) and which OT Fabric projects implement them.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+EtherNet/IP is the industrial Ethernet protocol of programmable controllers, I/O adapters, drives and sensors. It carries the **Common Industrial Protocol** (CIP) over standard Ethernet, TCP and UDP. ODVA maintains both in *The CIP Networks Library*: Volume 1 defines CIP and Volume 2 its adaptation to Ethernet. They are also part of the international fieldbus standards IEC 61158 and IEC 61784, as Communication Profile Family 2. This page explains how EtherNet/IP works on the wire, as far as it matters for using [go-ethernetip](/projects/go-ethernetip/) and [ethernetipctl](/projects/ethernetipctl/).
+
+## Scanners and adapters
+
+| Role | Also called | What it is | In go-ethernetip | In ethernetipctl |
+|---|---|---|---|---|
+| Scanner | Originator | A PLC, a PC application or an edge gateway: it opens connections and sends requests | packages `client` and `scanner` | every command but `adapter` |
+| Adapter | Target | An I/O block, a drive, a valve island, a sensor, or a controller answering requests: it holds the objects | package `server` | `ethernetipctl adapter` |
+
+A controller is often both. It scans its own I/O adapters, and it is a target for an HMI, a historian or another controller that reads its tags.
+
+## Encapsulation and sessions
+
+Every device listens on **TCP port 44818**, and on UDP 44818 for discovery. EtherNet/IP wraps each message in a 24-octet **encapsulation header**: a command, a length, a session handle, a status and a sender context that the reply echoes.
+
+| Command | What it does |
+|---|---|
+| RegisterSession, UnRegisterSession | Open and close a session on the TCP connection. Every CIP request travels in a session |
+| ListIdentity | Who are you? Vendor, device type, product code, revision, serial number, name and state. Sent over UDP to a broadcast address, it finds every device on a segment |
+| ListServices, ListInterfaces | What the device can do: CIP over TCP, I/O over UDP |
+| SendRRData | An unconnected request and its reply |
+| SendUnitData | A message on a connection |
+
+Inside SendRRData and SendUnitData the payload is a **common packet format**: an address item (null, or a connection ID) and a data item that holds the CIP message.
+
+## Objects, classes, instances and attributes
+
+Everything a device exposes is an **object**. A **class** is a kind of object, an **instance** is one of them, and **attributes** are its numbered values. A path such as `@1/1/7` names class 1 (Identity), instance 1, attribute 7: the product name.
+
+| Class | Object | What it holds |
+|---|---|---|
+| 0x01 | Identity | Vendor, device type, product code, revision, status, serial number, product name |
+| 0x02 | Message Router | The list of classes the device implements; it dispatches every request |
+| 0x04 | Assembly | Blocks of I/O data: inputs, outputs and configuration |
+| 0x06 | Connection Manager | Opens and closes connections, and counts them |
+| 0xF4, 0xF5, 0xF6 | Port, TCP/IP Interface, Ethernet Link | Ports for routing, IP configuration, link speed and counters |
+
+A CIP request is a **service** on a path: Get_Attribute_Single (0x0E), Set_Attribute_Single (0x10), Get_Attributes_All (0x01), Reset (0x05), Multiple Service Packet (0x0A) to bundle several requests, and services specific to one class. The answer carries a **general status**, success or a code such as 0x05 (path destination unknown), 0x08 (service not supported) or 0x14 (attribute not supported), and sometimes **extended status** words that say more.
+
+Device profiles fix which objects a kind of device has, so that drives of different vendors look alike. An **Electronic Data Sheet** (EDS), a text file from the vendor, describes a device's identity, parameters, assemblies and connections for configuration tools.
+
+## Explicit messaging
+
+Explicit messages are request and response, for configuration, diagnostics and data that is not time-critical:
+
+- **Unconnected**: each request on its own, in SendRRData. Simple, and the way most tools start.
+- **Connected**: over a **Class 3** connection opened with Forward_Open to the Message Router. The device reserves resources for it, and each request carries a sequence count, so a repeated request is detected.
+- **Routed**: a request for a device behind a gateway, such as a controller in a chassis behind its EtherNet/IP module, goes in an **Unconnected_Send** with a route path. `1/0` is port 1 (the backplane), slot 0.
+
+## Implicit messaging: cyclic I/O
+
+I/O data does not wait for requests. A scanner opens a **Class 1** connection with **Forward_Open** (or Large_Forward_Open above 511 octets), naming in its connection path the configuration assembly and two **connection points**:
+
+| Direction | What travels | Name |
+|---|---|---|
+| O->T (originator to target) | The scanner's outputs, the adapter's consumed data | output assembly |
+| T->O (target to originator) | The adapter's inputs, its produced data | input assembly |
+
+From then on both ends send a UDP datagram to port **2222** at every **RPI** (requested packet interval), each with a sequence number so that late and duplicate datagrams are dropped. O->T data usually starts with a 32-bit **run/idle** header that tells the adapter whether the scanner is in run mode. If datagrams stop for the timeout (a multiple of the RPI), the connection times out and the adapter falls back to its safe state. Forward_Close ends a connection, named by its **triad**: connection serial number, originator vendor ID and originator serial number.
+
+| Connection type | What it is |
+|---|---|
+| Exclusive owner | Writes the outputs. Only one per output assembly |
+| Input only | Reads the inputs, with a heartbeat instead of output data. Several may share them |
+| Listen only | Like input only, but only while an owner's connection exists; usually multicast |
+
+Inputs can be sent **point-to-point** to one scanner or by **multicast** to several, from addresses the device derives from its IP address. **Class 0** connections are the same without the sequence count. The Connection Manager refuses a Forward_Open it cannot honour with general status 0x01 and an extended status: 0x0106 (ownership conflict), 0x0127 (wrong O->T size), 0x0119 (listen-only without an owner).
+
+## Logix tags
+
+Rockwell Automation's ControlLogix and CompactLogix controllers add **tag services** to CIP: Read Tag (0x4C), Write Tag (0x4D), their fragmented forms for large values, Read-Modify-Write for bits, a tag list on the Symbol object and structure definitions on the Template object. These are vendor specific, documented in Rockwell's *Logix 5000 Controllers Data Access* manual, and not part of CIP: other devices refuse them. Most open-source "EtherNet/IP libraries" are in fact Logix tag clients.
+
+## Transports and security
+
+| Transport | Port | Notes |
+|---|---|---|
+| TCP | 44818 | Sessions, explicit messages |
+| UDP | 44818 | ListIdentity and ListServices, including broadcast discovery |
+| UDP | 2222 | Class 0 and Class 1 I/O |
+| TLS | 2221 (TCP) | EtherNet/IP over TLS, the CIP Security transport for explicit messaging |
+| DTLS | 2221 (UDP) | CIP Security for I/O |
+
+Plain EtherNet/IP has no authentication: anyone who can reach port 44818 can read and write attributes and open connections that drive outputs, and anyone who can send to port 2222 from a scanner's address can inject output data. **CIP Security** (Volume 8) adds TLS and DTLS with certificates or pre-shared keys, configured through its own objects. Keep EtherNet/IP on isolated cell and area networks, and use TLS or a VPN across anything you do not trust.
+
+<Aside type="caution" title="Real equipment">
+EtherNet/IP I/O drives real outputs: an exclusive-owner connection replaces what the PLC writes, and a Reset or an attribute write can stop a device. Use ethernetipctl and go-ethernetip on devices and networks you own or are authorized to test.
+</Aside>
+
+## Specifications and conformance
+
+ODVA sells the specifications as an annual subscription, under its Terms of Usage. A product that implements EtherNet/IP needs an ODVA vendor ID, and passing ODVA's conformance test earns its Declaration of Conformity; see [ODVA in the standards directory](/ecosystem/organizations/odva/). The OT Fabric projects are built from public sources and the behaviour of independent implementations, list every code they use with its source, and make no conformance claim.
+
+## OT Fabric for EtherNet/IP
+
+| Project | What it is |
+|---|---|
+| [go-ethernetip](/projects/go-ethernetip/) | EtherNet/IP and CIP for Go: client, scanner and adapter, Class 0, 1 and 3 connections with multicast and listen-only, Rockwell Logix tags with an emulated controller, EDS files and code generation, EtherNet/IP over TLS. No dependencies outside the standard library. v0.2.1. |
+| [ethernetipctl](/projects/ethernetipctl/) | A command-line tool on go-ethernetip: discover, identify, read and write attributes, open connections and stream I/O, diagnose, Logix tags and EDS files; simulate an adapter from a YAML model. v0.2.1. |
+| [ethernetip-interop](/projects/ethernetip-interop/) | Docker images of four independent EtherNet/IP implementations behind one container contract, with deterministic fixtures and a cross-stack self-test. v0.2.0. |
+
+<CardGrid>
+  <LinkCard title="Go library" description="Clients, scanners, adapters, Logix tags and EDS files with go-ethernetip." href="/docs/protocols/ethernet-ip/library/" />
+  <LinkCard title="ethernetipctl" description="Discover, identify, read and write, stream I/O and simulate an adapter." href="/docs/protocols/ethernet-ip/cli/" />
+  <LinkCard title="Testing and interop" description="Reference stacks, fixtures and what has been validated." href="/docs/protocols/ethernet-ip/testing/" />
+  <LinkCard title="Ecosystem map" description="Who else implements EtherNet/IP, in which language and licence." href="/ecosystem/implementations/?protocol=ethernet-ip" />
+</CardGrid>

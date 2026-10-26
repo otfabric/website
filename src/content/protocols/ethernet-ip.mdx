@@ -1,0 +1,117 @@
+---
+name: "EtherNet/IP"
+standard: "ODVA EtherNet/IP and CIP (The CIP Networks Library, Volumes 1 and 2); IEC 61158 and IEC 61784 (CPF 2)"
+summary: "The industrial Ethernet protocol of programmable controllers, I/O adapters, drives and sensors: the Common Industrial Protocol (CIP) over TCP and UDP, with explicit messages to read and write objects and cyclic I/O between scanners and adapters."
+order: 12
+facts:
+  - { label: 'Transport', value: 'TCP and UDP 44818, I/O on UDP 2222, TLS 2221' }
+  - { label: 'Roles', value: 'Scanner (originator) and adapter (target)' }
+  - { label: 'Library', value: 'go-ethernetip' }
+  - { label: 'CLI', value: 'ethernetipctl' }
+  - { label: 'Interop', value: 'ethernetip-interop v0.2.0' }
+icon: go-ethernetip
+docs: /docs/protocols/ethernet-ip/
+---
+
+import Callout from '../../components/Callout.astro';
+
+EtherNet/IP carries the **Common Industrial Protocol** (CIP) over standard Ethernet, TCP and UDP. A **scanner**, usually a PLC, opens connections to **adapters**: I/O blocks, drives, valve manifolds, robots, scales and sensors. It then exchanges their **assembly** data cyclically over UDP at a requested packet interval, from tens of milliseconds down to one. Next to that cyclic **implicit** traffic, any device can be asked about itself and configured with **explicit** request and response messages that read and write the attributes of its **objects**. ODVA maintains the specification, and the same CIP application layer also runs over DeviceNet and ControlNet.
+
+## Where you meet it
+
+- Factory and process automation, above all with Rockwell Automation ControlLogix and CompactLogix controllers, and with Omron, Schneider Electric, Keyence and many other vendors
+- Drives, I/O, valve islands and robots on machines and packaging lines, often next to Modbus TCP and PROFINET on the same plant floor
+- Data collection, historians and edge gateways that read controller tags or watch device health without a programming tool
+- Energy and infrastructure sites run by the same controllers, such as battery storage, water treatment and building plant
+
+## Quickstart
+
+### From the command line
+
+Download `ethernetipctl` from [GitHub Releases](https://github.com/otfabric/ethernetipctl/releases). No device at hand? Start the simulated adapter, with an emulated Logix tag database:
+
+```sh
+ethernetipctl adapter --listen 127.0.0.1 --echo --logix
+```
+
+and talk to it from another terminal:
+
+```sh
+# Which devices answer on this segment? (one ListIdentity broadcast)
+ethernetipctl discover --address 255.255.255.255
+
+# Who is it, and is it healthy?
+ethernetipctl identify 127.0.0.1
+ethernetipctl diagnose 127.0.0.1
+
+# Read the product name, decoded
+ethernetipctl read 127.0.0.1 @1/1/7 --type SHORT_STRING
+
+# Watch input assembly 100 through an input-only I/O connection
+ethernetipctl io 127.0.0.1 --config 151 --output 152 --input 100 --input-size 32 --rpi 50ms
+
+# A Logix tag, as JSON for a script
+ethernetipctl tag read 127.0.0.1 Count --format json
+```
+
+`--route 1/0` reaches a controller behind its communication module through the backplane, `--connected` sends requests over a Class 3 connection, and `adapter --config` serves a device from a YAML model of identity, assemblies and tags. Commands that change a device need `--yes`.
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-ethernetip
+```
+
+A client that reads the identity and an attribute, then a scanner that opens a Class 1 I/O connection (abridged from the go-ethernetip README):
+
+```go title="main.go"
+c, err := client.Dial(ctx, "192.168.1.10") // TCP 44818
+if err != nil {
+	log.Fatal(err)
+}
+defer c.Close()
+
+id, err := c.Identity(ctx) // Get_Attributes_All of the Identity object
+name, err := c.GetAttributeSingle(ctx, cip.ClassIdentity, 1, 7)
+
+s, err := scanner.New(c) // UDP 2222
+io, err := s.Open(ctx, scanner.IOConfig{
+	ConfigInstance: 151, OutputInstance: 150, InputInstance: 100,
+	OutputSize: 32, InputSize: 32, RPI: 10 * time.Millisecond,
+	Reconnect: &scanner.Reconnect{},
+})
+_ = io.SetOutput(out)     // sent from the next interval on
+in, run, at := io.Input() // the last input and when it arrived
+```
+
+And an adapter with three assemblies that a PLC can connect to:
+
+```go
+srv, err := server.New(server.WithIdentity(cip.Identity{
+	VendorID: 0xFFFF, DeviceType: cip.DeviceTypeCommunicationsAdapter,
+	ProductCode: 1, Revision: cip.Revision{Major: 1, Minor: 0},
+	SerialNumber: 42, ProductName: "My adapter",
+}))
+in, _ := srv.AddAssembly(100, server.AssemblyInput, 32)
+out, _ := srv.AddAssembly(150, server.AssemblyOutput, 32)
+_, _ = srv.AddAssembly(151, server.AssemblyConfig, 10)
+out.OnWrite(func(data []byte, run bool) { /* drive the outputs */ })
+_ = in.SetData(inputs)
+log.Fatal(srv.ListenAndServe(":44818"))
+```
+
+## What go-ethernetip and ethernetipctl support
+
+| | |
+|---|---|
+| Roles | Client (explicit messages and discovery), scanner (Class 0 and Class 1 I/O) and adapter (target with the standard objects and objects of your own) |
+| Explicit messaging | Unconnected requests, Multiple Service Packet, routing through Unconnected_Send, Class 3 connections with Forward_Open and Large_Forward_Open, ListIdentity, ListServices and ListInterfaces over TCP and UDP |
+| I/O | Exclusive owner, input-only and listen-only connections, point-to-point and multicast, configuration data, run and idle, timeouts and automatic reopening |
+| Logix | Rockwell Logix tag services (vendor specific): reads, writes, fragmented transfers, bit writes, tag lists, structures and STRING, plus an emulated controller for tests |
+| EDS | Parse, validate, write and build Electronic Data Sheets, and generate Go constants, assembly structs and scanner configurations from them |
+| Security | EtherNet/IP over TLS on port 2221 for explicit messaging, the transport of CIP Security; no DTLS for I/O |
+| Dependencies | None outside the Go standard library |
+
+<Callout type="note" title="Early versions, interoperability tested">
+go-ethernetip v0.2.1 and ethernetipctl v0.2.1 are pre-1.0. The library is tested in both directions against four independent implementations packaged by [ethernetip-interop](https://github.com/otfabric/ethernetip-interop) v0.2.0: OpENer (C), EIPScanner (C++), pycomm3 (Python) and cpppo (Python). That is interoperability, not ODVA conformance testing: the library makes no conformance claim, and a product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test.
+</Callout>
