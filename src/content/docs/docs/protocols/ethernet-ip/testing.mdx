@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Test EtherNet/IP code against eleven independent implementations in eight languages with ethernetip-interop (OpENer, EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip and EEIP.NET), and see what go-ethernetip and ethernetipctl have and have not been validated against.
+description: Test EtherNet/IP code against twelve independent implementations in eight languages with ethernetip-interop (OpENer, EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip, EEIP.NET and loki-os go-ethernet-ip), and see what go-ethernetip and ethernetipctl have and have not been validated against.
 sidebar:
   label: Testing and interop
   order: 3
@@ -11,12 +11,12 @@ import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components'
 Two kinds of OT Fabric repositories share the testing of EtherNet/IP. [ethernetip-interop](/projects/ethernetip-interop/) owns the reference implementations: adapters around independent EtherNet/IP stacks, one container contract, deterministic fixtures and the reference-to-reference self-test. It knows nothing about any library under test. [go-ethernetip](/projects/go-ethernetip/) is a consumer: it pulls the images, pinned by digest, and owns its own scenarios, assertions and compatibility claims.
 
 <Aside type="note" title="Not conformance testing">
-Interoperability between implementations does not establish conformance: they can share the same misreading of the specification, and none of the eleven references here documents an ODVA conformance test either. ODVA's conformance test is a separate programme, required for a product's Declaration of Conformity, and go-ethernetip has not taken it.
+Interoperability between implementations does not establish conformance: they can share the same misreading of the specification, and none of the twelve references here documents an ODVA conformance test either. ODVA's conformance test is a separate programme, required for a product's Declaration of Conformity, and go-ethernetip has not taken it.
 </Aside>
 
 ## ethernetip-interop
 
-ethernetip-interop v0.3.0 packages eleven independent stacks in eight languages:
+ethernetip-interop v0.4.0 packages twelve independent stacks in eight languages:
 
 | Adapter | Upstream | Language | Licence | Roles |
 |---|---|---|---|---|
@@ -31,10 +31,11 @@ ethernetip-interop v0.3.0 packages eleven independent stacks in eight languages:
 | `eiprs` | [eip-rs (rseip)](https://github.com/Joylei/eip-rs) main `16e2236` (0.3.1-2) | Rust | MIT | originator: generic CIP and Logix, with Class 3 |
 | `nodeeip` | [node-ethernet-ip](https://github.com/cmseaton42/node-ethernet-ip) 2.0.0 | TypeScript | MIT | originator: Logix, with templates |
 | `eeip` | [EEIP.NET](https://github.com/rossmann-engineering/EEIP.NET) master `58b91a0` (1.6.0) | C# | MIT | originator, with Class 1 I/O, multicast and listen-only |
+| `lokieip` | [go-ethernet-ip (loki-os)](https://github.com/loki-os/go-ethernet-ip) master `535f797` (no tags, 2022) | Go | WTFPL | originator: generic CIP and Logix, with Class 3 |
 
-OpENer, EIPScanner, etherip, eip-rs and EEIP.NET have made no recent release, or none at all, so they are pinned to a commit of their default branch; the others are pinned to a release tag or to their PyPI, npm or Go module package. Every pin, with its checksum, is in [versions.yaml](https://github.com/otfabric/ethernetip-interop/blob/main/versions.yaml), and each image is multi-arch (amd64 and arm64) and runs as a non-root user. The cpppo adapter imports a GPL library and is itself GPL-3.0-or-later, and libplctag is linked statically and used under the MPL-2.0; OpENer's licence adds that products implementing EtherNet/IP need ODVA's Terms of Usage. Nothing of any reference is linked into go-ethernetip: third-party code runs in its own container only.
+OpENer, EIPScanner, etherip, eip-rs, EEIP.NET and loki-os go-ethernet-ip have made no recent release, or none at all, so they are pinned to a commit of their default branch; the others are pinned to a release tag or to their PyPI, npm or Go module package. Every pin, with its checksum, is in [versions.yaml](https://github.com/otfabric/ethernetip-interop/blob/main/versions.yaml), and each image is multi-arch (amd64 and arm64) and runs as a non-root user. The cpppo adapter imports a GPL library and is itself GPL-3.0-or-later, and libplctag is linked statically and used under the MPL-2.0; OpENer's licence adds that products implementing EtherNet/IP need ODVA's Terms of Usage. Nothing of any reference is linked into go-ethernetip: third-party code runs in its own container only.
 
-The stacks do not all do the same, and the images say so: `print-capabilities` lists what each adapter supports, and a consumer skips, not fails, a scenario an image declares unsupported. Four are targets (OpENer, cpppo, libplctag's ab_server and gologix); ten are originators.
+The stacks do not all do the same, and the images say so: `print-capabilities` lists what each adapter supports, and a consumer skips, not fails, a scenario an image declares unsupported. Four are targets (OpENer, cpppo, libplctag's ab_server and gologix); eleven are originators.
 
 | | Class 3 | Class 1 I/O | Multicast, listen-only | Logix tags | Tag list, templates |
 |---|:-:|:-:|:-:|:-:|:-:|
@@ -49,6 +50,7 @@ The stacks do not all do the same, and the images say so: `print-capabilities` l
 | eip-rs | yes | no | no | yes | yes |
 | node-ethernet-ip | yes | no | no | yes | yes |
 | EEIP.NET | no | originator | originator | no | no |
+| go-ethernet-ip (loki-os) | yes | no | no | yes, scalar writes only | tag list |
 
 ### Fixtures
 
@@ -82,13 +84,13 @@ Every image has the same commands: `server`, `client <operation>` (list-identity
 
 ## The self-test
 
-ethernetip-interop tests its references against each other: every originator image against every target image (OpENer, cpppo, ab_server and gologix), case by case, with expected values from the target's fixture and every result document validated against its schema. A case runs when the originator has the operation and both sides declare the features it needs; otherwise it is recorded as not applicable, with the reason. A pair that is known not to work, such as EIPScanner's 16-bit segments crashing gologix's Forward_Open, is listed with its reason and recorded as a known incompatibility rather than a failure. The run of 26 October 2026 has **171 cases passing, none failing, and 22 known incompatibilities**.
+ethernetip-interop tests its references against each other: every originator image against every target image (OpENer, cpppo, ab_server and gologix), case by case, with expected values from the target's fixture and every result document validated against its schema. A case runs when the originator has the operation and both sides declare the features it needs; otherwise it is recorded as not applicable, with the reason. A pair that is known not to work, such as EIPScanner's 16-bit segments crashing gologix's Forward_Open, is listed with its reason and recorded as a known incompatibility rather than a failure. The run of 26 October 2026 has **186 cases passing, none failing, and 24 known incompatibilities**.
 
-Between at least two independent stacks that verifies ListIdentity over TCP and UDP, ListServices, the attribute services, error statuses, Multiple Service Packet, Class 3, Class 1 I/O (EIPScanner and EEIP.NET against OpENer) and Logix reads and writes (cpppo against ab_server and gologix, etherip against cpppo and gologix). The Logix originators that start with a tag list (pycomm3, pylogix, libplctag, eip-rs, node-ethernet-ip and gologix) find no reference target with a usable one: cpppo and ab_server have none, and gologix's lists only names and types. That is the gap go-ethernetip's emulated controller fills. CI rebuilds and runs the self-test natively on amd64 and arm64, and nightly to catch drift in what the pinned builds fetch.
+Between at least two independent stacks that verifies ListIdentity over TCP and UDP, ListServices, the attribute services, error statuses, Multiple Service Packet, Class 3, Class 1 I/O (EIPScanner and EEIP.NET against OpENer) and Logix reads and writes (cpppo against ab_server and gologix, etherip against cpppo and gologix). The Logix originators that start with a tag list (pycomm3, pylogix, libplctag, eip-rs, node-ethernet-ip, gologix and loki-os go-ethernet-ip) find no reference target with a usable one: cpppo and ab_server have none, and gologix's lists only names and types. That is the gap go-ethernetip's emulated controller fills. CI rebuilds and runs the self-test natively on amd64 and arm64, and nightly to catch drift in what the pinned builds fetch.
 
 ## go-ethernetip against the references
 
-`make interop` in go-ethernetip runs its originator against the reference targets and the reference originators against its target and Logix emulation, each in a container on one Docker network. Cases run by the capabilities each stack declares. The run of 26 October 2026 against ethernetip-interop v0.3.0 has **173 cases passing, none failing, and 129 not applicable** (the reference has the role but not the feature): 37 with go-ethernetip as originator and 136 with go-ethernetip as target.
+`make interop` in go-ethernetip runs its originator against the reference targets and the reference originators against its target and Logix emulation, each in a container on one Docker network. Cases run by the capabilities each stack declares. The run of 26 October 2026 against ethernetip-interop v0.4.0 has **184 cases passing, none failing, and 146 not applicable** (the reference has the role but not the feature): 37 with go-ethernetip as originator and 147 with go-ethernetip as target.
 
 | Reference | Passes | What is covered |
 |---|:-:|---|
@@ -103,6 +105,7 @@ Between at least two independent stacks that verifies ListIdentity over TCP and 
 | eip-rs | 21 ← | Discovery, attributes, Multiple Service Packet, Class 3, Logix reads and writes with fragments, bit writes, the tag list, structures and STRING |
 | node-ethernet-ip | 19 ← | Discovery, attributes, Multiple Service Packet, Class 3, Logix reads and writes, bit writes, the tag list, structures and STRING |
 | EEIP.NET | 11 ← | Discovery, attributes, Class 1 I/O as exclusive owner, input only and T->O multicast, Large_Forward_Open, Forward_Open refusals |
+| go-ethernet-ip (loki-os) | 11 ← | ListIdentity over TCP, attributes, error responses, Multiple Service Packet, Class 3, Logix reads with 64-bit types, several tags in one request, the tag list |
 
 → is go-ethernetip as originator against the reference's target, ← is the reference's originator against go-ethernetip's target. The full matrix, case by case, is in go-ethernetip's [INTEROPERABILITY.md](https://github.com/otfabric/go-ethernetip/blob/main/INTEROPERABILITY.md#interop-matrix). The seven new peers found three defects in go-ethernetip, fixed in v0.3.0: the size of a structure template's definition (pylogix, node-ethernet-ip and libplctag read the last member name short), replies on a Class 3 connection larger than the connection allows, and Multiple Service Packets limited to 200 requests where node-ethernet-ip sends about 220.
 
@@ -121,7 +124,7 @@ CI runs them natively on Linux, macOS and Windows, on amd64 and arm64, with Go 1
 
 ## What is and is not validated
 
-**Validated**: both roles against eleven independent implementations in eight languages; Class 1 I/O in both directions (against OpENer as target, and EIPScanner and EEIP.NET as originators); multicast and listen-only against OpENer and EEIP.NET; the library's Logix client against cpppo, ab_server and gologix; Logix tags, bit writes, the tag list, structures and STRING against the Logix drivers of pycomm3, eip-rs and node-ethernet-ip, which open a session on the emulated controller as they would on a real one.
+**Validated**: both roles against twelve independent implementations in eight languages; Class 1 I/O in both directions (against OpENer as target, and EIPScanner and EEIP.NET as originators); multicast and listen-only against OpENer and EEIP.NET; the library's Logix client against cpppo, ab_server and gologix; Logix tags, bit writes, the tag list, structures and STRING against the Logix drivers of pycomm3, eip-rs and node-ethernet-ip, which open a session on the emulated controller as they would on a real one.
 
 **Not covered yet**:
 
@@ -132,7 +135,7 @@ CI runs them natively on Linux, macOS and Windows, on amd64 and arm64, with Go 1
 
 ### Findings about the references
 
-Running eleven stacks against each other and against go-ethernetip turned up behaviour worth knowing:
+Running twelve stacks against each other and against go-ethernetip turned up behaviour worth knowing:
 
 | Reference | Finding |
 |---|---|
@@ -146,6 +149,7 @@ Running eleven stacks against each other and against go-ethernetip turned up beh
 | etherip | No LINT or LREAL and no fragmented services; decodes the identity's product code by summing its octets (65001 reads 486) |
 | node-ethernet-ip 2.0.0 | No Unconnected_Send; writes a whole structure with the template instance ID instead of the structure handle; its Forward_Open path always starts with a backplane port segment, which OpENer refuses |
 | EEIP.NET | No ListIdentity over TCP and no Class 3; always sends a configuration segment and a T->O socket address item |
+| go-ethernet-ip (loki-os) | No UDP and no timeouts of its own; does not check the status of RegisterSession, Forward_Open or a write; writes only whole scalar tags; no fragmented services. Like node-ethernet-ip, its Forward_Open path always starts with a backplane port segment, which OpENer refuses |
 
 Each is recorded in go-ethernetip's [STACKS.md](https://github.com/otfabric/go-ethernetip/blob/main/docs/research/STACKS.md) and ethernetip-interop's [CAPABILITIES.md](https://github.com/otfabric/ethernetip-interop/blob/main/docs/CAPABILITIES.md) and [COMPATIBILITY.md](https://github.com/otfabric/ethernetip-interop/blob/main/docs/COMPATIBILITY.md).
 

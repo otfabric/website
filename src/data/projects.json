@@ -587,7 +587,7 @@
 			"ethernet-ip"
 		],
 		"status": "available",
-		"description": "Eleven EtherNet/IP reference stacks in eight languages, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
+		"description": "Twelve EtherNet/IP reference stacks in eight languages, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
 		"icon": "go-ethernetip"
 	},
 	{

@@ -5128,10 +5128,10 @@
    "historySince": "2026",
    "lastCommit": "2026-10-26",
    "release": {
-    "version": "v0.3.0",
+    "version": "v0.3.1",
     "date": "2026-10-26",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.3.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.3.1.info"
    },
    "roles": [
     "scanner",
@@ -5151,7 +5151,7 @@
    "emerging": true,
    "otfabric": true,
    "package": "https://pkg.go.dev/github.com/otfabric/go-ethernetip",
-   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the eleven ethernetip-interop references.",
+   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the twelve ethernetip-interop references.",
    "sources": [
     "https://github.com/otfabric/go-ethernetip",
     "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@latest"
@@ -5472,6 +5472,38 @@
    "sources": [
     "https://github.com/danomagnum/gologix",
     "https://proxy.golang.org/github.com/danomagnum/gologix/@latest"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "loki-go-ethernet-ip",
+   "name": "go-ethernet-ip (loki-os)",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "WTFPL",
+   "url": "https://github.com/loki-os/go-ethernet-ip",
+   "repo": "loki-os/go-ethernet-ip",
+   "stars": null,
+   "historySince": "2020",
+   "lastCommit": "2022-12-29",
+   "release": null,
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags",
+    "Class 3"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "quiet",
+   "package": "https://pkg.go.dev/github.com/loki-os/go-ethernet-ip",
+   "notes": "Small pure Go client for Rockwell Logix controllers: ListIdentity and ListServices over TCP, generic CIP requests direct, routed or over a Class 3 connection, and Logix tags by name or from the tag list, with several reads in one Multiple Service Packet. No UDP, no Class 1 I/O, no fragmented services, no templates. No tagged release; the Go module proxy has only a pseudo-version of the default branch.",
+   "sources": [
+    "https://github.com/loki-os/go-ethernet-ip",
+    "https://proxy.golang.org/github.com/loki-os/go-ethernet-ip/@latest"
    ],
    "verified": "2026-10-26"
   },
