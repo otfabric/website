@@ -23,8 +23,20 @@ lastmod.set(`${site}/ecosystem/organizations/`, organizations.map((o) => o.verif
 const description =
   'Open-source protocol libraries and tools that break down OT data silos, built by people and AI agents together.';
 
+// Pages that moved when SunSpec became an information model rather than a protocol. Cloudflare
+// answers these with a 301 from public/_redirects; these entries only keep `astro dev` and
+// `astro preview` working, as meta-refresh pages with a canonical link.
+const moved = {
+  '/protocols/sunspec': '/models/sunspec/',
+  '/docs/protocols/sunspec': '/docs/models/sunspec/',
+  '/docs/protocols/sunspec/library': '/docs/models/sunspec/library/',
+  '/docs/protocols/sunspec/cli': '/docs/models/sunspec/cli/',
+  '/docs/protocols/sunspec/testing': '/docs/models/sunspec/testing/',
+};
+
 export default defineConfig({
   site,
+  redirects: moved,
 
   integrations: [
     starlight({
@@ -72,7 +84,6 @@ export default defineConfig({
           items: [
             { label: 'Overview', slug: 'docs/protocols' },
             { label: 'Modbus', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/modbus' } }] },
-            { label: 'SunSpec', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/sunspec' } }] },
             { label: 'OPC UA', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/opc-ua' } }] },
             { label: 'BACnet/IP', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/bacnet' } }] },
             { label: 'IEC 60870-5-104', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/iec-104' } }] },
@@ -83,6 +94,14 @@ export default defineConfig({
             { label: 'DNP3', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/dnp3' } }] },
             { label: 'IEEE 2030.5', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/ieee-2030-5' } }] },
             { label: 'EtherNet/IP', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/ethernet-ip' } }] },
+          ],
+        },
+        {
+          label: 'Information models',
+          items: [
+            { label: 'Overview', slug: 'docs/models' },
+            { label: 'SunSpec Modbus', collapsed: true, items: [{ autogenerate: { directory: 'docs/models/sunspec' } }] },
+            { label: 'IEC 61850 information model', collapsed: true, items: [{ autogenerate: { directory: 'docs/models/iec-61850' } }] },
           ],
         },
         {

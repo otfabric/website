@@ -1,56 +1,126 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/site/PageHeader.astro';
-import ProtocolMatrix from '../../components/ProtocolMatrix.astro';
-import { getProtocols } from '../../data/projects';
+import StandardsMatrix from '../../components/StandardsMatrix.astro';
+import { getStandards, kinds, shortName, standardPath } from '../../data/standards';
 import { absolute, breadcrumbs } from '../../data/seo';
 
-const protocols = await getProtocols();
+// One catalog, one section per kind of standard. A kind without entries yet (application
+// profiles) keeps its definition in the intro but gets no empty section.
+const standards = await getStandards();
+const sections = kinds
+	.map((kind) => ({ kind, items: standards.filter((s) => s.data.kind === kind.id) }))
+	.filter((s) => s.items.length > 0);
+// "Modbus, OPC UA, BACnet/IP and more" for the definitions at the top.
+const examples = (kind: string) => {
+	const names = standards.filter((s) => s.data.kind === kind).map((s) => s.data.name);
+	return names.length ? `${names.slice(0, 3).join(', ')}${names.length > 3 ? ' and more' : ''}.` : undefined;
+};
+const byId = Object.fromEntries(standards.map((s) => [s.id, s]));
 const schema = [
-	breadcrumbs([{ name: 'Protocols', path: '/protocols/' }]),
-	{
+	breadcrumbs([{ name: 'Protocols and information models', path: '/protocols/' }]),
+	...sections.map(({ kind, items }) => ({
 		'@type': 'ItemList',
-		name: 'OT protocols supported by OT Fabric',
-		itemListElement: protocols.map((p, i) => ({
+		'@id': absolute(`/protocols/#${kind.section}`),
+		name: `${kind.plural} supported by OT Fabric`,
+		itemListElement: items.map((s, i) => ({
 			'@type': 'ListItem',
 			position: i + 1,
-			name: p.data.name,
-			description: p.data.summary,
-			url: absolute(`/protocols/${p.id}/`),
+			name: s.data.name,
+			description: s.data.summary,
+			url: absolute(standardPath(s)),
 		})),
-	},
+	})),
 ];
 ---
 
 <BaseLayout
-	title="Protocols"
-	description="The OT protocols OT Fabric supports, with the library, CLI and interop suite for each."
+	title="Protocols and information models"
+	description="The industrial communication protocols and standard information models OT Fabric supports, with the open-source library, CLI and interop suite for each."
 	pageType="CollectionPage"
 	schema={schema}
 >
 	<PageHeader
-		label="Protocols"
-		title="Every protocol, the same toolkit"
-		lead="Each protocol gets a pure Go library, a command-line tool built on it where devices need one, and an interoperability suite that tests it against independent implementations."
-	/>
-	<div class="ot-container">
-		<div class="cards">
-			{protocols.map((p) => (
-				<a class="card" href={`/protocols/${p.id}/`}>
-					{p.data.icon && <img src={`/icons/${p.data.icon}.svg`} alt="" width="40" height="40" />}
-					<span class="ot-label">{p.data.standard}</span>
-					<h2>{p.data.name}</h2>
-					<p>{p.data.summary}</p>
-				</a>
+		label="Every protocol, the same toolkit"
+		title="Protocols and information models"
+		lead="OT Fabric provides open-source building blocks for industrial communication, standardized information models and interoperable messaging. Each gets a pure Go library, a command-line tool where field work needs one, and tests against independent implementations."
+	>
+		<dl class="kinds">
+			{kinds.map((kind) => (
+				<div>
+					<dt class="ot-label">{kind.plural}</dt>
+					<dd>
+						{kind.description}{' '}
+						{examples(kind.id) ? <a href={`#${kind.section}`}>{examples(kind.id)}</a> : kind.example}
+					</dd>
+				</div>
 			))}
-		</div>
+		</dl>
+	</PageHeader>
+	<div class="ot-container">
+		{sections.map(({ kind, items }) => (
+			<section class="group" aria-labelledby={kind.section}>
+				<h2 id={kind.section}>{kind.plural}</h2>
+				<p class="group-desc">{kind.description}</p>
+				<div class="cards">
+					{items.map((s) => (
+						<a class="card" href={standardPath(s)}>
+							{s.data.icon && <img src={`/icons/${s.data.icon}.svg`} alt="" width="40" height="40" />}
+							<span class="ot-label">{s.data.standard}</span>
+							<h3>{s.data.name}</h3>
+							<p>{s.data.summary}</p>
+							{s.data.carriedBy.length > 0 && (
+								<span class="over">Over {s.data.carriedBy.map((id) => shortName(byId[id])).join(', ')}</span>
+							)}
+						</a>
+					))}
+				</div>
+			</section>
+		))}
 
 		<h2 class="matrix-title">At a glance</h2>
-		<ProtocolMatrix />
+		{sections.map(({ kind }) => (
+			<>
+				{sections.length > 1 && <h3 class="matrix-sub">{kind.plural}</h3>}
+				<StandardsMatrix kind={kind.id} />
+			</>
+		))}
 	</div>
 </BaseLayout>
 
 <style>
+	.kinds {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+		gap: 1rem 2rem;
+		max-width: 64rem;
+		margin: 2rem 0 0;
+	}
+	.kinds dt {
+		margin-bottom: 0.4rem;
+		color: var(--ot-fg-strong);
+	}
+	.kinds dd a {
+		color: var(--ot-accent);
+	}
+	.kinds dd {
+		margin: 0;
+		font-size: 0.92rem;
+		color: var(--ot-muted);
+	}
+	.group + .group {
+		margin-top: 3.5rem;
+	}
+	.group h2 {
+		margin: 0;
+		font-size: 1.8rem;
+		scroll-margin-top: 5rem;
+	}
+	.group-desc {
+		margin: 0.3rem 0 1.25rem;
+		color: var(--ot-muted);
+		font-size: 0.95rem;
+	}
 	.cards {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
@@ -75,7 +145,7 @@ const schema = [
 		width: 2.5rem;
 		height: 2.5rem;
 	}
-	.card h2 {
+	.card h3 {
 		margin: 0;
 		font-size: 1.5rem;
 	}
@@ -84,8 +154,21 @@ const schema = [
 		color: var(--ot-muted);
 		font-size: 0.95rem;
 	}
+	.over {
+		margin-top: auto;
+		align-self: flex-start;
+		font: 500 0.7rem/1 var(--ot-font-mono);
+		padding: 0.25rem 0.4rem;
+		border-radius: 0.2rem;
+		background: var(--ot-accent-soft);
+		color: var(--ot-accent-strong);
+	}
 	.matrix-title {
 		margin: 3.5rem 0 1rem;
 		font-size: 1.8rem;
+	}
+	.matrix-sub {
+		margin: 2rem 0 0.5rem;
+		font-size: 1.15rem;
 	}
 </style>

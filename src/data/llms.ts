@@ -2,7 +2,8 @@
 // /llms.txt is the index, /llms-full.txt carries the full text of every page.
 import { getCollection } from 'astro:content';
 import { getPosts } from './blog';
-import { categories, getProjects, getProtocols, projectsFor, repoUrl, type Project, type Protocol } from './projects';
+import { categories, getProjects, projectsFor, repoUrl, type Project } from './projects';
+import { getStandards, kindOf, kinds, standardPath, type Standard } from './standards';
 import { longDescription } from './seo';
 import { site } from './site';
 import { byProtocol, ecosystem, typeLabels } from './ecosystem';
@@ -51,9 +52,9 @@ export const docsUrl = (id: string) => `${site.url}/${id}/`;
 
 type Doc = Awaited<ReturnType<typeof getDocs>>[number];
 
-/** Protocol subpages share short titles ("Go library"), so name the protocol too: "Modbus: Go library". */
+/** Protocol and model subpages share short titles ("Go library"), so name the standard too: "Modbus: Go library". */
 export function docTitle(doc: Doc, docs: Doc[]) {
-	if (!/^docs\/protocols\/[^/]+\/[^/]+$/.test(doc.id)) return doc.data.title;
+	if (!/^docs\/(protocols|models)\/[^/]+\/[^/]+$/.test(doc.id)) return doc.data.title;
 	const parent = docs.find((d) => d.id === doc.id.split('/').slice(0, 3).join('/'));
 	return parent && !doc.data.title.includes(parent.data.title) ? `${parent.data.title}: ${doc.data.title}` : doc.data.title;
 }
@@ -62,11 +63,14 @@ export function docTitle(doc: Doc, docs: Doc[]) {
 const section = (title: string, url: string, description: string | undefined, body: string) =>
 	[`# ${title}`, `URL: ${url}`, description ? `> ${description}` : '', body].filter(Boolean).join('\n\n');
 
-export async function protocolSection(p: Protocol) {
+export async function protocolSection(p: Standard) {
 	const facts = p.data.facts.map((f) => `- ${f.label}: ${f.value}`).join('\n');
 	const projects = (await projectsFor(p.id)).map((x) => `- ${x.data.name}: ${x.data.description} (${repoUrl(x.data.repo!)})`).join('\n');
-	const body = [`Standard: ${p.data.standard}`, facts, mdxToMarkdown(p.body ?? ''), `## OT Fabric projects for ${p.data.name}`, projects].join('\n\n');
-	return section(p.data.name, `${site.url}/protocols/${p.id}/`, p.data.summary, body);
+	const all = await getStandards();
+	const carriers = all.filter((s) => p.data.carriedBy.includes(s.id as never)).map((s) => `${s.data.name} (${site.url}${standardPath(s)})`);
+	const kind = [`Kind: ${kindOf(p.data.kind).label}`, carriers.length && `carried over ${carriers.join(', ')}`].filter(Boolean).join(', ');
+	const body = [`${kind}. Standard: ${p.data.standard}`, facts, mdxToMarkdown(p.body ?? ''), `## OT Fabric projects for ${p.data.name}`, projects].join('\n\n');
+	return section(p.data.name, `${site.url}${standardPath(p)}`, p.data.summary, body);
 }
 
 export const docSection = (d: Doc, docs: Doc[]) => section(docTitle(d, docs), docsUrl(d.id), d.data.description, mdxToMarkdown(d.body ?? ''));
@@ -101,10 +105,10 @@ export function organizationSection(o: Organization) {
 	return section(d.name, `${site.url}${orgPath(o)}`, d.summary, body.join('\n\n'));
 }
 
-/** Everything about one protocol in one file: overview, docs, projects, other implementations and posts. */
-export async function protocolBundle(p: Protocol) {
+/** Everything about one protocol or model in one file: overview, docs, projects, other implementations and posts. */
+export async function protocolBundle(p: Standard) {
 	const docs = await getDocs();
-	const own = docs.filter((d) => d.id === `docs/protocols/${p.id}` || d.id.startsWith(`docs/protocols/${p.id}/`));
+	const own = p.data.docs ? docs.filter((d) => `/${d.id}/`.startsWith(p.data.docs!)) : [];
 	const projects = await projectsFor(p.id);
 	const posts = (await getPosts()).filter((post) => post.data.tags.includes(p.id));
 	const landscape = byProtocol(p.id).length
@@ -115,7 +119,7 @@ export async function protocolBundle(p: Protocol) {
 		? [section(`Organizations behind ${p.data.name}`, `${site.url}/ecosystem/organizations/?protocol=${p.id}`, `Standards bodies, alliances, user groups and foundations for ${p.data.name}. Listed for reference; OT Fabric is not affiliated with them.`, organizations.map((o) => `- [${o.data.name}](${site.url}${orgPath(o)}): ${o.data.summary}`).join('\n'))]
 		: [];
 	return [
-		`# ${p.data.name} with OT Fabric\n\n> Everything otfabric.io says about ${p.data.name}: the protocol overview, the documentation, the OT Fabric projects and the wider ecosystem. Index of the whole site: ${site.url}/llms.txt`,
+		`# ${p.data.name} with OT Fabric\n\n> Everything otfabric.io says about ${p.data.name}: the ${kindOf(p.data.kind).label.toLowerCase()} overview, the documentation, the OT Fabric projects and the wider ecosystem. Index of the whole site: ${site.url}/llms.txt`,
 		await protocolSection(p),
 		...own.map((d) => docSection(d, docs)),
 		...projects.map(projectSection),
@@ -137,7 +141,7 @@ export async function getDocs() {
 }
 
 export async function llmsIndex() {
-	const [protocols, projects, docs, posts, organizations] = await Promise.all([getProtocols(), getProjects(), getDocs(), getPosts(), getOrganizations()]);
+	const [standards, projects, docs, posts, organizations] = await Promise.all([getStandards(), getProjects(), getDocs(), getPosts(), getOrganizations()]);
 	const available = projects.filter((p) => p.data.status === 'available');
 	const planned = projects.filter((p) => p.data.status === 'planned');
 	const line = (title: string, url: string, description?: string) =>
@@ -147,14 +151,20 @@ export async function llmsIndex() {
 		`# ${site.name}`,
 		`> ${longDescription}`,
 		[
-			'OT Fabric is an open-source organization on GitHub (https://github.com/otfabric). For each operational technology (OT) protocol it publishes a library with client and server support, a command-line tool where field work needs one, and a Dockerized interoperability suite that tests the implementation against independent stacks. Everything is MIT-licensed unless a repository says otherwise.',
+			'OT Fabric is an open-source organization on GitHub (https://github.com/otfabric). For each operational technology (OT) communication protocol it publishes a library with client and server support, a command-line tool where field work needs one, and a Dockerized interoperability suite that tests the implementation against independent stacks. For standard information models, which define what device data means and are carried over a protocol (SunSpec Modbus over Modbus, the IEC 61850 information model), it publishes model libraries and tools on top of the protocol libraries. Everything is MIT-licensed unless a repository says otherwise.',
 			'The roadmap covers every relevant OT protocol, IT-to-OT gateways and data connectors, and MCP servers so AI agents can work with industrial devices safely. The project is built by people and AI agents together: engineers set direction and own every decision, and public tests and interop suites hold every change to the same bar.',
 		].join('\n\n'),
-		'## Protocols',
-		protocols.map((p) => line(p.data.standard.startsWith(p.data.name) ? p.data.name : `${p.data.name} (${p.data.standard})`, `${site.url}/protocols/${p.id}/`, p.data.summary)).join('\n'),
-		'## Protocol bundles',
-		'One plain-text file per protocol with its overview, every documentation page, the OT Fabric projects and the other open-source implementations.',
-		protocols.map((p) => line(`${p.data.name} bundle`, `${site.url}/llms/${p.id}.txt`)).join('\n'),
+		...kinds
+			.map((k) => ({ k, items: standards.filter((s) => s.data.kind === k.id) }))
+			.filter(({ items }) => items.length)
+			.flatMap(({ k, items }) => [
+				`## ${k.plural}`,
+				k.description,
+				items.map((p) => line(p.data.standard.startsWith(p.data.name) ? p.data.name : `${p.data.name} (${p.data.standard})`, `${site.url}${standardPath(p)}`, p.data.summary)).join('\n'),
+			]),
+		'## Protocol and model bundles',
+		'One plain-text file per protocol or information model with its overview, every documentation page, the OT Fabric projects and the other open-source implementations.',
+		standards.map((p) => line(`${p.data.name} bundle`, `${site.url}/llms/${p.id}.txt`)).join('\n'),
 		'## Documentation',
 		docs.map((d) => line(docTitle(d, docs), docsUrl(d.id), d.data.description)).join('\n'),
 		'## Projects',
@@ -184,7 +194,7 @@ export async function llmsIndex() {
 		[
 			line('About OT Fabric', `${site.url}/about/`, 'Why OT Fabric exists, how it is built, and where it is heading.'),
 			line('Contact', `${site.url}/contact/`, `Email ${site.email}, or reach the team on LinkedIn and GitHub.`),
-			line('Full text for LLMs', `${site.url}/llms-full.txt`, 'Every protocol page, documentation page, project and blog post in one Markdown file.'),
+			line('Full text for LLMs', `${site.url}/llms-full.txt`, 'Every protocol and information-model page, documentation page, project and blog post in one Markdown file.'),
 			...planned.map((p) => line(`${p.data.name} (planned)`, `${site.url}/projects/`, p.data.description)),
 		].join('\n'),
 	].join('\n\n') + '\n';

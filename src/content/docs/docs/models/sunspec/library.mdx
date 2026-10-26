@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[go-sunspec](/projects/go-sunspec/) reads and serves SunSpec devices over Modbus. As a client it finds the `SunS` marker, walks the model chain, and decodes every point of the 112 compiled SunSpec models into typed values with scale factors and units applied. As a server it lays out a model chain from point values given by name and serves it through go-modbus, as a simulator or as the SunSpec interface of your own equipment. It is pure Go with no cgo, and built on [go-modbus](/projects/go-modbus/), which supplies the transport. The command-line tool built on it, [sunspecctl](/docs/protocols/sunspec/cli/), has its own repository since go-sunspec v0.5.0; go-sunspec is the library only.
+[go-sunspec](/projects/go-sunspec/) reads and serves SunSpec devices over Modbus. As a client it finds the `SunS` marker, walks the model chain, and decodes every point of the 112 compiled SunSpec models into typed values with scale factors and units applied. As a server it lays out a model chain from point values given by name and serves it through go-modbus, as a simulator or as the SunSpec interface of your own equipment. It is pure Go with no cgo, and built on [go-modbus](/projects/go-modbus/), which supplies the transport. The command-line tool built on it, [sunspecctl](/docs/models/sunspec/cli/), has its own repository since go-sunspec v0.5.0; go-sunspec is the library only.
 
 ## Install
 

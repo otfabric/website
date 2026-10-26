@@ -3,7 +3,12 @@ import { file, glob } from 'astro/loaders';
 import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 
-const protocolIds = ['modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'sunspec', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5', 'ethernet-ip'] as const;
+// Every standard with a page of its own (src/content/standards/): communication protocols,
+// information models and application profiles. Projects and organizations refer to them by id.
+const standardIds = [
+	'modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5', 'ethernet-ip',
+	'sunspec', 'iec-61850-model',
+] as const;
 
 // Standards and alliances directory (src/data/organizations.json). "Open" and "free"
 // are split into separate questions, and every answer that states a fact must cite
@@ -32,17 +37,40 @@ export const collections = {
 	// Documentation, rendered by Starlight under /docs/.
 	docs: defineCollection({ loader: docsLoader(), schema: docsSchema() }),
 
-	// Protocol landing pages at /protocols/<id>/.
-	protocols: defineCollection({
-		loader: glob({ pattern: '*.mdx', base: './src/content/protocols' }),
+	// Standards pages: communication protocols at /protocols/<slug>/, information models at
+	// /models/<slug>/ and application or messaging profiles at /profiles/<slug>/ (see src/data/standards.ts).
+	standards: defineCollection({
+		loader: glob({ pattern: '*.mdx', base: './src/content/standards' }),
 		schema: z.object({
+			// protocol: defines messages, services and transport behaviour on the wire.
+			// information-model: defines what devices and data mean, and is carried by a protocol.
+			// application-profile: defines how a protocol is used for one interoperable application.
+			kind: z.enum(['protocol', 'information-model', 'application-profile']),
 			name: z.string(),
+			// Label for badges and filters when the name is long; defaults to the name.
+			short: z.string().optional(),
+			// URL segment when it differs from the id (`slug` would rename the entry itself).
+			urlSlug: z.string().optional(),
+			// <title> when "<name>: open-source library and tools" does not fit.
+			title: z.string().optional(),
 			standard: z.string(),
 			summary: z.string(),
 			order: z.number(),
 			facts: z.array(z.object({ label: z.string(), value: z.string() })),
 			icon: z.string().optional(),
 			docs: z.string().optional(),
+			// The protocols that carry this model or profile on the wire, linked both ways.
+			carriedBy: z.array(z.enum(standardIds)).default([]),
+			// How the standard is layered, top to bottom, for the "How it fits" diagram. A layer
+			// names standards, not OT Fabric support: `note` says what OT Fabric implements, if anything.
+			layers: z
+				.array(
+					z.object({
+						label: z.string(),
+						items: z.array(z.object({ name: z.string(), id: z.enum(standardIds).optional(), note: z.string().optional() })),
+					}),
+				)
+				.default([]),
 		}),
 	}),
 
@@ -51,9 +79,13 @@ export const collections = {
 		loader: file('./src/data/projects.json'),
 		schema: z.object({
 			name: z.string(),
-			category: z.enum(['library', 'cli', 'transport', 'discovery', 'interop', 'ui', 'mcp', 'gateway']),
+			// What the project is. A library's category follows the kind of standard it implements.
+			category: z.enum(['protocol', 'information-model', 'application-profile', 'cli', 'transport', 'discovery', 'interop', 'ui', 'mcp', 'gateway']),
 			description: z.string(),
-			protocols: z.array(z.enum(protocolIds)),
+			// The standards the project implements; the first is its primary one.
+			standards: z.array(z.enum(standardIds)),
+			// Standards it builds on or works with without implementing them (go-sunspec: Modbus).
+			related: z.array(z.enum(standardIds)).default([]),
 			status: z.enum(['available', 'planned']),
 			repo: z.string().optional(),
 			install: z.string().optional(),
@@ -75,7 +107,7 @@ export const collections = {
 			website: z.string().url(),
 			region: z.enum(['global', 'europe', 'north-america', 'asia-pacific']),
 			domains: z.array(z.enum(['energy', 'industrial', 'buildings', 'ev-charging'])).min(1),
-			protocols: z.array(z.enum(protocolIds)),
+			protocols: z.array(z.enum(standardIds)),
 			standards: z.array(
 				z.object({
 					name: z.string(),

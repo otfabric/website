@@ -1,0 +1,145 @@
+---
+title: IEC 61850 information model
+description: How the IEC 61850 information model is defined (logical nodes, data objects, CDCs, data attributes, functional constraints and NSD files) and how go-iec61850-model loads, validates and resolves it in Go.
+sidebar:
+  label: Overview and Go library
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+IEC 61850 is two things: an **information model** that standardizes what the data in a power system device means, and **communication services** with mappings that move it (MMS for client/server, GOOSE and Sampled Values for fast peer-to-peer traffic). This guide covers the model. For the communication side, see [IEC 61850 / MMS](/docs/protocols/iec-61850/).
+
+[go-iec61850-model](/projects/go-iec61850-model/) implements the model in Go, with no transport: it imports the official namespace definitions, builds an edition-aware catalog, validates and resolves references, and adds rule-based semantic hints. [nsdctl](/docs/models/iec-61850/cli/) is the command-line tool included with it.
+
+## The model
+
+| Concept | Defined in | Example |
+|---|---|---|
+| Logical node class | IEC 61850-7-4 and domain parts (7-410, 7-420, technical reports 90-x) | `MMXU` measurement, `XCBR` circuit breaker, `DBAT` battery |
+| Data object | The logical node class, with a CDC and a presence condition | `MMXU.TotW` of CDC `MV`, optional |
+| Common data class (CDC) | IEC 61850-7-3 | `MV`, `WYE`, `DPC`, `ENS` |
+| Data attribute | The CDC, with a type and a functional constraint | `mag` (AnalogueValue, `MX`), `q` (Quality), `t` (Timestamp) |
+| Functional constraint | IEC 61850-7-2 | `MX`, `ST`, `CO`, `CF`, `SP`, `DC` |
+| Enumeration | 7-3, 7-4 and domain parts | `SIUnitKind`, `MultiplierKind`, `BehaviourModeKind` |
+
+Logical node classes inherit from abstract classes, so `MMXU` holds data objects it does not declare itself; go-iec61850-model returns the flattened list and says which class declares each one. Some CDCs leave an attribute's type open (`ENS.stVal` takes the data object's enumeration), and multi-instance data objects appear numbered on devices (`Ind` becomes `Ind1`, `Ind2`); the resolver handles both.
+
+## NSD files and editions
+
+IEC 61850-7-7 defines **NSD**, the XML format in which IEC publishes each namespace as a code component. A namespace has a release identifier such as `IEC 61850-7-4:2007B6` (version, revision and release, not a publication date) and declares the namespaces it depends on.
+
+go-iec61850-model never picks a "latest" release. A catalog can hold several releases; a **profile** selects at most one release per standard and adds dependencies when exactly one loaded release satisfies them. A name that two namespaces define is never merged: IEC 61850-7-420 and IEC TR 61850-90-9 both define `DBAT`, differently, so a lookup in a profile with both fails as ambiguous until you name the namespace.
+
+The library embeds a catalog of the 12 official NSD namespaces, generated from the official packages:
+
+| Profile | Namespaces |
+|---|---|
+| `default` | IEC 61850-7-2, 7-3, 7-4, 7-410 and 7-420 |
+| `extended` | The default namespaces plus the technical reports 90-3, 90-4, 90-6, 90-9, 90-11, 90-14 and 90-21 |
+
+You can also load NSD packages you obtained yourself, as ZIP archives, directories or files. The importer treats them as untrusted: it bounds size, depth and token count, rejects DTDs, and checks archives for traversal and compression bombs. The service namespace of IEC 61850-8-1 is recognized but not modeled.
+
+## Normative model, device instance, interpretation
+
+| Level | Question | Where the answer comes from |
+|---|---|---|
+| Normative model | Does `MMXU` define `Hz`, and what type is `Hz.mag.f`? | The NSD namespaces, through go-iec61850-model |
+| Device instance | Does this IED have `LD0/MMXU1.Hz`? | Its SCL file or browsing it over MMS with [go-iec61850](/docs/protocols/iec-61850/library/) |
+| Semantic inference | Is it a frequency, expected in Hz? | go-iec61850-model's `semantic` package, from explicit rules |
+
+Semantic descriptors carry the rule, source and confidence they came from and are always marked as OT Fabric's interpretation. No rule means no description: nothing is guessed from parts of names. The default rules cover `MMXU`, `MMXN` and `MMTR`. A unit hint is what a quantity is usually expressed in, not what a device reports; read the device's own `units` attributes for that.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-iec61850-model
+```
+
+Go 1.24 or later. The library packages use only the standard library and need no network access at run time.
+
+## Look up and resolve
+
+```go title="main.go"
+p, err := official.Default() // IEC 61850-7-2, 7-3, 7-4, 7-410 and 7-420
+if err != nil {
+	log.Fatal(err)
+}
+
+// What does MMXU hold, inherited data objects included?
+dos, _ := p.DataObjects("MMXU")
+for _, do := range dos {
+	fmt.Printf("%-8s %-4s %s\n", do.Name, do.Type, do.Presence)
+}
+
+// Resolve a device reference down to its basic type.
+res, err := resolver.New(p).ResolveString("LD0/MMXU1.PNV.phsA.cVal.mag.f[MX]")
+if err != nil {
+	log.Fatal(err) // errors.Is(err, model.ErrUnknownDataObject), ErrAmbiguousReference, ...
+}
+fmt.Println(res.DataObjectPath(), res.AttributePath(), res.Type(), res.FC()) // PNV.phsA cVal.mag.f FLOAT32 MX
+```
+
+References follow the format of go-iec61850's `ParseRef` (`LD/LN.DO.DA[FC]`), and the test suite runs go-iec61850's own vectors against the parser. `reference.FromMMS` and `Ref.ToMMS` convert to and from the MMS form (domain `LD0`, item `MMXU1$MX$PNV$phsA$cVal$mag$f`).
+
+Validation has three levels: syntax (`reference.Parse`, no model needed), model (`resolver.Resolve` against the selected namespaces) and device, which only SCL or discovery can answer.
+
+## Choose a namespace
+
+```go
+x, _ := official.Extended()
+_, err := x.LogicalNode("DBAT") // errors.Is(err, model.ErrAmbiguousSymbol): 7-420 and 90-9
+dbat, _ := x.LogicalNodeIn(model.NamespaceID{Standard: "IEC 61850-7-420"}, "DBAT")
+```
+
+`catalog.Overlaps` compares the names two namespaces both define, classified as identical, compatible extension or conflicting.
+
+## Describe a value
+
+```go
+d, _ := semantic.Describe(p, "MMXU.PNV.phsA.cVal.mag.f")
+fmt.Println(d.Quantity, d.Phase, d.Reference, d.UnitHint) // voltage A line-neutral V
+```
+
+`semantic.FindMeasurements` lists the mapped measurements of a class, and a `Mapper` takes your own rules and overrides next to the defaults.
+
+## Generated names
+
+```go
+ref := string(names.MMXU_PhV) + ".phsA.cVal.mag.f" // "MMXU.PhV.phsA.cVal.mag.f"
+mode := names.BehaviourModeKind(1)                 // mode.String() == "on"
+```
+
+Package `names` has typed constants for every class, data object, CDC and enumeration of the default profile.
+
+## Packages
+
+| Package | Purpose |
+|---|---|
+| `model` | Namespaces, logical node classes, data objects, CDCs, data attributes, enumerations, FCs, presence conditions, provenance and errors |
+| `nsd` | Importer for NSD and NSDoc XML and ZIP packages |
+| `catalog` | Multi-release index, profiles, namespace-qualified lookups, overlaps, search and diff |
+| `reference` | Instance and class references, logical node names, MMS form |
+| `resolver` | Path and type resolution with provenance |
+| `semantic` | Quantity, phase, reference, component and unit hints from explicit rules |
+| `ontology` | Typed concept graph with traversal and JSON export |
+| `official` | The embedded official namespaces and profiles |
+| `names` | Generated constants of the default profile |
+
+The module imports neither go-iec61850 nor go-mms, nor any other transport.
+
+## Status and scope
+
+go-iec61850-model is pre-release (v0.1.1 at the time of writing). Its README and PROGRESS.md track the state of each part.
+
+- **Supported:** the NSD importer, catalog and profiles, references, type resolution, semantic mapping for metering classes, ontology helpers, the embedded catalog, generated names and the nsdctl CLI. The importer is tested against the 14 tracked official packages, and 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages.
+- **Not supported:** MMS, GOOSE, Sampled Values or any other communication; an SCL runtime; the IEC 61850-8-1 service namespace. An NSD update monitor is planned.
+
+<Aside type="note" title="IEC content and licensing">
+The library is MIT-licensed and ships no NSD files and no text from the standards. Its embedded catalog, the `names` constants and the generated model reference hold identifiers, types and structure derived from the official packages, published under the IEC Code Components licence with IEC attribution. Packages you load yourself stay under their own licence, and nothing here grants rights to the IEC standards. See [docs/licensing.md](https://github.com/otfabric/go-iec61850-model/blob/main/docs/licensing.md) in the repository.
+</Aside>
+
+<CardGrid>
+  <LinkCard title="nsdctl" description="Look up classes, explain references and work with NSD packages from the command line." href="/docs/models/iec-61850/cli/" />
+  <LinkCard title="IEC 61850 / MMS" description="The communication side: services, the MMS mapping, reports and controls. go-iec61850, go-mms." href="/docs/protocols/iec-61850/" />
+</CardGrid>

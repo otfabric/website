@@ -4,7 +4,7 @@ import EcosystemNav from '../../../components/ecosystem/EcosystemNav.astro';
 import Answer from '../../../components/organizations/Answer.astro';
 import AccessList from '../../../components/organizations/AccessList.astro';
 import MembershipTable from '../../../components/organizations/MembershipTable.astro';
-import { getProtocols } from '../../../data/projects';
+import { getStandards, standardPath } from '../../../data/standards';
 import { absolute, breadcrumbs, orgRef } from '../../../data/seo';
 import {
 	REVIEW_DAYS,
@@ -23,7 +23,7 @@ import {
 } from '../../../data/organizations';
 
 const orgs = await getOrganizations();
-const protocols = await getProtocols();
+const protocols = await getStandards();
 const protocolName = Object.fromEntries(protocols.map((p) => [p.id, p.data.name]));
 const covered = protocols.filter((p) => orgs.some((o) => o.data.protocols.includes(p.id as never)));
 const kinds = Object.keys(kindLabels).filter((k) => orgs.some((o) => o.data.kind === k)) as (keyof typeof kindLabels)[];
@@ -118,7 +118,7 @@ const schema = [
 			</p>
 			<dl class="stats">
 				<div><dt>Organizations</dt><dd>{stats.organizations}</dd></div>
-				<div><dt>Protocols covered</dt><dd>{stats.protocols}</dd></div>
+				<div><dt>Standards covered</dt><dd>{stats.protocols}</dd></div>
 				<div><dt>Published fees and free tiers</dt><dd>{stats.fees}</dd></div>
 				<div><dt>Free or open routes for individuals</dt><dd>{stats.freeIndividual}</dd></div>
 			</dl>
@@ -149,7 +149,7 @@ const schema = [
 					</select>
 				</label>
 				<label>
-					<span class="ot-label">Protocol</span>
+					<span class="ot-label">Standard</span>
 					<select name="protocol">
 						<option value="">Any</option>
 						{covered.map((p) => <option value={p.id}>{p.data.name}</option>)}
@@ -190,7 +190,7 @@ const schema = [
 					<p class="summary">{o.data.summary}</p>
 					{o.data.protocols.length > 0 && (
 						<p class="chips">
-							{o.data.protocols.map((p) => <a class="chip" href={`/protocols/${p}/`}>{protocolName[p]}</a>)}
+							{o.data.protocols.map((p) => <a class="chip" href={standardPath(protocols.find((s) => s.id === p)!)}>{protocolName[p]}</a>)}
 						</p>
 					)}
 					<p class="entry">{entryPoint(o)}</p>

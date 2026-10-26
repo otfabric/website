@@ -236,7 +236,7 @@
 		"website": "https://tc57.iec.ch/",
 		"region": "global",
 		"domains": ["energy", "industrial"],
-		"protocols": ["iec-61850", "iec-104", "ethernet-ip"],
+		"protocols": ["iec-61850", "iec-61850-model", "iec-104", "ethernet-ip"],
 		"standards": [
 			{ "name": "IEC 61850 (TC 57 WG 10, power system IED communication)", "role": "publishes" },
 			{ "name": "IEC 60870-5 telecontrol protocols, including 60870-5-104 (TC 57 WG 3)", "role": "publishes" },
@@ -257,7 +257,7 @@
 		],
 		"programs": [],
 		"openSource": [],
-		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop", "go-iec104", "iec104ctl", "iec104-interop", "go-ethernetip", "ethernetipctl", "ethernetip-interop"],
+		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop", "go-iec61850-model", "nsdctl", "go-iec104", "iec104ctl", "iec104-interop", "go-ethernetip", "ethernetipctl", "ethernetip-interop"],
 		"related": [
 			{ "id": "uca-international", "relation": "Runs the IEC 61850 user group and interoperability testing; TC 57 writes the standard." },
 			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." },

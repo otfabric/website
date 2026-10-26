@@ -1,16 +1,17 @@
 ---
 import ProjectCard from './ProjectCard.astro';
-import { getProtocols, type Project } from '../data/projects';
+import type { Project } from '../data/projects';
+import { getStandards, shortName } from '../data/standards';
 
 interface Props {
 	projects: Project[];
 }
 const { projects } = Astro.props;
-const protocolNames = Object.fromEntries((await getProtocols()).map((p) => [p.id, p.data.name]));
+const names = Object.fromEntries((await getStandards()).map((s) => [s.id, shortName(s)]));
 ---
 
 <div class="ot-grid not-content">
-	{projects.map((project) => <ProjectCard project={project} protocolNames={protocolNames} />)}
+	{projects.map((project) => <ProjectCard project={project} names={names} />)}
 </div>
 
 <style>

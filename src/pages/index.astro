@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Section from '../components/home/Section.astro';
 import Tiles from '../components/home/Tiles.astro';
-import ProtocolMatrix from '../components/ProtocolMatrix.astro';
+import StandardsMatrix from '../components/StandardsMatrix.astro';
 import PostList from '../components/blog/PostList.astro';
 import { getPosts } from '../data/blog';
 import { homeDescription } from '../data/seo';
@@ -41,7 +41,7 @@ const latest = (await getPosts()).slice(0, 2);
 			<Tiles
 				min="11.5rem"
 				tiles={[
-					{ label: 'Libraries', title: 'Protocol libraries', body: 'Pure Go clients and servers for Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850, Siemens S7, SunSpec, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP. No cgo.', href: '/projects/#library' },
+					{ label: 'Libraries', title: 'Protocol libraries', body: 'Pure Go clients and servers for Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP, plus SunSpec Modbus and IEC 61850 information models. No cgo.', href: '/projects/#protocol' },
 					{ label: 'CLI', title: 'Command-line tools', body: 'One tool per protocol to discover, read, write and diagnose devices in the field, with JSON output for scripts and CI.', href: '/projects/#cli' },
 					{ label: 'Discovery', title: 'Network visibility', body: 'LAN Tracker keeps a history of what is connected to your OT networks. go-otfp detects which protocols are running from transport framing alone.', href: '/projects/#discovery' },
 					{ label: 'UI', title: 'UI apps', body: 'SunSpec Explorer decodes every model of an inverter, meter or battery. Modbus Trace Explorer reads packet traces in Modbus terms.', href: '/projects/#ui' },
@@ -50,9 +50,11 @@ const latest = (await getPosts()).slice(0, 2);
 			/>
 		</Section>
 
-		<Section label="02 · Protocols" title="What you can connect today">
+		<Section label="02 · Protocols & models" title="What you can connect today">
 			<p>Every library, CLI and interop suite is MIT-licensed and public on GitHub.</p>
-			<ProtocolMatrix />
+			<StandardsMatrix kind="protocol" />
+			<h3 class="matrix-sub">Information models on top</h3>
+			<StandardsMatrix kind="information-model" />
 		</Section>
 
 		<Section label="03 · Why" title="Industrial data should not stay trapped">
@@ -126,6 +128,10 @@ const latest = (await getPosts()).slice(0, 2);
 </BaseLayout>
 
 <style>
+	.matrix-sub {
+		margin: 2rem 0 0.25rem;
+		font-size: 1.15rem;
+	}
 	.hero {
 		padding-block: 4rem 2rem;
 		background:

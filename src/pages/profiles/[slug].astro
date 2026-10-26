@@ -1,0 +1,14 @@
+---
+import StandardPage from '../../components/standards/StandardPage.astro';
+import { getStandards, type Standard } from '../../data/standards';
+
+export async function getStaticPaths() {
+	return (await getStandards('application-profile')).map((standard) => ({ params: { slug: standard.data.urlSlug ?? standard.id }, props: { standard } }));
+}
+
+interface Props {
+	standard: Standard;
+}
+---
+
+<StandardPage standard={Astro.props.standard} />
