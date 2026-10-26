@@ -10,7 +10,7 @@ import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 OPC Unified Architecture (OPC UA) is the interoperability standard of industrial automation. A server exposes an object model of a machine, line or plant (its *address space*); a client discovers the server, opens a secured channel, creates a session and then reads, writes, browses, calls methods, subscribes to changes and events, and reads history. The same standard defines the wire encoding, the services, the information model and the security model, so two independent implementations can talk without a vendor driver in between.
 
-The standard has two communication models. **Client/server** is the session-based model described above. **PubSub** (Part 14) sends DataSets from publishers to any number of subscribers without sessions, over UDP, Ethernet or a message broker. This page explains both as the OT Fabric projects implement them: client/server over UA-TCP (`opc.tcp://`), WebSockets (`opc.wss://`) and HTTPS (`opc.https://`) with the OPC UA Binary encoding, and PubSub with the UADP and JSON message mappings.
+The standard has two communication models. **Client/server** is the session-based model described above. **PubSub** (Part 14) sends DataSets from publishers to any number of subscribers without sessions, over UDP, Ethernet or a message broker. This page explains both as the OT Fabric projects implement them: client/server over UA-TCP (`opc.tcp://`), WebSockets (`opc.wss://`) and HTTPS (`opc.https://`) with the OPC UA Binary encoding, the UA JSON mappings of WebSockets and HTTPS, and PubSub with the UADP and JSON message mappings.
 
 ## Layers and transport
 
@@ -28,7 +28,7 @@ An endpoint URL looks like `opc.tcp://host:4840/path`; 4840 is the well-known Lo
 
 **WebSockets and HTTPS** (Part 6 §7.5 and §7.4) carry the same binary messages for networks where only web ports are open. `opc.wss://` runs the secure conversation inside a TLS WebSocket (profile wss-uasc-uabinary). `opc.https://` sends each request as an HTTPS POST (https-uabinary): there is no SecureChannel, TLS protects the connection, the security policy only signs the session, and a Publish is a long poll. In both cases the TLS server certificate is checked separately from the OPC UA application certificate.
 
-JSON and XML are supported as encodings of values (for exchange with other stacks and in PubSub), not as client/server wire encodings: UA JSON encoding over HTTPS and WebSockets (`https-uajson`, `wss-uajson`) is not implemented, while UA Binary over both is supported.
+Both transports also have a **UA JSON** mapping (Part 6 §7.4.5 and §7.5.2), for web and IT clients that would rather not decode OPC UA Binary. Every service message is then a JSON message and there is no secure conversation: `https-uajson` POSTs each request as `application/json`, and `wss-uajson` sends one JSON message per WebSocket message with the sub-protocol `opcua+uajson`. TLS is the only protection, so wss-uajson runs with security mode None. A server advertises the JSON endpoints next to the binary ones, at the same URLs, and the client picks one by its transport profile. JSON and XML are also encodings of values on their own, for exchange with other stacks and in PubSub.
 
 ## Address space
 
@@ -70,6 +70,12 @@ Notifications carry sequence numbers, so after a connection loss a client can mo
 Alarms and Conditions (Part 9) model alarms as **condition** nodes with state machines that clients see as events. A condition has an EnabledState, an ActiveState, an AckedState and, if required, a ConfirmedState; alarms can also be shelved (timed or one-shot). A client subscribes to events on the Server object with a filter that selects the condition fields, then calls **ConditionRefresh**: the server replays every *retained* condition between a RefreshStart and a RefreshEnd event, and live changes follow. Acknowledge, Confirm and AddComment take the **EventId** of the event they answer, so an operator never acknowledges a state they did not see.
 
 OPC UA 1.05 adds suppression, out-of-service, silence and latched states with their methods, dialog conditions that ask an operator a question, **branches** (an earlier occurrence kept until it is acknowledged), alarm groups, on- and off-delays, re-alarming, alarm metrics, and audit events that record who called which method. go-opcua implements all of this on both sides; opcuactl exposes it as the `alarms` commands.
+
+## Historical access
+
+Historical Access (Part 11) reads and edits what a server has recorded. **Data history** belongs to a variable: HistoryRead returns its raw values over a time range, values that were modified, values at given times, or aggregates such as the average per hour (processed). **Event history** belongs to an event notifier, an Object whose EventNotifier attribute has the HistoryRead bit: the server stores the events reported on it, alarm transitions and audit events included, and a client reads them back with the same EventFilter as a live event subscription, SelectClauses for the fields and a WhereClause for the events. A start time after the end time reads newest first, and long results come in pages linked by continuation points, which belong to the session and should be released when a client stops early. HistoryUpdate inserts, replaces, updates and deletes values or events, where the notifier allows it.
+
+go-opcua serves both kinds from its built-in historian or a provider of your own, and opcuactl reads them with `history value` and `history event` and changes them with `history update-events` and `history delete-events`.
 
 ## Certificate management
 
@@ -179,8 +185,8 @@ OPC UA connects PLCs, industrial gateways, SCADA servers and industrial IoT appl
 ## OT Fabric for OPC UA
 
 <CardGrid>
-  <LinkCard title="go-opcua" description="Pure Go client, server and PubSub library: TCP, WebSockets and HTTPS, RSA and ECC security, alarms, history, GDS certificate management, discovery and reverse connect." href="/projects/go-opcua/" />
-  <LinkCard title="opcuactl" description="Command-line client for discovery, browse, read, write, method calls, monitoring, alarms, diagnostics, certificate management, history, export and PubSub." href="/projects/opcuactl/" />
+  <LinkCard title="go-opcua" description="Pure Go client, server and PubSub library: TCP, WebSockets and HTTPS in UA Binary and UA JSON, RSA and ECC security, alarms, data and event history, GDS certificate management, discovery and reverse connect." href="/projects/go-opcua/" />
+  <LinkCard title="opcuactl" description="Command-line client for discovery, browse, read, write, method calls, monitoring, alarms, diagnostics, certificate management, history, export and PubSub, with a built-in test server." href="/projects/opcuactl/" />
   <LinkCard title="opcua-interop" description="Dockerized reference clients and servers of six independent stacks, plus a Global Discovery Server, with shared fixtures and a test PKI." href="/projects/opcua-interop/" />
 </CardGrid>
 

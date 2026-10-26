@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[opcuactl](https://github.com/otfabric/opcuactl) is a single-binary OPC UA client for the terminal, built on [go-opcua](https://github.com/otfabric/go-opcua). It discovers servers and endpoints, browses and searches the address space, reads and writes values, calls methods, monitors data changes, events and alarms, acknowledges and shelves alarms, reads server diagnostics, manages certificates and trust lists (GDS push and pull), reads history, exports subtrees, and listens to, publishes and configures OPC UA PubSub. It connects over `opc.tcp`, `opc.wss` and `opc.https`. Every command prints a table, JSON, YAML, CSV or JSON Lines and reports failures through stable exit codes. This page describes v0.8.0, which is built on go-opcua v1.23.1.
+[opcuactl](https://github.com/otfabric/opcuactl) is a single-binary OPC UA client for the terminal, built on [go-opcua](https://github.com/otfabric/go-opcua). It discovers servers and endpoints, browses and searches the address space, reads and writes values, calls methods, monitors data changes, events and alarms, acknowledges and shelves alarms, reads server diagnostics, manages certificates and trust lists (GDS push and pull), reads and edits data and event history, exports subtrees, and listens to, publishes and configures OPC UA PubSub. It connects over `opc.tcp`, and over `opc.wss` and `opc.https` in UA Binary or UA JSON. `opcuactl serve` runs a test server, so all of this can be tried without a PLC. Every command prints a table, JSON, YAML, CSV or JSON Lines and reports failures through stable exit codes. This page describes v0.10.3, which is built on go-opcua v1.27.0.
 
 <Aside type="caution" title="Responsible use">
 opcuactl talks to real control systems. Use it only on servers and networks you own or are authorized to test. `write value` changes process values and `call method` runs server-side logic. Subscriptions and large browse or export runs add load to servers with limited sessions.
@@ -74,12 +74,13 @@ opcuactl
 │   └── pull     find | get | query | query-servers | register | update | unregister
 │                request | finish | wait | trustlist | groups | certs | status
 │                revoke | check-revocation | enroll
-├── history      value | event
+├── history      value | event | update-events | delete-events
 ├── export       nodes | values
 ├── pubsub       subscribe | publish | call | respond | discover | decode
 │   ├── sks      get-keys
 │   └── config   show | add-* | remove | enable | disable | diagnostics
 │                export | reserve-ids | add-action
+├── serve
 ├── ping
 ├── version
 └── completion
@@ -92,6 +93,8 @@ Every networked command takes the same connection flags. Settings can also come 
 | Flag | Environment variable | Purpose |
 |---|---|---|
 | `-e, --endpoint` | `OPCUACTL_ENDPOINT` | Server endpoint: `opc.tcp://host:4840`, `opc.wss://host:port` or `opc.https://host:port` |
+| `--transport` | `OPCUACTL_TRANSPORT` | `tcp`, `wss`, `https`, `wss-uajson`, `https-uajson` or a transport profile URI; the URL scheme alone means UA Binary |
+| `--json-content-type` | `OPCUACTL_JSON_CONTENT_TYPE` | https-uajson Content-Type: `standard` (`application/json`, default) or `legacy` (`application/opcua+uajson`, which UA-.NETStandard 2.0.1 needs) |
 | `--security-policy` | `OPCUACTL_SECURITY_POLICY` | `None`, `Basic256Sha256`, `ECC_nistP256`, ..., or `auto` |
 | `--security-mode` | `OPCUACTL_SECURITY_MODE` | `None`, `Sign`, `SignAndEncrypt` or `auto` |
 | `--auth` | `OPCUACTL_AUTH` | `anonymous`, `username`, `certificate`, `issued` |
@@ -242,6 +245,28 @@ opcuactl export values "${CONN[@]}" --start-node "ns=2;i=1" --depth 2 \
 
 History modes are `raw` (default), `modified`, `processed` and `attime` (repeatable `--at`); `--aggregate` accepts `average`, `min`, `max` and `count`.
 
+Historical events are read from an event notifier, with the same fields and filters as `monitor event`:
+
+```sh
+# Alarms of Severity 500 and more, newest first (start after end), in pages of 100
+opcuactl history event "${CONN[@]}" -n "ns=1;s=Demo" \
+  --start 2026-03-11T00:00:00Z --end 2026-03-10T00:00:00Z \
+  --of-type AlarmConditionType --severity-min 500 \
+  --select EventId --select Time --select ConditionId --select ActiveState/Id --num-values 100
+
+# The last 10 events before a time
+opcuactl history event "${CONN[@]}" -n "ns=1;s=Demo" --end 2026-03-11T00:00:00Z --max-events 10
+
+# Insert an event, correct it, delete it (the notifier needs HistoryWrite)
+opcuactl history update-events "${CONN[@]}" -n "ns=1;s=Demo" --yes \
+  --event '{"EventId":"0x0a01","Time":"2026-03-10T08:00:00Z","Message":"shift handover","Severity":100}'
+opcuactl history update-events "${CONN[@]}" -n "ns=1;s=Demo" --yes --mode replace \
+  --event '{"EventId":"0x0a01","Message":"shift handover, line 2","Severity":200}'
+opcuactl history delete-events "${CONN[@]}" -n "ns=1;s=Demo" --event-id 0x0a01 --yes
+```
+
+`--select` takes browse paths (`AckedState/Id`, `2:Temperature`) and `ConditionId`. `--num-values` is the page size: opcuactl follows the continuation points until the range is read or `--max-events` events came back, and releases the point it leaves. `update-events` takes events as JSON (`--event`, or `--events-file`, `-` for stdin) with `--mode insert|replace|update`; like `write value`, both commands ask before changing anything (`--yes`, `--dry-run`).
+
 ## Alarms and conditions
 
 `alarms list` calls ConditionRefresh and shows the retained conditions with their states and the EventId of their latest event. The other commands call the Part 9 methods on a condition and look up that EventId for you.
@@ -366,10 +391,48 @@ opcuactl call method "${CONN[@]}" --object "ns=2;i=1" --method "ns=2;i=2" \
 | `1` | Usage or validation error |
 | `2` | Connection or transport failure |
 | `3` | OPC UA service or status-code failure |
-| `4` | Partial success (batch and export operations); `gds pull check-revocation`: the certificate is not valid |
+| `4` | Partial success (batch and export operations, `history update-events` and `delete-events` with some failed events); `gds pull check-revocation`: the certificate is not valid |
 
-`monitor value` exits with code 3 when the server rejected every monitored item; rejected items are reported on stderr while the others keep running.
+`monitor value` exits with code 3 when the server rejected every monitored item; rejected items are reported on stderr while the others keep running. A Bad status from the server exits 3 for `write value`, `call method` and the `history` commands, as does a node that does not exist for `get node`, `browse` and `find`. `ping` exits 2 when the server cannot be reached and 3 when it cannot be browsed, so it works as a health check in scripts and CI.
 
-## Simulation
+## Test server
 
-opcuactl is a client; it has no OPC UA server or simulation mode. To practise, run a go-opcua server (the library's `examples/server/*_server` and `examples/pubsub/server` programs) or an opcua-interop reference server, as described in [Testing and interop](/docs/protocols/opc-ua/testing/). For PubSub it can play both sides itself: `pubsub publish` feeds a subscriber with test data and `pubsub respond` is a test Responder for Actions.
+`opcuactl serve` runs an OPC UA server built on go-opcua: to try the commands without a PLC, to give a CI job a server, or to test another client against a known one. It runs until Ctrl+C or SIGTERM (or `--duration`), then closes its sessions and exits.
+
+```sh
+# Port 4840 with None and Basic256Sha256 endpoints; save the self-signed certificate it makes
+opcuactl serve --cert-out server.pem --key-out server.key --user operator:secret
+
+# In another terminal: the demo namespace is ns=1
+opcuactl get value -e opc.tcp://localhost:4840 -n "ns=1;s=Demo.Counter"
+opcuactl write value -e opc.tcp://localhost:4840 -n "ns=1;s=Demo.Level" --value 90 --type double --yes
+opcuactl alarms list -e opc.tcp://localhost:4840
+opcuactl history event -e opc.tcp://localhost:4840 -n "ns=1;s=Demo" --max-events 10 --end 2030-01-01T00:00:00Z
+
+# opc.wss and opc.https next to opc.tcp, with their UA JSON mappings
+opcuactl serve --wss 0.0.0.0:4843 --https 0.0.0.0:4443 --uajson --cert-out server.pem
+opcuactl get value -e opc.wss://localhost:4843 --transport wss-uajson --tls-ca server.pem -n "ns=1;s=Demo.Sine"
+
+# Your own information model instead of the demo, for trusted clients only
+opcuactl serve --cert server.pem --key server.key --trust-dir ./pki/trusted --no-demo --nodeset machine.NodeSet2.xml
+
+# For scripts: just the endpoint URLs, on a free port
+opcuactl serve --listen 127.0.0.1:0 -q
+```
+
+| Demo node (ns=1) | What it does |
+|---|---|
+| `Demo.Boolean`, `Demo.Int32`, `Demo.Double`, `Demo.String`, `Demo.DateTime`, `Demo.Int32Array` | Read-only values of the common types |
+| `Demo.Counter` | Counts up every `--sim-interval` (default 1 s), for subscriptions |
+| `Demo.Sine` | A sine wave between -1 and 1, historized for `history value` |
+| `Demo.Level` | A writable Double, starting at 50 |
+| `Demo.LevelAlarm` | An exclusive level alarm on `Demo.Level`: High at 80, HighHigh at 95, to acknowledge and shelve with `alarms` |
+| `Demo.Add` | A method of `Demo`: `Add(a, b Int32)` returns the sum |
+
+`Demo` is also an event notifier with an event history of its last 1000 events (the start event and the alarm transitions), writable for `history update-events` and `delete-events`. `--security-policy` offers any policy of the client (default `None,Basic256Sha256`); every policy without a `--cert` gets a self-signed certificate at start (RSA, ECDSA P-256 and P-384, Ed25519). `--trusted-cert` and `--trust-dir` restrict the clients, and `--user name:password` adds users next to anonymous access (`--allow-anonymous=false` turns that off).
+
+<Aside type="caution" title="For tests only">
+Without a trust list `serve` accepts every client certificate, and users and passwords live on the command line or in the environment. Do not expose it to networks you do not control.
+</Aside>
+
+For PubSub, opcuactl plays both sides itself: `pubsub publish` feeds a subscriber with test data and `pubsub respond` is a test Responder for Actions. The [opcua-interop](/docs/protocols/opc-ua/testing/) reference servers are the next step, to test against other stacks.

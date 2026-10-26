@@ -9,7 +9,7 @@ facts:
   - { label: 'Default port', value: '4840' }
   - { label: 'Library', value: 'go-opcua' }
   - { label: 'CLI', value: 'opcuactl' }
-  - { label: 'Interop', value: 'opcua-interop v0.14.0' }
+  - { label: 'Interop', value: 'opcua-interop v0.17.0' }
 icon: go-opcua
 docs: /docs/protocols/opc-ua/
 ---
@@ -31,9 +31,12 @@ OPC Unified Architecture (OPC UA) is the interoperability standard of industrial
 
 ### From the command line
 
-Download `opcuactl` from [GitHub Releases](https://github.com/otfabric/opcuactl/releases), then:
+Download `opcuactl` from [GitHub Releases](https://github.com/otfabric/opcuactl/releases). No server at hand? `opcuactl serve` starts one with a demo address space (changing values, a writable level with an alarm, a method and history), so every command below works against `opc.tcp://localhost:4840`:
 
 ```sh
+# A test server, in a second terminal
+opcuactl serve
+
 # List endpoints and their security configurations
 opcuactl discover endpoints -e opc.tcp://localhost:4840
 
@@ -109,12 +112,12 @@ func main() {
 | | |
 |---|---|
 | Roles | Client and server; PubSub publisher and subscriber, standalone or inside the server |
-| Transport | UA-TCP (`opc.tcp://`) with reverse connect, WebSockets (`opc.wss://`) and HTTPS (`opc.https://`), all with OPC UA Binary |
+| Transport | UA-TCP (`opc.tcp://`) with reverse connect, WebSockets (`opc.wss://`) and HTTPS (`opc.https://`) with OPC UA Binary, and the UA JSON mappings of WebSockets and HTTPS (`wss-uajson`, `https-uajson`) |
 | PubSub | UADP and JSON over UDP (unicast and multicast), raw Ethernet, MQTT 3.1.1 and 5.0, and AMQP 1.0; message security with a Security Key Service; chunks, discovery and Actions |
 | Security | None, Sign and SignAndEncrypt; RSA policies from Basic128Rsa15 to Aes256Sha256RsaPss, and every ECC policy: nistP256, nistP384, brainpoolP256r1, brainpoolP384r1, curve25519 and curve448, plus the AES-GCM and ChaCha20-Poly1305 variants |
-| Services | Every client/server service set: discovery, attribute, view, method, query, node management, subscriptions and monitored items, history read and update |
+| Services | Every client/server service set: discovery, attribute, view, method, query, node management, subscriptions and monitored items, history read and update of values and events |
 | Beyond the services | Alarms and Conditions (Part 9, with the 1.05 methods), server diagnostics, GDS certificate management by the push and pull models (Part 12), a Local Discovery Server with mDNS, NodeSet2 import |
-| Not implemented | UA JSON encoding over HTTPS and WebSockets (UA Binary over both is supported), time-scheduled (TSN) Ethernet, historical events in the built-in historian |
+| Not implemented | Time-scheduled (TSN) Ethernet for PubSub |
 | Go version | 1.26 or later |
 
 <Callout type="caution">
@@ -123,4 +126,4 @@ func main() {
 
 ## Interoperability
 
-[opcua-interop](https://github.com/otfabric/opcua-interop) runs go-opcua in every applicable client and server direction against six independent stacks: open62541 (C), Eclipse Milo (Java), async-opcua (Rust), the OPC Foundation's UA-.NETStandard (C#), node-opcua (TypeScript) and opcua-asyncio (Python). PubSub is tested against open62541 and UA-.NETStandard, and the GDS pull model against the UA-.NETStandard Global Discovery Server. The [testing page](/docs/protocols/opc-ua/testing/) has the evidence and what is still open.
+[opcua-interop](https://github.com/otfabric/opcua-interop) runs go-opcua in every applicable client and server direction against six independent stacks: open62541 (C), Eclipse Milo (Java), async-opcua (Rust), the OPC Foundation's UA-.NETStandard (C#), node-opcua (TypeScript) and opcua-asyncio (Python). Every peer client also manages the go-opcua server's certificates (push model) and pulls from its Global Discovery Server, and reads, pages, filters and edits its event history. PubSub is tested against open62541 and UA-.NETStandard, and UA JSON over WebSockets and HTTPS against UA-.NETStandard, the only peer that has it. The [testing page](/docs/protocols/opc-ua/testing/) has the evidence and what is still open.

@@ -10,7 +10,7 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 OPC UA PubSub (IEC 62541-14, "Part 14") sends data from publishers to any number of subscribers without sessions. A publisher samples a set of values at a fixed interval and sends it as a message over UDP, raw Ethernet or a message broker; subscribers take the messages they are interested in from what arrives. It complements client/server: PubSub fans data out to many receivers, and into IT and cloud systems through MQTT or AMQP, while client/server stays the way to browse, write, call methods and configure.
 
-[go-opcua](/projects/go-opcua/) implements both sides, standalone or inside its server, and [opcuactl](/projects/opcuactl/) has a `pubsub` command group to listen, publish, discover and configure from a terminal. This page describes go-opcua v1.23.1 and opcuactl v0.8.0.
+[go-opcua](/projects/go-opcua/) implements both sides, standalone or inside its server, and [opcuactl](/projects/opcuactl/) has a `pubsub` command group to listen, publish, discover and configure from a terminal. This page describes go-opcua v1.27.0 and opcuactl v0.10.3.
 
 ## The model
 
@@ -100,7 +100,7 @@ The configuration is the standard `ua.PubSubConfigurationDataType`, with builder
   </TabItem>
 </Tabs>
 
-`DataSource` is an interface, so values can come from anywhere. `KeyFrameCount` on a writer sends delta frames between key frames, and `KeepAliveTime` on a group sends keep-alives. go-opcua speaks MQTT 3.1.1 unless asked for 5.0; `BestAvailable` tries 5.0 and falls back.
+`Start` opens the transports in the background. `ps.Ready(ctx)` waits until every connection has opened its transport and made its subscriptions (readers, discovery, Actions), so a message sent right after it is not missed; an unreachable broker keeps it waiting until `ctx` ends. `DataSource` is an interface, so values can come from anywhere. `KeyFrameCount` on a writer sends delta frames between key frames, and `KeepAliveTime` on a group sends keep-alives. go-opcua speaks MQTT 3.1.1 unless asked for 5.0; `BestAvailable` tries 5.0 and falls back.
 
 **Inside a server.** `server.WithPubSub(cfg)` runs the runtime in a go-opcua server: PublishedDataItems read variables of the address space, PublishedEvents publish the events the server emits, and readers with TargetVariables write received fields to variables. The configuration appears under `Objects/Server/PublishSubscribe`, where clients can change it with the standard methods (AddConnection, AddWriterGroup, AddDataSetWriter and so on) and read the PubSubConfiguration file. The library's `examples/pubsub/server` publishes a variable and subscribes to it again.
 

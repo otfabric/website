@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-OT Fabric tests its OPC UA implementation against six independent stacks rather than only against itself. [opcua-interop](https://github.com/otfabric/opcua-interop) packages the reference stacks as Docker images; [go-opcua](https://github.com/otfabric/go-opcua) owns the test cases and the published compatibility claims. This page describes opcua-interop v0.14.0 and go-opcua v1.23.1.
+OT Fabric tests its OPC UA implementation against six independent stacks rather than only against itself. [opcua-interop](https://github.com/otfabric/opcua-interop) packages the reference stacks as Docker images; [go-opcua](https://github.com/otfabric/go-opcua) owns the test cases and the published compatibility claims. This page describes opcua-interop v0.17.0 and go-opcua v1.27.0.
 
 ## Reference stacks
 
@@ -17,12 +17,12 @@ OT Fabric tests its OPC UA implementation against six independent stacks rather 
 | open62541 | C | open62541 v1.5.9, OpenSSL crypto backend, mDNS via mdnsd | ECC policies, reverse connect, LDS and mDNS, PubSub with MQTT and SKS, alarms, push management |
 | Eclipse Milo | Java | Eclipse Milo v1.1.8 with `milo-encoding-json` and `milo-encoding-xml` | No ECC policy, no ReverseHello, not a discovery server, no PubSub |
 | async-opcua | Rust | async-opcua 0.19.0, pure Rust crypto | No ECC, no LDS, no PubSub; trusts exact certificates only |
-| UA-.NETStandard (`dotnet`) | C# | OPC Foundation UA-.NETStandard 2.0.1 on .NET 10 | The reference implementation: PubSub (UDP, MQTT, chunks, discovery), `opc.wss` and `opc.https`, alarms, push management |
+| UA-.NETStandard (`dotnet`) | C# | OPC Foundation UA-.NETStandard 2.0.1 on .NET 10 | The reference implementation: PubSub (UDP, MQTT, chunks, discovery), `opc.wss` and `opc.https` in UA Binary and UA JSON, alarms with the 1.05 fixture, push management, event history |
 | node-opcua | TypeScript | node-opcua 2.187.12 on Node.js 24 | Reverse connect, alarms, push management; no ECC, no node management served |
-| opcua-asyncio (`asyncua`) | Python | opcua-asyncio 2.1.0 on CPython 3.14 | RSA policies only, no reverse connect, no PubSub |
-| UA-.NETStandard GDS (`dotnet-gds`) | C# | UA-.NETStandard 1.5.378.182 GDS packages | Global Discovery Server and GDS pull client; a separate image because the GDS packages have no 2.0.x release |
+| opcua-asyncio (`asyncua`) | Python | opcua-asyncio 2.1.0 on CPython 3.14 | RSA policies only, no reverse connect, no PubSub; event history read only |
+| UA-.NETStandard GDS (`dotnet-gds`) | C# | UA-.NETStandard 2.0.1 with `Opc.Ua.Gds.Server` and `Opc.Ua.Gds.Client` | The reference Global Discovery Server and GDS pull client, in an image of its own |
 
-The images are `ghcr.io/otfabric/opcua-interop-<adapter>:<version>` (`open62541`, `milo`, `async-opcua`, `dotnet`, `node-opcua`, `asyncua` and `dotnet-gds`), for linux/amd64 and linux/arm64. Tags are immutable, and go-opcua pins all seven by digest to v0.14.0.
+The images are `ghcr.io/otfabric/opcua-interop-<adapter>:<version>` (`open62541`, `milo`, `async-opcua`, `dotnet`, `node-opcua`, `asyncua` and `dotnet-gds`), for linux/amd64 and linux/arm64. Tags are immutable, and go-opcua pins all seven by digest to v0.17.0.
 
 Each image has the same modes: `server` (start a server from a fixture), `client` (run one probe operation), `test`, `validate-fixture` and `print-capabilities`. An Eclipse Mosquitto broker, pinned by digest, carries the MQTT PubSub tests.
 
@@ -68,9 +68,9 @@ The baseline fixture lives under `Objects/Compatibility` in namespace `urn:otfab
 | Access | Read-write, read-only, write-only |
 | Methods | `Add`, `Multiply`, `Echo`, `NoArguments`, `MultipleOutputs`, `Fail` |
 | Events | `Events.Source` emits a BaseEvent about every 2 s, Severity 500 |
-| History | `History.Temperature`: 5 raw samples |
+| History | `History.Temperature`: 5 raw samples. `History.Events`: an event notifier with 5 seeded events, Severity 100 to 500, and `History.ResetEvents` to restore them (UA-.NETStandard server, asyncua read only) |
 | Analog | `Analog.Level`, `Analog.Setpoint`: AnalogItemType with EURange 0..100, for deadband tests |
-| Alarms | `Alarms.InteropAlarm`, an alarm condition for the Alarms and Conditions tests (open62541, UA-.NETStandard and node-opcua servers) |
+| Alarms | `Alarms.InteropAlarm`, an alarm condition for the Alarms and Conditions tests (open62541, UA-.NETStandard and node-opcua servers); on UA-.NETStandard also `Alarms.ExtAlarm` with the 1.05 states, a dialog and an alarm group |
 | PubSub | Writable variables of every common type for published fields and TargetVariables |
 
 The fixture user is `test-user` / `test-password`; users with the SecurityAdmin role may call push certificate management. A secured server needs `--certificate`, `--private-key` and `--pki-dir`; the fixture's `securityProfiles` decide which secure endpoints are advertised.
@@ -79,7 +79,7 @@ The fixture user is `test-user` / `test-password`; users with the SecurityAdmin 
 `make certs` generates a test CA and identities under `certs/test-pki/`, including ECC certificates per curve. These private keys are for isolated test environments. Never use them in production or expose them to untrusted networks.
 </Aside>
 
-Without opcua-interop, the go-opcua repository has runnable servers in `examples/server/node_server`, `map_server`, `NodeSet2_server` and `method_server`, a PubSub server in `examples/pubsub/server`, and a Global Discovery Server in `examples/gds-pull`.
+Without opcua-interop, `opcuactl serve` is the quickest test server (see the [opcuactl page](/docs/protocols/opc-ua/cli/#test-server)), and the go-opcua repository has runnable servers in `examples/server/node_server`, `map_server`, `NodeSet2_server` and `method_server`, a PubSub server in `examples/pubsub/server`, and a Global Discovery Server in `examples/gds-pull`.
 
 ## What each adapter supports
 
@@ -90,7 +90,7 @@ docker run --rm ghcr.io/otfabric/opcua-interop-open62541:latest print-capabiliti
 docker run --rm ghcr.io/otfabric/opcua-interop-dotnet:latest print-capabilities
 ```
 
-| Feature (v0.14.0) | open62541 | Milo | async-opcua | UA-.NETStandard | node-opcua | asyncua |
+| Feature (v0.17.0) | open62541 | Milo | async-opcua | UA-.NETStandard | node-opcua | asyncua |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | DataChangeFilter, client and server | Yes | Yes | Yes | Yes | Yes | Client only |
 | Reverse connect | Yes | No | Yes | Not wired | Yes | No |
@@ -99,11 +99,14 @@ docker run --rm ghcr.io/otfabric/opcua-interop-dotnet:latest print-capabilities
 | Node management served | Yes | No | Yes | Yes | No | Admin role only |
 | Alarms and Conditions server fixture | Yes | No | No | Yes | Yes | No |
 | Push certificate management server | Yes | No | No | Yes | Yes | No |
-| `opc.wss` and `opc.https` | No | No | No | Yes | No | No |
+| `opc.wss` and `opc.https` | No | No | No | Yes, UA Binary and UA JSON (server) | No | No |
+| Event history server | No | No | No | Read and update | No (variables only) | Read only |
+| Push management and GDS pull clients | Yes | Yes | Yes | Yes | Push only | Yes |
+| Query client | No | No | Yes | No | Yes | No |
 | PubSub | UDP, MQTT, SKS, information model | No | No | UDP, MQTT, chunks, discovery | No | No |
 | `codec` JSON / XML | Compact / partial | Compact and verbose / yes | No | Compact and verbose / yes | No | No |
 
-The client mode has nineteen operations, among them `endpoints`, `read`, `write`, `browse`, `call`, `subscribe`, `event-subscribe`, `alarms`, `history-read`, `republish`, `transfer-subscriptions`, `node-management`, `register-server` and `codec`, plus `push` on node-opcua, `pubsub-discover` on UA-.NETStandard and `gds-pull` on dotnet-gds. All write JSON to stdout. `--channel-lifetime-ms` requests a short SecureChannel lifetime to force token renewals during a command.
+The client mode has operations such as `endpoints`, `read`, `write`, `browse`, `call`, `subscribe`, `event-subscribe`, `alarms`, `history-read`, `history-read-events`, `history-update-events`, `republish`, `transfer-subscriptions`, `node-management`, `register-server` and `codec`, plus `push` on every adapter, `gds-pull` on every adapter but node-opcua, `query` on node-opcua and async-opcua, and `pubsub-discover` on UA-.NETStandard. All write JSON to stdout. `--channel-lifetime-ms` requests a short SecureChannel lifetime to force token renewals during a command.
 
 ## Running the go-opcua interop suite
 
@@ -139,13 +142,13 @@ Every capability is tested in both directions per peer: the go-opcua client agai
 
 | Peer | Verified | Unverified | Unsupported by the peer | Deferred |
 |---|---:|---:|---:|---:|
-| open62541 and Eclipse Milo | 476 | 70 | 228 | 60 |
-| async-opcua | 148 | 49 | 192 | 28 |
-| UA-.NETStandard | 225 | 29 | 131 | 32 |
-| node-opcua | 159 | 30 | 203 | 25 |
-| opcua-asyncio | 123 | 34 | 228 | 32 |
+| open62541 and Eclipse Milo | 521 | 0 | 281 | 52 |
+| async-opcua | 172 | 0 | 231 | 24 |
+| UA-.NETStandard | 261 | 4 | 134 | 28 |
+| node-opcua | 178 | 4 | 223 | 22 |
+| opcua-asyncio | 148 | 0 | 251 | 28 |
 
-The counts come from the ledgers in go-opcua's `interop/` directory (`COVERAGE.md` and `testdata/ledger-*.json`).
+That is 1280 verified rows, and 8 left unverified, all waiting for an adapter command. The counts come from the ledgers in go-opcua's `interop/` directory (`COVERAGE.md` and `testdata/ledger-*.json`).
 
 ## What has been validated
 
@@ -156,9 +159,10 @@ Verified with every peer that has the feature, in both directions, among others:
 - Subscriptions: queue windows, timestamps, publishing and monitoring modes, DataChangeFilter deadbands and triggers, Republish and TransferSubscriptions, recovery after a reconnect.
 - Security: the RSA policies in Sign and SignAndEncrypt, trusted and untrusted certificates, valid and invalid usernames, SecureChannel renewal under a live subscription, multi-chunk secured messages.
 - Event subscription with OfType and severity filters; raw HistoryRead and continuation points; LDS registration and FindServers.
+- **Historical events:** all six peer clients read the go-opcua server's event history forward and in reverse, page it with continuation points, filter it by type and severity, and insert, replace, update and delete events. The go-opcua client does the same against the UA-.NETStandard server, and reads the asyncua server with its deviations pinned.
 - **Alarms and Conditions:** ConditionRefresh, Acknowledge, Confirm and AddComment in both directions with open62541, UA-.NETStandard and node-opcua, and from every peer client against the go-opcua server; the OPC UA 1.05 methods, dialogs, branches, alarm groups, timing, metrics and audit events from all six peer clients.
-- **Certificate management:** the push model against open62541, UA-.NETStandard and node-opcua servers, with the node-opcua push client against the go-opcua server, and the 1.05 additions against UA-.NETStandard; the GDS pull model in both directions against the UA-.NETStandard Global Discovery Server.
-- **Transports:** `opc.https` and `opc.wss` against UA-.NETStandard.
+- **Certificate management:** the push model against open62541, UA-.NETStandard and node-opcua servers, and the 1.05 additions against UA-.NETStandard; every peer's push client against the go-opcua server, with the 1.05 flags; the GDS pull model in both directions against the UA-.NETStandard Global Discovery Server, and from open62541, Milo, async-opcua, asyncua and UA-.NETStandard clients against the go-opcua GDS. Session signatures with a server that sends its certificate chain, as UA-.NETStandard does by default.
+- **Transports:** `opc.https` and `opc.wss` against UA-.NETStandard, in UA Binary and, from the go-opcua client, in UA JSON (`https-uajson`, `wss-uajson`). No other peer implements the JSON mappings.
 - **PubSub:** with open62541, UADP and JSON codecs byte for byte, UDP unicast and multicast, Ethernet, MQTT 3.1.1 and 5.0 through Mosquitto, message security, the SKS (pull and push) and the PublishSubscribe methods; with UA-.NETStandard, UDP, MQTT, static-key security, chunked NetworkMessages and UADP discovery. AMQP 1.0 is tested go-opcua to go-opcua through RabbitMQ 4 and ActiveMQ Artemis.
 - **JSON and XML** encodings of values with open62541, Milo and UA-.NETStandard.
 
@@ -168,8 +172,8 @@ Interop found go-opcua defects that Go-to-Go tests could not: the RSA-OAEP-SHA25
 
 ## What has not been validated
 
-- **Deferred:** NodeSet2 import, cross-stack custom DataTypes, IssuedIdentityToken, HistoryRead modified, at-time, processed and events and HistoryUpdate against peers, certificate chains and CRLs, custom event emission and the general WhereClause surface for peer clients, and secured LDS registration against a peer LDS.
-- **Waiting for an adapter:** push management and GDS clients for open62541 and Milo, PubSub chunks, discovery and keyed codec operations in the open62541 adapter, and the 1.05 alarm conditions on a peer server.
+- **Deferred:** NodeSet2 import, cross-stack custom DataTypes, IssuedIdentityToken, HistoryRead modified, at-time and processed and HistoryUpdate of values against peers, intermediate certificate chains and CRLs, custom event emission and the general WhereClause surface for peer clients, and secured LDS registration against a peer LDS.
+- **Waiting for an adapter:** a GDS pull client for node-opcua, the PubSub reader state of the UA-.NETStandard adapter, and UA JSON in the UA-.NETStandard adapter's client, which selects UA Binary endpoints only.
 - **ECC with other stacks:** open62541 is the only ECC peer; UA-.NETStandard 2.0.1 refuses the test PKI's ECC certificates. ECC `Sign` mode follows open62541 v1.5.9 and is not expected to interoperate with stacks that follow OPC UA 1.05.07.
 - Not certified by the OPC Foundation.
 
@@ -183,4 +187,4 @@ Interop found go-opcua defects that Go-to-Go tests could not: the RSA-OAEP-SHA25
 | Chaos | `make chaos` | Faults on unsecured and secured channels (bit flips, replayed, lost and reordered chunks), DataChangeFilter, reverse connect, discovery, codecs, certificate management, the GDS, and PubSub over lossy networks and failing brokers; seeds are logged for replay |
 | Fuzzing | `ua`, `uasc`, `uacp`, PubSub and more | Binary, JSON and XML decoders, secure channel, transport, WebSocket and HTTPS, certificates and PFX files, mDNS, and the UADP, JSON, MQTT, AMQP and Ethernet parsers |
 
-opcuactl has end-to-end tests that run the CLI against a go-opcua server, including alarms, certificate management and PubSub. Its published example outputs were captured against a WAGO 750-8102 PFC100 PLC (anonymous and username over `None/None` only, no events or history) and against go-opcua demo servers and real MQTT and AMQP brokers for the ECC, reverse connect, discovery, encoding and PubSub features.
+opcuactl has end-to-end tests that run every command family against `opcuactl serve` and go-opcua test servers, with their output formats and exit codes, at 92.7% coverage. Its published example outputs were captured against a WAGO 750-8102 PFC100 PLC (anonymous and username over `None/None` only, no events or history) and against go-opcua demo servers and real MQTT and AMQP brokers for the ECC, reverse connect, discovery, encoding and PubSub features.
