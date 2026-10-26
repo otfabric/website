@@ -1,12 +1,12 @@
 ---
-title: 'EtherNet/IP joins OT Fabric: go-ethernetip, ethernetipctl and eleven reference stacks'
-description: EtherNet/IP is how PLCs talk to the I/O, drives and controllers on the factory floor. go-ethernetip implements client, scanner and adapter under MIT, with Logix tags and EDS files, ethernetipctl puts them on the command line, and ethernetip-interop tests both against eleven independent implementations in eight languages.
+title: 'EtherNet/IP joins OT Fabric: go-ethernetip, ethernetipctl and twelve reference stacks'
+description: EtherNet/IP is how PLCs talk to the I/O, drives and controllers on the factory floor. go-ethernetip implements client, scanner and adapter under MIT, with Logix tags and EDS files, ethernetipctl puts them on the command line, and ethernetip-interop tests both against twelve independent implementations in eight languages.
 date: 2026-10-26
 authors: [OT Fabric]
 tags: [announcement, ethernet-ip, automation, interop]
 featured: true
 cover:
-  alt: go-ethernetip in the middle, connected to ten reference originators on the left (EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip and EEIP.NET) and the reference targets OpENer, cpppo, libplctag and gologix on the right.
+  alt: go-ethernetip in the middle, connected to eleven reference originators on the left (EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip, EEIP.NET and loki-os go-ethernet-ip) and the reference targets OpENer, cpppo, libplctag and gologix on the right.
   image: ../../assets/blog/ethernetip-interop-matrix.svg
 ---
 
@@ -64,16 +64,16 @@ ethernetipctl tag read 192.168.1.10 Program:Main.Counts[2] --count 5 --route 1/0
 
 It also reads and writes any attribute, lists a device's objects, tests a Forward_Open and closes a connection by its triad, validates EDS files for CI and generates them from a live device. Every command that changes a device needs `--yes`, and it never scans address ranges. Output is text, a table or JSON with stable exit codes. The [ethernetipctl guide](/docs/protocols/ethernet-ip/cli/) walks through it.
 
-## Tested against eleven independent stacks
+## Tested against twelve independent stacks
 
-[ethernetip-interop](/projects/ethernetip-interop/) packages eleven independent EtherNet/IP implementations, in eight languages, as containers behind one contract. Four are targets: OpENer (C, the only open adapter with multicast and listen-only), cpppo (Python, a Logix-style simulator), libplctag's ab_server (C) and gologix (Go, a Logix tag server with Class 1 I/O). Ten are originators: EIPScanner (C++) and EEIP.NET (C#) as scanners with Class 1 I/O, and pycomm3, pylogix, cpppo, libplctag, gologix, etherip (Java, from the EPICS world), eip-rs (Rust) and node-ethernet-ip (TypeScript) for generic CIP and Logix tags. Every originator is first tested against every target.
+[ethernetip-interop](/projects/ethernetip-interop/) packages twelve independent EtherNet/IP implementations, in eight languages, as containers behind one contract. Four are targets: OpENer (C, the only open adapter with multicast and listen-only), cpppo (Python, a Logix-style simulator), libplctag's ab_server (C) and gologix (Go, a Logix tag server with Class 1 I/O). Eleven are originators: EIPScanner (C++) and EEIP.NET (C#) as scanners with Class 1 I/O, and pycomm3, pylogix, cpppo, libplctag, gologix, etherip (Java, from the EPICS world), eip-rs (Rust), node-ethernet-ip (TypeScript) and loki-os's go-ethernet-ip (Go) for generic CIP and Logix tags. Every originator is first tested against every target.
 
-go-ethernetip runs in both directions on every push. Its originator runs against OpENer, cpppo, ab_server and gologix: identity, attributes, errors, Class 3, Large_Forward_Open, Class 1 I/O with configuration data, multicast with a listen-only connection next to its owner, and Logix reads and writes. The ten reference originators run against its adapter and its emulated controller: Class 1 I/O from EIPScanner and EEIP.NET, refusals, Multiple Service Packet, routing, and the Logix drivers of pycomm3, pylogix, libplctag, eip-rs and node-ethernet-ip opening a session, listing the tags and reading and writing tags and bits, with structures and STRINGs from pycomm3, eip-rs and node-ethernet-ip. **173 cases pass, none fail**, and 129 are not applicable because a reference has the role but not the feature. The [coverage matrix](/docs/protocols/ethernet-ip/testing/) shows what each reference covers.
+go-ethernetip runs in both directions on every push. Its originator runs against OpENer, cpppo, ab_server and gologix: identity, attributes, errors, Class 3, Large_Forward_Open, Class 1 I/O with configuration data, multicast with a listen-only connection next to its owner, and Logix reads and writes. The eleven reference originators run against its adapter and its emulated controller: Class 1 I/O from EIPScanner and EEIP.NET, refusals, Multiple Service Packet, routing, and the Logix drivers of pycomm3, pylogix, libplctag, eip-rs and node-ethernet-ip opening a session, listing the tags and reading and writing tags and bits, with structures and STRINGs from pycomm3, eip-rs and node-ethernet-ip. **184 cases pass, none fail**, and 146 are not applicable because a reference has the role but not the feature. The [coverage matrix](/docs/protocols/ethernet-ip/testing/) shows what each reference covers.
 
-The references taught us things too. OpENer drops a first request with sequence 0 as a repeat, EIPScanner sends I/O from an ephemeral port, pycomm3 sends each Write Tag twice in one message, cpppo closes the session on an unknown tag, and gologix's server panics on a Forward_Open with 16-bit segments. They also found three bugs of our own, fixed in go-ethernetip v0.3.0: pylogix, node-ethernet-ip and libplctag read the last member name of a structure template two octets short, a large Logix read did not fit a small Class 3 connection, and node-ethernet-ip packs about 220 requests into one Multiple Service Packet where we allowed 200. Each is recorded with how it is handled.
+The references taught us things too. OpENer drops a first request with sequence 0 as a repeat, EIPScanner sends I/O from an ephemeral port, pycomm3 sends each Write Tag twice in one message, cpppo closes the session on an unknown tag, and gologix's server panics on a Forward_Open with 16-bit segments. They also found three bugs of our own, fixed in go-ethernetip v0.3.0 (v0.3.1 adds the twelfth reference with no change to the library): pylogix, node-ethernet-ip and libplctag read the last member name of a structure template two octets short, a large Logix read did not fit a small Class 3 connection, and node-ethernet-ip packs about 220 requests into one Multiple Service Packet where we allowed 200. Each is recorded with how it is handled.
 
 <Callout type="note" title="Interoperability, not conformance">
-go-ethernetip v0.3.0 and ethernetipctl v0.2.2 are pre-1.0 and interoperability tested, not ODVA conformance tested, and they make no conformance claim. EtherNet/IP over TLS has no independent counterpart in the suite yet, DTLS and the CIP Security objects are not implemented, and no real controller or drive is in it. A product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/ethernet-ip/testing/).
+go-ethernetip v0.3.1 and ethernetipctl v0.2.2 are pre-1.0 and interoperability tested, not ODVA conformance tested, and they make no conformance claim. EtherNet/IP over TLS has no independent counterpart in the suite yet, DTLS and the CIP Security objects are not implemented, and no real controller or drive is in it. A product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/ethernet-ip/testing/).
 </Callout>
 
 ## Built with AI agents
@@ -82,7 +82,7 @@ Like the rest of OT Fabric, the EtherNet/IP projects are built by people and AI 
 
 ## Who else implements EtherNet/IP
 
-The [ecosystem map](/ecosystem/implementations/?protocol=ethernet-ip) now covers EtherNet/IP: 21 implementations, from OpENer, libplctag and pylogix to Rust, Go, Java and Node.js libraries, the EPICS driver used at particle accelerators, and commercial stacks and firmware from RTA, Hilscher, Pyramid Solutions, CODESYS and Beckhoff, with language, licence, roles and latest release.
+The [ecosystem map](/ecosystem/implementations/?protocol=ethernet-ip) now covers EtherNet/IP: 22 implementations, from OpENer, libplctag and pylogix to Rust, Go, Java and Node.js libraries, the EPICS driver used at particle accelerators, and commercial stacks and firmware from RTA, Hilscher, Pyramid Solutions, CODESYS and Beckhoff, with language, licence, roles and latest release.
 
 <MapLink protocol="ethernet-ip" title="Explore EtherNet/IP on the ecosystem map" />
 

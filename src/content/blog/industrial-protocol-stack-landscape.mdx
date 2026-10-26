@@ -1,6 +1,6 @@
 ---
 title: The industrial protocol stack landscape
-description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP? 156 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
+description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP? 157 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
 updated: 2026-10-26
 authors: [OT Fabric]
@@ -17,7 +17,7 @@ import Callout from '../../components/Callout.astro';
 
 Nobody connects a plant, a substation or a building with one library. Every integration leans on stacks written by other people: a C library in a gateway, a Python tool on a laptop, a Java server in a SCADA system, a vendor SDK inside a controller. OT Fabric only makes sense as part of that ecosystem, which is why each of our protocols ships with an interop suite that tests against the established implementations.
 
-So we mapped the ecosystem. This post is the research: eleven protocol families, 156 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol, filter by language, licence and activity, and jump straight to the source.
+So we mapped the ecosystem. This post is the research: eleven protocol families, 157 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol, filter by language, licence and activity, and jump straight to the source.
 
 <MapLink />
 
@@ -138,7 +138,7 @@ The Australian side is the most active: ANU's Envoy is a complete CSIP-AUS utili
 
 <LandscapeTable protocol="ethernet-ip" />
 
-Most of the open field reads and writes Logix tags: libplctag (C, with a .NET wrapper and many others), pylogix, pycomm3, node-ethernet-ip, rseip and gologix, and ORNL's EPICS driver and its Java counterpart, which have connected accelerator control systems to Logix controllers for two decades. Open stacks with cyclic I/O are fewer: OpENer, first released by Rockwell Automation and still the only widely used open adapter, EIPScanner and EEIP.NET as scanners, gologix's adapter and the alpha I/O scanner of st-ethernet-ip. Eleven of them run in [ethernetip-interop](https://github.com/otfabric/ethernetip-interop): OpENer, EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip and EEIP.NET. None of the open stacks documents an ODVA conformance test; the specifications are sold by subscription, so open implementers work from public documents and from each other's behaviour.
+Most of the open field reads and writes Logix tags: libplctag (C, with a .NET wrapper and many others), pylogix, pycomm3, node-ethernet-ip, rseip, gologix and loki-os's go-ethernet-ip, and ORNL's EPICS driver and its Java counterpart, which have connected accelerator control systems to Logix controllers for two decades. Open stacks with cyclic I/O are fewer: OpENer, first released by Rockwell Automation and still the only widely used open adapter, EIPScanner and EEIP.NET as scanners, gologix's adapter and the alpha I/O scanner of st-ethernet-ip. Twelve of them run in [ethernetip-interop](https://github.com/otfabric/ethernetip-interop): OpENer, EIPScanner, pycomm3, cpppo, libplctag, gologix, pylogix, etherip, eip-rs, node-ethernet-ip, EEIP.NET and loki-os go-ethernet-ip. None of the open stacks documents an ODVA conformance test; the specifications are sold by subscription, so open implementers work from public documents and from each other's behaviour.
 
 ## The picture across protocols
 

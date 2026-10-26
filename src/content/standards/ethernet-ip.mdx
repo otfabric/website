@@ -9,7 +9,7 @@ facts:
   - { label: 'Roles', value: 'Scanner (originator) and adapter (target)' }
   - { label: 'Library', value: 'go-ethernetip' }
   - { label: 'CLI', value: 'ethernetipctl' }
-  - { label: 'Interop', value: 'ethernetip-interop v0.3.0' }
+  - { label: 'Interop', value: 'ethernetip-interop v0.4.0' }
 icon: go-ethernetip
 docs: /docs/protocols/ethernet-ip/
 ---
@@ -114,5 +114,5 @@ log.Fatal(srv.ListenAndServe(":44818"))
 | Dependencies | None outside the Go standard library |
 
 <Callout type="note" title="Early versions, interoperability tested">
-go-ethernetip v0.3.0 and ethernetipctl v0.2.2 are pre-1.0. The library is tested in both directions against eleven independent implementations in eight languages, packaged by [ethernetip-interop](https://github.com/otfabric/ethernetip-interop) v0.3.0: OpENer and libplctag (C), EIPScanner (C++), pycomm3, cpppo and pylogix (Python), gologix (Go), etherip (Java), eip-rs (Rust), node-ethernet-ip (TypeScript) and EEIP.NET (C#). 173 cases pass and none fail. That is interoperability, not ODVA conformance testing: the library makes no conformance claim, and a product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test.
+go-ethernetip v0.3.1 and ethernetipctl v0.2.2 are pre-1.0. The library is tested in both directions against twelve independent implementations in eight languages, packaged by [ethernetip-interop](https://github.com/otfabric/ethernetip-interop) v0.4.0: OpENer and libplctag (C), EIPScanner (C++), pycomm3, cpppo and pylogix (Python), gologix and loki-os go-ethernet-ip (Go), etherip (Java), eip-rs (Rust), node-ethernet-ip (TypeScript) and EEIP.NET (C#). 184 cases pass and none fail. That is interoperability, not ODVA conformance testing: the library makes no conformance claim, and a product that implements EtherNet/IP needs its own ODVA vendor ID and conformance test.
 </Callout>
