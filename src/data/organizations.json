@@ -231,15 +231,16 @@
 		"name": "International Electrotechnical Commission",
 		"acronym": "IEC",
 		"kind": "standards-body",
-		"summary": "Publishes IEC 61850 and IEC 60870-5 through Technical Committee 57; experts join via national committees.",
-		"description": "The IEC is the international standards organization for electrical and electronic technologies. Its Technical Committee 57 (power systems management and associated information exchange) maintains the IEC 61850 substation automation series and the IEC 60870-5 telecontrol protocols, including IEC 60870-5-104.",
+		"summary": "Publishes IEC 61850 and IEC 60870-5 through TC 57, and the IEC 61158 and 61784 fieldbus series through SC 65C; experts join via national committees.",
+		"description": "The IEC is the international standards organization for electrical and electronic technologies. Its Technical Committee 57 (power systems management and associated information exchange) maintains the IEC 61850 substation automation series and the IEC 60870-5 telecontrol protocols, including IEC 60870-5-104. Subcommittee 65C (industrial networks) maintains the IEC 61158 fieldbus and IEC 61784 profile series, in which the CIP networks, EtherNet/IP among them, are Communication Profile Family 2.",
 		"website": "https://tc57.iec.ch/",
 		"region": "global",
-		"domains": ["energy"],
-		"protocols": ["iec-61850", "iec-104"],
+		"domains": ["energy", "industrial"],
+		"protocols": ["iec-61850", "iec-104", "ethernet-ip"],
 		"standards": [
 			{ "name": "IEC 61850 (TC 57 WG 10, power system IED communication)", "role": "publishes" },
-			{ "name": "IEC 60870-5 telecontrol protocols, including 60870-5-104 (TC 57 WG 3)", "role": "publishes" }
+			{ "name": "IEC 60870-5 telecontrol protocols, including 60870-5-104 (TC 57 WG 3)", "role": "publishes" },
+			{ "name": "IEC 61158 and IEC 61784 industrial networks, including CPF 2 for the CIP networks (SC 65C)", "role": "publishes" }
 		],
 		"access": {
 			"specifications": { "answer": "no", "detail": "Standards are sold through the IEC webstore. The complete IEC 61850 series pack lists at CHF 26,508.", "source": "https://webstore.iec.ch/en/publication/6028" },
@@ -256,18 +257,21 @@
 		],
 		"programs": [],
 		"openSource": [],
-		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop", "go-iec104", "iec104ctl", "iec104-interop"],
+		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop", "go-iec104", "iec104ctl", "iec104-interop", "go-ethernetip", "ethernetipctl", "ethernetip-interop"],
 		"related": [
 			{ "id": "uca-international", "relation": "Runs the IEC 61850 user group and interoperability testing; TC 57 writes the standard." },
-			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." }
+			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." },
+			{ "id": "odva", "relation": "ODVA maintains CIP and EtherNet/IP; IEC 61784-1-2 profiles them as CPF 2." }
 		],
 		"sources": [
 			{ "label": "IEC TC 57", "url": "https://tc57.iec.ch/" },
 			{ "label": "How experts get involved", "url": "https://tc3.iec.ch/get-involved/" },
 			{ "label": "IEC 61850 series in the IEC webstore", "url": "https://webstore.iec.ch/en/publication/6028" },
-			{ "label": "SCC mirror committee for TC 57", "url": "https://scc-ccn.ca/standards/committees/mciectc-57-power-systems-management-and-associated-information-exchange" }
+			{ "label": "SCC mirror committee for TC 57", "url": "https://scc-ccn.ca/standards/committees/mciectc-57-power-systems-management-and-associated-information-exchange" },
+			{ "label": "IEC 61784-1-2 (CPF 2) in the IEC webstore", "url": "https://webstore.iec.ch/en/publication/83455" },
+			{ "label": "IEC 61784-1-2 preview: CP 2/1 ControlNet, CP 2/2 EtherNet/IP, CP 2/3 DeviceNet", "url": "https://iteh.es/catalog/standards/iec/aa85047a-7312-45fc-b206-b7d2abde1975/iec-61784-1-2-2023" }
 		],
-		"verifiedAt": "2026-10-23"
+		"verifiedAt": "2026-10-26"
 	},
 	{
 		"id": "uca-international",
@@ -411,6 +415,71 @@
 			{ "label": "IEEE GET program", "url": "https://standards.ieee.org/about/get/" }
 		],
 		"verifiedAt": "2026-10-23"
+	},
+	{
+		"id": "odva",
+		"name": "ODVA",
+		"kind": "industry-alliance",
+		"summary": "Maintains CIP and EtherNet/IP, licenses vendors, runs conformance testing and hosts the PlugFest interoperability events.",
+		"description": "ODVA, founded in 1995 as the Open DeviceNet Vendors Association, maintains the Common Industrial Protocol and its network adaptations EtherNet/IP, DeviceNet, ControlNet and CompoNet. It sells the specifications by subscription, assigns vendor IDs to licensed vendors, issues a Declaration of Conformity after conformance testing at its test service providers, and runs PlugFest interoperability events.",
+		"website": "https://www.odva.org/",
+		"region": "global",
+		"domains": ["industrial"],
+		"protocols": ["ethernet-ip"],
+		"standards": [
+			{ "name": "The CIP Networks Library: CIP, EtherNet/IP, CIP Security and the other volumes", "role": "publishes" },
+			{ "name": "Conformance testing and the Declaration of Conformity", "role": "certifies" },
+			{ "name": "PlugFest interoperability testing", "role": "tests" }
+		],
+		"access": {
+			"specifications": { "answer": "no", "detail": "The specifications are sold as annual subscriptions, updated twice a year, and need signed Terms of Usage first. Prices are on the order form only.", "source": "https://www.odva.org/technology-standards/getting-started/" },
+			"community": { "answer": "partial", "detail": "PlugFest events are open without membership; Special Interest Groups are listed as a member benefit.", "source": "https://www.odva.org/subscriptions-services/learning-tools/plugfest/" },
+			"individualFree": { "answer": "notApplicable", "detail": "Membership is limited to Licensed Vendors of ODVA technologies, which are companies.", "source": "https://www.odva.org/membership/apply/" },
+			"organizationFree": { "answer": "notPublished", "detail": "Membership levels and fees are not published on the pages we checked; the order form only lists member discounts." },
+			"workingGroups": { "answer": "unknown", "detail": "Joining Special Interest Groups is listed as a member benefit; we found no statement on access for non-members." },
+			"interopTesting": { "answer": "yes", "detail": "The PlugFest page states that ODVA membership is not required.", "source": "https://www.odva.org/subscriptions-services/learning-tools/plugfest/" },
+			"certification": { "answer": "partial", "detail": "Conformance testing needs no membership, but the vendor must be a Licensed Vendor, with signed Terms of Usage, a vendor ID, a specification subscription and a conformance test software subscription.", "source": "https://www.odva.org/technology-standards/conformance-testing/" },
+			"openSource": { "answer": "unknown", "detail": "The developer hub offers ODVACompress source code after registration; we found no open-source protocol stack maintained by ODVA. OpENer is maintained by the independent EIP Stack Group." }
+		},
+		"memberships": [
+			{ "name": "Licensed Vendor", "audience": "company", "fee": { "kind": "notPublished" }, "eligibility": "A company that signs the ODVA Application and Agreement for Membership and Terms of Usage, the technology licence; needed before buying specifications or a vendor ID.", "note": "Pays the non-member price for specifications, vendor IDs and test software.", "source": "https://www.odva.org/technology-standards/getting-started/" },
+			{ "name": "Associate member", "audience": "company", "fee": { "kind": "notPublished" }, "eligibility": "Licensed Vendors that can show intent to make and sell products using ODVA technologies.", "note": "25% discount on specifications, vendor IDs and conformance test software.", "source": "https://www.odva.org/spec-vid-ctsoftware-order-form/" },
+			{ "name": "Regular or Principal member", "audience": "company", "fee": { "kind": "notPublished" }, "eligibility": "Licensed Vendors.", "note": "50% discount on specifications, vendor IDs and conformance test software.", "source": "https://www.odva.org/spec-vid-ctsoftware-order-form/" }
+		],
+		"programs": [
+			{ "kind": "conformance-testing", "name": "ODVA conformance testing", "url": "https://www.odva.org/technology-standards/conformance-testing/", "detail": "Every product with ODVA technology must pass vendor-independent conformance testing, which results in a Declaration of Conformity. Test service providers: ODVA in Ann Arbor (USA), TÜV Rheinland in Yokohama (Japan) and Taicang (China), and Otto-von-Guericke-Universität Magdeburg (Germany). Fees are not published.", "openToNonMembers": "yes", "source": "https://www.odva.org/technology-standards/conformance-testing/" },
+			{ "kind": "test-tool", "name": "ODVA conformance test software", "detail": "A subscription that vendors must buy before conformance test services; members get 25% or 50% off.", "openToNonMembers": "yes", "source": "https://www.odva.org/spec-vid-ctsoftware-order-form/" },
+			{ "kind": "plugfest", "name": "EtherNet/IP PlugFest", "url": "https://www.odva.org/subscriptions-services/learning-tools/plugfest/", "detail": "A three-day event where vendors exercise their products against other vendors' in a live system, using ODVA's interoperability test procedures (Pub 95).", "openToNonMembers": "yes", "source": "https://www.odva.org/subscriptions-services/learning-tools/plugfest/" }
+		],
+		"openSource": [],
+		"documents": [
+			{ "label": "Request the Application and Agreement for Membership and Terms of Usage", "url": "https://www.odva.org/request-odva-agreement/" },
+			{ "label": "The Common Industrial Protocol and the Family of CIP Networks (PUB00123)", "url": "https://www.odva.org/wp-content/uploads/2020/06/PUB00123R1_Common-Industrial_Protocol_and_Family_of_CIP_Networks.pdf" },
+			{ "label": "Recommended Functionality for EtherNet/IP Devices (PUB00070)", "url": "https://www.odva.org/wp-content/uploads/2020/05/PUB00070_Recommended-Functionality-for-EIP-Devices-v10.pdf" },
+			{ "label": "EtherNet/IP Interoperability Test Procedures (PUB00095)", "url": "https://www.odva.org/wp-content/uploads/2020/05/PUB00095_PF-Test-Procedure-v9.pdf" }
+		],
+		"relatedProjects": ["go-ethernetip", "ethernetipctl", "ethernetip-interop"],
+		"related": [
+			{ "id": "iec", "relation": "IEC 61158 and IEC 61784-1-2 include the CIP networks as Communication Profile Family 2, with EtherNet/IP as profile CP 2/2." }
+		],
+		"sources": [
+			{ "label": "Getting started: specifications, vendor ID and Terms of Usage", "url": "https://www.odva.org/technology-standards/getting-started/" },
+			{ "label": "Conformance testing", "url": "https://www.odva.org/technology-standards/conformance-testing/" },
+			{ "label": "Test service provider locations", "url": "https://www.odva.org/about/odva-hq-and-tsp-locations/" },
+			{ "label": "PlugFest", "url": "https://www.odva.org/subscriptions-services/learning-tools/plugfest/" },
+			{ "label": "Membership application", "url": "https://www.odva.org/membership/apply/" },
+			{ "label": "Membership benefits", "url": "https://www.odva.org/membership/membership-benefits/" },
+			{ "label": "Specification, vendor ID and test software order form", "url": "https://www.odva.org/spec-vid-ctsoftware-order-form/" },
+			{ "label": "Developer hub", "url": "https://www.odva.org/communities/developer-hub/" }
+		],
+		"verifiedAt": "2026-10-26",
+		"detail": true,
+		"insights": [
+			"Building EtherNet/IP into a product is a licensing relationship before it is a membership question: Terms of Usage, a vendor ID, a specification subscription and a conformance test are needed whether or not a company joins.",
+			"Open-source implementers work without the specifications. OpENer was first released by Rockwell Automation, and newer stacks such as go-ethernetip are built from public documents and the behaviour of other implementations. That keeps the code open, but leaves conformance to the companies that ship products on it.",
+			"The PlugFest is the cheapest way in for a young company: it needs no membership and tests a product against other vendors' devices in a live system, well before the formal conformance test.",
+			"ODVA does not publish its fees on its website, so comparing the cost of entry with the OPC Foundation or the DNP Users Group needs a quote."
+		]
 	},
 	{
 		"id": "openadr-alliance",

@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-25",
+ "verified": "2026-10-26",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -98,6 +98,15 @@
    "maturity": "Young, growing open field",
    "commercial": "Certification-driven",
    "summary": "Mandates in California and Australia drive it, so most open stacks are CSIP or CSIP-AUS projects of a research lab, a utility programme or one developer, and few cover both roles across both editions."
+  },
+  {
+   "id": "ethernet-ip",
+   "name": "EtherNet/IP",
+   "standard": "ODVA CIP Networks Library, Volumes 1 and 2; IEC 61158 and IEC 61784-1-2 (CPF 2)",
+   "focus": "CIP over TCP and UDP: explicit messaging and cyclic I/O between scanners, adapters and controllers",
+   "maturity": "Mature for tag access, thin for I/O",
+   "commercial": "Very established",
+   "summary": "The open field is dominated by clients for Rockwell Logix tags; independent stacks that do cyclic I/O are few, and only one open adapter, OpENer, is widely used."
   }
  ],
  "implementations": [
@@ -5056,6 +5065,747 @@
     "https://github.com/otfabric/go-ieee20305"
    ],
    "verified": "2026-10-23"
+  },
+  {
+   "id": "otfabric-go-ethernetip",
+   "name": "go-ethernetip",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-ethernetip",
+   "repo": "otfabric/go-ethernetip",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "v0.2.1",
+    "date": "2026-10-26",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.2.1.info"
+   },
+   "roles": [
+    "scanner",
+    "adapter",
+    "client"
+   ],
+   "capabilities": [
+    "Class 1 I/O",
+    "Class 3",
+    "Multicast",
+    "Logix tags",
+    "EDS",
+    "TLS"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-ethernetip",
+   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the four ethernetip-interop references.",
+   "sources": [
+    "https://github.com/otfabric/go-ethernetip",
+    "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@latest"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "opener",
+   "name": "OpENer",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "BSD-style (OpENer)",
+   "url": "https://github.com/EIPStackGroup/OpENer",
+   "repo": "EIPStackGroup/OpENer",
+   "stars": 863,
+   "forks": 314,
+   "historySince": "2009",
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "v2.3",
+    "date": "2019-03-25",
+    "source": "git tag",
+    "url": "https://github.com/EIPStackGroup/OpENer/tree/v2.3"
+   },
+   "roles": [
+    "adapter"
+   ],
+   "capabilities": [
+    "Class 1 I/O",
+    "Class 3",
+    "Multicast"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "active",
+   "notes": "The best-known open-source EtherNet/IP adapter, first released by Rockwell Automation and now maintained by the EIP Stack Group. Development continues on master with no tagged release since v2.3 in 2019. Its licence adds that products implementing EtherNet/IP need ODVA's Terms of Usage.",
+   "sources": [
+    "https://github.com/EIPStackGroup/OpENer",
+    "https://github.com/otfabric/go-ethernetip/blob/main/docs/research/STACKS.md"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "eipscanner",
+   "name": "EIPScanner",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/nimbuscontrols/EIPScanner",
+   "repo": "nimbuscontrols/EIPScanner",
+   "stars": 318,
+   "forks": 123,
+   "historySince": "2019",
+   "lastCommit": "2024-11-26",
+   "release": {
+    "version": "1.3.0",
+    "date": "2021-06-24",
+    "source": "git tag",
+    "url": "https://github.com/nimbuscontrols/EIPScanner/tree/1.3.0"
+   },
+   "roles": [
+    "scanner"
+   ],
+   "capabilities": [
+    "Class 1 I/O",
+    "Discovery"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "slowing",
+   "notes": "A scanner in C++: explicit messaging, point-to-point implicit I/O and discovery, with the Identity, Parameter and File objects. No Class 3 connected messaging and no multicast.",
+   "sources": [
+    "https://github.com/nimbuscontrols/EIPScanner"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "pycomm3",
+   "name": "pycomm3",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/ottowayi/pycomm3",
+   "repo": "ottowayi/pycomm3",
+   "stars": 514,
+   "forks": 113,
+   "historySince": "2014",
+   "lastCommit": "2025-12-22",
+   "release": {
+    "version": "1.2.16",
+    "date": "2025-12-22",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/pycomm3/1.2.16/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Class 3",
+    "Logix tags",
+    "Discovery"
+   ],
+   "upstream": [
+    "pycomm"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/pycomm3/",
+   "notes": "Python driver for Rockwell Logix controllers (tags, structures, tag lists) and generic CIP messaging, a rewrite of pycomm. No implicit I/O.",
+   "sources": [
+    "https://github.com/ottowayi/pycomm3",
+    "https://pypi.org/pypi/pycomm3/json"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "cpppo",
+   "name": "cpppo",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "GPL-3.0",
+   "commercialLicense": true,
+   "url": "https://github.com/pjkundert/cpppo",
+   "repo": "pjkundert/cpppo",
+   "stars": 391,
+   "forks": 119,
+   "historySince": "2013",
+   "lastCommit": "2025-02-18",
+   "release": {
+    "version": "5.2.5",
+    "date": "2025-02-18",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/cpppo/5.2.5/"
+   },
+   "roles": [
+    "client",
+    "adapter"
+   ],
+   "capabilities": [
+    "Class 3",
+    "Logix tags"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "slowing",
+   "package": "https://pypi.org/project/cpppo/",
+   "notes": "A protocol parser framework with an EtherNet/IP client and a Logix-style controller simulator. No Class 1 I/O. PyPI lists a dual licence: GPL-3.0 and proprietary.",
+   "sources": [
+    "https://github.com/pjkundert/cpppo",
+    "https://pypi.org/pypi/cpppo/json"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "libplctag",
+   "name": "libplctag",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "MPL-2.0 OR LGPL-2.0-or-later",
+   "url": "https://github.com/libplctag/libplctag",
+   "repo": "libplctag/libplctag",
+   "stars": 905,
+   "forks": 282,
+   "historySince": "2013",
+   "lastCommit": "2026-09-09",
+   "release": {
+    "version": "v2.7.2",
+    "date": "2026-09-09",
+    "source": "GitHub Releases",
+    "url": "https://github.com/libplctag/libplctag/releases/tag/v2.7.2"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags",
+    "PLC-5, SLC, MicroLogix",
+    "Omron NJ/NX",
+    "Modbus TCP"
+   ],
+   "maintenance": "active",
+   "notes": "C library for reading and writing PLC tags: ControlLogix, CompactLogix, Micro800, PCCC over EtherNet/IP for PLC-5, SLC 500 and MicroLogix, and Omron NJ/NX, plus Modbus TCP. Wrappers exist for .NET, Java, Python, Go, Rust and more.",
+   "sources": [
+    "https://github.com/libplctag/libplctag"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "libplctag-net",
+   "name": "libplctag.NET",
+   "protocol": "ethernet-ip",
+   "type": "derived",
+   "languages": [
+    "C#"
+   ],
+   "license": "MPL-2.0",
+   "url": "https://github.com/libplctag/libplctag.NET",
+   "repo": "libplctag/libplctag.NET",
+   "stars": 298,
+   "forks": 79,
+   "historySince": "2019",
+   "lastCommit": "2026-09-18",
+   "release": {
+    "version": "1.5.2",
+    "date": "2024-07-13",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/libplctag/1.5.2"
+   },
+   "prerelease": {
+    "version": "1.6.0-alpha.5",
+    "date": "2025-07-20",
+    "source": "NuGet"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags"
+   ],
+   "upstream": [
+    "libplctag"
+   ],
+   "relation": ".NET wrapper",
+   "maintenance": "active",
+   "package": "https://www.nuget.org/packages/libplctag",
+   "notes": "The .NET wrapper of libplctag, with strongly typed tags, user-defined types and async APIs.",
+   "sources": [
+    "https://github.com/libplctag/libplctag.NET",
+    "https://api.nuget.org/v3-flatcontainer/libplctag/index.json"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "pylogix",
+   "name": "pylogix",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/dmroeder/pylogix",
+   "repo": "dmroeder/pylogix",
+   "stars": 733,
+   "forks": 204,
+   "historySince": "2016",
+   "lastCommit": "2026-09-01",
+   "release": {
+    "version": "1.1.6",
+    "date": "2026-09-01",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/pylogix/1.1.6/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags",
+    "Discovery"
+   ],
+   "maintenance": "active",
+   "package": "https://pypi.org/project/pylogix/",
+   "notes": "Dependency-free Python driver for tags in ControlLogix, CompactLogix and Micro800 controllers, also on MicroPython. Discovery finds other devices, but only Logix-style controllers are supported for data.",
+   "sources": [
+    "https://github.com/dmroeder/pylogix",
+    "https://pypi.org/pypi/pylogix/json"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "gologix",
+   "name": "gologix",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/danomagnum/gologix",
+   "repo": "danomagnum/gologix",
+   "stars": 74,
+   "forks": 37,
+   "historySince": "2022",
+   "lastCommit": "2026-10-09",
+   "release": null,
+   "prerelease": {
+    "version": "v0.44.0-beta",
+    "date": "2026-10-09",
+    "source": "Go module proxy"
+   },
+   "roles": [
+    "client",
+    "adapter"
+   ],
+   "capabilities": [
+    "Logix tags",
+    "Class 3",
+    "Class 1 I/O"
+   ],
+   "maintenance": "active",
+   "package": "https://pkg.go.dev/github.com/danomagnum/gologix",
+   "notes": "Pure Go driver for Logix tags, modelled on pylogix, with a server that receives MSG instructions from a controller (Class 3) or acts as a Class 1 I/O adapter, and an L5X parser. Only beta versions are published.",
+   "sources": [
+    "https://github.com/danomagnum/gologix",
+    "https://proxy.golang.org/github.com/danomagnum/gologix/@latest"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "rseip",
+   "name": "rseip",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/Joylei/eip-rs",
+   "repo": "Joylei/eip-rs",
+   "stars": 67,
+   "forks": 7,
+   "historySince": "2021",
+   "lastCommit": "2023-03-22",
+   "release": {
+    "version": "0.3.1",
+    "date": "2022-11-14",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/rseip/0.3.1"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Class 3",
+    "Logix tags"
+   ],
+   "maintenance": "quiet",
+   "package": "https://crates.io/crates/rseip",
+   "notes": "Asynchronous pure Rust client for generic CIP and Logix tag services (fragmented reads and writes, Read-Modify-Write, tag list, templates).",
+   "sources": [
+    "https://github.com/Joylei/eip-rs",
+    "https://crates.io/api/v1/crates/rseip"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "node-ethernet-ip",
+   "name": "ethernet-ip (Node.js)",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "TypeScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/cmseaton42/node-ethernet-ip",
+   "repo": "cmseaton42/node-ethernet-ip",
+   "stars": 295,
+   "forks": 113,
+   "historySince": "2018",
+   "lastCommit": "2026-04-16",
+   "release": {
+    "version": "2.0.0",
+    "date": "2026-04-16",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/ethernet-ip/v/2.0.0"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Class 3",
+    "Logix tags"
+   ],
+   "maintenance": "active",
+   "package": "https://www.npmjs.com/package/ethernet-ip",
+   "notes": "Client for ControlLogix and CompactLogix tags, rewritten in TypeScript for 2.0 with connected messaging, structures, tag lists and subscriptions.",
+   "sources": [
+    "https://github.com/cmseaton42/node-ethernet-ip",
+    "https://registry.npmjs.org/ethernet-ip"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "st-ethernet-ip",
+   "name": "st-ethernet-ip",
+   "protocol": "ethernet-ip",
+   "type": "derived",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/SerafinTech/ST-node-ethernet-ip",
+   "repo": "SerafinTech/ST-node-ethernet-ip",
+   "stars": 47,
+   "forks": 33,
+   "historySince": "2020",
+   "lastCommit": "2025-04-20",
+   "release": {
+    "version": "2.7.5",
+    "date": "2025-04-21",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/st-ethernet-ip/v/2.7.5"
+   },
+   "roles": [
+    "client",
+    "scanner"
+   ],
+   "capabilities": [
+    "Logix tags",
+    "Class 1 I/O"
+   ],
+   "upstream": [
+    "node-ethernet-ip"
+   ],
+   "relation": "Extended fork",
+   "maintenance": "slowing",
+   "package": "https://www.npmjs.com/package/st-ethernet-ip",
+   "notes": "Continues the original node-ethernet-ip with a connection manager, structures and an I/O scanner that its README marks alpha, not for production.",
+   "sources": [
+    "https://github.com/SerafinTech/ST-node-ethernet-ip",
+    "https://registry.npmjs.org/st-ethernet-ip"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "eeip-net",
+   "name": "EEIP.NET",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/rossmann-engineering/EEIP.NET",
+   "repo": "rossmann-engineering/EEIP.NET",
+   "stars": 293,
+   "forks": 144,
+   "historySince": "2017",
+   "lastCommit": "2026-07-31",
+   "release": {
+    "version": "1.6.0.26419",
+    "date": "2020-05-22",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/EEIP/1.6.0.26419"
+   },
+   "roles": [
+    "scanner",
+    "client"
+   ],
+   "capabilities": [
+    "Class 1 I/O",
+    "Discovery"
+   ],
+   "maintenance": "active",
+   "package": "https://www.nuget.org/packages/EEIP",
+   "notes": "Rossmann Engineering's .NET library: explicit messaging, an I/O scanner and discovery, with examples for Wago, Allen-Bradley Point I/O, Turck and Keyence devices.",
+   "sources": [
+    "https://github.com/rossmann-engineering/EEIP.NET",
+    "https://api.nuget.org/v3-flatcontainer/eeip/index.json"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "ether-ip",
+   "name": "EPICS ether_ip",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "EPICS Open License (ORNL)",
+   "url": "https://github.com/epics-modules/ether_ip",
+   "repo": "epics-modules/ether_ip",
+   "stars": 50,
+   "forks": 30,
+   "historySince": "2000",
+   "lastCommit": "2026-07-29",
+   "release": {
+    "version": "ether_ip-3-10",
+    "date": "2026-02-19",
+    "source": "git tag",
+    "url": "https://github.com/epics-modules/ether_ip/tree/ether_ip-3-10"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags"
+   ],
+   "maintenance": "active",
+   "notes": "EPICS device support from Oak Ridge National Laboratory that connects ControlLogix and CompactLogix tags to EPICS IOCs, in use at accelerators since 2000.",
+   "sources": [
+    "https://github.com/epics-modules/ether_ip"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "etherip-java",
+   "name": "etherip (Java)",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Java"
+   ],
+   "license": "EPL-1.0",
+   "url": "https://github.com/ornl-epics/etherip",
+   "repo": "ornl-epics/etherip",
+   "stars": 134,
+   "forks": 71,
+   "historySince": "2012",
+   "lastCommit": "2024-08-06",
+   "release": {
+    "version": "V1.0",
+    "date": "2014-02-20",
+    "source": "git tag",
+    "url": "https://github.com/ornl-epics/etherip/tree/V1.0"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags"
+   ],
+   "maintenance": "slowing",
+   "notes": "The Java counterpart of EPICS ether_ip from ORNL: reads and writes ControlLogix and CompactLogix tags and generic CIP attributes; used by CS-Studio and Phoebus.",
+   "sources": [
+    "https://github.com/ornl-epics/etherip"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "pycomm",
+   "name": "pycomm",
+   "protocol": "ethernet-ip",
+   "type": "legacy",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/ruscito/pycomm",
+   "repo": "ruscito/pycomm",
+   "stars": 158,
+   "forks": 85,
+   "historySince": "2014",
+   "lastCommit": "2019-09-06",
+   "release": {
+    "version": "1.0.8",
+    "date": "2015-11-01",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/pycomm/1.0.8/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Logix tags"
+   ],
+   "maintenance": "quiet",
+   "package": "https://pypi.org/project/pycomm/",
+   "notes": "The original Python driver for ControlLogix, CompactLogix, MicroLogix and SLC, tested on Python 2.6 and 2.7. pycomm3 started as its Python 3 rewrite.",
+   "sources": [
+    "https://github.com/ruscito/pycomm",
+    "https://pypi.org/pypi/pycomm/json"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "rta-ethernet-ip",
+   "name": "RTA EtherNet/IP",
+   "protocol": "ethernet-ip",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "Commercial",
+   "url": "https://www.rtautomation.com/product/ethernet-ip-adapter-source-code-stack/",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "adapter",
+    "scanner"
+   ],
+   "capabilities": [
+    "Class 1 I/O",
+    "Class 3",
+    "DLR",
+    "CIP Security"
+   ],
+   "maintenance": "n/a",
+   "notes": "Real Time Automation sells royalty-free ANSI C source code for an adapter and a scanner, with Device Level Ring and CIP Security as adapter add-ons and help with ODVA conformance testing. Versions are not published.",
+   "sources": [
+    "https://www.rtautomation.com/product/ethernet-ip-adapter-source-code-stack/",
+    "https://www.rtautomation.com/product/ethernet-ip-scanner-source-code-stack/"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "hilscher-netx-eip",
+   "name": "Hilscher netX",
+   "protocol": "ethernet-ip",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.hilscher.com/products/multiprotocol-socs-stacks/stacks-for-industrial-ethernet-fieldbus/nxlfw-eim",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "scanner",
+    "adapter"
+   ],
+   "capabilities": [
+    "SPE (10BASE-T1L)"
+   ],
+   "maintenance": "n/a",
+   "notes": "Loadable firmware for Hilscher's netX chips: an EtherNet/IP scanner (NXLFW-EIM) and adapters, including one for Single Pair Ethernet, sold as precertified stacks that a host configures through the dual-port memory.",
+   "sources": [
+    "https://www.hilscher.com/products/multiprotocol-socs-stacks/stacks-for-industrial-ethernet-fieldbus/nxlfw-eim",
+    "https://www.hilscher.com/na/products/multiprotocol-socs-stacks/stacks-for-industrial-ethernet-fieldbus/nxlfw-eis-spe"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "pyramid-esdk",
+   "name": "Pyramid Solutions ESDK",
+   "protocol": "ethernet-ip",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://media.hms-networks.com/image/upload/v1738824290/Documents/Generated_Datasheets/Production/en/hms-1.24.0033.01000-en-EtherNetIP-Scanner-Developers%27-Kit-%28ESDK%29-Site-License.pdf",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "scanner"
+   ],
+   "maintenance": "n/a",
+   "notes": "Pyramid Solutions' EtherNet/IP Scanner Developers' Kit, sold by HMS as a site licence alongside a scanner DLL kit. Languages and platforms are not published.",
+   "sources": [
+    "https://media.hms-networks.com/image/upload/v1738824290/Documents/Generated_Datasheets/Production/en/hms-1.24.0033.01000-en-EtherNetIP-Scanner-Developers%27-Kit-%28ESDK%29-Site-License.pdf"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "codesys-ethernet-ip",
+   "name": "CODESYS EtherNet/IP",
+   "protocol": "ethernet-ip",
+   "type": "commercial",
+   "languages": [
+    "IEC 61131-3"
+   ],
+   "license": "Commercial",
+   "url": "https://codesys.com/products/codesys-fieldbus/industrial-ethernet/ethernetip.html",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "scanner",
+    "adapter"
+   ],
+   "capabilities": [
+    "EDS"
+   ],
+   "maintenance": "n/a",
+   "notes": "Scanner and adapter for CODESYS controllers; the scanner stack is a CODESYS library written in IEC 61131-3 and imports adapter EDS files. Device makers add it through the CODESYS Runtime Toolkit.",
+   "sources": [
+    "https://codesys.com/products/codesys-fieldbus/industrial-ethernet/ethernetip.html"
+   ],
+   "verified": "2026-10-26"
+  },
+  {
+   "id": "beckhoff-tf6281",
+   "name": "Beckhoff TF6281",
+   "protocol": "ethernet-ip",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://download.beckhoff.com/download/document/automation/twincat3/TF6281_TC3_EthernetIP_Scanner_EN.pdf",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "scanner"
+   ],
+   "capabilities": [
+    "Class 1 I/O"
+   ],
+   "maintenance": "n/a",
+   "notes": "TwinCAT 3 function that turns a standard Ethernet port with an Intel chipset into an EtherNet/IP scanner, with up to 128 remote nodes and explicit messaging.",
+   "sources": [
+    "https://download.beckhoff.com/download/document/automation/twincat3/TF6281_TC3_EthernetIP_Scanner_EN.pdf"
+   ],
+   "verified": "2026-10-26"
   }
  ]
 }
