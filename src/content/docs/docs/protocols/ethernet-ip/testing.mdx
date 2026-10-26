@@ -1,0 +1,132 @@
+---
+title: Testing and interop
+description: Test EtherNet/IP code against four independent implementations with ethernetip-interop (OpENer, EIPScanner, pycomm3 and cpppo), and see what go-ethernetip and ethernetipctl have and have not been validated against.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Two kinds of OT Fabric repositories share the testing of EtherNet/IP. [ethernetip-interop](/projects/ethernetip-interop/) owns the reference implementations: adapters around independent EtherNet/IP stacks, one container contract, deterministic fixtures and the reference-to-reference self-test. It knows nothing about any library under test. [go-ethernetip](/projects/go-ethernetip/) is a consumer: it pulls the images, pinned by digest, and owns its own scenarios, assertions and compatibility claims.
+
+<Aside type="note" title="Not conformance testing">
+Interoperability between implementations does not establish conformance: they can share the same misreading of the specification, and none of the four references here documents an ODVA conformance test either. ODVA's conformance test is a separate programme, required for a product's Declaration of Conformity, and go-ethernetip has not taken it.
+</Aside>
+
+## ethernetip-interop
+
+| Adapter | Upstream | Language | Licence | Roles |
+|---|---|---|---|---|
+| `opener` | [OpENer](https://github.com/EIPStackGroup/OpENer) master `d8820ef` (v2.3-588) | C | adapted BSD | target: the only reference with Class 1 I/O as a target |
+| `eipscanner` | [EIPScanner](https://github.com/nimbuscontrols/EIPScanner) master `12c89a5` (1.3.0-33) | C++ | MIT | originator, with Class 1 I/O |
+| `pycomm3` | [pycomm3](https://github.com/ottowayi/pycomm3) 1.2.16 | Python | MIT | originator: generic CIP and Logix |
+| `cpppo` | [cpppo](https://github.com/pjkundert/cpppo) 5.2.5 | Python | GPL-3.0 | target (a Logix-style simulator) and originator |
+
+OpENer and EIPScanner have made no release in years, so both are pinned to a commit of their default branch; the Python stacks are pinned to their PyPI wheels. Every pin, with its checksum, is in [versions.yaml](https://github.com/otfabric/ethernetip-interop/blob/main/versions.yaml), and each image is multi-arch (amd64 and arm64) and runs as a non-root user. The cpppo adapter imports a GPL library and is itself GPL-3.0-or-later; OpENer's licence adds that products implementing EtherNet/IP need ODVA's Terms of Usage. Nothing of any reference is linked into go-ethernetip: third-party code runs in its own container only.
+
+The stacks do not all do the same, and the images say so: `print-capabilities` lists what each adapter supports, and a consumer skips, not fails, a scenario an image declares unsupported.
+
+| | OpENer | EIPScanner | pycomm3 | cpppo |
+|---|:-:|:-:|:-:|:-:|
+| Multiple Service Packet | no | request only | Logix reads | yes |
+| Unconnected_Send routing | no | no | yes | yes |
+| Class 3 connected messaging | target | no | yes | target |
+| Class 1 I/O | target | originator | no | no |
+| Multicast, listen-only | target | no | no | no |
+| Logix tags | no | no | yes, with tag list and structures | yes, no tag list |
+
+### Fixtures
+
+A fixture describes what a target is: its identity, its assemblies and, for a Logix-style controller, its tags and structure templates. `opener-sample` is what OpENer's sample application serves (compiled in, so the fixture describes it); `adapter` is the device a library under test serves to the reference originators; `logix` is a controller with atomic tags and arrays that cpppo serves; `logix-structures`, added in v0.2.0, has a structure template, structure, STRING, integer and BOOL array tags, for a library under test to serve to pycomm3. Consumers read the fixture from the image (`print-fixture`), so expectations cannot drift from the image.
+
+## Running the reference stacks
+
+<Steps>
+
+1. Create a Docker network and start a reference target. Wait for its readiness file, never for a delay:
+
+   ```sh
+   docker network create eip
+   docker run -d --rm --name ref --network eip ghcr.io/otfabric/ethernetip-interop-opener@sha256:... server
+   until docker exec ref test -f /run/ethernetip-interop/ready; do sleep 0.1; done
+   ```
+
+2. Run your originator against it from a container on the same network. Class 1 I/O needs this: the target sends its T->O datagrams to the originator's own address at UDP 2222, which Docker's port publishing hides.
+
+3. Or test your target with a reference originator, and assert on the result document and the exit code:
+
+   ```sh
+   docker run --rm --network eip ghcr.io/otfabric/ethernetip-interop-eipscanner@sha256:... \
+     client io --host "$TARGET" --config 151 --output 150 --input 100 \
+     --output-size 32 --input-size 32 --rpi-ms 10 --duration-ms 1000
+   ```
+
+</Steps>
+
+Every image has the same commands: `server`, `client <operation>` (list-identity, discover, list-services, get-attribute, set-attribute, get-attributes-all, multiple-get, identity, io, read-tag, read-tags, write-tag, tag-list; not every image has all), `print-capabilities`, `print-fixture` and `version`. `docker compose up -d --wait` starts OpENer and cpppo with explicit messaging published on 127.0.0.1 only. The servers are unauthenticated targets that accept writes and I/O connections from anyone who reaches them: never attach them to a plant network.
+
+## The self-test
+
+ethernetip-interop tests its references against each other: every originator image against every target image, case by case, with expected values from the target's fixture and every result document validated against its schema. A case runs when the originator has the operation and both sides declare the features it needs; otherwise it is recorded as not applicable, with the reason. Between at least two independent stacks that verifies ListIdentity over TCP and UDP, ListServices, the attribute services, error statuses, Multiple Service Packet, Unconnected_Send, Class 3 and Class 1 I/O. Logix tag services are verified only by cpppo against itself, because pycomm3's Logix driver needs a tag list that no reference target serves. That is the gap go-ethernetip's emulated controller fills. CI rebuilds and runs the self-test natively on amd64 and arm64, and nightly to catch drift in what the pinned builds fetch.
+
+## go-ethernetip against the references
+
+`make interop` in go-ethernetip runs its originator against the reference targets and the reference originators against its target and Logix emulation, each in a container on one Docker network. The run of 26 October 2026 against ethernetip-interop v0.2.0 has **63 cases passing, none failing, and 13 not applicable** (the reference has the role but not the feature).
+
+| Feature | OpENer | EIPScanner | pycomm3 | cpppo |
+|---|:-:|:-:|:-:|:-:|
+| ListIdentity over TCP and UDP | → | ← | ← | → ← |
+| Get_Attribute_Single, Get_Attributes_All, Set_Attribute_Single | → | ← | ← | → ← |
+| Error responses and Forward_Open refusals | → | ← | ← | |
+| Multiple Service Packet | | ← | | → ← |
+| Unconnected_Send routing | | | ← | |
+| Class 3 connected messaging, Large_Forward_Open | → | ← | ← | → |
+| Class 1 I/O: exclusive owner, input only, configuration data | → | ← | | |
+| Class 1 I/O: multicast and listen-only next to its owner | → | | | |
+| Logix reads, writes and fragmented transfers | | | ← | → ← |
+| Logix bit writes, tag list, structures and STRING | | | ← | |
+
+→ is go-ethernetip as originator against the reference's target, ← is the reference's originator against go-ethernetip's target. A blank cell is a feature the reference does not have in that role, or no case for it yet. The full matrix is in go-ethernetip's [INTEROPERABILITY.md](https://github.com/otfabric/go-ethernetip/blob/main/INTEROPERABILITY.md#interop-matrix).
+
+## Beyond interop
+
+go-ethernetip's own tests need nothing but Go: clients, scanners and servers run against each other over loopback TCP and UDP, without mocks for the network.
+
+| Suite | What it does |
+|---|---|
+| `make test` | Unit tests and end-to-end tests of every role against each other: discovery, attributes, routing, Class 3, TLS, Class 0 and Class 1, multicast with listen-only, refusals, timeouts and recovery, Logix tags and structures, with the race detector and a leak check |
+| `make chaos` | A TCP proxy that splits, delays, corrupts and kills connections; UDP faults (drop, duplicate, reorder, blackout); forged and replayed I/O datagrams; and a seeded chaos monkey that mixes explicit, Class 3, Logix and I/O operations through the faulty proxy |
+| `make stress` | Many clients, shared sessions, session and connection limits under contention, reconnection storms, shutdown under load |
+| `make fuzz` | Every decoder, from encapsulation and CIP to Forward_Open, I/O datagrams and EDS files, and the server's Logix dispatch: no panic and bounded allocation |
+
+CI runs them natively on Linux, macOS and Windows, on amd64 and arm64, with Go 1.23 to 1.26 and a 90% coverage gate.
+
+## What is and is not validated
+
+**Validated**: both roles against four independent implementations; Class 1 I/O in both directions (against OpENer as target and EIPScanner as originator); multicast and listen-only against OpENer; Logix tags, bit writes, the tag list, structures and STRING against pycomm3's Logix driver, which opens a session on the emulated controller as it would on a real one.
+
+**Not covered yet**:
+
+- EtherNet/IP over TLS against an independent implementation: no reference in ethernetip-interop has it, so it is verified between go-ethernetip's own ends.
+- CIP Security objects and DTLS, Class 2, CIP Safety, CIP Motion and Device Level Ring, which go-ethernetip does not implement.
+- ODVA conformance testing, and EDS files checked by ODVA's EZ-EDS.
+- Real controllers, adapters and drives. The references are stacks in containers.
+
+### Findings about the references
+
+Running four stacks against each other and against go-ethernetip turned up behaviour worth knowing:
+
+| Reference | Finding |
+|---|---|
+| OpENer | No Multiple Service Packet and no Unconnected_Send (0x08). A first Class 3 request with sequence 0, and a first I/O datagram with sequence count 0, are dropped as repeats. Wrong configuration data is refused with 0x0129 (invalid configuration path) rather than 0x0126, and closing a listen-only connection before its owner stops the shared production and drops the owner |
+| EIPScanner | No Class 3 and no multicast. It sends O->T datagrams from an ephemeral port, so a target must not filter on the source port, and packs 16-bit logical segments |
+| pycomm3 1.2.16 | Sends each Write Tag request twice in one message, appends route bytes to unrouted generic messages, and addresses BOOL arrays by DWORD, as Logix does |
+| cpppo 5.2.5 | Closes the session on an unknown tag instead of answering an error, rejects Read-Modify-Write, packs ListIdentity integers as signed (so it cannot serve vendor ID 65535), and answers SendUnitData with the O->T connection ID |
+
+Each is recorded in go-ethernetip's [STACKS.md](https://github.com/otfabric/go-ethernetip/blob/main/docs/research/STACKS.md) and ethernetip-interop's [COMPATIBILITY.md](https://github.com/otfabric/ethernetip-interop/blob/main/docs/COMPATIBILITY.md).
+
+<CardGrid>
+  <LinkCard title="ethernetip-interop on GitHub" description="Adapters, container contract, fixtures, capabilities and compatibility" href="https://github.com/otfabric/ethernetip-interop" />
+  <LinkCard title="go-ethernetip INTEROPERABILITY.md" description="What is implemented, feature by feature, and the interop matrix" href="https://github.com/otfabric/go-ethernetip/blob/main/INTEROPERABILITY.md" />
+</CardGrid>
