@@ -84,14 +84,22 @@ const schema = [
 	</section>
 
 	<div class="ot-container wide eco" id="eco">
-		<div class="tabs" role="tablist" aria-label="Protocol">
-			{maps.map(({ protocol }, i) => (
-				<button type="button" role="tab" id={`tab-${protocol.id}`} data-protocol={protocol.id} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${protocol.id}`}>
-					{icons[protocol.id] && <img src={`/icons/${icons[protocol.id]}.svg`} alt="" width="22" height="22" />}
-					<span>{protocol.name}</span>
-					<span class="count">{byProtocol(protocol.id).length}</span>
-				</button>
-			))}
+		<div class="picker">
+			<button type="button" class="picker-toggle" aria-expanded="false" aria-controls="protocol-tabs">
+				{icons[maps[0].protocol.id] && <img src={`/icons/${icons[maps[0].protocol.id]}.svg`} alt="" width="22" height="22" />}
+				<span class="picker-label"><span class="ot-label">Protocol</span><span class="picker-name">{maps[0].protocol.name}</span></span>
+				<span class="count">{byProtocol(maps[0].protocol.id).length}</span>
+				<span class="picker-hint">Change</span>
+			</button>
+			<div class="tabs" id="protocol-tabs" role="tablist" aria-label="Protocol">
+				{maps.map(({ protocol }, i) => (
+					<button type="button" role="tab" id={`tab-${protocol.id}`} data-protocol={protocol.id} data-icon={icons[protocol.id] ?? ''} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${protocol.id}`} tabindex={i === 0 ? 0 : -1} title={protocol.name}>
+						{icons[protocol.id] && <img src={`/icons/${icons[protocol.id]}.svg`} alt="" width="22" height="22" />}
+						<span class="name">{protocol.name}</span>
+						<span class="count">{byProtocol(protocol.id).length}</span>
+					</button>
+				))}
+			</div>
 		</div>
 
 		<form class="filters" aria-label="Filter implementations" onsubmit="return false">
@@ -266,6 +274,27 @@ const schema = [
 	const items = new Map(data.items.map((i) => [i.id, i]));
 	const root = document.getElementById('eco')!;
 	const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+	const toggle = root.querySelector<HTMLButtonElement>('.picker-toggle')!;
+	const picker = toggle.parentElement!;
+	// On phones the protocol grid folds behind a single button showing the current protocol.
+	const setOpen = (open: boolean) => {
+		picker.classList.toggle('is-open', open);
+		toggle.setAttribute('aria-expanded', String(open));
+	};
+	toggle.addEventListener('click', () => {
+		const open = !picker.classList.contains('is-open');
+		setOpen(open);
+		if (open) tabs.find((t) => t.dataset.protocol === protocol)?.focus();
+	});
+	document.addEventListener('click', (e) => {
+		if (!picker.contains(e.target as Node)) setOpen(false);
+	});
+	picker.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && picker.classList.contains('is-open')) {
+			setOpen(false);
+			toggle.focus();
+		}
+	});
 	const maps = [...root.querySelectorAll<HTMLElement>('.map')];
 	const rows = [...root.querySelectorAll<HTMLTableRowElement>('tbody tr')];
 	const form = root.querySelector<HTMLFormElement>('.filters')!;
@@ -329,7 +358,18 @@ const schema = [
 	function show(next: string, push = true) {
 		if (!data.protocols[next]) return;
 		protocol = next;
-		for (const t of tabs) t.setAttribute('aria-selected', String(t.dataset.protocol === next));
+		for (const t of tabs) {
+			const on = t.dataset.protocol === next;
+			t.setAttribute('aria-selected', String(on));
+			t.tabIndex = on ? 0 : -1;
+			if (on) {
+				const img = toggle.querySelector('img');
+				if (img && t.dataset.icon) img.src = `/icons/${t.dataset.icon}.svg`;
+				toggle.querySelector('.picker-name')!.textContent = t.querySelector('.name')!.textContent;
+				toggle.querySelector('.count')!.textContent = t.querySelector('.count')!.textContent;
+			}
+		}
+		setOpen(false);
 		for (const m of maps) m.classList.toggle('is-active', m.dataset.protocol === next);
 		if (selected && items.get(selected)?.protocol !== next) select(null, false);
 		apply();
@@ -411,11 +451,12 @@ const schema = [
 	tabs.forEach((t, n) => {
 		t.addEventListener('click', () => show(t.dataset.protocol!));
 		t.addEventListener('keydown', (e) => {
-			const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-			if (!d) return;
-			const next = tabs[(n + d + tabs.length) % tabs.length];
-			next.focus();
+			const keys: Record<string, number> = { ArrowRight: n + 1, ArrowDown: n + 1, ArrowLeft: n - 1, ArrowUp: n - 1, Home: 0, End: tabs.length - 1 };
+			if (!(e.key in keys)) return;
+			e.preventDefault();
+			const next = tabs[(keys[e.key] + tabs.length) % tabs.length];
 			show(next.dataset.protocol!);
+			next.focus();
 		});
 	});
 	root.addEventListener('click', (e) => {
@@ -498,41 +539,120 @@ const schema = [
 		padding-bottom: 4rem;
 	}
 
-	/* Protocol tabs */
+	/* Protocol picker: a wrapping grid that grows by rows, never sideways. */
 	.tabs {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
 		gap: 0.5rem;
-		overflow-x: auto;
-		padding-bottom: 0.25rem;
-		scrollbar-width: thin;
 	}
-	.tabs button {
-		display: inline-flex;
+	.tabs button,
+	.picker-toggle {
+		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		flex: none;
-		padding: 0.45rem 0.8rem 0.45rem 0.5rem;
+		gap: 0.55rem;
+		min-width: 0;
+		padding: 0.5rem 0.7rem 0.5rem 0.5rem;
 		border: 1px solid var(--ot-line);
-		border-radius: 999px;
+		border-radius: 0.5rem;
 		background: var(--ot-surface);
 		color: var(--ot-fg);
-		font: 500 0.92rem/1 var(--ot-font-body);
+		font: 500 0.92rem/1.2 var(--ot-font-body);
+		text-align: left;
 		cursor: pointer;
+		transition: border-color 0.15s, background-color 0.15s;
 	}
 	.tabs button:hover {
 		border-color: var(--ot-accent);
+	}
+	.tabs button:focus-visible,
+	.picker-toggle:focus-visible {
+		outline: 2px solid var(--ot-accent);
+		outline-offset: 2px;
 	}
 	.tabs button[aria-selected='true'] {
 		border-color: var(--ot-accent);
 		background: var(--ot-accent-soft);
 		color: var(--ot-fg-strong);
+		box-shadow: inset 0 0 0 1px var(--ot-accent);
 	}
-	.tabs img {
+	.tabs img,
+	.picker-toggle img {
+		flex: none;
 		border-radius: 0.3rem;
 	}
-	.tabs .count {
-		font: 500 0.75rem/1 var(--ot-font-mono);
+	.tabs .name {
+		flex: 1;
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.tabs .count,
+	.picker-toggle .count {
+		flex: none;
+		min-width: 1.75rem;
+		padding: 0.2rem 0.4rem;
+		border-radius: 999px;
+		background: var(--ot-bg);
+		font: 500 0.72rem/1 var(--ot-font-mono);
+		text-align: center;
 		color: var(--ot-muted);
+	}
+	.tabs button[aria-selected='true'] .count {
+		color: var(--ot-fg-strong);
+	}
+	.picker-toggle {
+		display: none;
+	}
+	/* Phones: one button names the current protocol and opens the grid below it. */
+	@media (max-width: 40rem) {
+		.picker-toggle {
+			display: flex;
+			width: 100%;
+			padding: 0.55rem 0.8rem 0.55rem 0.6rem;
+		}
+		.picker-label {
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+			gap: 0.15rem;
+			min-width: 0;
+		}
+		.picker-label .ot-label {
+			font-size: 0.62rem;
+		}
+		.picker-name {
+			color: var(--ot-fg-strong);
+			font-weight: 600;
+		}
+		.picker-hint {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.3rem;
+			color: var(--ot-accent);
+			font: 500 0.8rem/1 var(--ot-font-body);
+		}
+		.picker-hint::after {
+			content: '';
+			width: 0.4rem;
+			height: 0.4rem;
+			border-right: 1.5px solid currentColor;
+			border-bottom: 1.5px solid currentColor;
+			transform: translateY(-0.1rem) rotate(45deg);
+			transition: transform 0.15s;
+		}
+		.picker.is-open .picker-hint::after {
+			transform: translateY(0.1rem) rotate(-135deg);
+		}
+		.tabs {
+			display: none;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			margin-top: 0.5rem;
+		}
+		.picker.is-open .tabs {
+			display: grid;
+		}
+		.tabs button {
+			font-size: 0.85rem;
+		}
 	}
 
 	/* Filters */
@@ -588,6 +708,10 @@ const schema = [
 		display: grid;
 		gap: 1.25rem;
 		margin-top: 1.25rem;
+	}
+	/* Keeps the wide map panning inside its card instead of widening the page. */
+	.stage > * {
+		min-width: 0;
 	}
 	@media (min-width: 64rem) {
 		.stage {
