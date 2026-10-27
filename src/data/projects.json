@@ -471,8 +471,37 @@
 		"standards": [],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-otfp",
-		"description": "OT protocol fingerprinting from transport framing and handshake behaviour, without application-layer requests.",
-		"icon": "go-otfp"
+		"description": "Find out which OT protocol an endpoint speaks, and read the device's identity, with safe connection-level probes. 14 protocols, graded confidence, zero runtime dependencies.",
+		"icon": "go-otfp",
+		"highlights": [
+			"Detects 14 protocols: Modbus TCP, SunSpec, IEC 61850 MMS, Siemens S7comm and S7comm-plus, OPC UA, EtherNet/IP, BACnet/IP, PROFINET IO, DNP3, IEC 60870-5-104, OCPP, IEEE 2030.5, OpenADR 3 and 2.0b, and CAN over TCP gateways.",
+			"Safe by design: each protocol gets its standard handshake or one harmless request. It never writes a value, issues a control or changes a device's configuration.",
+			"Identify mode sends each protocol's own read-only identity service (Read Device Identification, the CIP Identity object, SZL, MMS Identify, the BACnet Device object, OPC UA GetEndpoints, PROFINET I&M0) and returns vendor, model, version and serial.",
+			"Port-agnostic over TCP, UDP and TLS: the target port's likely protocols go first, then the rest, so a protocol on a non-standard port is still found.",
+			"Graded confidence on one shared scale, with the evidence behind every match and a stable fingerprint signature per result.",
+			"An OT-safe mode for production networks: passive probes only, the likely protocols of a port first, and 250 ms between probes.",
+			"Validated against 11 reference servers from the OT Fabric interop suites, end-to-end fuzzed, tested against hostile servers and a cross-protocol false-positive matrix, with 98% test coverage.",
+			"Standard library only, so it drops into any Go program. Ships with the otprobe command-line tool."
+		]
+	},
+	{
+		"id": "otprobe",
+		"name": "otprobe",
+		"repo": "go-otfp",
+		"category": "discovery",
+		"standards": [],
+		"status": "available",
+		"description": "The command-line tool included with go-otfp: point it at an endpoint or a host and it tells you which OT protocol answers, with what confidence, and which device is behind it.",
+		"icon": "go-otfp",
+		"highlights": [
+			"otprobe detect 10.0.0.5:502 --identify probes one endpoint and reads the device identity; a bare host sweeps the well-known OT ports.",
+			"tcp://, udp:// and tls:// targets, so BACnet/IP, PROFINET and EtherNet/IP over UDP and Modbus/TCP Security or wss:// over TLS are covered.",
+			"--safe keeps to passive probes and paces them 250 ms apart, to stay under OT intrusion detection thresholds.",
+			"Text output for people, --format table for one row per probe and --format json with a versioned schema for scripts.",
+			"Stable exit codes for automation: 0 detected, 1 no match, 4 unreachable, 5 timeout, 7 matched below high confidence.",
+			"--trace shows the raw probe and response bytes; shell completion for bash, zsh, fish and PowerShell.",
+			"Prebuilt binaries on the go-otfp releases page, or go install github.com/otfabric/go-otfp/cmd/otprobe@latest."
+		]
 	},
 	{
 		"id": "lan-tracker",

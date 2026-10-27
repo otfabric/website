@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 336" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="otprobe sweeping one host in OT-safe mode: seven ports answer, each with the protocol detected, its confidence and the device identity it reported: Siemens S7comm on 102, Modbus TCP on 502, IEC 60870-5-104 on 2404, OPC UA on 4840, OpenADR 3 on 8080, DNP3 on 20000 and EtherNet/IP on 44818.">
+  <rect width="720" height="336" fill="#F4F6F8"/>
+  <text x="40" y="44" font-size="15" font-weight="600" fill="#17212B">One host, seven protocols</text>
+  <text x="680" y="44" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">otprobe detect 10.0.0.5 --safe --identify</text>
+  <g font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">
+    <text x="40" y="74">PORT</text><text x="140" y="74">DETECTED</text><text x="330" y="74">CONF</text><text x="390" y="74">IDENTITY / EVIDENCE</text>
+  </g>
+  <path d="M40 82H680" stroke="#D9DFE4"/>
+  <rect x="40" y="90" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="90" width="4" height="24" rx="2" fill="#0A7C80"/>
+  <text x="54" y="106" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/102</text>
+  <text x="140" y="106" font-size="12.5" font-weight="600" fill="#17212B">Siemens S7comm</text>
+  <text x="330" y="106" font-size="11.5" font-weight="600" fill="#0A7C80" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="106" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">PDU 480, TSAP 0x0102</text>
+  <rect x="40" y="118" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="118" width="4" height="24" rx="2" fill="#0A7C80"/>
+  <text x="54" y="134" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/502</text>
+  <text x="140" y="134" font-size="12.5" font-weight="600" fill="#17212B">Modbus TCP</text>
+  <text x="330" y="134" font-size="11.5" font-weight="600" fill="#0A7C80" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="134" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">otfabric · MBI-BASELINE · 1.0</text>
+  <rect x="40" y="146" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="146" width="4" height="24" rx="2" fill="#B35A1F"/>
+  <text x="54" y="162" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/2404</text>
+  <text x="140" y="162" font-size="12.5" font-weight="600" fill="#17212B">IEC 60870-5-104</text>
+  <text x="330" y="162" font-size="11.5" font-weight="600" fill="#B35A1F" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="162" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">controlled station</text>
+  <rect x="40" y="174" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="174" width="4" height="24" rx="2" fill="#0A7C80"/>
+  <text x="54" y="190" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/4840</text>
+  <text x="140" y="190" font-size="12.5" font-weight="600" fill="#17212B">OPC UA</text>
+  <text x="330" y="190" font-size="11.5" font-weight="600" fill="#0A7C80" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="190" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">UACP hello acknowledged</text>
+  <rect x="40" y="202" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="202" width="4" height="24" rx="2" fill="#B35A1F"/>
+  <text x="54" y="218" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/8080</text>
+  <text x="140" y="218" font-size="12.5" font-weight="600" fill="#17212B">OpenADR 3</text>
+  <text x="330" y="218" font-size="11.5" font-weight="600" fill="#B35A1F" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="218" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">VTN, OAuth2 token URL</text>
+  <rect x="40" y="230" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="230" width="4" height="24" rx="2" fill="#B35A1F"/>
+  <text x="54" y="246" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/20000</text>
+  <text x="140" y="246" font-size="12.5" font-weight="600" fill="#17212B">DNP3</text>
+  <text x="330" y="246" font-size="11.5" font-weight="600" fill="#B35A1F" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="246" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">outstation 1024</text>
+  <rect x="40" y="258" width="640" height="24" rx="4" fill="#FFFFFF"/>
+  <rect x="40" y="258" width="4" height="24" rx="2" fill="#0A7C80"/>
+  <text x="54" y="274" font-size="11.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">tcp/44818</text>
+  <text x="140" y="274" font-size="12.5" font-weight="600" fill="#17212B">EtherNet/IP</text>
+  <text x="330" y="274" font-size="11.5" font-weight="600" fill="#0A7C80" font-family="IBM Plex Mono, monospace">1.00</text>
+  <text x="390" y="274" font-size="11.5" fill="#17212B" font-family="IBM Plex Mono, monospace">Rockwell · OpENer PC · 2.3</text>
+  <text x="40" y="312" font-size="12" fill="#5A6875" font-family="IBM Plex Mono, monospace">READ-ONLY PROBES · NO WRITES · NO CONTROLS · 250 MS PACING</text>
+</svg>
