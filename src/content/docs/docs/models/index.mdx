@@ -17,7 +17,7 @@ An **information model** defines what device data means: which devices, measurem
 
 A model library builds on, or sits next to, the protocol library: go-sunspec reads and writes registers through go-modbus, and go-iec61850-model describes the model that go-iec61850 reads and writes over MMS, without depending on it.
 
-Profiles that define how a protocol is used for one application, such as Sparkplug B on top of MQTT, are a third kind of standard. OT Fabric has none yet. For a short introduction to each model, start with the [protocols and information models](/protocols/#models) overview.
+Profiles that define how a protocol is used for one application, such as [Sparkplug B](/docs/profiles/sparkplugb/) on top of MQTT, are a third kind of standard, with [their own guides](/docs/profiles/). For a short introduction to each model, start with the [protocols, information models and profiles](/protocols/#models) overview.
 
 <CardGrid>
   <LinkCard title="SunSpec Modbus" description="The SunS marker, the model chain, point types, scale factors and groups. go-sunspec, sunspecctl." href="/docs/models/sunspec/" />

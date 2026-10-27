@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import EcosystemNav from '../../../components/ecosystem/EcosystemNav.astro';
-import { getProtocols } from '../../../data/standards';
+import { getStandards } from '../../../data/standards';
 import { absolute, breadcrumbs, orgRef } from '../../../data/seo';
 import {
 	ecosystem,
@@ -9,6 +9,7 @@ import {
 	byProtocol,
 	formatCount,
 	formatDay,
+	isProfile,
 	licenseFamily,
 	maintenanceLabels,
 	stats,
@@ -17,7 +18,9 @@ import {
 } from '../../../data/ecosystem';
 import { ELBOW, H, HUB, RX, RY, W, layout } from '../../../data/ecosystem-layout';
 
-const icons = Object.fromEntries((await getProtocols()).map((p) => [p.id, p.data.icon]));
+const icons = Object.fromEntries((await getStandards()).map((p) => [p.id, p.data.icon]));
+// Protocols first, then application profiles, which the picker lists under their own heading.
+const kindLabel = (p: (typeof ecosystemProtocols)[number]) => (isProfile(p) ? 'Application profile' : 'Protocol');
 const maps = ecosystemProtocols.map((p) => ({ protocol: p, ...layout(p.id) }));
 const all = ecosystem.implementations;
 const languages = [...new Set(all.flatMap((i) => i.languages))].sort((a, b) => a.localeCompare(b));
@@ -42,7 +45,7 @@ const schema = [
 		'@type': 'Dataset',
 		'@id': `${absolute('/ecosystem/implementations/')}#dataset`,
 		name: ecosystem.title,
-		description: `An open, source-backed registry of ${stats.implementations} open-source and commercial implementations of industrial protocol stacks (${ecosystemProtocols.map((p) => p.name).join(', ')}), with language, licence, roles, capabilities, maintenance status and latest release, each checked at its publishing source.`,
+		description: `An open, source-backed registry of ${stats.implementations} open-source and commercial implementations of industrial protocol stacks (${ecosystemProtocols.filter((p) => !isProfile(p)).map((p) => p.name).join(', ')}) and application profiles (${ecosystemProtocols.filter(isProfile).map((p) => p.name).join(', ')}), with language, licence, roles, capabilities, maintenance status and latest release, each checked at its publishing source.`,
 		url: absolute('/ecosystem/implementations/'),
 		dateModified: ecosystem.verified,
 		license: 'https://opensource.org/licenses/MIT',
@@ -50,7 +53,7 @@ const schema = [
 		creator: orgRef,
 		publisher: orgRef,
 		keywords: ['industrial protocols', 'OT', 'protocol stacks', 'open source', ...ecosystemProtocols.map((p) => p.name)],
-		variableMeasured: ['protocol', 'implementation type', 'programming language', 'licence', 'roles', 'capabilities', 'latest release', 'maintenance status'],
+		variableMeasured: ['protocol or application profile', 'implementation type', 'programming language', 'licence', 'roles', 'capabilities', 'latest release', 'maintenance status'],
 		distribution: { '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: absolute('/ecosystem.json') },
 	},
 ];
@@ -58,7 +61,7 @@ const schema = [
 
 <BaseLayout
 	title="OT protocol ecosystem map"
-	description={`Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP: ${stats.implementations} open-source and commercial stacks with language, licence, roles and latest release.`}
+	description={`Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP and the Sparkplug B profile: ${stats.implementations} open-source and commercial stacks with language, licence, roles and latest release.`}
 	image="/ecosystem-card.png"
 	imageAlt="The OT protocol ecosystem map: protocols in the middle, implementations around them"
 	pageType="CollectionPage"
@@ -70,12 +73,13 @@ const schema = [
 			<span class="ot-label accent">Ecosystem map · verified {verified}</span>
 			<h1>The industrial protocol stack landscape</h1>
 			<p class="lead">
-				An open, community-maintained map of the implementations connecting operational technology. Pick a protocol, then pick a
-				stack to see its language, licence, roles and latest release, and jump straight to its source.
+				An open, community-maintained map of the implementations connecting operational technology. Pick a protocol or an application
+				profile, then pick a stack to see its language, licence, roles and latest release, and jump straight to its source.
 			</p>
 			<dl class="stats">
 				<div><dt>Implementations</dt><dd>{stats.implementations}</dd></div>
 				<div><dt>Protocols</dt><dd>{stats.protocols}</dd></div>
+				<div><dt>{stats.profiles === 1 ? 'Application profile' : 'Application profiles'}</dt><dd>{stats.profiles}</dd></div>
 				<div><dt>Languages</dt><dd>{stats.languages}</dd></div>
 				<div><dt>Commercial SDKs</dt><dd>{stats.commercial}</dd></div>
 				<div><dt>Tested in our interop suites</dt><dd>{stats.interop}</dd></div>
@@ -87,17 +91,20 @@ const schema = [
 		<div class="picker">
 			<button type="button" class="picker-toggle" aria-expanded="false" aria-controls="protocol-tabs">
 				{icons[maps[0].protocol.id] && <img src={`/icons/${icons[maps[0].protocol.id]}.svg`} alt="" width="22" height="22" />}
-				<span class="picker-label"><span class="ot-label">Protocol</span><span class="picker-name">{maps[0].protocol.name}</span></span>
+				<span class="picker-label"><span class="ot-label">{kindLabel(maps[0].protocol)}</span><span class="picker-name">{maps[0].protocol.name}</span></span>
 				<span class="count">{byProtocol(maps[0].protocol.id).length}</span>
 				<span class="picker-hint">Change</span>
 			</button>
-			<div class="tabs" id="protocol-tabs" role="tablist" aria-label="Protocol">
+			<div class="tabs" id="protocol-tabs" role="tablist" aria-label="Protocol or profile">
 				{maps.map(({ protocol }, i) => (
-					<button type="button" role="tab" id={`tab-${protocol.id}`} data-protocol={protocol.id} data-icon={icons[protocol.id] ?? ''} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${protocol.id}`} tabindex={i === 0 ? 0 : -1} title={protocol.name}>
+					<>
+					{isProfile(protocol) && !isProfile(maps[i - 1].protocol) && <span class="tabs-kind" role="presentation">Application profiles</span>}
+					<button type="button" role="tab" id={`tab-${protocol.id}`} class:list={{ 'is-profile': isProfile(protocol) }} data-protocol={protocol.id} data-kind={kindLabel(protocol)} data-icon={icons[protocol.id] ?? ''} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${protocol.id}`} tabindex={i === 0 ? 0 : -1} title={protocol.name}>
 						{icons[protocol.id] && <img src={`/icons/${icons[protocol.id]}.svg`} alt="" width="22" height="22" />}
 						<span class="name">{protocol.name}</span>
 						<span class="count">{byProtocol(protocol.id).length}</span>
 					</button>
+					</>
 				))}
 			</div>
 		</div>
@@ -366,6 +373,7 @@ const schema = [
 				const img = toggle.querySelector('img');
 				if (img && t.dataset.icon) img.src = `/icons/${t.dataset.icon}.svg`;
 				toggle.querySelector('.picker-name')!.textContent = t.querySelector('.name')!.textContent;
+				toggle.querySelector('.picker-label .ot-label')!.textContent = t.dataset.kind ?? 'Protocol';
 				toggle.querySelector('.count')!.textContent = t.querySelector('.count')!.textContent;
 			}
 		}
@@ -598,6 +606,18 @@ const schema = [
 	}
 	.tabs button[aria-selected='true'] .count {
 		color: var(--ot-fg-strong);
+	}
+	/* Application profiles run on top of a protocol, so they get their own row and a dashed outline. */
+	.tabs-kind {
+		grid-column: 1 / -1;
+		margin-top: 0.35rem;
+		font: 500 0.7rem/1 var(--ot-font-mono);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--ot-muted);
+	}
+	.tabs button.is-profile {
+		border-style: dashed;
 	}
 	.picker-toggle {
 		display: none;

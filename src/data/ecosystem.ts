@@ -1,6 +1,7 @@
 // The industrial protocol stack registry (src/data/ecosystem.json): every known
-// implementation of the protocols OT Fabric covers, with its source and the date
-// it was verified. It drives the landscape blog post and the /ecosystem/implementations/ map.
+// implementation of the protocols and application profiles OT Fabric covers, with
+// its source and the date it was verified. Profiles (Sparkplug B) sit next to the
+// protocols but are counted apart. It drives the landscape blog post and the /ecosystem/implementations/ map.
 import registry from './ecosystem.json';
 
 export type ImplType = 'independent' | 'derived' | 'commercial' | 'legacy';
@@ -47,6 +48,8 @@ export interface Implementation {
 
 export interface ProtocolSummary {
 	id: string;
+	/** profile: an application profile on top of a protocol (Sparkplug B over MQTT), counted apart. */
+	kind?: 'protocol' | 'profile';
 	name: string;
 	standard: string;
 	focus: string;
@@ -65,6 +68,8 @@ export const ecosystem = registry as {
 
 export const implementations = ecosystem.implementations;
 export const ecosystemProtocols = ecosystem.protocols;
+
+export const isProfile = (p: ProtocolSummary) => p.kind === 'profile';
 
 export const byProtocol = (protocol: string) => implementations.filter((i) => i.protocol === protocol);
 export const byId = (id: string) => implementations.find((i) => i.id === id);
@@ -114,7 +119,8 @@ export const formatCount = (n: number | null | undefined) =>
 
 export const stats = {
 	implementations: implementations.length,
-	protocols: ecosystemProtocols.length,
+	protocols: ecosystemProtocols.filter((p) => !isProfile(p)).length,
+	profiles: ecosystemProtocols.filter(isProfile).length,
 	languages: new Set(
 		implementations.flatMap((i) => i.languages.flatMap((l) => l.split('/').map((s) => s.replace(/\(.*\)/, '').trim()))),
 	).size,

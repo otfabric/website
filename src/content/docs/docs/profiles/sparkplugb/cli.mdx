@@ -1,0 +1,105 @@
+---
+title: CLI
+description: Use sparkplugbctl to watch and decode Sparkplug B traffic on an MQTT broker, publish typed metrics, encode and decode payloads, and simulate an edge node, a primary host application or an application.
+sidebar:
+  label: CLI
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[sparkplugbctl](/projects/sparkplugbctl/) is the command-line tool for Sparkplug B, built on [go-sparkplugb](/docs/profiles/sparkplugb/library/). It watches a broker, publishes and decodes payloads, and plays any Sparkplug role for testing a SCADA host or an edge gateway. This page follows v0.1.1.
+
+## Install
+
+Download the archive for your platform (Linux, macOS and Windows, amd64 and arm64) from [GitHub Releases](https://github.com/otfabric/sparkplugbctl/releases), check its SHA-256 checksum and put `sparkplugbctl` on your `PATH`. With Go 1.27 or later:
+
+```sh
+go install github.com/otfabric/sparkplugbctl@latest
+sparkplugbctl version   # prints the go-sparkplugb version it is built with
+```
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `listen` | Subscribe to `spBv1.0/#` and decode every message live, STATE included; filter with `--group`, `--node`, `--device` |
+| `edge` | Simulate an edge node: births, periodic data, devices, commands, rebirth, primary host awareness |
+| `host` | Run a primary host application: STATE, and the births, data and deaths of every edge node |
+| `app` | Run an application that tracks edge nodes without publishing STATE |
+| `publish` | Publish one Sparkplug B payload with typed metrics to a topic |
+| `encode`, `decode` | Convert between typed metrics and the binary Protobuf payload |
+| `completion` | Shell completion for bash, zsh, fish and PowerShell |
+
+## Global flags
+
+| Flag | Environment variable | Default |
+|---|---|---|
+| `--broker` | `SPARKPLUGBCTL_BROKER` | `tcp://localhost:1883` |
+| `--client-id` | `SPARKPLUGBCTL_CLIENT_ID` | generated |
+| `--username`, `--password` | `SPARKPLUGBCTL_USERNAME`, `SPARKPLUGBCTL_PASSWORD` | none |
+| `--tls-cert`, `--tls-key`, `--tls-ca` | `SPARKPLUGBCTL_TLS_CERT`, `SPARKPLUGBCTL_TLS_KEY`, `SPARKPLUGBCTL_TLS_CA` | none |
+| `--json` | `SPARKPLUGBCTL_JSON` | `false` |
+
+A flag on the command line wins over its environment variable.
+
+## Watch a broker
+
+```sh
+sparkplugbctl listen --broker tcp://broker:1883
+sparkplugbctl listen --group plant --node gw1 --json
+```
+
+```text
+[STATE] spBv1.0/STATE/scada
+  online=true  ts=2026-10-27T11:12:18Z
+
+[NBIRTH] spBv1.0/plant/NBIRTH/gw1
+  seq=0  ts=2026-10-27T11:12:18Z
+  bdSeq                 Int64    1
+  Node Control/Rebirth  Boolean  false
+  temperature           Double   22.5
+
+[DBIRTH] spBv1.0/plant/DBIRTH/gw1/sensor1
+  seq=1  ts=2026-10-27T11:12:18Z
+  status  Boolean  true
+```
+
+`listen` and `decode` show every datatype a payload carries, DateTime, arrays, DataSets and Templates included, and a metric's quality property when it has one.
+
+## Simulate an edge node
+
+```sh
+sparkplugbctl edge --group plant --node gw1 \
+  --device sensor1 --device sensor2 \
+  --metric "temperature:Double=22.5" \
+  --metric "pressure:Double=1013.25" \
+  --interval 2s --primary-host scada
+```
+
+Without `--metric` the node publishes temperature, humidity and pressure. Each device is born with one Boolean metric, `status`. Received NCMD and DCMD messages are printed, and a rebirth request is answered with new births. With `--primary-host`, the node waits for that host's STATE to be online before its births, and when the host goes offline it publishes NDEATH, reconnects and waits again.
+
+## Run a host or an application
+
+```sh
+sparkplugbctl host --host-id scada
+sparkplugbctl app --group plant --json
+```
+
+`host` publishes STATE birth and death certificates and so becomes a primary host that edge nodes can wait for. `app` only listens and tracks, for passive monitoring next to a real SCADA host.
+
+## Publish, encode and decode
+
+Metrics are written as `name:Type=value`. `--metric` takes `Int8` to `Int64`, `UInt8` to `UInt64`, `Float`, `Double`, `Boolean` (or `Bool`), `String`, `Text`, `UUID` and `Bytes`; type names are case-insensitive.
+
+```sh
+sparkplugbctl publish --topic "spBv1.0/plant/NDATA/gw1" \
+  --metric "temperature:Double=23.1" --metric "status:Boolean=true" --seq 5
+
+sparkplugbctl encode --metric "temperature:Double=22.5" | sparkplugbctl decode
+base64 -d < payload.b64 | sparkplugbctl decode --json
+```
+
+<Aside type="caution" title="Limitations">
+MQTT 3.1.1 only, like go-sparkplugb. `--metric` does not take DateTime, arrays, DataSets or Templates, though `listen` and `decode` show them. `publish` sends exactly what you give it: it does not check that a `seq` fits the node's session, so use it to probe a host, not to impersonate a running edge node.
+</Aside>

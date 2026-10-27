@@ -681,22 +681,27 @@
 		"id": "eclipse-foundation",
 		"name": "Eclipse Foundation",
 		"kind": "oss-foundation",
-		"summary": "Open-source foundation hosting Eclipse Milo (OPC UA); committer membership is free.",
-		"description": "The Eclipse Foundation is an open-source foundation whose projects include Eclipse Milo, an open-source OPC UA stack for Java.",
+		"summary": "Open-source foundation behind the Sparkplug specification and Eclipse Tahu, and host of Eclipse Milo (OPC UA); committer membership is free.",
+		"description": "The Eclipse Foundation is an open-source foundation. Its Sparkplug Working Group develops the Sparkplug specification, also published as ISO/IEC 20237:2023, and its projects include Eclipse Tahu, the Sparkplug reference implementation, and Eclipse Milo, an open-source OPC UA stack for Java.",
 		"website": "https://www.eclipse.org/",
 		"region": "global",
 		"domains": ["industrial"],
-		"protocols": ["opc-ua"],
-		"standards": [{ "name": "Eclipse Milo (OPC UA)", "role": "hosts-oss" }],
+		"protocols": ["opc-ua", "sparkplug-b"],
+		"standards": [
+			{ "name": "Eclipse Sparkplug specification (ISO/IEC 20237)", "role": "publishes" },
+			{ "name": "Sparkplug Compatible program and Sparkplug TCK", "role": "certifies" },
+			{ "name": "Eclipse Tahu (Sparkplug)", "role": "hosts-oss" },
+			{ "name": "Eclipse Milo (OPC UA)", "role": "hosts-oss" }
+		],
 		"access": {
-			"specifications": { "answer": "notApplicable", "detail": "The foundation hosts software, not protocol specifications." },
+			"specifications": { "answer": "yes", "detail": "\"Anyone can implement the Sparkplug specification for any purpose without fee or royalty\", under the Eclipse Foundation Specification License, with attribution.", "source": "https://sparkplug.eclipse.org/about/faq/" },
 			"community": { "answer": "unknown", "detail": "The membership page does not say whether non-members can contribute; we have not yet checked the contributor terms." },
 			"individualFree": { "answer": "partial", "detail": "\"There is no cost to being a Committer member\", for committers whose employer is not already a member.", "source": "https://eclipse.org/membership/" },
 			"organizationFree": { "answer": "partial", "detail": "Associate membership is €0 for government, research, academic and user-group organizations.", "source": "https://eclipse.org/membership/" },
 			"workingGroups": { "answer": "unknown", "detail": "Industry working groups have their own participation agreements; not verified yet." },
-			"interopTesting": { "answer": "notApplicable", "detail": "The foundation does not run protocol test events." },
-			"certification": { "answer": "notApplicable", "detail": "The foundation does not certify OPC UA products." },
-			"openSource": { "answer": "yes", "detail": "Hosts Eclipse Milo (iot.milo).", "source": "https://projects.eclipse.org/projects/iot.milo/governance" }
+			"interopTesting": { "answer": "notApplicable", "detail": "We found no Sparkplug or OPC UA interoperability event run by the foundation; the Sparkplug TCK is a conformance kit that implementers run themselves." },
+			"certification": { "answer": "partial", "detail": "Anyone can run the Sparkplug TCK \"free of charge\", but \"participation in the Sparkplug Compatible program is reserved for members of the Sparkplug Working Group\". The foundation does not certify OPC UA products.", "source": "https://sparkplug.eclipse.org/about/faq/" },
+			"openSource": { "answer": "yes", "detail": "Hosts Eclipse Tahu, the Sparkplug reference implementation, and Eclipse Milo (iot.milo).", "source": "https://projects.eclipse.org/projects/iot.milo/governance" }
 		},
 		"memberships": [
 			{ "name": "Committer", "audience": "individual", "fee": { "kind": "free" }, "eligibility": "Committers on Eclipse projects whose employer is not a member.", "source": "https://eclipse.org/membership/" },
@@ -704,15 +709,24 @@
 			{ "name": "Contributing", "audience": "company", "fee": { "kind": "amount", "amount": 1000, "max": 25000, "currency": "EUR", "period": "year" }, "eligibility": "€1,000 for academic and user-group organizations; companies pay by revenue, from €1,500 (under €1M and fewer than 10 employees) to €25,000.", "source": "https://eclipse.org/membership/" },
 			{ "name": "Strategic", "audience": "company", "fee": { "kind": "amount", "amount": 30000, "max": 300000, "currency": "EUR", "period": "year" }, "eligibility": "By revenue, from €30,000 to €300,000.", "voting": "yes", "source": "https://eclipse.org/membership/" }
 		],
-		"programs": [],
-		"openSource": [{ "name": "Eclipse Milo", "url": "https://github.com/eclipse-milo/milo", "implementation": "milo" }],
-		"relatedProjects": ["go-opcua", "opcua-interop"],
+		"programs": [
+			{ "kind": "certification", "name": "Sparkplug Compatible", "url": "https://sparkplug.eclipse.org/compatibility/compatible-software/", "detail": "Self-certification: a product passes the Sparkplug TCK, publishes its results summary and files a listing request, which the specification project's committers approve.", "openToNonMembers": "no", "source": "https://sparkplug.eclipse.org/about/faq/" },
+			{ "kind": "test-tool", "name": "Eclipse Sparkplug TCK", "url": "https://sparkplug.eclipse.org/specification/tck-process", "detail": "The Technology Compatibility Kit that checks an implementation against the specification; free to use.", "openToNonMembers": "yes", "source": "https://sparkplug.eclipse.org/about/faq/" }
+		],
+		"openSource": [
+			{ "name": "Eclipse Tahu", "url": "https://github.com/eclipse-tahu/tahu", "implementation": "tahu-java" },
+			{ "name": "Eclipse Milo", "url": "https://github.com/eclipse-milo/milo", "implementation": "milo" }
+		],
+		"relatedProjects": ["go-opcua", "opcua-interop", "go-sparkplugb", "sparkplugbctl", "sparkplugb-interop"],
 		"related": [{ "id": "opc-foundation", "relation": "Publishes OPC UA, which Eclipse Milo implements independently." }],
 		"sources": [
 			{ "label": "Membership and fees", "url": "https://eclipse.org/membership/" },
-			{ "label": "Eclipse Milo project", "url": "https://projects.eclipse.org/projects/iot.milo/governance" }
+			{ "label": "Eclipse Milo project", "url": "https://projects.eclipse.org/projects/iot.milo/governance" },
+			{ "label": "Sparkplug FAQ", "url": "https://sparkplug.eclipse.org/about/faq/" },
+			{ "label": "Sparkplug TCK process", "url": "https://sparkplug.eclipse.org/specification/tck-process" },
+			{ "label": "Sparkplug 3.0 specification", "url": "https://sparkplug.eclipse.org/specification/version/3.0/" }
 		],
-		"verifiedAt": "2026-10-23"
+		"verifiedAt": "2026-10-27"
 	},
 	{
 		"id": "isa",

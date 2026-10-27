@@ -1,0 +1,146 @@
+---
+kind: application-profile
+name: "Sparkplug B"
+urlSlug: sparkplugb
+title: "Sparkplug B over MQTT: Go library, CLI and interop suite"
+standard: "Eclipse Sparkplug 3.0.0 · ISO/IEC 20237:2023"
+summary: "Sparkplug B standardizes industrial messaging over MQTT. It defines a topic namespace, typed Protobuf payloads and operational state management, so edge nodes, devices and host applications exchange data with consistent lifecycle awareness."
+order: 1
+facts:
+  - { label: 'Category', value: 'Application and messaging profile' }
+  - { label: 'Built on', value: 'MQTT 3.1.1 over TCP, TLS or WebSocket' }
+  - { label: 'Topic namespace', value: 'spBv1.0' }
+  - { label: 'Library', value: 'go-sparkplugb' }
+  - { label: 'CLI', value: 'sparkplugbctl' }
+  - { label: 'Interop', value: 'sparkplugb-interop v0.1.0' }
+icon: go-sparkplugb
+docs: /docs/profiles/sparkplugb/
+carriedByOther: ['MQTT']
+layers:
+  - label: 'Application and messaging profile'
+    items:
+      - { name: 'Sparkplug B 3.0: topic namespace, payloads, birth and death, STATE', id: sparkplug-b, note: 'go-sparkplugb, sparkplugbctl' }
+  - label: 'Transport protocol'
+    items:
+      - { name: 'MQTT 3.1.1: publish/subscribe, broker, QoS, will messages', note: 'Eclipse Paho inside go-sparkplugb; no OT Fabric MQTT library' }
+  - label: 'Carried over'
+    items:
+      - { name: 'TCP, TLS or WebSocket' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+Sparkplug B is not a replacement for MQTT, and it is not an equipment model. It is a **profile of MQTT**: it says how industrial devices and applications use an MQTT broker so that they understand each other without per-project agreements. Plain MQTT moves bytes on topics that anyone can invent. Sparkplug fixes three things on top of it:
+
+1. A **topic namespace**: `spBv1.0/<group>/<message type>/<edge node>/[<device>]`, plus `spBv1.0/STATE/<host id>` for host applications.
+2. A **payload**: a Protobuf message with named, typed metrics, timestamps, aliases, DataSets and Templates.
+3. **Session state**: birth and death certificates for every edge node and device, sequence numbers, and host awareness, so a consumer always knows whether a value is current or stale.
+
+Unlike SunSpec, Sparkplug B does not standardize the meaning of equipment points such as inverter power or a battery's state of charge. It standardizes how named, typed metrics and the state of the devices behind them are represented and exchanged reliably across an MQTT infrastructure. A Sparkplug metric can carry a SunSpec or IEC 61850 value; Sparkplug itself does not say what the value means.
+
+<Callout type="note">
+Two version numbers, one profile. **Sparkplug 3.0.0** is the specification version, published by the Eclipse Foundation and adopted as ISO/IEC 20237:2023. **`spBv1.0`** is the MQTT topic namespace identifier of the B payload format, and it stays `spBv1.0` in Sparkplug 3.0.
+</Callout>
+
+## Roles and messages
+
+| Role | What it is | Publishes | Receives |
+|---|---|---|---|
+| Edge node | A gateway, PLC or controller that speaks MQTT for itself and the devices behind it | NBIRTH, NDATA, NDEATH (as its MQTT will), DBIRTH, DDATA, DDEATH | NCMD, DCMD, STATE of its primary host |
+| Device | Equipment behind an edge node, with no MQTT connection of its own | through its edge node | through its edge node |
+| Primary host application | The SCADA or MES system that edge nodes wait for before publishing; it tracks every node and device | STATE (online and offline), NCMD, DCMD | everything under `spBv1.0/` |
+| Application | Any other consumer: a dashboard, historian or analytics pipeline | NCMD, DCMD if it needs to write | everything under `spBv1.0/` |
+
+## How the session state works
+
+- **Birth certificates.** An edge node starts every session with an **NBIRTH** that lists every metric with its name, datatype, current value and optional alias, then one **DBIRTH** per device. Later **NDATA** and **DDATA** messages report by exception: only what changed, often by alias instead of by name.
+- **Death certificates.** The edge node registers its **NDEATH** as the MQTT will when it connects, so the broker publishes it if the connection drops. A `bdSeq` number in both the NBIRTH and the will ties a death to the session it ends, so a late will of an old session is not mistaken for the current one.
+- **Sequence numbers.** Every message of a node session carries a `seq` from 0 to 255 that wraps. A host that sees a gap can wait briefly for the missing message and then ask the node to start over with a **rebirth**, an NCMD that writes `Node Control/Rebirth`.
+- **Primary host awareness.** A primary host application publishes a retained **STATE** message, online or offline, on `spBv1.0/STATE/<host id>`. An edge node configured for it waits for that host to be online before its births, and when the host goes offline it ends its session and walks to the next MQTT server, so data is never published to a broker the host cannot see.
+- **Commands.** NCMD and DCMD write metrics on a node or device, from setpoints to the rebirth request.
+
+## Where you meet it
+
+- Unified namespace and IIoT architectures that bring PLC, RTU and gateway data to SCADA, MES, historians and cloud platforms through one MQTT broker
+- Ignition and other SCADA platforms with MQTT modules, and edge gateways and controllers that publish their tags as Sparkplug edge nodes
+- Brokers that are Sparkplug aware, keeping the latest birth certificates for consumers that connect late
+- Energy, water, oil and gas and manufacturing sites where many remote assets report by exception over cellular or satellite links
+
+## Quickstart
+
+### From the command line
+
+Download `sparkplugbctl` from [GitHub Releases](https://github.com/otfabric/sparkplugbctl/releases), or `go install github.com/otfabric/sparkplugbctl@latest`. With an MQTT broker on `localhost:1883`, start a primary host application, an edge node that waits for it, and a listener, each in its own terminal:
+
+```sh
+sparkplugbctl host --host-id scada
+sparkplugbctl edge --group plant --node gw1 --device sensor1 \
+  --metric "temperature:Double=22.5" --interval 2s --primary-host scada
+sparkplugbctl listen --group plant
+```
+
+`listen` decodes every message on `spBv1.0/#`, STATE included:
+
+```text
+[NBIRTH] spBv1.0/plant/NBIRTH/gw1
+  seq=0  ts=2026-10-27T11:12:18Z
+  bdSeq                 Int64    1
+  Node Control/Rebirth  Boolean  false
+  temperature           Double   22.5
+```
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-sparkplugb
+```
+
+An edge node that publishes its birth certificate and then reports by exception (from the go-sparkplugb README):
+
+```go title="main.go"
+transport := mqtt.NewPahoTransport()
+
+node, _ := edge.New(transport, edge.Config{
+	GroupID:    "plant",
+	EdgeNodeID: "gateway-01",
+	BrokerURL:  "tcp://broker:1883",
+})
+
+ctx := context.Background()
+node.Connect(ctx)
+defer node.Close(ctx)
+
+temp, _ := payload.NewMetric("temperature", pb.DataType_Double, float64(22.5))
+node.PublishBirth(ctx, []*pb.Payload_Metric{temp})
+
+updated, _ := payload.NewMetric("temperature", pb.DataType_Double, float64(23.1))
+node.PublishNodeData(ctx, []*pb.Payload_Metric{updated})
+```
+
+## What go-sparkplugb supports
+
+go-sparkplugb is pre-release (v0.1.x). Its own [conformance matrix](https://github.com/otfabric/go-sparkplugb/blob/main/docs/CONFORMANCE.md) maps the specification clause by clause; this is a summary.
+
+| | |
+|---|---|
+| Roles | Edge node with devices, primary host application, and application without STATE |
+| Session state | NBIRTH, DBIRTH, NDEATH as the will with `bdSeq`, DDEATH, rebirth on request, births that wait for the primary host's STATE |
+| High availability | Edge node server walking across several MQTT servers when the primary host goes offline; the host takes several server URLs but connects to one at a time |
+| Host behaviour | `seq` checks, messages held and applied in order when a broker reorders them, one pending rebirth request per node, NDEATH of an earlier session ignored |
+| Payloads | Every scalar and array datatype, DataSets, Templates (definitions and instances), property sets, quality codes, metric aliases |
+| Topic namespace | Parser and builder for `spBv1.0/...` with identifier validation |
+| Transport | MQTT 3.1.1 over TCP, TLS or WebSocket through Eclipse Paho; other MQTT clients through the `mqtt.Transport` interface |
+| Not covered | MQTT 5 (and its DISCONNECT with will), checks that NDATA and DDATA only use metrics of the birth, the SendComplexData group of the edge conformance profile |
+| Go version | 1.26 or later |
+
+## Interoperability, not certification
+
+[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations as edge nodes and host applications in containers: **Eclipse Tahu** in Java and JavaScript, **pysparkplug** (Python), **SparkplugNet** (C#), **srad** (Rust) and **sparkplughost** (Go). On every push, go-sparkplugb's host and application run against each reference edge node, and its edge node against each reference host, on **Eclipse Mosquitto, HiveMQ CE, EMQX and NanoMQ**. The steps cover births, aliases, updates of all fourteen scalar datatypes, NCMD and DCMD writes, rebirth, device death and birth, NDEATH, the will after a crash, and the primary host going offline. Where a reference lacks a capability or has a known upstream bug, the step is skipped and the reason logged.
+
+This is interoperability testing, not the **Sparkplug Compatible** program. That program requires passing the official Eclipse Sparkplug TCK for a profile and being listed by the Eclipse Foundation. go-sparkplugb has not been run against the TCK and does not claim Sparkplug Compatible status. Templates, DataSets, arrays and properties are covered by the library's own codec tests only, because no reference fixture uses them yet.
+
+## Standards and licensing
+
+The Sparkplug specification is developed by the [Eclipse Sparkplug Working Group](https://sparkplug.eclipse.org/) and was adopted as [ISO/IEC 20237:2023](https://www.iso.org/standard/86204.html) through ISO/IEC JTC 1. Anyone can implement it without fee or royalty; the specification text is under the Eclipse Foundation Specification License. Eclipse Tahu is the Working Group's open-source implementation, and the Eclipse Sparkplug TCK tests implementations for the Sparkplug Compatible listing. "Sparkplug" is a trademark of the Eclipse Foundation.
+
+go-sparkplugb is MIT-licensed, **except its `proto/` directory**: the canonical `sparkplug_b.proto` from Eclipse Tahu and the Go code generated from it stay under **EPL-2.0**, a weak copyleft licence. If you change those files and distribute them, the EPL-2.0 terms apply to your changes. sparkplugbctl and sparkplugb-interop are MIT-licensed; the interop images also contain the upstream stacks under their own licences (EPL-2.0, Apache-2.0, MIT and others).

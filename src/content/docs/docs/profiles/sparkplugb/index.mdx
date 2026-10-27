@@ -1,0 +1,113 @@
+---
+title: Sparkplug B
+description: How Sparkplug B works over MQTT (topic namespace, message types, Protobuf payloads and datatypes, birth and death certificates, bdSeq and seq, primary host STATE, server walking, aliases, rebirth and commands) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Sparkplug B is an application and messaging profile for MQTT. The **Eclipse Sparkplug 3.0.0** specification, also published as ISO/IEC 20237:2023, defines a topic namespace, a Protobuf payload and the session state that MQTT leaves open, so that edge nodes, devices and host applications from different vendors can share one broker. This page explains how Sparkplug B works on the wire, as far as it matters for using [go-sparkplugb](/projects/go-sparkplugb/) and [sparkplugbctl](/projects/sparkplugbctl/).
+
+<Aside type="note" title="Version numbers">
+Sparkplug **3.0.0** is the specification version. **`spBv1.0`** is the namespace of the B payload format, and every topic starts with it, also in Sparkplug 3.0. The STATE message of a host application changed in 3.0: it is now JSON on `spBv1.0/STATE/<host id>`. go-sparkplugb implements the 3.0 form only.
+</Aside>
+
+## Roles
+
+| Role | What it does | In go-sparkplugb | In sparkplugbctl |
+|---|---|---|---|
+| Edge node | Connects to the broker for itself and its devices; publishes births, data and deaths; applies commands | package `edge` | `sparkplugbctl edge` |
+| Device | Equipment behind an edge node, without its own MQTT connection | `PublishDeviceBirth`, `PublishDeviceData`, `PublishDeviceDeath` on the edge node | `--device` on `edge` |
+| Primary host application | Publishes STATE; edge nodes that name it wait for it; tracks every node and device and asks for rebirths | package `host` | `sparkplugbctl host` |
+| Application | Consumes and commands without publishing STATE | package `app` | `sparkplugbctl app` |
+
+## Topic namespace
+
+```text
+spBv1.0/<group id>/<message type>/<edge node id>[/<device id>]
+spBv1.0/STATE/<host id>
+```
+
+Group, edge node and device IDs are UTF-8 strings without `/`, `+` or `#`. A host or application subscribes to `spBv1.0/#` and learns the whole infrastructure from the births it receives. go-sparkplugb's `topic` package parses and builds every form and rejects invalid IDs.
+
+| Message | Topic level | From | MQTT QoS, retain | What it carries |
+|---|---|---|---|---|
+| NBIRTH | node | edge node | 0, no | Every node metric with name, datatype, value and optional alias; `bdSeq`; `Node Control/Rebirth` |
+| NDATA | node | edge node | 0, no | Changed node metrics, by name or alias |
+| NDEATH | node | broker (the will) or edge node | 1, no | `bdSeq` of the session it ends |
+| DBIRTH | device | edge node | 0, no | Every metric of one device |
+| DDATA | device | edge node | 0, no | Changed device metrics |
+| DDEATH | device | edge node | 0, no | The device is offline |
+| NCMD | node | host or application | 0, no | Metrics to write on the node, including `Node Control/Rebirth` |
+| DCMD | device | host or application | 0, no | Metrics to write on a device |
+| STATE | host | primary host (or the broker, as its will) | 1, yes | JSON `{"online": true|false, "timestamp": ...}` |
+
+## Session state
+
+### Birth and death certificates
+
+An edge node session always follows the same order:
+
+1. **CONNECT** with a clean session and an **NDEATH will**: if the connection drops, the broker publishes the death for the node.
+2. **Subscribe** to its NCMD and DCMD topics, and to the STATE of its primary host if it has one.
+3. **Wait for the primary host** to be online, if configured.
+4. **NBIRTH** with every node metric, `seq` 0 and the session's `bdSeq`.
+5. **DBIRTH** for each device.
+6. **NDATA** and **DDATA**, by exception.
+7. On a clean stop: **NDEATH**, then DISCONNECT. In MQTT 3.1.1 a DISCONNECT suppresses the will, so the node publishes the NDEATH itself. Some stacks, Eclipse Tahu among them, first publish a DDEATH for every device.
+
+A host marks every metric of a node or device **stale** when its death arrives. Values are current only between a birth and the next death.
+
+### bdSeq and seq
+
+- **`bdSeq`** (birth/death sequence) goes up by one for every MQTT connection, from 0 to 255, and is in both the will and the NBIRTH. A host that receives an NDEATH whose `bdSeq` does not match the current birth ignores it: it is the late will of an earlier session. go-sparkplugb keeps `bdSeq` in memory by default; a `BdSeqStore` keeps it across restarts.
+- **`seq`** numbers every message of a node session, node and device messages alike, from 0 in the NBIRTH, wrapping after 255. NDEATH, NCMD and DCMD carry no `seq`.
+
+MQTT orders messages per topic only, and some brokers deliver a node's DBIRTH before its NBIRTH, or data of different topics out of order. go-sparkplugb's host and application **hold** messages that arrive ahead of the expected `seq` (up to 256 per node and 30 seconds) and apply them in order once the gap closes. A message behind the expected `seq` is held for the node's next session. If a gap stays open longer than `ReorderTimeout`, the host asks for a rebirth.
+
+### Rebirth
+
+A host that has lost track of a node, after a `seq` gap or data from a node it has no birth for, sends an NCMD that writes **`Node Control/Rebirth`** = true. The edge node answers with a new NBIRTH and DBIRTHs carrying current values. go-sparkplugb keeps at most one rebirth request pending per node: the next waits for the NBIRTH or two seconds.
+
+### Primary host and server walking
+
+A primary host application publishes a retained STATE `online` message, and registers STATE `offline` as its will. An edge node configured with `PrimaryHostID`:
+
+- publishes no births until that host's STATE is online;
+- when the STATE goes offline, publishes NDEATH, disconnects and starts a new session on the **next MQTT server** of its list (or the same one if there is only one), waiting again for the host.
+
+An offline STATE whose timestamp is older than the latest online one ends an earlier session of the host and is ignored. Server walking keeps an edge node on a broker its host can see, so no data is published into a broker nobody reads.
+
+## Payloads and datatypes
+
+The payload is the Protobuf message of Eclipse Tahu's `sparkplug_b.proto` (proto2): a timestamp, an optional `seq`, and a list of metrics. A metric has a name or an alias, a datatype, a timestamp, a value or `is_null`, and optional properties.
+
+| Datatypes | Encoding |
+|---|---|
+| Int8, Int16, Int32, Int64, UInt8, UInt16, UInt32, UInt64 | `int_value` (32-bit types) or `long_value` (64-bit types) |
+| Float, Double, Boolean | `float_value`, `double_value`, `boolean_value` |
+| String, Text, UUID | `string_value` |
+| DateTime | `long_value`, milliseconds since the Unix epoch |
+| Bytes, File | `bytes_value` |
+| DataSet | Columns with names and types, and typed rows |
+| Template | A user-defined type: a definition in the birth, instances with member metrics and parameters |
+| PropertySet, PropertySetList | Metadata on a metric, such as its quality |
+| Arrays of the scalar types | `bytes_value`, packed little-endian; BooleanArray bit-packed, StringArray null-terminated |
+
+<Aside type="caution" title="Where stacks disagree">
+Int8 and Int16 travel in the unsigned `int_value` field, and the specification does not say how a negative value goes in. Eclipse Tahu and SparkplugNet sign-extend to 32 bits; pysparkplug and srad encode only the width. go-sparkplugb sends the sign-extended form and reads both. Eclipse Tahu also puts UInt32 into `long_value`, which go-sparkplugb reads too. [Testing and interop](/docs/profiles/sparkplugb/testing/) lists every such finding.
+</Aside>
+
+### Aliases
+
+A birth can give each metric a numeric **alias**. Data messages may then carry only the alias, which keeps report-by-exception messages small on cellular and satellite links. Aliases are unique per edge node. In go-sparkplugb the caller assigns them in the birth metrics; the host and the application store an alias-only value under the name and datatype of its birth, and `ResolveAlias` maps an alias back.
+
+## OT Fabric projects
+
+<CardGrid>
+  <LinkCard title="Go library" description="go-sparkplugb: edge node, host application and application, typed metrics, aliases, server walking." href="/docs/profiles/sparkplugb/library/" />
+  <LinkCard title="CLI" description="sparkplugbctl: listen, publish, encode, decode, and simulate an edge node, a host or an application." href="/docs/profiles/sparkplugb/cli/" />
+  <LinkCard title="Testing and interop" description="sparkplugb-interop: six reference stacks on four MQTT brokers, and what the tests do and do not prove." href="/docs/profiles/sparkplugb/testing/" />
+</CardGrid>

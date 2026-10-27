@@ -1,0 +1,163 @@
+---
+title: Go library
+description: Use go-sparkplugb to build Sparkplug B edge nodes, primary host applications and applications in Go, with typed metrics, aliases, DataSets and Templates, primary host awareness and server walking, the MQTT transport, errors and observability.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+[go-sparkplugb](/projects/go-sparkplugb/) implements Sparkplug B 3.0.0 over MQTT 3.1.1 in Go, in all three roles: edge node, primary host application and application. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-sparkplugb), and runnable programs are in [examples/](https://github.com/otfabric/go-sparkplugb/tree/main/examples). This page follows v0.1.3.
+
+```sh
+go get github.com/otfabric/go-sparkplugb
+```
+
+It needs Go 1.26 or later. Its only direct dependencies are Eclipse Paho for MQTT and the Go Protobuf runtime.
+
+## Packages
+
+| Package | What it does |
+|---|---|
+| `edge` | Edge node runtime: lifecycle, devices, `seq` and `bdSeq`, aliases, commands, primary host awareness, server walking |
+| `host` | Primary host application: STATE, node and device registry, `seq` checks, reordering, rebirth requests |
+| `app` | Application: the same tracking without STATE |
+| `payload` | Typed metrics, arrays, DataSets, Templates, quality, `Encode` and `Decode` |
+| `topic` | Parse and build `spBv1.0/...` topics, validate IDs |
+| `mqtt` | The `Transport` interface and its Eclipse Paho implementation |
+| `proto` | Protobuf types generated from Eclipse Tahu's `sparkplug_b.proto` (EPL-2.0) |
+
+## An edge node
+
+```go title="edge.go"
+transport := mqtt.NewPahoTransport()
+
+node, err := edge.New(transport, edge.Config{
+	GroupID:       "plant",
+	EdgeNodeID:    "gw1",
+	PrimaryHostID: "scada",
+	ServerURLs:    []string{"tcp://broker1:1883", "tcp://broker2:1883"},
+	OnState: func(old, new edge.State) {
+		log.Printf("edge: %s -> %s", old, new)
+	},
+	OnDeviceCmd: func(device string, metrics []*pb.Payload_Metric) {
+		log.Printf("DCMD for %s: %d metrics", device, len(metrics))
+	},
+})
+if err != nil {
+	log.Fatal(err)
+}
+if err := node.Connect(ctx); err != nil { // waits for the primary host's STATE
+	log.Fatal(err)
+}
+defer node.Close(context.Background()) // NDEATH, then DISCONNECT
+
+temp, _ := payload.NewMetricWithAlias("temperature", 1, pb.DataType_Double, 22.5)
+node.PublishBirth(ctx, []*pb.Payload_Metric{temp})
+
+status, _ := payload.NewMetric("status", pb.DataType_Boolean, true)
+node.PublishDeviceBirth(ctx, "sensor1", []*pb.Payload_Metric{status})
+
+// Report by exception, by alias only.
+update, _ := payload.NewAliasMetric(1, pb.DataType_Double, 23.1)
+node.PublishNodeData(ctx, []*pb.Payload_Metric{update})
+```
+
+The node moves through the states `connecting`, `subscribing`, `waiting_for_primary_host` and `online`. `Rebirth` publishes the births again with current values; a host's `Node Control/Rebirth` command does the same. Every publish before a birth fails with `ErrNoBirth`.
+
+| Config field | What it does |
+|---|---|
+| `GroupID`, `EdgeNodeID` | The node's identity in the topic namespace |
+| `BrokerURL` or `ServerURLs` | One broker, or the list the node walks through: `tcp://`, `ssl://` or `ws://` |
+| `PrimaryHostID` | Births wait for this host's STATE online; its STATE offline makes the node walk to the next server |
+| `BdSeqStore` | Where `bdSeq` survives restarts; in memory by default |
+| `RetryPolicy` | Reconnect policy while walking servers; exponential backoff by default |
+| `OnState`, `OnNodeCmd`, `OnDeviceCmd` | Callbacks for state changes and received commands |
+| `Logger`, `Metrics` | Logging and observability hooks |
+
+## A primary host application
+
+```go title="host.go"
+h, err := host.New(transport, host.Config{
+	HostID:         "scada",
+	BrokerURL:      "tcp://broker:1883",
+	ReorderTimeout: 2 * time.Second,
+	OnNodeBirth: func(group, node string, metrics []*pb.Payload_Metric) {
+		log.Printf("online: %s/%s", group, node)
+	},
+	OnDeviceData: func(group, node, device string, metrics []*pb.Payload_Metric) {
+		for _, m := range metrics {
+			v, _ := payload.GetValue(m)
+			log.Printf("%s/%s/%s %s = %v", group, node, device, m.GetName(), v)
+		}
+	},
+	OnNodeDeath: func(group, node string) {
+		log.Printf("offline: %s/%s", group, node)
+	},
+})
+if err != nil {
+	log.Fatal(err)
+}
+if err := h.Connect(ctx); err != nil { // STATE online, retained; STATE offline as the will
+	log.Fatal(err)
+}
+defer h.Close(context.Background())
+
+setpoint, _ := payload.NewMetric("setpoint", pb.DataType_Double, 75.0)
+h.SendDeviceCommand(ctx, "plant", "gw1", "sensor1", []*pb.Payload_Metric{setpoint})
+h.RequestRebirth(ctx, "plant", "gw1")
+```
+
+`GetNode` and `Nodes` return copies of the registry: each node's `Online` and `Stale` flags, `bdSeq`, last `seq`, metrics, devices and aliases. In data callbacks, a metric that arrived as an alias carries the name and datatype of its birth.
+
+`ReorderTimeout` decides how long a `seq` gap may stay open. With `0` the host asks for a rebirth at once; with a timeout it first waits for the missing message, which matters on brokers that reorder messages across topics.
+
+## An application
+
+The `app` package tracks nodes and devices and can send commands, but publishes no STATE, so edge nodes never wait for it. Use it for dashboards, loggers and pipelines next to a primary host. Its `Config` has the same callbacks as the host, without `HostID`.
+
+## Metrics and payloads
+
+```go
+m, _ := payload.NewMetric("pressure", pb.DataType_Float, float32(1.013))
+arr, _ := payload.NewMetric("samples", pb.DataType_Int16Array, []int16{1, -2, 3})
+
+ds, _ := payload.NewDataSet("readings",
+	[]string{"name", "value"},
+	[]pb.DataType{pb.DataType_String, pb.DataType_Double},
+	[][]any{{"s1", 22.5}, {"s2", 33.1}})
+
+unit, _ := payload.NewTemplateParameter("unit", pb.DataType_String, "celsius")
+def, _ := payload.NewTemplateDefinition("Sensor", "1.0", []*pb.Payload_Metric{m}, []*pb.Payload_Template_Parameter{unit})
+
+b, _ := payload.Encode(payload.NewPayload(0, m, arr, ds, def))
+p, _ := payload.Decode(b)
+v, _ := payload.GetValue(p.GetMetrics()[0])
+```
+
+`NewMetric` checks that the Go value fits the datatype and returns `ErrTypeMismatch` otherwise. `GetValue` returns the Go value of any scalar or array metric; `GetDataSetValues` and `GetTemplateParameterValue` unpack the structured types, and `GetQuality` reads a quality property.
+
+## Transport, TLS and other MQTT clients
+
+`mqtt.NewPahoTransport()` speaks MQTT 3.1.1 through Eclipse Paho, over TCP, TLS or WebSocket by the scheme of the broker URL. For TLS, set its `TLSConfig` field to a `*tls.Config`; `ConnectTimeout` and `PublishTimeout` bound the waits. Another MQTT client plugs in by implementing `mqtt.Transport` and reporting a dropped connection through `ConnectOpts.OnConnectionLost`. MQTT 5 is not supported.
+
+When the connection drops, every role moves to `Disconnected` and fires `OnState`. Call `Connect` again to resume: an edge node then starts a new session with the next `bdSeq` and new births.
+
+## Errors and observability
+
+| Error | When |
+|---|---|
+| `ErrNotConnected`, `ErrClosed` | A call on a role that is not connected, or closed |
+| `ErrNoBirth` | Data before the node's birth |
+| `ErrTypeMismatch`, `ErrUnknownType`, `ErrInvalidArray` | A value that does not fit its datatype |
+| `ErrInvalidTopic`, `ErrInvalidID` | A topic or ID that breaks the namespace rules |
+| `mqtt.ErrConnectionLost` | The broker connection ended |
+
+Every blocking call takes a `context.Context`. `sparkplugb.NewSlogLogger` and `sparkplugb.NewStdLogger` adapt `log/slog` and the standard `log` package, and each role's `Metrics` callbacks report connects, publishes, received messages and state changes.
+
+<Aside type="note" title="Licensing">
+The library is MIT-licensed. The `proto` package is generated from Eclipse Tahu's `sparkplug_b.proto` and is EPL-2.0, like its source. The SPDX header of each file says which applies.
+</Aside>
+
+<LinkCard title="Testing and interop" description="What go-sparkplugb is tested against, and the wire behaviour where stacks disagree." href="/docs/profiles/sparkplugb/testing/" />
