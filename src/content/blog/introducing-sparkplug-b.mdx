@@ -1,0 +1,84 @@
+---
+title: 'Sparkplug B joins OT Fabric: go-sparkplugb, sparkplugbctl and six reference stacks'
+description: Sparkplug B gives MQTT the session state that industrial data needs. go-sparkplugb implements edge node, primary host application and application under MIT, sparkplugbctl puts them on the command line, and sparkplugb-interop tests both against six independent implementations on four MQTT brokers.
+date: 2026-10-27
+authors: [OT Fabric]
+tags: [announcement, sparkplug-b, automation, interop]
+featured: true
+cover:
+  alt: go-sparkplugb in the middle, connected to five reference edge nodes on the left (Eclipse Tahu, Eclipse Tahu sparkplug-client, pysparkplug, SparkplugNet and srad) and five reference host applications on the right (Eclipse Tahu, pysparkplug, SparkplugNet, srad and sparkplughost), tested on the Mosquitto, HiveMQ CE, EMQX and NanoMQ brokers.
+  image: ../../assets/blog/sparkplugb-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+MQTT is everywhere in industrial data now. Gateways publish PLC values to a broker, historians and dashboards subscribe, and a plant's "unified namespace" is often nothing more than a well-run broker. But MQTT itself only moves bytes on topics. It does not say what a topic means, how a payload is encoded, or how a subscriber knows that the value it holds is still true after a gateway lost its connection.
+
+Sparkplug B answers those questions. It is an application and messaging profile on top of MQTT: a topic namespace, a Protobuf payload with typed metrics, and the session state of edge nodes and host applications, with birth and death certificates, sequence numbers and a primary host that edge nodes can wait for. Today it becomes the first [application profile](/profiles/sparkplugb/) in OT Fabric, with the same three pieces as every protocol: a library, a command-line tool and an interoperability suite.
+
+## A profile, not a protocol
+
+OT Fabric now sorts standards in three groups. Protocols such as [Modbus](/protocols/modbus/) and [OPC UA](/protocols/opc-ua/) move bytes between devices. Information models such as [SunSpec](/models/sunspec/) say what the values mean. Application and messaging profiles define how applications use a transport, and Sparkplug B is one: it adds no new wire protocol, and every Sparkplug message is an ordinary MQTT publish. That is why it has its own page under `/profiles/`, its own table on the homepage, and a separate place on the ecosystem map that does not count as a protocol.
+
+Two version numbers travel together and are easy to mix up. **Sparkplug 3.0.0** is the specification version, published by the Eclipse Foundation and also as ISO/IEC 20237:2023. **`spBv1.0`** is the namespace of the B payload format, and every topic still starts with it.
+
+## go-sparkplugb
+
+[go-sparkplugb](/projects/go-sparkplugb/) implements Sparkplug B 3.0.0 over MQTT 3.1.1 in all three roles:
+
+- **An edge node** with devices, births and deaths, `bdSeq` and `seq`, metric aliases, report by exception, NCMD and DCMD commands and rebirth on request.
+- **Primary host awareness and server walking:** an edge node waits for its primary host's STATE before it publishes, and when the host goes offline it publishes its death and moves to the next MQTT server in its list.
+- **A primary host application** that publishes STATE, tracks every edge node and device, checks `seq`, holds messages that a broker delivers out of order, and asks for a rebirth when it loses track.
+- **An application** that does the same tracking without STATE, for dashboards, loggers and pipelines next to a real SCADA host.
+- **Every datatype** of the payload, from the scalars to arrays, DataSets, Templates and property sets, with typed constructors that refuse a value that does not fit.
+- **Built to run in production:** `context.Context` on every call, typed errors, structured logging and metrics hooks, TLS and WebSocket through the Eclipse Paho transport, and an interface to plug in another MQTT client.
+
+The library is MIT-licensed, except its `proto/` directory: the canonical `sparkplug_b.proto` from Eclipse Tahu and the Go code generated from it stay under EPL-2.0, like their source.
+
+## sparkplugbctl
+
+[sparkplugbctl](/projects/sparkplugbctl/) puts go-sparkplugb on the command line, to see what is on a broker and to stand in for any Sparkplug role in a test setup.
+
+```sh
+# What is on this broker? Every Sparkplug message, decoded
+sparkplugbctl listen --broker tcp://broker:1883
+
+# A primary host that edge nodes can wait for
+sparkplugbctl host --host-id scada
+
+# An edge node with two devices that waits for that host
+sparkplugbctl edge --group plant --node gw1 --device sensor1 --device sensor2 \
+  --metric "temperature:Double=22.5" --primary-host scada
+
+# One payload, encoded and decoded
+sparkplugbctl encode --metric "temperature:Double=22.5" | sparkplugbctl decode
+```
+
+Output is text or JSON, every flag has an environment variable, and TLS and broker credentials are supported. The [sparkplugbctl guide](/docs/profiles/sparkplugb/cli/) walks through it.
+
+## Tested against six independent stacks
+
+[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations, in six languages, as containers behind one contract: Eclipse Tahu in Java (edge node and host) and JavaScript (edge node), pysparkplug (Python), SparkplugNet (C#), srad (Rust, MQTT 5 only) and sparkplughost (Go, host only). They run on four MQTT brokers: Eclipse Mosquitto, HiveMQ CE, EMQX and NanoMQ. Before any library is tested, every reference host runs against every reference edge node on every broker, so a broken reference is caught first. On 27 October 2026 that self-test passed on all four brokers with no failures, with every known upstream bug listed and checked for staleness.
+
+go-sparkplugb then runs in every role on every push. Its host and application run against each reference edge node, its edge node against each reference host: births, aliases, updates of all fourteen scalar datatypes at their limits, NCMD and DCMD writes, rebirth, device death and birth, NDEATH on a clean stop, the will after a crash, and the primary host going offline. The [coverage matrix](/docs/profiles/sparkplugb/testing/) shows what each reference covers and where a step is skipped.
+
+The references taught us a lot, because the specification leaves room. Int8 and Int16 travel in an unsigned field, and stacks disagree on how a negative value goes in: Eclipse Tahu and SparkplugNet sign-extend, pysparkplug and srad do not. Eclipse Tahu puts UInt32 in the 64-bit field. Some stacks send commands without a datatype, as the specification recommends, and others cannot decode them. NanoMQ and HiveMQ CE can deliver a node's device birth before its node birth. go-sparkplugb now reads every variant and holds out-of-order messages until they fit, and four fixes in its first releases came straight from these runs.
+
+<Callout type="note" title="Interoperability, not certification">
+go-sparkplugb v0.1.3 and sparkplugbctl v0.1.1 are pre-1.0 and interoperability tested. They have not been run against the Eclipse Sparkplug TCK, are not listed as Sparkplug Compatible, and make no such claim. MQTT 5 is not supported yet, Templates, DataSets and arrays are tested by the library's own codec tests rather than against other stacks, and no commercial implementation is in the suite. What is and is not covered is listed openly in [Testing and interop](/docs/profiles/sparkplugb/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the Sparkplug B projects are built by people and AI agents together. The library follows the normative statements of the specification and records where it implements each one, the wire differences between stacks were found by running them against each other rather than assumed, and the interop images are pinned by digest so every result can be reproduced. The tests, the matrix and the list of limitations are public, so you can judge the result yourself.
+
+## Who else implements Sparkplug B
+
+The [ecosystem map](/ecosystem/implementations/?protocol=sparkplug-b) now shows Sparkplug B as a profile, apart from the protocols: 23 implementations, from Eclipse Tahu, the reference implementation in Java, JavaScript, C and Python, to libraries in Python, C#, Rust, Go, TypeScript and Node-RED, and commercial products such as Cirrus Link's MQTT Modules, the HiveMQ Platform, Canary, Proficy Historian, EMQ NeuronEX and Opto 22 groov, with language, licence, roles and latest release.
+
+<MapLink protocol="sparkplug-b" title="Explore Sparkplug B on the ecosystem map" />
+
+Who maintains the specification, what it costs to implement and how the Sparkplug Compatible program works is in the Eclipse Foundation's entry in the [standards and alliances directory](/ecosystem/organizations/?protocol=sparkplug-b#org-eclipse-foundation).
+
+Start with the [Sparkplug B overview](/docs/profiles/sparkplugb/), or `go get github.com/otfabric/go-sparkplugb`.

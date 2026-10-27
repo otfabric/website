@@ -12,11 +12,11 @@ export const ogImage = {
 
 /** Meta description for the homepage: what OT Fabric is, with the protocols and models people search for. */
 export const homeDescription =
-	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP, plus SunSpec Modbus and IEC 61850 information models.';
+	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5 and EtherNet/IP, plus SunSpec Modbus and IEC 61850 information models and the Sparkplug B profile for MQTT.';
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
-	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS) and EtherNet/IP (CIP), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD). Built by people and AI agents together.';
+	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS) and EtherNet/IP (CIP), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. Built by people and AI agents together.';
 
 export const absolute = (path: string) => new URL(path, site.url).href;
 
@@ -62,6 +62,9 @@ export const organization = {
 		'Smart Energy Profile 2.0',
 		'EtherNet/IP',
 		'Common Industrial Protocol (CIP)',
+		'Sparkplug B',
+		'MQTT',
+		'Unified namespace (UNS)',
 		'SCADA',
 		'Substation automation',
 		'Building automation',

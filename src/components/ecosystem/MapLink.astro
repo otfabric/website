@@ -1,5 +1,5 @@
 ---
-// Call-to-action banner that opens the ecosystem map, optionally on one protocol.
+// Call-to-action banner that opens the ecosystem map, optionally on one protocol or profile.
 import { stats } from '../../data/ecosystem';
 
 interface Props {
@@ -27,7 +27,7 @@ const href = protocol ? `/ecosystem/implementations/?protocol=${protocol}` : '/e
 		})}
 	</svg>
 	<span>
-		<span class="ot-label">{stats.implementations} implementations · {stats.protocols} protocols</span>
+		<span class="ot-label">{stats.implementations} implementations · {stats.protocols} protocols{stats.profiles > 0 && ` · ${stats.profiles} profile${stats.profiles > 1 ? 's' : ''}`}</span>
 		<strong>{title}</strong>
 		<span class="sub">Filter by language, licence and activity, then jump straight to the source.</span>
 	</span>

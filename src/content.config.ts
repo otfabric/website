@@ -8,6 +8,7 @@ import { docsSchema } from '@astrojs/starlight/schema';
 const standardIds = [
 	'modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5', 'ethernet-ip',
 	'sunspec', 'iec-61850-model',
+	'sparkplug-b',
 ] as const;
 
 // Standards and alliances directory (src/data/organizations.json). "Open" and "free"
@@ -61,6 +62,8 @@ export const collections = {
 			docs: z.string().optional(),
 			// The protocols that carry this model or profile on the wire, linked both ways.
 			carriedBy: z.array(z.enum(standardIds)).default([]),
+			// Protocols that carry it but have no page here, by name (Sparkplug B: MQTT 3.1.1).
+			carriedByOther: z.array(z.string()).default([]),
 			// How the standard is layered, top to bottom, for the "How it fits" diagram. A layer
 			// names standards, not OT Fabric support: `note` says what OT Fabric implements, if anything.
 			layers: z

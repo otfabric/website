@@ -5,8 +5,8 @@ import StandardsMatrix from '../../components/StandardsMatrix.astro';
 import { getStandards, kinds, shortName, standardPath } from '../../data/standards';
 import { absolute, breadcrumbs } from '../../data/seo';
 
-// One catalog, one section per kind of standard. A kind without entries yet (application
-// profiles) keeps its definition in the intro but gets no empty section.
+// One catalog, one section per kind of standard. A kind without entries yet keeps its
+// definition in the intro but gets no empty section.
 const standards = await getStandards();
 const sections = kinds
 	.map((kind) => ({ kind, items: standards.filter((s) => s.data.kind === kind.id) }))
@@ -18,7 +18,7 @@ const examples = (kind: string) => {
 };
 const byId = Object.fromEntries(standards.map((s) => [s.id, s]));
 const schema = [
-	breadcrumbs([{ name: 'Protocols and information models', path: '/protocols/' }]),
+	breadcrumbs([{ name: 'Protocols, information models and profiles', path: '/protocols/' }]),
 	...sections.map(({ kind, items }) => ({
 		'@type': 'ItemList',
 		'@id': absolute(`/protocols/#${kind.section}`),
@@ -35,14 +35,14 @@ const schema = [
 ---
 
 <BaseLayout
-	title="Protocols and information models"
-	description="The industrial communication protocols and standard information models OT Fabric supports, with the open-source library, CLI and interop suite for each."
+	title="Protocols, information models and profiles"
+	description="The industrial communication protocols, standard information models and application profiles OT Fabric supports, such as Sparkplug B over MQTT, with the open-source library, CLI and interop suite for each."
 	pageType="CollectionPage"
 	schema={schema}
 >
 	<PageHeader
 		label="Every protocol, the same toolkit"
-		title="Protocols and information models"
+		title="Protocols, information models and profiles"
 		lead="OT Fabric provides open-source building blocks for industrial communication, standardized information models and interoperable messaging. Each gets a pure Go library, a command-line tool where field work needs one, and tests against independent implementations."
 	>
 		<dl class="kinds">
@@ -69,8 +69,8 @@ const schema = [
 							<span class="ot-label">{s.data.standard}</span>
 							<h3>{s.data.name}</h3>
 							<p>{s.data.summary}</p>
-							{s.data.carriedBy.length > 0 && (
-								<span class="over">Over {s.data.carriedBy.map((id) => shortName(byId[id])).join(', ')}</span>
+							{s.data.carriedBy.length + s.data.carriedByOther.length > 0 && (
+								<span class="over">Over {[...s.data.carriedBy.map((id) => shortName(byId[id])), ...s.data.carriedByOther].join(', ')}</span>
 							)}
 						</a>
 					))}

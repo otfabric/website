@@ -1,0 +1,73 @@
+---
+title: Testing and interop
+description: How go-sparkplugb is tested against six independent Sparkplug B stacks on four MQTT brokers with sparkplugb-interop, what the cross-stack findings are, and why interop testing is not Sparkplug Compatible certification.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations as edge nodes and host applications in Docker images with one container contract. [go-sparkplugb](/docs/profiles/sparkplugb/library/) pulls those images, pinned by digest, and runs every one of its roles against them on every push. The suite owns the references and the fixtures; the library owns its own scenarios and assertions.
+
+## The reference stacks
+
+| Reference | Version | Language | Edge node | Host |
+|---|---|---|:---:|:---:|
+| [Eclipse Tahu](https://github.com/eclipse-tahu/tahu) | 1.0.21 | Java | yes | yes |
+| [Eclipse Tahu sparkplug-client](https://github.com/eclipse-tahu/tahu/tree/master/javascript) | 3.2.4 | JavaScript | yes | no |
+| [pysparkplug](https://github.com/matteosox/pysparkplug) | 0.6.1 | Python | yes | yes |
+| [SparkplugNet](https://github.com/SeppPenner/SparkplugNet) | 1.4.1 | C# | yes | yes |
+| [srad](https://github.com/dpazj/srad) | 0.5.0 | Rust | yes | yes |
+| [sparkplughost](https://github.com/EvergenEnergy/sparkplughost) | v0.4.0 | Go | no | yes |
+
+They run on four MQTT brokers, also pinned by digest: **Eclipse Mosquitto 2.1.2**, **HiveMQ CE 2026.5**, **EMQX 6.3.2** and **NanoMQ 0.25.7**. Each image says what it supports (`print-capabilities`): only Tahu (Java) waits for a primary host, Tahu and tahu-js rebirth on `Node Control/Rebirth`, pysparkplug and SparkplugNet edges publish data by name rather than alias, and SparkplugNet's host neither resolves aliases nor checks `seq`. A test skips a step that needs a capability a reference does not declare.
+
+## What go-sparkplugb is checked for
+
+| Suite | go-sparkplugb role | Against | Steps |
+|---|---|---|---|
+| `TestHost` | Primary host application | Every reference edge node, both fixtures | Births, aliases, every update, NCMD and DCMD writes, rebirth on request and by call, device death and birth, NDEATH on a clean stop, the will after a crash, the edge's view of the primary host going offline |
+| `TestApplication` | Application | Every reference edge node | Births, updates, device death and birth, the node's death |
+| `TestEdge` | Edge node | Every reference host | Births with aliases, alias-only data, the host's view of the node, commands, rebirth on request, device death and birth, NDEATH, the will, the primary host's STATE going offline |
+
+The two fixtures are `baseline`, a node with two devices and writable metrics, and `scalars`, all fourteen scalar datatypes at their limits. Run it with `make interop` in the go-sparkplugb repository (Docker needed).
+
+| Reference | go-sparkplugb host and application, reference edge | go-sparkplugb edge, reference host |
+|---|:---:|:---:|
+| Eclipse Tahu (Java) | pass | pass |
+| pysparkplug | pass ¹ | pass ² ⁵ |
+| SparkplugNet | pass ³ | pass ⁴ |
+| srad | pass | pass ⁵ |
+| Eclipse Tahu sparkplug-client | pass | edge only |
+| sparkplughost | host only | pass ⁵ |
+
+"pass" means every step passes on all four brokers, except the steps a reference cannot do or that hit one of its upstream bugs: ¹ pysparkplug's NDEATH carries the next `bdSeq`, so the will after a crash is checked instead; ² pysparkplug's host cannot decode a negative Int8 or Int16 sign-extended to 32 bits, so the scalars fixture is skipped; ³ without device writes, which SparkplugNet's edge drops; ⁴ without the steps after a death, because SparkplugNet's host keeps dead nodes online; ⁵ not on NanoMQ and HiveMQ CE, which reorder a node's messages across topics in a way these hosts do not resequence.
+
+## What the references taught
+
+Running six stacks against each other on four brokers found real differences. sparkplugb-interop's [COMPATIBILITY.md](https://github.com/otfabric/sparkplugb-interop/blob/main/docs/COMPATIBILITY.md) describes each one; these shaped go-sparkplugb's wire behaviour:
+
+| Finding | What go-sparkplugb does |
+|---|---|
+| Int8 and Int16 are encoded two ways: sign-extended (Tahu, SparkplugNet) or width-sized (pysparkplug, srad) | Sends sign-extended, reads both |
+| Tahu (Java and JavaScript) encodes UInt32 in `long_value`, not `int_value` | Reads integers from whichever field carries them |
+| srad and Tahu send command metrics without a datatype, as the specification recommends; several stacks cannot decode that | Takes the datatype from the birth |
+| NanoMQ and HiveMQ CE can deliver a node's DBIRTH before its NBIRTH, and data out of order across topics | Holds out-of-order messages and applies them in `seq` order |
+| A broker may deliver an old session's will late | Ignores an NDEATH whose `bdSeq` is not the current birth's |
+
+Several fixes in go-sparkplugb's first releases came from these runs: integers in `long_value` read as 0, data from a node without a birth dropped instead of answered with a rebirth request, a retained STATE missed by an edge node, and a device lost when a restarted node's DBIRTH arrived before its NBIRTH.
+
+## What this does and does not prove
+
+<Aside type="caution" title="Not Sparkplug Compatible certification">
+The Eclipse Foundation's **Sparkplug Compatible** program lists products that passed the official **Eclipse Sparkplug TCK** for a profile. go-sparkplugb has not been run against the TCK, has not been listed, and makes no such claim. The interop suite shows that go-sparkplugb and six independent stacks understand each other in the steps above, on four brokers.
+</Aside>
+
+- The fixtures cover scalars, aliases, devices and writes. **Templates, DataSets, arrays and properties** are covered by go-sparkplugb's own codec tests only, because no reference fixture has them yet.
+- Every adapter speaks **MQTT 3.1.1**, except srad, which speaks MQTT 5 only. TLS and broker authentication are not part of the interop runs.
+- The suite has not been run against **commercial** Sparkplug implementations. Interoperability reports are welcome in the [go-sparkplugb repository](https://github.com/otfabric/go-sparkplugb/issues).
+
+## The suite's own self-test
+
+sparkplugb-interop also runs every reference host against every reference edge node on each broker, so a broken reference is caught before a library is blamed for it. On 27 October 2026 it passed on all four brokers with no failures, with every known upstream bug listed in `tests/known-bugs.tsv` and checked for staleness, and a weekly workflow that tries the latest release of every reference and broker against its pin.

@@ -27,8 +27,7 @@ export const kinds: { id: StandardKind; label: string; plural: string; section: 
 		label: 'Application profile',
 		plural: 'Application and messaging profiles',
 		section: 'profiles',
-		description: 'Define how a protocol is used for one interoperable application: topics, payloads, message flows and state.',
-		example: 'Sparkplug B, an industrial messaging profile on top of MQTT, is one. OT Fabric has no profile library yet.',
+		description: 'Define how a protocol is used for one interoperable application: topics, payloads, message flows, lifecycle and state.',
 	},
 ];
 
@@ -49,6 +48,15 @@ export async function getStandards(kind?: StandardKind) {
 }
 
 export const getProtocols = () => getStandards('protocol');
+
+/** Everything that carries a standard, linked where it has a page: [{ name, href? }]. */
+export async function carriers(s: Standard) {
+	const all = await getStandards();
+	return [
+		...all.filter((x) => s.data.carriedBy.includes(x.id as never)).map((x) => ({ name: x.data.name, short: shortName(x), href: standardPath(x) as string | undefined })),
+		...s.data.carriedByOther.map((name) => ({ name, short: name, href: undefined as string | undefined })),
+	];
+}
 
 /** Standards that name this one in `carriedBy`: the models and profiles on top of a protocol. */
 export async function carriedOver(id: string) {

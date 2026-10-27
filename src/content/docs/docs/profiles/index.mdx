@@ -1,0 +1,29 @@
+---
+title: Application profile documentation
+description: Guides for the application and messaging profiles OT Fabric supports, starting with Sparkplug B over MQTT, and how a profile differs from a protocol and an information model.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+An **application profile** defines how a communication protocol is used for one interoperable application: which topics or addresses exist, how payloads are encoded, which messages flow in which order, and how every party tracks the state of the others. It sits between the two other kinds of standard OT Fabric covers:
+
+| Kind of standard | Examples | What it defines |
+|---|---|---|
+| [Communication protocols](/docs/protocols/) | Modbus, OPC UA, IEC 104, EtherNet/IP | How systems communicate: messages, services, addressing, sessions and transport |
+| [Information models](/docs/models/) | SunSpec Modbus, the IEC 61850 information model | What the data means: devices, measurements, controls and their structure |
+| Application and messaging profiles | Sparkplug B | How an underlying protocol is used: topics, payloads, message flows, lifecycle and state |
+
+A profile does not replace the protocol under it. Sparkplug B is MQTT on the wire, and any MQTT broker carries it. What the profile adds is the agreement that lets an edge node from one vendor and a SCADA host from another work together without a project-specific contract.
+
+| Profile | Built on | OT Fabric |
+|---|---|---|
+| [Sparkplug B](/docs/profiles/sparkplugb/) | MQTT 3.1.1 | go-sparkplugb, sparkplugbctl, sparkplugb-interop |
+
+For a short introduction, start with the [Sparkplug B page](/profiles/sparkplugb/) in the [protocols, information models and profiles](/protocols/#profiles) overview.
+
+<CardGrid>
+  <LinkCard title="Sparkplug B" description="Topic namespace, Protobuf payloads, birth and death certificates, primary host STATE and server walking over MQTT. go-sparkplugb, sparkplugbctl." href="/docs/profiles/sparkplugb/" />
+</CardGrid>

@@ -105,6 +105,13 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Application profiles',
+          items: [
+            { label: 'Overview', slug: 'docs/profiles' },
+            { label: 'Sparkplug B', collapsed: true, items: [{ autogenerate: { directory: 'docs/profiles/sparkplugb' } }] },
+          ],
+        },
+        {
           label: 'Contributing',
           items: [
             { label: 'How to contribute', slug: 'docs/contributing' },

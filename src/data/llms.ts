@@ -67,8 +67,8 @@ export async function protocolSection(p: Standard) {
 	const facts = p.data.facts.map((f) => `- ${f.label}: ${f.value}`).join('\n');
 	const projects = (await projectsFor(p.id)).map((x) => `- ${x.data.name}: ${x.data.description} (${repoUrl(x.data.repo!)})`).join('\n');
 	const all = await getStandards();
-	const carriers = all.filter((s) => p.data.carriedBy.includes(s.id as never)).map((s) => `${s.data.name} (${site.url}${standardPath(s)})`);
-	const kind = [`Kind: ${kindOf(p.data.kind).label}`, carriers.length && `carried over ${carriers.join(', ')}`].filter(Boolean).join(', ');
+	const carriers = [...all.filter((s) => p.data.carriedBy.includes(s.id as never)).map((s) => `${s.data.name} (${site.url}${standardPath(s)})`), ...p.data.carriedByOther];
+	const kind = [`Kind: ${kindOf(p.data.kind).label}`, carriers.length && `${p.data.kind === 'application-profile' ? 'built on' : 'carried over'} ${carriers.join(', ')}`].filter(Boolean).join(', ');
 	const body = [`${kind}. Standard: ${p.data.standard}`, facts, mdxToMarkdown(p.body ?? ''), `## OT Fabric projects for ${p.data.name}`, projects].join('\n\n');
 	return section(p.data.name, `${site.url}${standardPath(p)}`, p.data.summary, body);
 }
@@ -151,7 +151,7 @@ export async function llmsIndex() {
 		`# ${site.name}`,
 		`> ${longDescription}`,
 		[
-			'OT Fabric is an open-source organization on GitHub (https://github.com/otfabric). For each operational technology (OT) communication protocol it publishes a library with client and server support, a command-line tool where field work needs one, and a Dockerized interoperability suite that tests the implementation against independent stacks. For standard information models, which define what device data means and are carried over a protocol (SunSpec Modbus over Modbus, the IEC 61850 information model), it publishes model libraries and tools on top of the protocol libraries. Everything is MIT-licensed unless a repository says otherwise.',
+			'OT Fabric is an open-source organization on GitHub (https://github.com/otfabric). For each operational technology (OT) communication protocol it publishes a library with client and server support, a command-line tool where field work needs one, and a Dockerized interoperability suite that tests the implementation against independent stacks. For standard information models, which define what device data means and are carried over a protocol (SunSpec Modbus over Modbus, the IEC 61850 information model), it publishes model libraries and tools on top of the protocol libraries. For application and messaging profiles, which define how applications use a transport (Sparkplug B over MQTT), it publishes the same library, CLI and interop suite. Everything is MIT-licensed unless a repository says otherwise.',
 			'The roadmap covers every relevant OT protocol, IT-to-OT gateways and data connectors, and MCP servers so AI agents can work with industrial devices safely. The project is built by people and AI agents together: engineers set direction and own every decision, and public tests and interop suites hold every change to the same bar.',
 		].join('\n\n'),
 		...kinds
@@ -162,8 +162,8 @@ export async function llmsIndex() {
 				k.description,
 				items.map((p) => line(p.data.standard.startsWith(p.data.name) ? p.data.name : `${p.data.name} (${p.data.standard})`, `${site.url}${standardPath(p)}`, p.data.summary)).join('\n'),
 			]),
-		'## Protocol and model bundles',
-		'One plain-text file per protocol or information model with its overview, every documentation page, the OT Fabric projects and the other open-source implementations.',
+		'## Protocol, model and profile bundles',
+		'One plain-text file per protocol, information model or application profile with its overview, every documentation page, the OT Fabric projects and the other open-source implementations.',
 		standards.map((p) => line(`${p.data.name} bundle`, `${site.url}/llms/${p.id}.txt`)).join('\n'),
 		'## Documentation',
 		docs.map((d) => line(docTitle(d, docs), docsUrl(d.id), d.data.description)).join('\n'),
@@ -177,7 +177,7 @@ export async function llmsIndex() {
 			? ['## Blog', posts.map((p) => line(p.data.title, `${site.url}/blog/${p.id}/`, p.data.description)).join('\n')]
 			: []),
 		'## Ecosystem map',
-		line(ecosystem.title, `${site.url}/ecosystem/implementations/`, `Interactive map of ${ecosystem.implementations.length} open-source and commercial implementations of the protocols above, with language, licence, roles and latest release. Data: https://github.com/otfabric/website/blob/main/src/data/ecosystem.json`),
+		line(ecosystem.title, `${site.url}/ecosystem/implementations/`, `Interactive map of ${ecosystem.implementations.length} open-source and commercial implementations of the protocols and profiles above, with language, licence, roles and latest release. Data: https://github.com/otfabric/website/blob/main/src/data/ecosystem.json`),
 		'## Standards and alliances',
 		[
 			line('Industrial protocol standards and alliances', `${site.url}/ecosystem/organizations/`, `Independent directory of ${organizations.length} standards bodies, alliances, user groups and open-source foundations, with membership tiers, published fees, free routes in and interoperability programs. Every fact cites its official source. Listing does not imply affiliation.`),
@@ -194,7 +194,7 @@ export async function llmsIndex() {
 		[
 			line('About OT Fabric', `${site.url}/about/`, 'Why OT Fabric exists, how it is built, and where it is heading.'),
 			line('Contact', `${site.url}/contact/`, `Email ${site.email}, or reach the team on LinkedIn and GitHub.`),
-			line('Full text for LLMs', `${site.url}/llms-full.txt`, 'Every protocol and information-model page, documentation page, project and blog post in one Markdown file.'),
+			line('Full text for LLMs', `${site.url}/llms-full.txt`, 'Every protocol, information-model and profile page, documentation page, project and blog post in one Markdown file.'),
 			...planned.map((p) => line(`${p.data.name} (planned)`, `${site.url}/projects/`, p.data.description)),
 		].join('\n'),
 	].join('\n\n') + '\n';

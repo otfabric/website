@@ -1,9 +1,9 @@
 ---
 // "At a glance" for one kind of standard. Protocols list their library, CLI and interop
-// suite; information models and profiles list the protocol that carries them instead of
-// an interop suite, since they have no transport of their own.
+// suite. Information models and profiles first name the protocol that carries them;
+// models then list their UI apps, profiles their interop suite.
 import { getProjects, type Project } from '../data/projects';
-import { getStandards, kindOf, standardPath, type StandardKind } from '../data/standards';
+import { carriers, getStandards, kindOf, standardPath, type StandardKind } from '../data/standards';
 
 interface Props {
 	kind?: StandardKind;
@@ -16,7 +16,7 @@ const standards = all.filter((s) => s.data.kind === kind);
 // A project belongs to the row of its primary (first) standard.
 const of = (id: string, category: string) => projects.filter((p) => p.data.category === category && p.data.standards[0] === id);
 const projectCell = (category: string) => (id: string) => ({ projects: of(id, category) });
-const columns: { label: string; cell: (id: string) => { projects?: Project[]; links?: { name: string; href: string }[] } }[] =
+const columns: { label: string; cell: (id: string) => { projects?: Project[]; links?: { name: string; href?: string }[] } }[] =
 	kind === 'protocol'
 		? [
 				{ label: 'Library', cell: projectCell('protocol') },
@@ -24,16 +24,12 @@ const columns: { label: string; cell: (id: string) => { projects?: Project[]; li
 				{ label: 'Interop suite', cell: projectCell('interop') },
 			]
 		: [
-				{
-					label: 'Carried over',
-					cell: (id) => ({
-						links: all.filter((s) => standards.find((x) => x.id === id)!.data.carriedBy.includes(s.id as never)).map((s) => ({ name: s.data.name, href: standardPath(s) })),
-					}),
-				},
+				{ label: kind === 'application-profile' ? 'Built on' : 'Carried over', cell: (id) => ({ links: carriedBy[id] }) },
 				{ label: 'Library', cell: projectCell(kind) },
 				{ label: 'CLI', cell: projectCell('cli') },
-				{ label: 'UI app', cell: projectCell('ui') },
+				kind === 'application-profile' ? { label: 'Interop suite', cell: projectCell('interop') } : { label: 'UI app', cell: projectCell('ui') },
 			];
+const carriedBy = Object.fromEntries(await Promise.all(standards.map(async (s) => [s.id, await carriers(s)] as const)));
 const rows = standards.map((standard) => ({ standard, cells: columns.map((c) => c.cell(standard.id)) }));
 ---
 
@@ -52,7 +48,7 @@ const rows = standards.map((standard) => ({ standard, cells: columns.map((c) => 
 					{row.cells.map((cell) => (
 						<td>
 							{cell.links
-								? cell.links.map((l, i) => <>{i > 0 && ', '}<a href={l.href}>{l.name}</a></>)
+								? cell.links.map((l, i) => <>{i > 0 && ', '}{l.href ? <a href={l.href}>{l.name}</a> : l.name}</>)
 								: cell.projects!.length === 0
 									? <span class="ot-none">–</span>
 									: cell.projects!.map((p, i) => <>{i > 0 && ', '}<a href={`/projects/${p.id}/`}><code>{p.data.name}</code></a></>)}

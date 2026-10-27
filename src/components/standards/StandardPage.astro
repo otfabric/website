@@ -6,7 +6,7 @@ import PageHeader from '../site/PageHeader.astro';
 import ProjectGrid from '../ProjectGrid.astro';
 import StandardLayers from './StandardLayers.astro';
 import { projectsFor, repoUrl } from '../../data/projects';
-import { carriedOver, getStandards, hasDocs, kindOf, standardPath, type Standard } from '../../data/standards';
+import { carriedOver, carriers as carriersOf, hasDocs, kindOf, standardPath, type Standard } from '../../data/standards';
 import { absolute, breadcrumbs, orgRef } from '../../data/seo';
 import { kindLabels, organizationsFor, orgPath } from '../../data/organizations';
 
@@ -24,8 +24,8 @@ const docs = (await hasDocs(standard)) ? data.docs : undefined;
 const path = standardPath(standard);
 const url = absolute(path);
 // Both directions of "carried by": SunSpec Modbus runs over Modbus; Modbus carries SunSpec Modbus.
-const all = await getStandards();
-const carriers = all.filter((s) => data.carriedBy.includes(s.id as never));
+// Sparkplug B runs over MQTT, which has no page here and is named without a link.
+const carriers = await carriersOf(standard);
 const carried = await carriedOver(standard.id);
 // Overview of this kind of standard on the shared catalog page.
 const overview = data.kind === 'protocol' ? '/protocols/' : `/protocols/#${kind.section}`;
@@ -53,7 +53,8 @@ const schema = [
 		...(docs ? { relatedLink: absolute(docs) } : {}),
 		mentions: [
 			...projects.map((p) => ({ '@type': 'SoftwareSourceCode', name: p.data.name, codeRepository: repoUrl(p.data.repo!) })),
-			...[...carriers, ...carried].map((s) => ({ '@type': 'DefinedTerm', name: s.data.name, url: absolute(standardPath(s)) })),
+			...carriers.map((c) => ({ '@type': 'DefinedTerm', name: c.name, ...(c.href ? { url: absolute(c.href) } : {}) })),
+			...carried.map((s) => ({ '@type': 'DefinedTerm', name: s.data.name, url: absolute(standardPath(s)) })),
 		],
 	},
 ];
@@ -82,8 +83,8 @@ const schema = [
 				<dl class="relations">
 					{carriers.length > 0 && (
 						<div>
-							<dt class="ot-label">Carried over</dt>
-							<dd>{carriers.map((s, i) => <>{i > 0 && ', '}<a href={standardPath(s)}>{s.data.name}</a></>)}</dd>
+							<dt class="ot-label">{data.kind === 'application-profile' ? 'Built on' : 'Carried over'}</dt>
+							<dd>{carriers.map((c, i) => <>{i > 0 && ', '}{c.href ? <a href={c.href}>{c.name}</a> : c.name}</>)}</dd>
 						</div>
 					)}
 					{carried.length > 0 && (

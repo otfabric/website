@@ -161,6 +161,29 @@
 		]
 	},
 	{
+		"id": "go-sparkplugb",
+		"name": "go-sparkplugb",
+		"repo": "go-sparkplugb",
+		"category": "application-profile",
+		"standards": [
+			"sparkplug-b"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-sparkplugb",
+		"description": "Sparkplug B 3.0.0 over MQTT for Go: edge node, primary host application and application roles, with birth and death certificates, primary host awareness, server walking, aliases, sequence checks and the full typed metric codec.",
+		"icon": "go-sparkplugb",
+		"highlights": [
+			"Three roles in one library: an edge node with devices (package edge), a primary host application that publishes STATE (package host), and an application that tracks nodes without STATE (package app).",
+			"Session state as Sparkplug 3.0.0 defines it: NBIRTH and DBIRTH, NDEATH as the MQTT will with bdSeq, DDEATH, rebirth on Node Control/Rebirth, and births that wait for the primary host's STATE.",
+			"Server walking: when the primary host goes offline the edge node publishes NDEATH, disconnects and starts a new session on the next broker of ServerURLs.",
+			"The host checks seq, holds messages a broker delivers out of order and applies them in sequence, and asks for a rebirth only when a gap stays open; an NDEATH of an earlier session (by bdSeq) is ignored.",
+			"Every Sparkplug datatype: all scalars, arrays, DataSets, Templates (definitions and instances) and property sets, with metric aliases and quality codes.",
+			"MQTT 3.1.1 over TCP, TLS or WebSocket through Eclipse Paho; any other MQTT client plugs in through the mqtt.Transport interface. context.Context on every blocking call, log/slog logging and metrics callbacks.",
+			"Tested on every push against six independent Sparkplug B stacks on four MQTT brokers with sparkplugb-interop. Not run against the official Sparkplug TCK, and not listed as Sparkplug Compatible.",
+			"MIT-licensed, except the generated Protobuf code in proto/, which derives from Eclipse Tahu's sparkplug_b.proto and stays under EPL-2.0."
+		]
+	},
+	{
 		"id": "go-openadr",
 		"name": "go-openadr",
 		"repo": "go-openadr",
@@ -388,6 +411,18 @@
 		"icon": "go-ethernetip"
 	},
 	{
+		"id": "sparkplugbctl",
+		"name": "sparkplugbctl",
+		"repo": "sparkplugbctl",
+		"category": "cli",
+		"standards": [
+			"sparkplug-b"
+		],
+		"status": "available",
+		"description": "Watch and decode Sparkplug B traffic on a broker, publish typed metrics, encode and decode payloads, or simulate an edge node, a primary host application or an application.",
+		"icon": "go-sparkplugb"
+	},
+	{
 		"id": "go-cotp",
 		"name": "go-cotp",
 		"repo": "go-cotp",
@@ -589,6 +624,18 @@
 		"status": "available",
 		"description": "Twelve EtherNet/IP reference stacks in eight languages, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
 		"icon": "go-ethernetip"
+	},
+	{
+		"id": "sparkplugb-interop",
+		"name": "sparkplugb-interop",
+		"repo": "sparkplugb-interop",
+		"category": "interop",
+		"standards": [
+			"sparkplug-b"
+		],
+		"status": "available",
+		"description": "Six Sparkplug B reference stacks in six languages, Eclipse Tahu (Java and JavaScript), pysparkplug, SparkplugNet, srad and sparkplughost, as edge nodes and host applications on Mosquitto, HiveMQ CE, EMQX and NanoMQ.",
+		"icon": "go-sparkplugb"
 	},
 	{
 		"id": "sunspec-explorer",

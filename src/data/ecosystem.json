@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-26",
+ "verified": "2026-10-27",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -107,6 +107,16 @@
    "maturity": "Mature for tag access, thin for I/O",
    "commercial": "Very established",
    "summary": "The open field is dominated by clients for Rockwell Logix tags; independent stacks that do cyclic I/O are few, and only one open adapter, OpENer, is widely used."
+  },
+  {
+   "id": "sparkplug-b",
+   "kind": "profile",
+   "name": "Sparkplug B",
+   "standard": "Eclipse Sparkplug 3.0.0 (ISO/IEC 20237:2023)",
+   "focus": "Edge nodes and host applications over MQTT: topic namespace, Protobuf payloads, birth and death certificates, primary host STATE",
+   "maturity": "Mature reference, young independent field",
+   "commercial": "Established around SCADA and brokers",
+   "summary": "An application profile on top of MQTT, not a protocol of its own. Eclipse Tahu is the reference; most independent open stacks are recent, and few implement both roles with primary host awareness, server walking and resequencing."
   }
  ],
  "implementations": [
@@ -5892,6 +5902,812 @@
     "https://download.beckhoff.com/download/document/automation/twincat3/TF6281_TC3_EthernetIP_Scanner_EN.pdf"
    ],
    "verified": "2026-10-26"
+  },
+  {
+   "id": "tahu-java",
+   "name": "Eclipse Tahu (Java)",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Java"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/eclipse-tahu/tahu",
+   "repo": "eclipse-tahu/tahu",
+   "stars": 266,
+   "forks": 143,
+   "historySince": "2018",
+   "lastCommit": "2026-10-06",
+   "release": {
+    "version": "1.0.21",
+    "date": "2026-07-27",
+    "source": "Maven Central",
+    "url": "https://repo1.maven.org/maven2/org/eclipse/tahu/tahu-core/1.0.21/"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "capabilities": [
+    "Primary host",
+    "Server walking",
+    "Aliases",
+    "Templates",
+    "DataSets",
+    "Reordering"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "active",
+   "package": "https://repo1.maven.org/maven2/org/eclipse/tahu/",
+   "notes": "The Eclipse Sparkplug Working Group's own implementation (tahu-core, tahu-edge, tahu-host), one of the two compatible implementations used to ratify Sparkplug 3.0. A git tag v1.0.22 (6 Oct 2026) is not on Maven Central yet.",
+   "sources": [
+    "https://github.com/eclipse-tahu/tahu",
+    "https://repo1.maven.org/maven2/org/eclipse/tahu/tahu-core/maven-metadata.xml",
+    "https://sparkplug.eclipse.org/specification/version/3.0/"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "tahu-js",
+   "name": "Tahu sparkplug-client",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/eclipse-tahu/tahu/tree/master/javascript",
+   "repo": "eclipse-tahu/tahu",
+   "stars": 266,
+   "forks": 143,
+   "historySince": "2018",
+   "lastCommit": "2026-10-06",
+   "release": {
+    "version": "3.2.4",
+    "date": "2023-09-06",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/sparkplug-client"
+   },
+   "roles": [
+    "edge node"
+   ],
+   "capabilities": [
+    "Aliases",
+    "Rebirth"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "active",
+   "package": "https://www.npmjs.com/package/sparkplug-client",
+   "notes": "The Node.js edge node client of Eclipse Tahu, with its payload codec published separately as sparkplug-payload. No host application. Stars and forks are those of the whole Tahu repository.",
+   "sources": [
+    "https://github.com/eclipse-tahu/tahu",
+    "https://registry.npmjs.org/sparkplug-client"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "tahu-c",
+   "name": "Eclipse Tahu C",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/eclipse-tahu/tahu/tree/master/c",
+   "repo": "eclipse-tahu/tahu",
+   "stars": 266,
+   "forks": 143,
+   "historySince": "2018",
+   "lastCommit": "2026-10-06",
+   "release": null,
+   "roles": [
+    "payload codec"
+   ],
+   "capabilities": [
+    "nanopb"
+   ],
+   "maintenance": "active",
+   "notes": "A Sparkplug B payload library for C on nanopb, with examples that pair it with the Mosquitto client library. It has no MQTT session of its own, so it is neither an edge node nor a host by itself. Released only as part of the Tahu repository.",
+   "sources": [
+    "https://github.com/eclipse-tahu/tahu",
+    "https://github.com/otfabric/sparkplugb-interop/blob/main/PLAN.md"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "tahu-python",
+   "name": "Eclipse Tahu Python",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/eclipse-tahu/tahu/tree/master/python",
+   "repo": "eclipse-tahu/tahu",
+   "stars": 266,
+   "forks": 143,
+   "historySince": "2018",
+   "lastCommit": "2026-10-06",
+   "release": {
+    "version": "0.1.2",
+    "date": "2022-01-20",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/tahu/"
+   },
+   "roles": [
+    "payload codec"
+   ],
+   "maintenance": "active",
+   "package": "https://pypi.org/project/tahu/",
+   "notes": "Payload helpers and example edge nodes in Python. The PyPI package has not been updated since January 2022; mqtt-spb-wrapper builds its entities on top of it.",
+   "sources": [
+    "https://github.com/eclipse-tahu/tahu",
+    "https://pypi.org/pypi/tahu/json"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "pysparkplug",
+   "name": "pysparkplug",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/matteosox/pysparkplug",
+   "repo": "matteosox/pysparkplug",
+   "stars": 24,
+   "forks": 14,
+   "historySince": "2023",
+   "lastCommit": "2025-05-10",
+   "release": {
+    "version": "0.6.1",
+    "date": "2025-05-10",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/pysparkplug/"
+   },
+   "roles": [
+    "edge node",
+    "application"
+   ],
+   "capabilities": [
+    "MQTT 5",
+    "TLS",
+    "WebSocket",
+    "Aliases"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "slowing",
+   "package": "https://pypi.org/project/pysparkplug/",
+   "notes": "Edge node and a client that decodes STATE; it has no host application of its own, so the interop adapter publishes STATE itself. Encodes Int8 and Int16 by width and cannot decode them sign-extended.",
+   "sources": [
+    "https://github.com/matteosox/pysparkplug",
+    "https://pypi.org/pypi/pysparkplug/json",
+    "https://github.com/otfabric/go-sparkplugb#go-sparkplugb-vs-other-sparkplug-b-stacks"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "sparkplugnet",
+   "name": "SparkplugNet",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/SeppPenner/SparkplugNet",
+   "repo": "SeppPenner/SparkplugNet",
+   "stars": 96,
+   "forks": 55,
+   "historySince": "2021",
+   "lastCommit": "2026-08-18",
+   "release": {
+    "version": "1.4.1",
+    "date": "2026-08-18",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/SparkplugNet/1.4.1"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "capabilities": [
+    "MQTT 5",
+    "TLS",
+    "WebSocket",
+    "Aliases",
+    "Templates",
+    "DataSets",
+    "STATE 2.2"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "active",
+   "package": "https://www.nuget.org/packages/SparkplugNet",
+   "notes": "Edge node and host application on MQTTnet, with both the Sparkplug 3.0 and 2.2 STATE formats. The edge node does not wait for the primary host's STATE before its births.",
+   "sources": [
+    "https://github.com/SeppPenner/SparkplugNet",
+    "https://api.nuget.org/v3-flatcontainer/sparkplugnet/index.json",
+    "https://github.com/otfabric/go-sparkplugb#go-sparkplugb-vs-other-sparkplug-b-stacks"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "srad",
+   "name": "srad",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/dpazj/srad",
+   "repo": "dpazj/srad",
+   "stars": 10,
+   "forks": 1,
+   "historySince": "2025",
+   "lastCommit": "2026-09-16",
+   "release": {
+    "version": "0.5.0",
+    "date": "2026-05-08",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/srad/0.5.0"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "capabilities": [
+    "MQTT 5",
+    "Aliases",
+    "Templates",
+    "Reordering"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/srad",
+   "notes": "A Sparkplug development framework for Rust on tokio and rumqttc, MQTT 5 only. Its edge node ignores STATE; waiting for the primary host and several brokers are on its to-do list.",
+   "sources": [
+    "https://github.com/dpazj/srad",
+    "https://crates.io/api/v1/crates/srad",
+    "https://github.com/otfabric/go-sparkplugb#go-sparkplugb-vs-other-sparkplug-b-stacks"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "sparkplughost",
+   "name": "sparkplughost",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/EvergenEnergy/sparkplughost",
+   "repo": "EvergenEnergy/sparkplughost",
+   "stars": 7,
+   "forks": 1,
+   "historySince": "2023",
+   "lastCommit": "2026-08-18",
+   "release": {
+    "version": "v0.4.0",
+    "date": "2026-07-13",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!evergen!energy/sparkplughost/@v/v0.4.0.info"
+   },
+   "roles": [
+    "host application"
+   ],
+   "capabilities": [
+    "TLS",
+    "Reordering"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "active",
+   "package": "https://pkg.go.dev/github.com/EvergenEnergy/sparkplughost",
+   "notes": "A Go host application by Evergen that hands metrics on as raw Protobuf types. No edge node.",
+   "sources": [
+    "https://github.com/EvergenEnergy/sparkplughost",
+    "https://proxy.golang.org/github.com/!evergen!energy/sparkplughost/@latest"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "hivemqtt-sparkplug",
+   "name": "HiveMQtt.Sparkplug",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/hivemq/hivemq-mqtt-client-dotnet",
+   "repo": "hivemq/hivemq-mqtt-client-dotnet",
+   "stars": 96,
+   "forks": 16,
+   "historySince": "2022",
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "0.47.1",
+    "date": "2026-09-02",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/HiveMQtt.Sparkplug/0.47.1"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://www.nuget.org/packages/HiveMQtt.Sparkplug",
+   "notes": "Sparkplug B 3.0 host application and edge node on HiveMQ's .NET MQTT client, marked beta by HiveMQ. Stars and forks are those of the whole client repository.",
+   "sources": [
+    "https://github.com/hivemq/hivemq-mqtt-client-dotnet",
+    "https://api.nuget.org/v3/registration5-gz-semver2/hivemqtt.sparkplug/index.json"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "nautilus-sparkplug",
+   "name": "nautilus sparkplug",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/joyautomation/nautilus",
+   "repo": "joyautomation/nautilus",
+   "stars": 45,
+   "forks": 9,
+   "historySince": "2026",
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "v0.18.0",
+    "date": "2026-10-15",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/joyautomation/nautilus/@v/v0.18.0.info"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "capabilities": [
+    "Templates",
+    "Rebirth"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "The sparkplug package of Joy Automation's nautilus SCADA toolkit publishes a controller's tags as an edge node, with UDTs as Templates, and consumes Sparkplug fleets as a host driver. The project says its edge node passes the Sparkplug TCK edge node profile in CI.",
+   "sources": [
+    "https://github.com/joyautomation/nautilus",
+    "https://proxy.golang.org/github.com/joyautomation/nautilus/@latest"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "synapse",
+   "name": "Synapse",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "TypeScript"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/joyautomation/synapse",
+   "repo": "joyautomation/synapse",
+   "stars": 1,
+   "forks": 1,
+   "historySince": "2024",
+   "lastCommit": "2026-04-02",
+   "release": {
+    "version": "0.0.100",
+    "date": "2026-04-02",
+    "source": "JSR",
+    "url": "https://jsr.io/@joyautomation/synapse"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "capabilities": [
+    "Primary host"
+   ],
+   "maintenance": "active",
+   "package": "https://jsr.io/@joyautomation/synapse",
+   "notes": "Joy Automation's Sparkplug B client for Deno, with state machines for an edge node and a primary host. The npm package (0.0.71, MIT) lags the JSR releases (Apache-2.0).",
+   "sources": [
+    "https://github.com/joyautomation/synapse",
+    "https://jsr.io/@joyautomation/synapse/meta.json"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "sparklernet",
+   "name": "SparklerNet",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/longkerdandy/SparklerNet",
+   "repo": "longkerdandy/SparklerNet",
+   "stars": 2,
+   "forks": 0,
+   "historySince": "2025",
+   "lastCommit": "2026-01-26",
+   "release": {
+    "version": "0.9.7",
+    "date": "2025-12-11",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/SparklerNet/0.9.7"
+   },
+   "roles": [
+    "host application"
+   ],
+   "capabilities": [
+    "MQTT 5",
+    "TLS",
+    "WebSocket",
+    "Templates",
+    "DataSets"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://www.nuget.org/packages/SparklerNet",
+   "notes": "A host application for .NET 9 and later on MQTTnet; edge node and device roles are planned.",
+   "sources": [
+    "https://github.com/longkerdandy/SparklerNet",
+    "https://api.nuget.org/v3-flatcontainer/sparklernet/index.json"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "plugb",
+   "name": "PlugB",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/philipp2604/PlugB",
+   "repo": "philipp2604/PlugB",
+   "stars": 0,
+   "forks": 1,
+   "historySince": "2026",
+   "lastCommit": "2026-08-17",
+   "release": {
+    "version": "2.0.1",
+    "date": "2026-06-15",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/philipp2604.PlugB/2.0.1"
+   },
+   "roles": [
+    "edge node",
+    "host application"
+   ],
+   "capabilities": [
+    "Primary host",
+    "Server walking",
+    "Aliases"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://www.nuget.org/packages/philipp2604.PlugB",
+   "notes": "A fluent .NET 10 library on MQTTnet and the Tahu schema: an edge node with primary host STATE gating, multi-server failover and store-and-forward, and a host application with alias resolution and automatic rebirth requests. Marked work in progress by its author.",
+   "sources": [
+    "https://github.com/philipp2604/PlugB",
+    "https://api.nuget.org/v3/registration5-gz-semver2/philipp2604.plugb/index.json"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "otfabric-go-sparkplugb",
+   "name": "go-sparkplugb",
+   "protocol": "sparkplug-b",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT (proto/: EPL-2.0)",
+   "url": "https://github.com/otfabric/go-sparkplugb",
+   "repo": "otfabric/go-sparkplugb",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-27",
+   "release": {
+    "version": "v0.1.3",
+    "date": "2026-10-27",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-sparkplugb/@v/v0.1.3.info"
+   },
+   "roles": [
+    "edge node",
+    "host application",
+    "application"
+   ],
+   "capabilities": [
+    "Primary host",
+    "Server walking",
+    "Aliases",
+    "Templates",
+    "DataSets",
+    "Reordering",
+    "TLS",
+    "WebSocket"
+   ],
+   "interop": "sparkplugb-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-sparkplugb",
+   "notes": "Edge node, primary host application and application in one library, MQTT 3.1.1 through Eclipse Paho or any client behind its transport interface. MIT, except the Protobuf code generated from Tahu's schema, which stays EPL-2.0. Tested against the six sparkplugb-interop references on four brokers; not run against the Sparkplug TCK.",
+   "sources": [
+    "https://github.com/otfabric/go-sparkplugb",
+    "https://proxy.golang.org/github.com/otfabric/go-sparkplugb/@latest"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "mqtt-spb-wrapper",
+   "name": "mqtt-spb-wrapper",
+   "protocol": "sparkplug-b",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/javier-fg/mqtt-spb-wrapper",
+   "repo": "javier-fg/mqtt-spb-wrapper",
+   "stars": 25,
+   "forks": 15,
+   "historySince": "2022",
+   "lastCommit": "2025-07-13",
+   "release": {
+    "version": "2.1.2",
+    "date": "2025-07-13",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/mqtt-spb-wrapper/"
+   },
+   "roles": [
+    "edge node",
+    "host application",
+    "application"
+   ],
+   "upstream": [
+    "tahu-python"
+   ],
+   "relation": "High-level entities on top of Eclipse Tahu's Python core",
+   "maintenance": "slowing",
+   "package": "https://pypi.org/project/mqtt-spb-wrapper/",
+   "notes": "Edge node, device, application and SCADA host classes that wrap the Tahu Python modules and paho-mqtt.",
+   "sources": [
+    "https://github.com/javier-fg/mqtt-spb-wrapper",
+    "https://pypi.org/pypi/mqtt-spb-wrapper/json"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "node-red-sparkplug-plus",
+   "name": "Node-RED Sparkplug Plus",
+   "protocol": "sparkplug-b",
+   "type": "derived",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "ISC",
+   "url": "https://github.com/thomassorensen2650/node-red-contrib-mqtt-sparkplug-plus",
+   "repo": "thomassorensen2650/node-red-contrib-mqtt-sparkplug-plus",
+   "stars": 30,
+   "forks": 9,
+   "historySince": "2021",
+   "lastCommit": "2026-08-27",
+   "release": {
+    "version": "3.1.1",
+    "date": "2026-08-27",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/node-red-contrib-mqtt-sparkplug-plus"
+   },
+   "roles": [
+    "edge node",
+    "application"
+   ],
+   "capabilities": [
+    "MQTT 5",
+    "Primary host",
+    "Aliases",
+    "Templates"
+   ],
+   "upstream": [
+    "tahu-js"
+   ],
+   "relation": "Node-RED nodes on Eclipse Tahu's sparkplug-payload codec",
+   "maintenance": "active",
+   "package": "https://www.npmjs.com/package/node-red-contrib-mqtt-sparkplug-plus",
+   "notes": "Node-RED nodes: an edge node with devices, primary host gating, store and forward and metric aliases, plus nodes that decode and publish Sparkplug payloads. The npm package declares ISC; the repository has no licence file.",
+   "sources": [
+    "https://github.com/thomassorensen2650/node-red-contrib-mqtt-sparkplug-plus",
+    "https://registry.npmjs.org/node-red-contrib-mqtt-sparkplug-plus"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "sparkplug-rs",
+   "name": "sparkplug-rs",
+   "protocol": "sparkplug-b",
+   "type": "derived",
+   "languages": [
+    "Rust"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/ahlner/sparkplug-rs",
+   "repo": "ahlner/sparkplug-rs",
+   "stars": 3,
+   "forks": 3,
+   "historySince": "2022",
+   "lastCommit": "2025-06-12",
+   "release": {
+    "version": "0.5.1",
+    "date": "2025-06-12",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/sparkplug-rs/0.5.1"
+   },
+   "roles": [
+    "payload codec"
+   ],
+   "upstream": [
+    "tahu-java"
+   ],
+   "relation": "Rust types generated from Eclipse Tahu's sparkplug_b.proto",
+   "maintenance": "slowing",
+   "package": "https://crates.io/crates/sparkplug-rs",
+   "notes": "Protobuf payload types and topic name handling for Rust, without an MQTT session.",
+   "sources": [
+    "https://github.com/ahlner/sparkplug-rs",
+    "https://crates.io/api/v1/crates/sparkplug-rs"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "cirrus-link-mqtt-modules",
+   "name": "Cirrus Link MQTT Modules",
+   "protocol": "sparkplug-b",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://docs.chariot.io/x/mAOtAg",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "edge node",
+    "host application",
+    "broker"
+   ],
+   "maintenance": "n/a",
+   "notes": "MQTT Transmission (edge node), MQTT Engine (host application) and MQTT Distributor (broker) for Inductive Automation's Ignition, sold as paid strategic partner modules. Cirrus Link contributed Sparkplug to the Eclipse Foundation in 2019.",
+   "sources": [
+    "https://docs.chariot.io/x/mAOtAg",
+    "https://www.dmcinfo.com/blog/50802/ignition-mqtt-modules-transmission-engine-distributor/",
+    "https://forum.inductiveautomation.com/t/question-about-mqtt-partner-module-s/104085",
+    "https://sparkplug.eclipse.org/about/faq/"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "hivemq-sparkplug",
+   "name": "HiveMQ Platform",
+   "protocol": "sparkplug-b",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.hivemq.com/news/hivemq-announces-sparkplug-30-compatibility/",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "broker"
+   ],
+   "capabilities": [
+    "Sparkplug Aware"
+   ],
+   "maintenance": "n/a",
+   "notes": "A Sparkplug aware MQTT broker. HiveMQ announced in December 2022 that its platform passed the Sparkplug 3.0 TCK and was listed in the Sparkplug Compatible program; its Sparkplug Aware Extension 4.8.2 was one of the two compatible implementations used to ratify 3.0.",
+   "sources": [
+    "https://www.hivemq.com/news/hivemq-announces-sparkplug-30-compatibility/",
+    "https://sparkplug.eclipse.org/specification/version/3.0/"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "canary-mqtt-collector",
+   "name": "Canary MQTT Collector",
+   "protocol": "sparkplug-b",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://canarylabs.com/product/data-collectors",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "host application"
+   ],
+   "maintenance": "n/a",
+   "notes": "The MQTT collector of the Canary historian, which supports Sparkplug B 3.0 since version 23.0, according to Canary.",
+   "sources": [
+    "https://helpcenter.canarylabs.com/t/x2y8ggb/mqtt-collector-sparkplugb-3-0-compliance-version-24",
+    "https://canarylabs.com/product/data-collectors"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "proficy-historian-sparkplug",
+   "name": "Proficy Historian",
+   "protocol": "sparkplug-b",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.gevernova.com/software/documentation/historian/version2024/c_historian_collector_about_mqtt_sparkplugb.html",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "host application"
+   ],
+   "capabilities": [
+    "Primary host"
+   ],
+   "maintenance": "n/a",
+   "notes": "GE Vernova's historian collector connects as a Sparkplug 3.0.0 primary host application, publishes STATE, creates tags from births and requests rebirths for data without a birth.",
+   "sources": [
+    "https://www.gevernova.com/software/documentation/historian/version2024/c_historian_collector_about_mqtt_sparkplugb.html"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "neuronex-sparkplug",
+   "name": "EMQ NeuronEX",
+   "protocol": "sparkplug-b",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://docs.emqx.com/en/neuronex/latest/configuration/north-apps/sparkplugb/overview.html",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "edge node"
+   ],
+   "capabilities": [
+    "Aliases",
+    "TLS"
+   ],
+   "maintenance": "n/a",
+   "notes": "EMQ's industrial edge gateway publishes southbound device data as a Sparkplug B edge node, with write-back by NCMD and DCMD and offline caching. Licensed commercially, with a free quota of 30 tags.",
+   "sources": [
+    "https://docs.emqx.com/en/neuronex/latest/configuration/north-apps/sparkplugb/overview.html",
+    "https://docs.emqx.com/en/neuronex/latest/introduction/license/license-policy.html"
+   ],
+   "verified": "2026-10-27"
+  },
+  {
+   "id": "opto22-groov",
+   "name": "Opto 22 groov",
+   "protocol": "sparkplug-b",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://blog.opto22.com/optoblog/sparkplug-3-compatibility-brings-standardized-interoperability",
+   "stars": null,
+   "release": null,
+   "maintenance": "n/a",
+   "notes": "Edge controllers and I/O with built-in MQTT Sparkplug. Opto 22 says groov EPIC and groov RIO passed the Sparkplug compatibility tests with firmware 3.5 and are listed as Sparkplug Compatible hardware.",
+   "sources": [
+    "https://blog.opto22.com/optoblog/sparkplug-3-compatibility-brings-standardized-interoperability"
+   ],
+   "verified": "2026-10-27"
   }
  ]
 }
