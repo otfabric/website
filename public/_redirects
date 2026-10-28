@@ -7,3 +7,6 @@
 # The information models are a section of the shared catalog page.
 /models /protocols/#models 302
 /models/ /protocols/#models 302
+# mms-interop was renamed iec61850-interop when it gained GOOSE and Sampled Values (2026-10).
+/projects/mms-interop /projects/iec61850-interop/ 301
+/projects/mms-interop/ /projects/iec61850-interop/ 301

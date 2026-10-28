@@ -23,7 +23,7 @@ lastmod.set(`${site}/ecosystem/organizations/`, organizations.map((o) => o.verif
 const description =
   'Open-source protocol libraries and tools that break down OT data silos, built by people and AI agents together.';
 
-// Pages that moved when SunSpec became an information model rather than a protocol. Cloudflare
+// Pages that moved, first when SunSpec became an information model rather than a protocol. Cloudflare
 // answers these with a 301 from public/_redirects; these entries only keep `astro dev` and
 // `astro preview` working, as meta-refresh pages with a canonical link.
 const moved = {
@@ -32,6 +32,8 @@ const moved = {
   '/docs/protocols/sunspec/library': '/docs/models/sunspec/library/',
   '/docs/protocols/sunspec/cli': '/docs/models/sunspec/cli/',
   '/docs/protocols/sunspec/testing': '/docs/models/sunspec/testing/',
+  // mms-interop was renamed iec61850-interop when it gained GOOSE and Sampled Values.
+  '/projects/mms-interop': '/projects/iec61850-interop/',
 };
 
 export default defineConfig({
@@ -87,7 +89,7 @@ export default defineConfig({
             { label: 'OPC UA', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/opc-ua' } }] },
             { label: 'BACnet/IP', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/bacnet' } }] },
             { label: 'IEC 60870-5-104', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/iec-104' } }] },
-            { label: 'IEC 61850 / MMS', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/iec-61850' } }] },
+            { label: 'IEC 61850', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/iec-61850' } }] },
             { label: 'Siemens S7', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/s7' } }] },
             { label: 'OpenADR', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/openadr' } }] },
             { label: 'OCPP', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/ocpp' } }] },

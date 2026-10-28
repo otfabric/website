@@ -90,8 +90,17 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-iec61850",
-		"description": "IEC 61850 client and server with logical nodes, reports, controls and SCL as first-class Go types.",
-		"icon": "go-iec61850"
+		"description": "IEC 61850 in one library: MMS client and SCL-driven server, GOOSE and Sampled Values publishers and subscribers, and SCL parsing, with logical nodes, reports, controls and control blocks as first-class Go types.",
+		"icon": "go-iec61850",
+		"highlights": [
+			"MMS client: browse, typed reads and writes, datasets, URCB and BRCB reports with EntryID resume, direct, SBO and SBOw controls, setting groups, journals and files.",
+			"SCL-driven MMS server with a report engine, the control state machine with CommandTermination, setting groups and journals. One SetValue call drives reports, journals, GOOSE and Sampled Values.",
+			"GOOSE (IEC 61850-8-1): publisher with stNum, sqNum and MinTime to MaxTime retransmission, and a supervised subscriber validated against SCL. Server GoCBs are published on data change and readable and writable over MMS.",
+			"Sampled Values (IEC 61850-9-2, 9-2LE): drift-free publisher with noASDU batching, and a subscriber that counts loss, duplicates and reordering without allocating per frame. Server MSVCBs are published at their sample rate and exposed over MMS.",
+			"Raw Ethernet on Linux (AF_PACKET) and macOS and the BSDs (BPF), plus an in-memory hub with fault injection for tests.",
+			"Interop tested in CI against four independent stacks, libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust, in both directions, with GOOSE and Sampled Values on a Docker bridge.",
+			"Stable v1 API, at least 90% coverage in every package, fuzzed MMS, GOOSE, SV and SCL decoders, and chaos tests. Not certified, and not yet validated against physical IEDs."
+		]
 	},
 	{
 		"id": "go-mms",
@@ -103,8 +112,15 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-mms",
-		"description": "MMS (ISO 9506) client and server, the transport underneath IEC 61850.",
-		"icon": "go-mms"
+		"description": "MMS (ISO 9506) client and server with the full ISO upper-layer stack, the transport underneath IEC 61850: typed errors, metrics, retries and graceful shutdown, fuzzed and interop tested.",
+		"icon": "go-mms",
+		"highlights": [
+			"Client and server for variable access, named variable lists, files, journals, information reports and Status, over COTP and TPKT on TCP port 102, with optional TLS.",
+			"Built to run unattended: errors that work with errors.Is and errors.As, a Metrics interface, connection retry with backoff and jitter, association and handshake timeouts, and Server.Shutdown.",
+			"A cancelled request no longer tears down its association, and a silent peer can no longer block the listener.",
+			"57 fuzz targets, at least 90% coverage in every package, and an end-to-end test of every exported method between its own client and server.",
+			"Interop tested in both directions against libiec61850, dscsystems/go-iec61850 and iec61850-rust, with 120 passing scenarios against libiec61850."
+		]
 	},
 	{
 		"id": "go-s7comm",
@@ -335,8 +351,16 @@
 			"iec-61850"
 		],
 		"status": "available",
-		"description": "Browse IED data models, read and write, operate controls, subscribe to reports and parse SCL.",
-		"icon": "go-iec61850"
+		"description": "IEC 61850 from the terminal: browse IEDs, read and write, operate controls and subscribe to reports over MMS, and sniff, subscribe to and publish GOOSE and Sampled Values on the station bus.",
+		"icon": "go-iec61850",
+		"highlights": [
+			"MMS client: discover, browse, read, write scalar settings, operate controls in one association, subscribe to URCBs and BRCBs, download files and read journals.",
+			"GOOSE: list control blocks from SCL, sniff, supervised subscriptions, publishing with guard rails (test frames unless you say otherwise) and GoCB read and write over MMS.",
+			"Sampled Values: sniff, supervised subscriptions with live loss and rate statistics, publishing with 9-2LE sine waveforms (simulation frames by default) and MSVCB read and write over MMS.",
+			"Runs an MMS server from any ICD, CID or SCD file, and a read-only HTTP/JSON API in front of one device.",
+			"Stable exit codes and JSON or JSON Lines output for scripting, static binaries with no cgo for Linux, macOS and Windows.",
+			"Black-box end-to-end tests against the four iec61850-interop stacks, GOOSE and Sampled Values included."
+		]
 	},
 	{
 		"id": "nsdctl",
@@ -571,15 +595,15 @@
 		"icon": "go-iec104"
 	},
 	{
-		"id": "mms-interop",
-		"name": "mms-interop",
-		"repo": "mms-interop",
+		"id": "iec61850-interop",
+		"name": "iec61850-interop",
+		"repo": "iec61850-interop",
 		"category": "interop",
 		"standards": [
 			"iec-61850"
 		],
 		"status": "available",
-		"description": "MMS and IEC 61850 adapter images for libiec61850 and IEC61850bean.",
+		"description": "IEC 61850 reference stacks as containers: libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust, for MMS, IED services, GOOSE and Sampled Values. Formerly mms-interop.",
 		"icon": "go-iec61850"
 	},
 	{

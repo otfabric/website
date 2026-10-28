@@ -1,6 +1,6 @@
 ---
-title: IEC 61850 / MMS
-description: How IEC 61850 client/server communication works over MMS, from the object model to the ISO stack on TCP port 102.
+title: IEC 61850
+description: How IEC 61850 communication works, from the object model to client/server services over MMS on TCP port 102 and GOOSE and Sampled Values on raw Ethernet.
 sidebar:
   label: Overview
   order: 0
@@ -8,9 +8,15 @@ sidebar:
 
 import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-IEC 61850 is the communication standard for substation automation. It does two things that older SCADA protocols kept apart. It defines an **object model** for the device (what a breaker, a measurement or a protection function looks like), and it defines **services** on that model (read, write, report, control, file transfer, logging). The abstract services are specified in IEC 61850-7-2 (ACSI, the Abstract Communication Service Interface). IEC 61850-8-1 maps those services onto **MMS**, the Manufacturing Message Specification (ISO 9506), which runs over an ISO upper-layer stack on TCP port 102.
+IEC 61850 is the communication standard for substation automation. It does two things that older SCADA protocols kept apart. It defines an **object model** for the device (what a breaker, a measurement or a protection function looks like), and it defines **services** on that model (read, write, report, control, file transfer, logging, fast events, sampled measurements). The abstract services are specified in IEC 61850-7-2 (ACSI, the Abstract Communication Service Interface) and mapped onto three protocols:
 
-This page covers the client/server (MMS) part of IEC 61850, which is what OT Fabric implements. GOOSE and Sampled Values are covered briefly at the end, because they are out of scope.
+| Mapping | Standard | Carries | Runs on |
+|---|---|---|---|
+| **MMS** | IEC 61850-8-1, ISO 9506 | Client/server services: browse, read, write, reports, controls, files, logs | ISO upper layers over TCP port 102 |
+| **GOOSE** | IEC 61850-8-1 | Dataset values multicast on every change, for trips, interlocks and status between IEDs | Raw Ethernet, EtherType `0x88B8` |
+| **Sampled Values** | IEC 61850-9-2, IEC 61869-9, UCA 9-2LE | Digitized currents and voltages from merging units, thousands of samples a second | Raw Ethernet, EtherType `0x88BA` |
+
+OT Fabric implements all three. This page explains the model and the client/server services first, then GOOSE and Sampled Values.
 
 The object model below is summarized only as far as communication needs it. The model itself, defined once for every mapping and published by IEC as machine-readable NSD files, has its own guide: the [IEC 61850 information model](/docs/models/iec-61850/), implemented without a transport in go-iec61850-model.
 
@@ -104,7 +110,7 @@ Report instance names on the wire do not always match the SCL. A ReportControl n
 | 3 | direct-with-enhanced-security | Write `Oper`; the server reports completion with CommandTermination. |
 | 4 | sbo-with-enhanced-security | Write `SBOw` (select with value), then write `Oper`. |
 
-SBO stands for select-before-operate. Selection reserves the object for one client for a limited time. With enhanced security the `ctlNum` in `SBOw` and `Oper` must match, and both libiec61850 and the OT Fabric server enforce this. Every control also carries an origin (`orCat` and `orIdent`), a test flag and check conditions (synchrocheck, interlock check). If the server rejects a control, the reason is in `LastApplError` with an `AddCause` code. OT Fabric does not implement CommandTermination monitoring or time-activated operate.
+SBO stands for select-before-operate. Selection reserves the object for one client for a limited time. With enhanced security the `ctlNum` in `SBOw` and `Oper` must match, and both libiec61850 and the OT Fabric server enforce this. Every control also carries an origin (`orCat` and `orIdent`), a test flag and check conditions (synchrocheck, interlock check). If the server rejects a control, the reason is in `LastApplError` with an `AddCause` code. The OT Fabric server sends a positive CommandTermination after an enhanced-security operate; the client does not wait for it, and time-activated operate is not implemented.
 
 **Setting groups, journals and files.** Protection settings can live in several setting groups, switched through the setting group control block (SGCB). Journals (logs) are read by time range or after a known entry. Files (for example disturbance records or configuration) are listed and downloaded through MMS file services.
 
@@ -138,37 +144,79 @@ TCP            port 102
 
 A client opens TCP, sends a COTP connection request, then a single packet that nests session CONNECT, presentation, ACSE AARQ and the MMS Initiate request. The Initiate exchange negotiates the maximum PDU size, the number of outstanding requests and the data nesting level. After that the association carries confirmed requests (matched by invoke ID) and unconfirmed InformationReports in both directions. A client ends with MMS Conclude (graceful) or an ACSE abort (immediate).
 
+## GOOSE
+
+GOOSE (Generic Object Oriented Substation Event, IEC 61850-8-1) is how IEDs tell each other about events fast enough for protection: a breaker failure, a blocking signal, an interlock. It has no TCP, no association and no request. A publisher multicasts the values of one dataset in Ethernet frames (EtherType `0x88B8`, often in an 802.1Q VLAN with a priority tag), and any IED on the segment that is configured for it subscribes.
+
+Each GOOSE control block (GoCB, FC `GO` in `LLN0`) names its dataset, a `goID` and a configuration revision. Its multicast MAC address, APPID, VLAN and timing come from the SCL `GSE` element. The frame carries:
+
+| Field | Meaning |
+|---|---|
+| `gocbRef`, `datSet`, `goID` | Which control block and dataset this is |
+| `stNum` | State number: increments when any dataset value changes |
+| `sqNum` | Sequence number: increments on each retransmission of the same state, restarts at 0 on a new state |
+| `timeAllowedToLive` | How long the subscriber may wait for the next frame before it declares the stream lost |
+| `confRev`, `ndsCom` | Configuration revision, and "needs commissioning" |
+| `test`, simulation bit | Test frames (the `test` field) and Edition 2 simulation frames (the S bit in the header) |
+| `allData` | The dataset values, BER-encoded like MMS data |
+
+Because there is no acknowledgement, reliability comes from repetition. After a change the publisher sends the new state at once, then retransmits it at growing intervals from **MinTime** to **MaxTime**, and keeps sending at MaxTime while nothing changes. A subscriber validates `confRev`, `datSet` and the member types against its SCL, and supervises the stream: a frame that does not arrive within `timeAllowedToLive` is a timeout, a jump in `stNum` or `sqNum` is a gap, and an `stNum` back at 1 is a publisher restart. In IEC 61850-7-4 that supervision is the `LGOS` logical node.
+
+A client can read a GoCB over MMS and, where the server allows it, write `GoEna` (enable), `GoID` and `DatSet`.
+
+## Sampled Values
+
+Sampled Values (SV, IEC 61850-9-2) carry the analogue measurements of the process bus. A merging unit samples the currents and voltages of instrument transformers and multicasts them (EtherType `0x88BA`), so protection relays and meters receive digital samples instead of copper wiring from every transformer.
+
+A frame holds one or more ASDUs (`noASDU`). Each ASDU carries its `svID`, the sample counter `smpCnt`, `confRev`, the synchronization state `smpSynch` (none, local or global clock), and the sample: the dataset members in a fixed binary layout. Optional fields are the dataset name, refresh time, sample rate and sample mode.
+
+The common layout in the field is the **UCA 9-2LE** implementation guideline, now carried forward by IEC 61869-9: four currents and four voltages as 32-bit integers in 1 mA and 10 mV units, each with a 32-bit quality, at 80 samples per cycle (4000 frames a second at 50 Hz) with one ASDU per frame. Generic streams use any dataset and rate. `smpCnt` counts samples within a second and wraps, so a subscriber detects lost, duplicated and reordered samples from it, and `smpSynch` tells it whether samples from two merging units can be compared.
+
+Multicast SV control blocks (MSVCB, FC `MS`) are configured from SCL (`SampledValueControl` and its `SMV` address) and can be read and partly written over MMS: `SvEna`, `MsvID`, `DatSet`, `SmpRate`, `OptFlds` and `SmpMod`. Unicast SV (`US`) exists in the standard but is rare.
+
+<Aside type="caution">
+GOOSE and SV frames go to every port of the segment and act on protection. A test publisher on a live bus can trip a breaker or blind a relay. Mark test traffic with the `test` flag or the simulation bit, keep it on a lab VLAN, and never publish a control block that a real IED also publishes.
+</Aside>
+
+## What OT Fabric implements
+
+| Area | Implemented | Not implemented |
+|---|---|---|
+| MMS client | Browse, read and write (single and bulk), datasets, URCB and BRCB reports with GI, integrity period, EntryID resume and segmented report reassembly, direct, SBO and SBOw controls, setting groups, journals, files | CommandTermination wait and time-activated operate in the client |
+| MMS server | SCL model, report engine, control state machine with positive CommandTermination, setting groups, journals and files through providers, Identify, Status, graceful shutdown | Dynamic datasets, per-group setting banks, persistent buffers, segmented report generation |
+| GOOSE | Publisher, supervised subscriber, SCL binding, server GoCBs on data change, GoCB access over MMS | GOOSE management, GSSE, fixed-offset encoding, mapping received values into a server model |
+| Sampled Values | 9-2LE and generic, publisher with absolute pacing and `noASDU` batching, subscriber with loss accounting, SCL binding, server MSVCBs, MSVCB access over MMS | Unicast SV, hardware time synchronization (PTP or 1PPS) |
+| Security | TLS on the MMS connection | IEC 62351-6 for GOOSE and SV, R-GOOSE and R-SV (IEC 61850-90-5) |
+
+The library guide has the details, and [Testing and interop](/docs/protocols/iec-61850/testing/) shows which of these are tested against which stack.
+
 ## Security
 
-Plain IEC 61850 MMS has no encryption and, in most deployments, no authentication. ACSE can carry a password in the association request; anyone on the network path can read it. TLS on the TCP connection is the transport-level option and must be supported by both ends. In practice MMS is protected by network segmentation. Treat port 102 as a control interface, because an associated client can send control commands to any object the device allows to be operated remotely.
+Plain IEC 61850 MMS has no encryption and, in most deployments, no authentication. ACSE can carry a password in the association request; anyone on the network path can read it. TLS on the TCP connection (IEC 62351-3) is the transport-level option and must be supported by both ends. In practice MMS is protected by network segmentation. Treat port 102 as a control interface, because an associated client can send control commands to any object the device allows to be operated remotely.
+
+GOOSE and Sampled Values are usually neither signed nor encrypted. IEC 62351-6 defines authentication for them, but it is rare in the field and OT Fabric does not implement it. Anyone who can send frames on the segment can forge them, so the process and station buses are protected with VLANs, port security and separate switches.
 
 ## Where it is used
 
-IEC 61850 MMS is the station-bus protocol in modern substations. A station computer, gateway or SCADA front end is the MMS client; protection relays, bay controllers, meters and RTUs are the servers. The same model is used wherever grid-connected plant is engineered to substation practice.
-
-## GOOSE and Sampled Values (out of scope)
-
-IEC 61850 also defines two publisher/subscriber protocols that do not use MMS. **GOOSE** (Generic Object Oriented Substation Event, IEC 61850-8-1) multicasts dataset values in Ethernet frames for fast protection signalling between IEDs. **Sampled Values** (IEC 61850-9-2) streams digitised current and voltage samples from merging units. Both run directly on Ethernet with no TCP and no association.
-
-OT Fabric does not implement GOOSE or Sampled Values: no publishing, no subscription, no sniffing. The SCL tooling can still list GOOSE and SMV control blocks from a configuration file.
+IEC 61850 is the station-bus standard in modern substations. A station computer, gateway or SCADA front end is the MMS client; protection relays, bay controllers, meters and RTUs are the servers, and exchange GOOSE among themselves. On the process bus, merging units publish Sampled Values to the relays. The same model is used wherever grid-connected plant is engineered to substation practice.
 
 ## OT Fabric for IEC 61850
 
 <CardGrid>
-  <LinkCard title="go-iec61850" description="IEC 61850 client and SCL-driven server in pure Go, plus the sclparse and sclgen tools." href="/projects/go-iec61850/" />
+  <LinkCard title="go-iec61850" description="IEC 61850 in pure Go: MMS client and SCL-driven server, GOOSE, Sampled Values and SCL, plus the sclparse tool." href="/projects/go-iec61850/" />
   <LinkCard title="go-mms" description="MMS (ISO 9506) client and server, with the ISO upper-layer stack." href="/projects/go-mms/" />
-  <LinkCard title="iec61850ctl" description="Command-line client, SCL tools and local MMS server." href="/projects/iec61850ctl/" />
-  <LinkCard title="mms-interop" description="Docker adapter images for libiec61850 and IEC61850bean, used by the interop tests." href="/projects/mms-interop/" />
+  <LinkCard title="iec61850ctl" description="Command-line MMS client, GOOSE and Sampled Values tools, SCL tools and a local MMS server." href="/projects/iec61850ctl/" />
+  <LinkCard title="iec61850-interop" description="Container images of libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust for MMS, GOOSE and SV interop tests. Formerly mms-interop." href="/projects/iec61850-interop/" />
   <LinkCard title="go-iec61850-model" description="The IEC 61850 information model from the official NSD files, with nsdctl. No transport; used next to the libraries above." href="/models/iec-61850/" />
 </CardGrid>
 
 | Project | Role | Source |
 |---|---|---|
-| go-iec61850 | IEC 61850 semantics: references, FCs, datasets, reports, controls, SCL, server model | [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) |
+| go-iec61850 | IEC 61850 semantics: references, FCs, datasets, reports, controls, SCL, server model, GOOSE, Sampled Values, raw Ethernet | [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) |
 | go-mms | Generic MMS, ACSE, presentation and session layers | [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) |
 | go-cotp | COTP class 0 transport | [github.com/otfabric/go-cotp](https://github.com/otfabric/go-cotp) |
 | go-tpkt | RFC 1006 TPKT framing | [github.com/otfabric/go-tpkt](https://github.com/otfabric/go-tpkt) |
 | iec61850ctl | CLI on top of go-iec61850 and go-mms | [github.com/otfabric/iec61850ctl](https://github.com/otfabric/iec61850ctl) |
-| mms-interop | Reference stack adapters and fixtures | [github.com/otfabric/mms-interop](https://github.com/otfabric/mms-interop) |
+| iec61850-interop | Reference stack images and fixtures for MMS, IED services, GOOSE and SV | [github.com/otfabric/iec61850-interop](https://github.com/otfabric/iec61850-interop) |
 
 Start with the [Go library](/docs/protocols/iec-61850/library/) page or the [iec61850ctl](/docs/protocols/iec-61850/cli/) page, and see [Testing and interop](/docs/protocols/iec-61850/testing/) for what has been validated.

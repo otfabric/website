@@ -257,7 +257,7 @@
 		],
 		"programs": [],
 		"openSource": [],
-		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop", "go-iec61850-model", "nsdctl", "go-iec104", "iec104ctl", "iec104-interop", "go-ethernetip", "ethernetipctl", "ethernetip-interop"],
+		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "iec61850-interop", "go-iec61850-model", "nsdctl", "go-iec104", "iec104ctl", "iec104-interop", "go-ethernetip", "ethernetipctl", "ethernetip-interop"],
 		"related": [
 			{ "id": "uca-international", "relation": "Runs the IEC 61850 user group and interoperability testing; TC 57 writes the standard." },
 			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." },
@@ -310,7 +310,7 @@
 			{ "kind": "interop-event", "name": "IEC 61850 Interoperability Testing (IOP)", "url": "https://61850ug.org/61850-iop-testing-2024", "detail": "Multi-day interoperability event for vendors, utilities, labs, integrators and standards organizations. The 2024 edition ran 12 to 20 September in Birmingham, Alabama.", "openToNonMembers": "unknown", "source": "https://61850ug.org/61850-iop-testing-2024" }
 		],
 		"openSource": [],
-		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "mms-interop"],
+		"relatedProjects": ["go-iec61850", "go-mms", "iec61850ctl", "iec61850-interop"],
 		"related": [
 			{ "id": "iec", "relation": "IEC TC 57 develops IEC 61850 and CIM; UCAIug supports their users and tests interoperability." },
 			{ "id": "lf-energy", "relation": "LF Energy hosts open-source IEC 61850 tooling such as CoMPAS." }

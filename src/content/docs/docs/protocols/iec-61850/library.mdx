@@ -1,24 +1,35 @@
 ---
 title: Go library
-description: Using go-iec61850 and go-mms to browse, read, write, subscribe to reports, operate controls and serve an SCL model from Go.
+description: Using go-iec61850 and go-mms to browse, read, write, subscribe to reports, operate controls, serve an SCL model, and publish and subscribe to GOOSE and Sampled Values from Go.
 sidebar:
   label: Go library
   order: 1
 ---
 
-import { Aside, Tabs, TabItem, Badge } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
 
-OT Fabric splits IEC 61850 over two Go libraries. Both are pure Go with no CGO and are MIT-licensed.
+OT Fabric splits IEC 61850 over two Go libraries. Both are pure Go with no CGO, MIT-licensed, and have a stable v1 API.
 
 | | [go-iec61850](https://github.com/otfabric/go-iec61850) | [go-mms](https://github.com/otfabric/go-mms) |
 |---|---|---|
-| Speaks | IEC 61850 (LD, LN, DO, DA, FC, datasets, RCBs, controls, SCL) | Generic MMS, ISO 9506 (domains, item IDs, named variable lists) |
+| Speaks | IEC 61850 over MMS, GOOSE and Sampled Values (LD, LN, DO, DA, FC, datasets, RCBs, GoCBs, MSVCBs, controls, SCL) | Generic MMS, ISO 9506 (domains, item IDs, named variable lists) |
+| Version described here | v1.2.1 | v1.2.1 |
 | Go version | 1.24 or later | 1.23 or later |
 | Client | Yes | Yes |
-| Server | SCL-driven, <Badge text="experimental API" variant="caution" /> | Yes, you register domains and variables |
-| Use it when | You talk to IEDs or simulate one. This is the right choice almost always. | You need raw MMS: a non-IEC 61850 MMS device, alternate access, wire-level tests, or a custom transport. |
+| Server | SCL-driven, with reports, controls, setting groups, journals, GOOSE and SV | Yes, you register domains and variables |
+| Use it when | You talk to IEDs, listen to or publish on the station bus, or simulate an IED. This is the right choice almost always. | You need raw MMS: a non-IEC 61850 MMS device, alternate access, wire-level tests, or a custom transport. |
 
-go-iec61850 is built on go-mms, and go-mms uses [go-cotp](https://github.com/otfabric/go-cotp) and [go-tpkt](https://github.com/otfabric/go-tpkt) for the transport. You can always reach the lower layer: `Client.MMS()` returns the underlying `*mms.Client`.
+go-iec61850 is one module with these packages:
+
+| Package | Contents |
+|---|---|
+| `iec61850` | MMS client and server, reports, controls, datasets, setting groups, journals, files, GoCB and MSVCB engines |
+| `goose` | GOOSE frame codec, publisher, subscriber, SCL binding |
+| `sv` | Sampled Values frame codec, 9-2LE layout, publisher, subscriber, SCL binding |
+| `l2` | Raw Ethernet shared by `goose` and `sv`: `AF_PACKET`, BPF, EtherType demultiplexing and an in-memory hub |
+| `scl`, `scl/index`, `scl/validate` | SCL parsing, cross-reference index and semantic validation |
+
+The MMS side is built on go-mms, and go-mms uses [go-cotp](https://github.com/otfabric/go-cotp) (v1.1.0, with separate read and write deadlines) and [go-tpkt](https://github.com/otfabric/go-tpkt) for the transport. You can always reach the lower layer: `Client.MMS()` returns the underlying `*mms.Client`.
 
 ## Install
 
@@ -81,6 +92,10 @@ func main() {
 | `IEDName` | Prepended to outgoing domain names and stripped from returned names, so your code uses bare LD names on servers that prefix domains with the IED name. |
 | `Cache` | `CacheNone` (default), `CacheExplicit` (filled by `RefreshCache`) or `CacheLazy` (filled on first access per LD). In memory only. |
 | `Strictness` | `RejectUnknownFC`, `VerifyReportCandidates`. |
+| `Retry` | `mms.RetryPolicy` for TCP connect, COTP and association, with exponential backoff and jitter. The zero value tries once; `mms.DefaultRetryPolicy()` is a sensible reconnect policy. Errors a retry cannot fix return at once. |
+| `Metrics` | An `mms.Metrics` that observes every request and connection event. |
+
+Per-request timeouts are set with `MMS.RequestTimeout`. `Client.MMS().Done()` and `Err()` tell you when and why the association ended.
 
 `Close` sends MMS Conclude. `Abort` drops the association immediately; use it for servers that do not answer Conclude (IEC61850bean is one).
 
@@ -264,7 +279,7 @@ if err != nil {
 }
 ```
 
-`OperateParams` also takes `Origin` (`OrCat`, `OrIdent`), `CtlNum`, `OperTm`, `Test` and `Check` (synchrocheck, interlock check). Use the same `CtlNum` for `SelectWithValue` and `Operate`. `Cancel` releases a selection. Value helpers: `BoolCtlVal`, `IntCtlVal`, `FloatCtlVal`, `EnumCtlVal`, `StringCtlVal`, `BspCtlVal`, `DpCtlVal`. CommandTermination monitoring and time-activated operate are not implemented.
+`OperateParams` also takes `Origin` (`OrCat`, `OrIdent`), `CtlNum`, `OperTm`, `Test` and `Check` (synchrocheck, interlock check). Use the same `CtlNum` for `SelectWithValue` and `Operate`. `Cancel` releases a selection. Value helpers: `BoolCtlVal`, `IntCtlVal`, `FloatCtlVal`, `EnumCtlVal`, `StringCtlVal`, `BspCtlVal`, `DpCtlVal`. The client does not wait for the CommandTermination of an enhanced-security operate, and time-activated operate is not implemented.
 
 ## Setting groups, journals, files
 
@@ -302,11 +317,11 @@ func main() {
 }
 ```
 
-`Summarize`, `Flatten` / `WriteCSV`, `ExportDataSets`, `ExportReports` and the `Find*` helpers cover inspection. `Generate` writes XML back out, but does not reproduce the original formatting and does not serialise GSE or SMV control blocks. There is no XSD schema validation, only semantic checks.
+`Summarize`, `Flatten` / `WriteCSV`, `ExportDataSets`, `ExportReports` and the `Find*` helpers cover inspection. The `sclparse` tool also lists GOOSE and SMV control blocks (`list-goose`, `list-smv`). `Generate` writes XML back out, but does not reproduce the original formatting and does not serialise GSE or SMV control blocks. There is no XSD schema validation, only semantic checks.
 
 ## Server
 
-The server builds an MMS model from SCL and adds a report engine, control state machine, setting groups and journals. Its API is marked experimental.
+The server builds an MMS model from SCL and adds a report engine, control state machine, setting groups, journals, and GOOSE and Sampled Values publishing. Its API is covered by the same v1 guarantee as the client.
 
 ```go title="main.go"
 package main
@@ -362,7 +377,180 @@ func main() {
 }
 ```
 
-Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s). Interlocking and synchrocheck are your handler's job. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. Known gaps: no dynamic datasets, no per-group SE/SG value banks, in-memory BRCB buffers and journals only, and the model is immutable after construction.
+Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s). After an enhanced-security operate the server sends a positive CommandTermination. Interlocking and synchrocheck are your handler's job. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. `EnableSettingGroups` and `EnableJournals` start the other engines, `ServerOptions.Authenticate` checks the association, and `Server.Shutdown(ctx)` stops accepting associations and drains the active ones.
+
+One `SetValue` call updates the model and drives everything that depends on it: reports, journals, GOOSE states and the next Sampled Values. Known gaps: no dynamic datasets, no per-group SE/SG value banks, in-memory BRCB buffers and journals only, no segmented report generation, and the model is immutable after construction.
+
+## GOOSE
+
+The `goose` package publishes and subscribes on raw Ethernet. Both ends are usually built from the SCL control block: `ControlBlockFromSCL` returns the multicast address, APPID, VLAN, MinTime and MaxTime, and the dataset layout.
+
+```go
+tr, err := goose.Open("eth0", goose.TransportOptions{})
+if err != nil {
+	log.Fatal(err) // wraps goose.ErrPermission without CAP_NET_RAW or /dev/bpf access
+}
+defer tr.Close()
+
+cb, err := goose.ControlBlockFromSCL(doc, "DemoIED", "LD1", "gcb01")
+if err != nil {
+	log.Fatal(err)
+}
+cfg, err := cb.PublisherConfig() // address, references, times, initial values
+if err != nil {
+	log.Fatal(err)
+}
+cfg.Src = tr.HardwareAddr()
+pub, err := goose.NewPublisher(tr, cfg)
+if err != nil {
+	log.Fatal(err)
+}
+defer pub.Close()
+go pub.Run(ctx) // sends, then retransmits from MinTime to MaxTime
+
+values := cfg.Values
+values[0] = mms.NewBoolean(true) // GGIO1.Ind1.stVal
+if err := pub.Publish(values); err != nil { // a new state: stNum+1, sqNum 0
+	log.Fatal(err)
+}
+```
+
+The publisher keeps `stNum` and `sqNum`, sends `timeAllowedToLive` (twice MaxTime unless you set it), and sets the `test`, simulation and `ndsCom` flags you ask for.
+
+A subscriber filters by destination, APPID, `gocbRef` and source, validates `datSet`, `goID`, `confRev` and the member types, and supervises each stream:
+
+```go
+sub, err := goose.NewSubscriber(tr, goose.SubscriberConfig{})
+if err != nil {
+	log.Fatal(err)
+}
+defer sub.Close()
+
+scfg := cb.SubscriptionConfig() // filters and validation from SCL
+scfg.OnlyStateChanges = true
+s, err := sub.Subscribe(scfg)
+if err != nil {
+	log.Fatal(err)
+}
+go sub.Run(ctx)
+
+for ev := range s.Events() {
+	switch ev.Kind {
+	case goose.EventMessage:
+		fmt.Println("stNum", ev.Frame.PDU.StNum, ev.Frame.PDU.AllData)
+	case goose.EventTimeout:
+		fmt.Println("timeAllowedToLive expired")
+	case goose.EventInvalid:
+		fmt.Println("invalid:", ev.Err, errors.Is(ev.Err, goose.ErrConfRevMismatch))
+	default: // restarts, sequence gaps, duplicates, out of order
+	}
+}
+```
+
+Supervision snapshots in the style of the `LGOS` logical node are available per stream. The subscriber does not substitute values on a timeout: what a lost input means is your application's decision.
+
+## Sampled Values
+
+The `sv` package does the same for IEC 61850-9-2. A publisher paces samples on an absolute schedule at `smpRate`, batches `noASDU` samples per frame and wraps `smpCnt`; the `Source` callback fills each sample.
+
+```go
+cb, err := sv.ControlBlockFromSCL(doc, "DemoIED", "LD1", "MSVCB01") // 9-2LE, 4000 samples/s
+if err != nil {
+	log.Fatal(err)
+}
+cfg, err := cb.PublisherConfig()
+if err != nil {
+	log.Fatal(err)
+}
+cfg.Src = tr.HardwareAddr()
+cfg.Source = func(info sv.SampleInfo, dst []byte) []byte { // called for every sample
+	wt := 2 * math.Pi * 50 * float64(info.Index) / 4000
+	var s sv.LESample
+	s.Current[0].Value = sv.AmpsCount(141.4 * math.Sin(wt))
+	s.Voltage[0].Value = sv.VoltsCount(89800 * math.Sin(wt))
+	return s.Append(dst)
+}
+pub, err := sv.NewPublisher(tr, cfg)
+if err != nil {
+	log.Fatal(err)
+}
+defer pub.Close()
+log.Fatal(pub.Run(ctx))
+```
+
+A subscriber validates `datSet`, `confRev`, `smpRate`, `smpMod` and the sample size, and accounts for every sample from `smpCnt`: lost, duplicated, out of order. Its receive path does not allocate, so a callback runs per ASDU at full rate:
+
+```go
+s, err := sv.NewSubscriber(tr, sv.SubscriberConfig{})
+if err != nil {
+	log.Fatal(err)
+}
+defer s.Close()
+
+scfg := cb.SubscriptionConfig()
+scfg.OnASDU = func(smp *sv.Sample) { // on the receive goroutine
+	var le sv.LESample
+	if smp.ASDU.SmpCnt == 0 && sv.DecodeLE(smp.ASDU.Sample, &le) == nil {
+		fmt.Printf("IA %.1f A, UA %.0f V\n", sv.Amps(le.Current[0].Value), sv.Volts(le.Voltage[0].Value))
+	}
+}
+sub, err := s.Subscribe(scfg)
+if err != nil {
+	log.Fatal(err)
+}
+go func() {
+	for ev := range sub.Events() { // start, gaps, timeouts, synch changes, invalid ASDUs
+		fmt.Println(ev.Kind, ev.Stream)
+	}
+}()
+err = s.Run(ctx)
+for _, st := range sub.Stats() {
+	fmt.Printf("%s: %d ASDUs, %d lost, %.0f samples/s\n", st.Stream, st.ASDUs, st.Lost, st.Rate)
+}
+```
+
+The publisher is software-timed. It reports late and skipped samples, but it is not a merging unit with PTP or 1PPS synchronization: set `SmpSynch` to what the host clock really provides.
+
+## GOOSE and SV in the server
+
+`NewServerModelFromSCL` reads the `GSEControl` and `SampledValueControl` blocks with their addresses. Two calls start publishing them:
+
+```go
+tr, _ := goose.Open("eth0", goose.TransportOptions{})
+gooseEngine, err := srv.EnableGOOSE(iec61850.GOOSEOptions{Transport: tr})
+
+svTr, _ := sv.Open("eth0", sv.TransportOptions{})
+svEngine, err := srv.EnableSV(iec61850.SVOptions{Transport: svTr, SmpSynch: sv.SmpSynchLocal})
+
+srv.SetValue(ctx, "LD0/GGIO1$ST$Ind1$stVal", mms.NewBoolean(true)) // a new GOOSE state
+```
+
+A change of any dataset member, through `SetValue` or an MMS write, publishes a new GOOSE state; Sampled Values carry the current dataset values at `SmpRate`, and `svEngine.Publisher(ref)` takes waveform samples directly. The control blocks are MMS variables too: `LLN0$GO$<name>` with `GoEna`, `GoID` and `DatSet` writable, `LLN0$MS$<name>` with `SvEna`, `MsvID`, `DatSet`, `SmpRate`, `OptFlds` and `SmpMod` writable, each only while the block is disabled.
+
+A client reads and writes them on any server:
+
+```go
+cb, err := client.GetGoCB(ctx, "LD0", "LLN0$GO$gcb1")
+off := false
+err = client.SetGoCB(ctx, "LD0", "LLN0$GO$gcb1", iec61850.GoCBUpdate{GoEna: &off})
+
+msvcb, err := client.GetMSVCB(ctx, "MU01", "LLN0$MS$MSVCB01")
+on, rate := true, uint16(256)
+err = client.SetMSVCB(ctx, "MU01", "LLN0$MS$MSVCB01", iec61850.MSVCBUpdate{SmpRate: &rate, SvEna: &on})
+```
+
+Both setters write the enable attribute last.
+
+## Raw Ethernet transports
+
+| Platform | Transport | Privilege |
+|---|---|---|
+| Linux | `AF_PACKET` | `CAP_NET_RAW` (`sudo setcap cap_net_raw+ep ./myapp`) or root |
+| macOS, BSD | BPF | Read and write access to `/dev/bpf*`, for example the `access_bpf` group |
+| Windows and others | none | `Open` returns `ErrUnsupportedPlatform` |
+| Everywhere | In-memory `Hub` with fault injection | none, for tests and simulation |
+
+`goose` and `sv` share the `l2` types, so one socket can carry both EtherTypes. Set `TransportOptions.Multicast` to the control blocks' destination addresses so the network card filters in hardware; without it the transport receives all multicast. Keep the VLAN ID and priority from SCL, and check that every switch on the path forwards 802.1Q-tagged frames. A subscriber to many 4 kHz streams needs a larger socket receive buffer (`net.core.rmem_default` on Linux).
 
 ## Using go-mms directly
 
@@ -383,7 +571,7 @@ fmt.Println(id.Vendor, id.Model, id.Revision)
 res, err := client.Read(ctx, mms.ReadRequest{DomainID: "MyDomain", ItemID: "MyVariable"})
 ```
 
-go-mms does not implement semaphore, event management, program invocation or client-side MMS Cancel services, and supports COTP class 0 over TCP only.
+go-mms does not implement semaphore, event management, program invocation or client-side MMS Cancel services, and supports COTP class 0 over TCP only. Since v1.1.0 every exported method is exercised between its own client and server in an end-to-end suite. That release fixed sixteen wire and behaviour bugs found this way and by the wider interop suite, among them FileDirectory against conforming servers and FileDelete; v1.2.0 fixed codec bugs found by its 57 fuzz targets, such as the Cancel PDU tags and BinaryTime.
 
 ## Errors
 
@@ -410,23 +598,31 @@ default:
 }
 ```
 
-Control failures wrap `ErrControlFailed` plus `ErrSelectFailed`, `ErrOperateFailed` or `ErrCancelFailed`, and `ErrNotControllable` for status-only objects; extract details with `*iec61850.ControlError`. Other sentinels include `ErrInvalidReference`, `ErrTypeMismatch`, `ErrUnsupportedService`, `ErrSubscriptionClosed` and `ErrSCLParse`.
+Control failures wrap `ErrControlFailed` plus `ErrSelectFailed`, `ErrOperateFailed` or `ErrCancelFailed`, and `ErrNotControllable` for status-only objects; extract details with `*iec61850.ControlError`. Other sentinels include `ErrInvalidReference`, `ErrTypeMismatch`, `ErrUnsupportedService`, `ErrSubscriptionClosed`, `ErrSCLParse` and `ErrGOOSE`.
+
+go-mms classifies every failure the same way: `ErrAssociationFailed`, `ErrNegotiationFailed`, `ErrClosed`, `ErrInvokeTimeout` (with `context.DeadlineExceeded`), `ErrInvalidArgument` and `ErrServerClosed`, plus `*mms.RejectError` for MMS Reject PDUs. `ServiceError.CodeName()` gives the ISO 9506-2 name of an error code, and `Error()` now ends with it, so compare with `errors.Is` and `errors.As`, never with the message text. The `goose` and `sv` packages have their own sentinels, such as `ErrPermission`, `ErrUnsupportedPlatform`, `ErrInvalidFrame` and `ErrConfRevMismatch`.
 
 ## Timeouts, retries and concurrency
 
-- Every network call takes a `context.Context`. Use `context.WithTimeout` or `WithDeadline`: a cancel-only context may not unblock a pending transport read until data arrives or the connection closes.
-- Neither library documents automatic retry or reconnect. On `ErrClosed`, dial again and re-subscribe. The go-iec61850 server releases a URCB reservation when its connection drops.
+- Every network call takes a `context.Context`. Reads and writes have separate deadlines (go-cotp v1.1.0), so a short write deadline no longer cuts a concurrent read.
+- A request whose context ends before any byte moved returns the context error and leaves the association usable. Once bytes have moved, the connection is aborted rather than left half-written.
+- `DialOptions.Retry` retries the connection with backoff and jitter. There is no automatic reconnect of a live association: on `ErrClosed`, dial again and re-subscribe. The go-iec61850 server releases a URCB reservation when its connection drops.
+- On the server, `AssociationTimeout` (30 s by default) aborts an association that never completes its handshake, and the listener runs TLS and COTP handshakes concurrently, so a silent peer cannot block others.
 - `*iec61850.Client` is safe for concurrent use. go-mms correlates responses by invoke ID and serialises writes. The negotiated max-outstanding value is not enforced on the client, so bound concurrency yourself.
 - A go-mms server handles confirmed requests on one connection serially.
 - InformationReport handlers in go-mms run on the reader goroutine and must return quickly.
 
 ## Logging and observability
 
-Pass a `*slog.Logger` in `DialOptions` or `ServerOptions`. With no logger nothing is emitted. Debug covers protocol flow, Info covers lifecycle and control operations, Warn covers report overflow and recoverable issues. The ISO layer logger (`iso.WithLogger`) is separate and only logs TLS and COTP handshake failures on the listener. For wire debugging, `mms.DialOptions.RawHook` sees every raw upper-layer packet on the client. There are no built-in metrics or tracing.
+Pass a `*slog.Logger` in `DialOptions` or `ServerOptions`. With no logger nothing is emitted. Debug covers protocol flow and every request (service, invoke ID, duration, error), Info covers lifecycle and control operations, Warn covers retries, report overflow and recoverable issues. The ISO layer logger (`iso.WithLogger`) is separate. For wire debugging, `mms.DialOptions.RawHook` sees every raw upper-layer packet on the client.
+
+For metrics, implement `mms.Metrics` (`ObserveRequest`, `ObserveConnection`) and pass it in `DialOptions.Metrics` or `ServerOptions.Metrics`; the go-mms repository has a Prometheus example. The `goose` and `sv` packages have their own `Metrics` hooks for frames, states, losses and timeouts. There is no built-in tracing.
 
 ## Limitations
 
-- MMS only. GOOSE and Sampled Values are out of scope.
+- No R-GOOSE or R-SV (IEC 61850-90-5), no IEC 62351-6 security for GOOSE and SV, no unicast SV, no GOOSE management or fixed-offset encoding.
+- Received GOOSE values are not mapped into a server model (`ExtRef` binding); map them from the subscriber events.
+- The server's MMS domain is the bare LD instance, so its `gocbRef` and `datSet` are `LD/LLN0$...` rather than the IED-prefixed form many IEDs use. Subscribers that validate against IED-prefixed SCL references must relax that check.
 - Primary baseline is IEC 61850 Edition 2 (2007B). Edition 2.1 features are partially validated.
-- Not every ACSI service is mapped; CommandTermination and TimeActivatedOperate are missing.
-- Tested against libiec61850 and IEC61850bean; interoperability with physical IEDs has not been formally established. See [Testing and interop](/docs/protocols/iec-61850/testing/).
+- Not every ACSI service is mapped. The client does not wait for CommandTermination, and TimeActivatedOperate is missing.
+- Tested in both directions against four independent software stacks; not certified, and interoperability with physical IEDs has not been formally established. See [Testing and interop](/docs/protocols/iec-61850/testing/).

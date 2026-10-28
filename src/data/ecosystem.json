@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-27",
+ "verified": "2026-10-28",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -47,8 +47,8 @@
   },
   {
    "id": "iec-61850",
-   "name": "IEC 61850 / MMS",
-   "standard": "IEC 61850-8-1 / ISO 9506",
+   "name": "IEC 61850",
+   "standard": "IEC 61850-8-1, 9-2 / ISO 9506",
    "focus": "MMS, GOOSE, Sampled Values, SCL",
    "maturity": "Specialized",
    "commercial": "Established",
@@ -2057,7 +2057,7 @@
     "Reports",
     "TLS"
    ],
-   "interop": "mms-interop",
+   "interop": "iec61850-interop",
    "maintenance": "active",
    "notes": "Commercial licences and support from MZ Automation. Git history starts in 2014.",
    "sources": [
@@ -2095,7 +2095,7 @@
     "MMS",
     "Reports"
    ],
-   "interop": "mms-interop",
+   "interop": "iec61850-interop",
    "maintenance": "quiet",
    "package": "https://central.sonatype.com/artifact/com.beanit/iec61850bean",
    "notes": "Formerly OpenIEC61850. MMS client and server; no commits since June 2023.",
@@ -2119,12 +2119,12 @@
    "forks": 1,
    "repoCreated": "2026-07-18",
    "historySince": "2026",
-   "lastCommit": "2026-10-17",
+   "lastCommit": "2026-10-28",
    "release": {
-    "version": "v0.6.4",
-    "date": "2026-10-17",
-    "source": "Git tag",
-    "url": "https://pkg.go.dev/github.com/dscsystems/go-iec61850"
+    "version": "v0.6.6",
+    "date": "2026-10-28",
+    "source": "Go module proxy",
+    "url": "https://pkg.go.dev/github.com/dscsystems/go-iec61850@v0.6.6"
    },
    "roles": [
     "client",
@@ -2134,17 +2134,65 @@
     "MMS",
     "GOOSE",
     "Sampled Values",
+    "R-GOOSE / R-SV",
     "SCL",
     "TLS"
    ],
    "maintenance": "active",
    "emerging": true,
    "package": "https://pkg.go.dev/github.com/dscsystems/go-iec61850",
-   "notes": "Three months old; capabilities as claimed by its README.",
+   "notes": "Pure Go, started in July 2026: MMS client and server, GOOSE, Sampled Values, R-GOOSE and R-SV with GDOI key distribution, and MMS over TLS (IEC 62351-3 and 62351-4), with a terminal client. Capabilities as claimed by its README. An iec61850-interop reference since v0.3.0.",
    "sources": [
-    "https://github.com/dscsystems/go-iec61850"
+    "https://github.com/dscsystems/go-iec61850",
+    "https://proxy.golang.org/github.com/dscsystems/go-iec61850/@latest",
+    "https://github.com/otfabric/iec61850-interop"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-10-28",
+   "interop": "iec61850-interop"
+  },
+  {
+   "id": "iec61850-rust",
+   "name": "iec61850-rust",
+   "protocol": "iec-61850",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/csp0924/iec61850-rust",
+   "repo": "csp0924/iec61850-rust",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-09-06",
+   "release": {
+    "version": "0.2.0",
+    "date": "2026-09-05",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/iec61850-server/0.2.0"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "MMS",
+    "GOOSE",
+    "Sampled Values",
+    "Reports",
+    "SCL",
+    "TLS"
+   ],
+   "interop": "iec61850-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/iec61850-server",
+   "notes": "An independent Rust workspace written from the published standards, with twelve crates on crates.io sharing one version: MMS client and server, GOOSE, 9-2LE Sampled Values, an SCL parser with compile-time model generation, and TLS per IEC 62351-3. Its README lists the gaps: no MMS file services, no SVCB management over MMS, and GetNameList answered from run-time registries rather than the SCL.",
+   "sources": [
+    "https://github.com/csp0924/iec61850-rust",
+    "https://crates.io/api/v1/crates/iec61850-server",
+    "https://github.com/otfabric/iec61850-interop"
+   ],
+   "verified": "2026-10-28"
   },
   {
    "id": "otfabric-go-iec61850",
@@ -2161,12 +2209,12 @@
    "forks": 1,
    "repoCreated": "2026-03-20",
    "historySince": "2026",
-   "lastCommit": "2026-07-30",
+   "lastCommit": "2026-10-28",
    "release": {
-    "version": "v1.0.8",
-    "date": "2026-07-30",
+    "version": "v1.2.1",
+    "date": "2026-10-28",
     "source": "GitHub release",
-    "url": "https://github.com/otfabric/go-iec61850/releases/tag/v1.0.8"
+    "url": "https://github.com/otfabric/go-iec61850/releases/tag/v1.2.1"
    },
    "roles": [
     "client",
@@ -2174,6 +2222,8 @@
    ],
    "capabilities": [
     "MMS",
+    "GOOSE",
+    "Sampled Values",
     "Reports",
     "SCL"
    ],
@@ -2181,13 +2231,13 @@
     "otfabric-go-mms"
    ],
    "relation": "Uses go-mms underneath",
-   "interop": "mms-interop",
+   "interop": "iec61850-interop",
    "maintenance": "active",
    "otfabric": true,
    "sources": [
     "https://github.com/otfabric/go-iec61850"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-10-28"
   },
   {
    "id": "otfabric-go-mms",
@@ -2204,12 +2254,12 @@
    "forks": 1,
    "repoCreated": "2026-03-19",
    "historySince": "2026",
-   "lastCommit": "2026-07-30",
+   "lastCommit": "2026-10-28",
    "release": {
-    "version": "v1.0.7",
-    "date": "2026-07-30",
+    "version": "v1.2.1",
+    "date": "2026-10-28",
     "source": "GitHub release",
-    "url": "https://github.com/otfabric/go-mms/releases/tag/v1.0.7"
+    "url": "https://github.com/otfabric/go-mms/releases/tag/v1.2.1"
    },
    "roles": [
     "client",
@@ -2219,13 +2269,13 @@
     "MMS"
    ],
    "relation": "MMS building block beneath go-iec61850",
-   "interop": "mms-interop",
+   "interop": "iec61850-interop",
    "maintenance": "active",
    "otfabric": true,
    "sources": [
     "https://github.com/otfabric/go-mms"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-10-28"
   },
   {
    "id": "tmw-iec61850",

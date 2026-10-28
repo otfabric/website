@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="go-iec61850 tested in both directions against four independent IEC 61850 stacks: MMS and IED services against libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust, and GOOSE and Sampled Values against libiec61850, dscsystems and iec61850-rust, over MMS on TCP port 102 and raw Ethernet.">
+  <rect width="720" height="420" fill="#F4F6F8"/>
+  <text x="40" y="44" font-size="15" font-weight="600" fill="#17212B">go-iec61850 against four independent IEC 61850 stacks</text>
+  <text x="680" y="44" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">iec61850-interop v1.0.1</text>
+  <g font-size="11" fill="#5A6875" font-family="IBM Plex Mono, monospace"><text x="40" y="76">MMS · IED SERVICES</text><text x="680" y="76" text-anchor="end">GOOSE · SAMPLED VALUES</text></g>
+  <g fill="none" stroke="#B35A1F" stroke-width="1.5" stroke-linecap="round" opacity="0.55">
+    <path d="M232 107 C 280 107, 270 164, 306 164"/>
+    <path d="M232 145 C 280 145, 270 164, 306 164"/>
+    <path d="M232 183 C 280 183, 270 164, 306 164"/>
+    <path d="M232 221 C 280 221, 270 164, 306 164"/>
+    <path d="M414 164 C 450 164, 440 126, 488 126"/>
+    <path d="M414 164 C 450 164, 440 164, 488 164"/>
+    <path d="M414 164 C 450 164, 440 202, 488 202"/>
+  </g>
+  <g><rect x="40" y="90" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="104" font-size="12.5" font-weight="600" fill="#17212B">libiec61850</text>
+    <text x="220" y="104" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="52" y="117" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">MMS · reports · controls</text></g>
+  <g><rect x="40" y="128" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="142" font-size="12.5" font-weight="600" fill="#17212B">IEC61850bean</text>
+    <text x="220" y="142" font-size="11" fill="#5A6875" text-anchor="end">Java</text>
+    <text x="52" y="155" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">IED services</text></g>
+  <g><rect x="40" y="166" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="180" font-size="12.5" font-weight="600" fill="#17212B">dscsystems</text>
+    <text x="220" y="180" font-size="11" fill="#5A6875" text-anchor="end">Go</text>
+    <text x="52" y="193" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">MMS · SBOw · files</text></g>
+  <g><rect x="40" y="204" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="218" font-size="12.5" font-weight="600" fill="#17212B">iec61850-rust</text>
+    <text x="220" y="218" font-size="11" fill="#5A6875" text-anchor="end">Rust</text>
+    <text x="52" y="231" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">MMS · reports · SBOw</text></g>
+  <g><rect x="488" y="109" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="500" y="123" font-size="12.5" font-weight="600" fill="#17212B">libiec61850</text>
+    <text x="668" y="123" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="500" y="136" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">GOOSE · SV · MSVCB</text></g>
+  <g><rect x="488" y="147" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="500" y="161" font-size="12.5" font-weight="600" fill="#17212B">dscsystems</text>
+    <text x="668" y="161" font-size="11" fill="#5A6875" text-anchor="end">Go</text>
+    <text x="500" y="174" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">GOOSE · SV · MSVCB</text></g>
+  <g><rect x="488" y="185" width="192" height="34" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="500" y="199" font-size="12.5" font-weight="600" fill="#17212B">iec61850-rust</text>
+    <text x="668" y="199" font-size="11" fill="#5A6875" text-anchor="end">Rust</text>
+    <text x="500" y="212" font-size="10.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">GOOSE · 9-2LE · generic SV</text></g>
+  <rect x="306" y="127" width="108" height="74" rx="10" fill="#F6E6DA" stroke="#B35A1F" stroke-width="1.5"/>
+  <text x="360" y="157" font-size="14" font-weight="600" fill="#17212B" text-anchor="middle">go-iec61850</text>
+  <text x="360" y="175" font-size="10.5" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, monospace">both directions</text>
+  <text x="360" y="190" font-size="10.5" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, monospace">v1.2.1</text>
+  <text x="40" y="286" font-size="11" fill="#5A6875" font-family="IBM Plex Mono, monospace">ONE LIBRARY, EVERY MAPPING</text>
+  <g><rect x="40" y="296" width="154" height="30" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/><text x="52" y="315" font-size="12.5" font-weight="600" fill="#17212B">MMS</text><text x="182" y="315" font-size="11" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">TCP 102</text></g>
+  <g><rect x="202" y="296" width="154" height="30" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/><text x="214" y="315" font-size="12.5" font-weight="600" fill="#17212B">GOOSE</text><text x="344" y="315" font-size="11" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">0x88B8</text></g>
+  <g><rect x="364" y="296" width="154" height="30" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/><text x="376" y="315" font-size="12.5" font-weight="600" fill="#17212B">Sampled Values</text><text x="506" y="315" font-size="11" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">9-2</text></g>
+  <g><rect x="526" y="296" width="154" height="30" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/><text x="538" y="315" font-size="12.5" font-weight="600" fill="#17212B">SCL</text><text x="668" y="315" font-size="11" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">1.7–2007C5</text></g>
+  <text x="40" y="364" font-size="12" fill="#17212B"><tspan font-weight="600">C, Java, Go and Rust, pinned by digest.</tspan><tspan fill="#5A6875"> Reports, controls, files, GOOSE states and SV loss,</tspan></text>
+  <text x="40" y="382" font-size="12" fill="#5A6875">checked against one shared fixture on every pull request.</text>
+</svg>

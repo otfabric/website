@@ -1,0 +1,121 @@
+---
+title: 'Full IEC 61850 in OT Fabric: MMS, GOOSE and Sampled Values in one library'
+description: OT Fabric's IEC 61850 stack now covers the whole communication side of the standard. go-iec61850 adds GOOSE and Sampled Values to a hardened MMS client and server, iec61850ctl sniffs, subscribes and publishes on the station bus, and iec61850-interop tests both against four independent stacks.
+date: 2026-10-28
+authors: [OT Fabric]
+tags: [announcement, iec-61850, substation, energy, interop]
+featured: true
+cover:
+  alt: go-iec61850 in the middle, connected on the left to the MMS and IED services of libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust, and on the right to the GOOSE and Sampled Values publishers and subscribers of libiec61850, dscsystems and iec61850-rust, with MMS on TCP port 102, GOOSE and Sampled Values on raw Ethernet, and SCL.
+  image: ../../assets/blog/iec61850-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+A substation speaks IEC 61850 in three ways at once. A gateway or station computer browses and controls the relays over MMS. The relays tell each other about trips, breaker failures and interlocks in GOOSE frames, within a few milliseconds. And on the process bus, merging units stream the currents and voltages of the instrument transformers as Sampled Values, thousands of samples a second, to the relays that protect the line.
+
+Until today OT Fabric covered the first of the three. Our protocol page said it plainly: GOOSE and Sampled Values, not implemented. That line is gone. [go-iec61850](/projects/go-iec61850/) now implements MMS, GOOSE and Sampled Values in one library, configured from the same SCL file, and [iec61850ctl](/projects/iec61850ctl/) brings all three to the terminal.
+
+## Why the whole standard matters
+
+A library that only speaks MMS is useful for reading an IED, but it is not an IEC 61850 stack, and it shows the moment a project goes beyond polling:
+
+- **Gateways and SCADA integration** need reports and controls over MMS, and more and more often the GOOSE status of the bay next to it.
+- **Protection and automation testing** needs to see what is on the station bus, check that a relay publishes the state it should, and inject a test state into a lab setup.
+- **Digital substations and DER plants** move measurements onto the process bus. Battery, solar and wind plants connected at medium and high voltage are engineered to substation practice, and their controllers and monitoring meet Sampled Values there.
+
+The open-source field is thin. In our [research for the ecosystem map](#who-else-implements-iec-61850), libiec61850 is the one established open implementation of all three mappings, under GPL-3.0 with commercial licences. go-iec61850 adds a permissively licensed (MIT) one with the same reach, tested against it and against three other independent stacks.
+
+## go-iec61850 v1.2.1
+
+**MMS client and server**, unchanged in scope and hardened underneath: browse, typed reads and writes, datasets, URCB and BRCB reports with EntryID resume, direct, SBO and SBOw controls, setting groups, journals and files on the client; an SCL-driven server with a report engine, the control state machine with CommandTermination, setting groups, journals and graceful shutdown.
+
+**GOOSE** (IEC 61850-8-1). A publisher that keeps `stNum` and `sqNum` and retransmits from MinTime to MaxTime, and a subscriber that validates every frame against the SCL control block (`datSet`, `goID`, `confRev`, member types) and supervises each stream: timeouts, sequence gaps, duplicates and publisher restarts, as typed events.
+
+**Sampled Values** (IEC 61850-9-2 and the 9-2LE profile). A publisher that paces samples on an absolute schedule, batches several ASDUs per frame and wraps `smpCnt`, and a subscriber that counts every lost, duplicated and reordered sample without allocating per frame. On a laptop, decoding a one-ASDU frame takes under 100 ns, and 32 interleaved 4 kHz streams use under 3% of a core.
+
+**One server for all three.** The server reads the GOOSE and SV control blocks from SCL and publishes them. One `SetValue` call updates the model and drives everything that depends on it: reports, journals, a new GOOSE state and the next Sampled Values. The control blocks are MMS variables too, so any client can read them and enable or reconfigure them:
+
+```go
+model, _ := iec61850.NewServerModelFromSCL(doc, "DemoIED", "")
+srv, _ := iec61850.NewServer(model, iec61850.ServerOptions{})
+srv.EnableReports()
+
+tr, _ := goose.Open("eth0", goose.TransportOptions{})
+srv.EnableGOOSE(iec61850.GOOSEOptions{Transport: tr})
+
+// Updates the model, sends a report and publishes a new GOOSE state.
+srv.SetValue(ctx, "LD1/GGIO1$ST$Ind1$stVal", mms.NewBoolean(true))
+```
+
+GOOSE and SV run on raw Ethernet: `AF_PACKET` on Linux, BPF on macOS and the BSDs, and an in-memory hub with fault injection for tests. No cgo, one module, a stable v1 API.
+
+## A hardened MMS layer
+
+GOOSE and SV are new; MMS is what every integration starts with, so it got a long look of its own. [go-mms](/projects/go-mms/), the MMS library underneath, went through two releases of hardening:
+
+- **Every public method tested** between a go-mms client and server, and every MMS service against libiec61850 in both directions. That found the bug that started it, file directories in a form conforming servers could not read, and fifteen more, all fixed in v1.1.0.
+- **57 fuzz targets** and at least 90% coverage in every package, enforced in CI. Fuzzing found wrong Cancel PDU tags and BinaryTime and UTCTime edge cases, fixed in v1.2.0.
+- **Built to run unattended:** errors that work with `errors.Is` and `errors.As` across every failure path, a metrics interface, connection retries with backoff and jitter, association and handshake timeouts, and `Server.Shutdown`. A cancelled request no longer tears down its association, and a peer that connects and stays silent can no longer block the listener.
+- **Full-duplex deadlines.** MMS reads and writes on one connection at the same time. go-cotp v1.1.0 now arms read and write deadlines separately, so a short write timeout can no longer cut a concurrent read.
+
+go-iec61850 itself has the same gates: at least 90% coverage per package, fuzzed GOOSE, SV and SCL decoders, and chaos tests that corrupt, truncate, drop and reorder MMS, GOOSE and SV traffic.
+
+## iec61850ctl v0.4.0
+
+[iec61850ctl](/docs/protocols/iec-61850/cli/) gains two command trees for the station bus, next to its MMS client:
+
+```sh
+# What is on the bus? Every GOOSE frame, decoded
+iec61850ctl goose sniff --iface eth0 --count 10
+
+# A supervised subscription to one GoCB, validated against SCL
+iec61850ctl goose subscribe --iface eth0 --scl station.scd --gocb IED1/LD0/gcb1
+
+# A merging unit's stream with live rate and loss statistics
+iec61850ctl sv subscribe --iface eth0 --scl merging-unit.cid --svcb MSVCB01 --duration 30s
+
+# Read or disable a control block over MMS
+iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
+iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable
+```
+
+It can also publish, because testing a subscriber needs a publisher, with guard rails that assume you are next to live protection: an explicit interface, `--yes`, and every frame marked as a GOOSE test frame or an SV simulation frame unless you also pass `--live`. `sv publish --waveform IA=100` injects a sine on a 9-2LE channel, computed from the sample index so it stays exact under scheduling jitter. Every command has stable exit codes and JSON or JSON Lines output for scripts.
+
+## Tested against four independent stacks
+
+The interop suite was called mms-interop. It outgrew the name, so it is now [iec61850-interop](/projects/iec61850-interop/) (the old links redirect), at v1.0.0 with a stable contract. It packages four IEC 61850 stacks that share no code with each other or with us:
+
+| Stack | Language | MMS and IED services | GOOSE | Sampled Values |
+|---|---|:-:|:-:|:-:|
+| libiec61850 | C | ✓ | ✓ | ✓ |
+| IEC61850bean | Java | ✓ | | |
+| dscsystems/go-iec61850 | Go | ✓ | ✓ | ✓ |
+| iec61850-rust | Rust | ✓ | ✓ | ✓ |
+
+dscsystems/go-iec61850 and iec61850-rust are the two new references. Both are young and both implement the whole family, which is what made them worth adding: a GOOSE or SV implementation tested only against libiec61850 would still be agreeing with one other reading of the standard.
+
+go-iec61850 runs against all four on every pull request, in both directions: its client against each IED server and each stack's client, controller and reporter against its server; its GOOSE and SV publishers into each stack's subscribers, and each stack's publishers into its subscribers, on a Docker bridge, plus its IED server's GoCBs and MSVCBs into each subscriber. iec61850ctl runs the same journeys through the built binary, in 19 CI jobs.
+
+The runs found real things on both sides. The dscsystems controller waits for the CommandTermination of an enhanced-security operate, which our server did not send; it does now. iec61850-rust sends `smpMod` in one octet and libiec61850 in two, and libiec61850's own SV subscriber drops the two-octet form, so our subscriber accepts both and the suite records the difference. iec61850-rust enforces a fixed integrity period that the others let a client write. Every deviation is listed per stack in go-iec61850's [compatibility matrix](/docs/protocols/iec-61850/testing/).
+
+<Callout type="note" title="Interoperability, not certification">
+go-iec61850 v1.2.1, go-mms v1.2.1 and iec61850ctl v0.4.0 are interoperability tested against four software stacks. They have no UCA conformance certification and make no such claim, and they have not yet been validated against physical IEDs or merging units. The Sampled Values publisher is software-timed, with no PTP or 1PPS synchronization, so it is a test and simulation source, not a merging unit. R-GOOSE, R-SV and IEC 62351-6 security for GOOSE and SV are not implemented. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/iec-61850/testing/).
+</Callout>
+
+## The model stays a separate layer
+
+IEC 61850 also standardizes what the data means: logical nodes, data objects and common data classes. OT Fabric keeps that apart, as the [IEC 61850 information model](/models/iec-61850/) in go-iec61850-model and nsdctl, with no transport. go-iec61850 is the communication side, now all of it.
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the IEC 61850 projects are built by people and AI agents together. The frame codecs are written from the published standards, the differences between stacks were found by running them against each other rather than assumed, and the interop images are pinned by digest, so every result can be reproduced. The tests, the matrix and the list of limitations are public, so you can judge the result yourself.
+
+## Who else implements IEC 61850
+
+The [ecosystem map](/ecosystem/implementations/?protocol=iec-61850) lists seven IEC 61850 implementations with language, licence, roles and latest release, now including iec61850-rust, and marks the four that iec61850-interop runs.
+
+<MapLink protocol="iec-61850" title="Explore IEC 61850 on the ecosystem map" />
+
+Start with the [IEC 61850 overview](/docs/protocols/iec-61850/), or `go get github.com/otfabric/go-iec61850`.

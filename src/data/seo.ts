@@ -16,7 +16,7 @@ export const homeDescription =
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
-	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 / MMS, Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS) and EtherNet/IP (CIP), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. Built by people and AI agents together.';
+	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 (MMS, GOOSE and Sampled Values), Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS) and EtherNet/IP (CIP), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. Built by people and AI agents together.';
 
 export const absolute = (path: string) => new URL(path, site.url).href;
 
@@ -52,6 +52,9 @@ export const organization = {
 		'BACnet',
 		'IEC 60870-5-104',
 		'IEC 61850',
+		'IEC 61850 GOOSE',
+		'IEC 61850-9-2 Sampled Values (9-2LE)',
+		'MMS (ISO 9506)',
 		'IEC 61850 information model',
 		'IEC 61850 NSD (IEC 61850-7-7)',
 		'Siemens S7',
