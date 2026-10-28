@@ -1,8 +1,8 @@
 ---
 title: The industrial protocol stack landscape
-description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP and the Sparkplug B profile? 180 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
+description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP and the Sparkplug B profile? 181 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
-updated: 2026-10-27
+updated: 2026-10-28
 authors: [OT Fabric]
 tags: [ecosystem, research, open-source]
 featured: true
@@ -17,7 +17,7 @@ import Callout from '../../components/Callout.astro';
 
 Nobody connects a plant, a substation or a building with one library. Every integration leans on stacks written by other people: a C library in a gateway, a Python tool on a laptop, a Java server in a SCADA system, a vendor SDK inside a controller. OT Fabric only makes sense as part of that ecosystem, which is why each of our protocols ships with an interop suite that tests against the established implementations.
 
-So we mapped the ecosystem. This post is the research: eleven protocol families, one application profile on top of MQTT, 180 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
+So we mapped the ecosystem. This post is the research: eleven protocol families, one application profile on top of MQTT, 181 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
 
 <MapLink />
 
@@ -84,13 +84,13 @@ BACnet Stack stands out: extensive service coverage, embedded targets, and a GPL
 
 The independent engines are lib60870, OpenMUC j60870 and go-iecp5. The Python package c104 binds lib60870; wendy512/iec104 builds on a go-iecp5 fork. The original go-iecp5 was archived in March 2023 and lives on in two maintained forks. cB-Sigma's iec60870 is a young pure Go stack (Apache-2.0) with IEC 101, a 101-to-104 gateway and the only open-source implementation of the 2023 edition of IEC 62351-5 application-layer security. Four of them run in [iec104-interop](https://github.com/otfabric/iec104-interop): lib60870, j60870, wendy512/iec104 and cB-Sigma iec60870. j60870 is distributed through OpenMUC and Maven Central (1.8.0) rather than a GitHub repository. MZ Automation, OpenMUC and Triangle MicroWorks offer commercial licences.
 
-## IEC 61850 and MMS
+## IEC 61850
 
 **Specialized, with few comprehensive implementations.** IEC 61850 is not just MMS: it adds information models, GOOSE, Sampled Values and SCL. A stack that only speaks MMS is not an IEC 61850 stack.
 
 <LandscapeTable protocol="iec-61850" />
 
-libiec61850 is the dominant open-source reference: MMS client and server, GOOSE, Sampled Values, reports, datasets, logging, file services and TLS, with commercial licences from MZ Automation. IEC61850bean (formerly OpenIEC61850) is an established Java MMS implementation, quiet since 2023. dscsystems/go-iec61850 is three months old and worth watching.
+libiec61850 is the dominant open-source reference: MMS client and server, GOOSE, Sampled Values, reports, datasets, logging, file services and TLS, with commercial licences from MZ Automation. IEC61850bean (formerly OpenIEC61850) is an established Java MMS implementation, quiet since 2023. Two young stacks cover the whole family. dscsystems/go-iec61850 (Go, GPL-3.0, started in July 2026) adds R-GOOSE, R-SV and IEC 62351 security to MMS, GOOSE and Sampled Values. iec61850-rust (Rust, MIT OR Apache-2.0, September 2026) was written from the published standards as a set of crates, with MMS, GOOSE, 9-2LE Sampled Values and IEC 62351-3 TLS, and lists its gaps openly. All four run in [iec61850-interop](https://github.com/otfabric/iec61850-interop), formerly mms-interop.
 
 ## Siemens S7
 
@@ -158,7 +158,7 @@ The commercial side looks different from the other protocols: few SDKs, and most
 | OPC UA | Very mature | Very established | open62541, OPC Foundation .NET, Eclipse Milo, node-opcua, FreeOpcUa |
 | BACnet | Mature, fragmented | Very established | BACnet Stack, BACpypes3, BACnet4J, System.IO.BACnet |
 | IEC 60870-5-104 | Specialized | Established | lib60870, OpenMUC j60870, go-iecp5 |
-| IEC 61850 / MMS | Specialized | Established | libiec61850, IEC61850bean |
+| IEC 61850 | Specialized | Established | libiec61850, IEC61850bean, dscsystems/go-iec61850, iec61850-rust |
 | Siemens S7 | Mature for classic S7 | Established | Snap7, S7NetPlus, python-snap7, Apache PLC4X |
 | OpenADR | Smaller, evolving | Not transparent | OpenLEADR (Python and Rust), ElaadNL |
 | OCPP | Mature for 1.6J, maturing for 2.x | Established | The Mobility House ocpp, Java-OCA-OCPP, ocpp-go, EVerest libocpp, CitrineOS, SteVe |

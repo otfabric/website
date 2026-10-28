@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Twelve interop suites package 57 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Twelve interop suites package 59 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
-updated: 2026-10-27
+updated: 2026-10-28
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Twelve OT Fabric interop suites and their 57 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850 / MMS, DNP3, OCPP, OpenADR, IEEE 2030.5, EtherNet/IP and Sparkplug B, each with the open-source implementations its suite runs and their languages.
+  alt: Twelve OT Fabric interop suites and their 59 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, IEC 104, IEC 61850, DNP3, OCPP, OpenADR, IEEE 2030.5, EtherNet/IP and Sparkplug B, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Twelve suites, 57 reference stacks
+## Twelve suites, 59 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -23,7 +23,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [BACnet/IP](/protocols/bacnet/) | [bacnet-interop](/projects/bacnet-interop/) | BACnet Stack (C), BACpypes3 (Python), BACnet4J (Java), System.IO.BACnet (C#), worldiety/bacnet (Go) |
 | [Siemens S7](/protocols/s7/) | [snap7-interop](/projects/snap7-interop/) | Snap7 (C++), python-snap7 (Python) |
 | [IEC 60870-5-104](/protocols/iec-104/) | [iec104-interop](/projects/iec104-interop/) | lib60870 (C), OpenMUC j60870 (Java), wendy512/iec104 (Go), cB-Sigma iec60870 (Go) |
-| [IEC 61850 / MMS](/protocols/iec-61850/) | [mms-interop](/projects/mms-interop/) | libiec61850 (C), IEC61850bean (Java) |
+| [IEC 61850](/protocols/iec-61850/) (MMS, GOOSE, Sampled Values) | [iec61850-interop](/projects/iec61850-interop/) | libiec61850 (C), IEC61850bean (Java), dscsystems/go-iec61850 (Go), iec61850-rust (Rust) |
 | [DNP3](/protocols/dnp3/) | [dnp3-interop](/projects/dnp3-interop/) | Step Function I/O dnp3 (Rust), opendnp3 (C++), DSC go-dnp3 (Go), dnp3py (Python) |
 | [OCPP](/protocols/ocpp/) | [ocpp-interop](/projects/ocpp-interop/) | The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), ocpp-go (Go), EVerest libocpp (C++), CitrineOS (TypeScript) |
 | [OpenADR](/protocols/openadr/) | [openadr-interop](/projects/openadr-interop/) | OpenLEADR (Rust), ElaadNL openadr3-client (Python), plus a specification-driven conformance suite |
@@ -71,6 +71,7 @@ A library runs its own scenarios against the images, in both roles: our client a
 - **go-opcua**: client and server against all six OPC UA stacks in both directions, with 1280 verified ledger rows, plus PubSub against open62541 and UA-.NETStandard, UA JSON over HTTPS and WebSockets against UA-.NETStandard, the GDS pull model against the UA-.NETStandard Global Discovery Server, and event history and certificate management from every peer client.
 - **go-ieee20305**: its client and device agent against the Envoy and GridAPPS-D servers, and the GridAPPS-D, py20305 and EPRI clients against its server, in both editions and with the CSIP and CSIP-AUS fixtures.
 - **go-iec104**: client and server against lib60870, j60870, wendy512/iec104 and cB-Sigma in both roles, and IEC 62351-5 application-layer security against cB-Sigma in both directions: certificates from an authority or pinned, HMAC and AES-256-GCM, and role-based refusals.
+- **go-iec61850**: MMS client and server against all four IEC 61850 stacks in both directions, and GOOSE and Sampled Values against the libiec61850, dscsystems and iec61850-rust publishers and subscribers in both directions, on a Docker bridge. go-mms alone passes 120 MMS scenarios against libiec61850 and against iec61850-rust.
 - **go-ethernetip**: 184 cases pass against twelve stacks in eight languages, in both roles, none fail, with Class 1 I/O against OpENer, EIPScanner and EEIP.NET, multicast with a listen-only connection, and the Logix drivers of pycomm3, eip-rs and node-ethernet-ip reading and writing structures on its emulated controller.
 
 Each protocol's *Testing and interop* page in the [documentation](/docs/protocols/) has the full matrix, and what has not been validated yet.
@@ -79,9 +80,9 @@ Each protocol's *Testing and interop* page in the [documentation](/docs/protocol
 
 The suites earn their keep by finding things nobody was looking for, on both sides.
 
-In our own code: the go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. go-ocpp lost frames on close and refused `20000.0` for an integer field. Each was fixed in a release.
+In our own code: go-mms encoded and read MMS file directory listings with the wrong tag, so it could not list files on conforming servers, and fifteen more MMS bugs surfaced when the suite grew to every public method. The go-iec61850 server did not send the CommandTermination that the dscsystems controller waits for. The go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. go-ocpp lost frames on close and refused `20000.0` for an integer field. Each was fixed in a release.
 
-In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. pycomm3 sends each Logix Write Tag twice in one message. OpenMUC j60870 1.8.0 closes the connection when it receives a read command. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
+In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. pycomm3 sends each Logix Write Tag twice in one message. OpenMUC j60870 1.8.0 closes the connection when it receives a read command. libiec61850's Sampled Values subscriber drops samples whose `smpMod` is encoded in two octets, the form its own publisher sends. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
 
 ## What interop is not
 

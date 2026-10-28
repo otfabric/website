@@ -1,6 +1,6 @@
 ---
 title: iec61850ctl
-description: Browse, read, subscribe to reports, operate controls and run an SCL-driven MMS server from the command line with iec61850ctl.
+description: Browse, read, subscribe to reports, operate controls, sniff, subscribe to and publish GOOSE and Sampled Values, and run an SCL-driven MMS server from the command line with iec61850ctl.
 sidebar:
   label: iec61850ctl
   order: 2
@@ -8,9 +8,9 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[iec61850ctl](https://github.com/otfabric/iec61850ctl) is a command-line tool for IEC 61850 over MMS. It is built on [go-iec61850](https://github.com/otfabric/go-iec61850) and [go-mms](https://github.com/otfabric/go-mms) and ships as a static Go binary with no CGO and no libiec61850 at runtime. It browses and reads IEDs, subscribes to reports, operates controls, writes scalar settings, transfers files, reads journals, parses SCL offline, runs a local MMS server from SCL, and can expose a small read-only HTTP/JSON API.
+[iec61850ctl](https://github.com/otfabric/iec61850ctl) is a command-line tool for IEC 61850. It is built on [go-iec61850](https://github.com/otfabric/go-iec61850) and [go-mms](https://github.com/otfabric/go-mms) and ships as a static Go binary with no CGO and no libiec61850 at runtime. Over MMS it browses and reads IEDs, subscribes to reports, operates controls, writes scalar settings, transfers files and reads journals. On the station bus it sniffs, subscribes to and publishes GOOSE and Sampled Values, and reads and writes their control blocks. It also parses SCL offline, runs a local MMS server from SCL, and can expose a small read-only HTTP/JSON API.
 
-The current release is v0.2.0, built on go-iec61850 v1.0.6 and go-mms v1.0.5.
+The current release is v0.4.0, built on go-iec61850 v1.2.1 and go-mms v1.2.1.
 
 ## Install
 
@@ -46,7 +46,15 @@ Most client commands need `--host`. Host, port and IED name can also come from t
 | `--host` | `IEC61850_HOST` | none (required) | IED address |
 | `--port` | `IEC61850_PORT` | `102` | MMS port |
 | `--ied-name` | `IEC61850_IED_NAME` | empty | IED name used as the MMS domain prefix; also selects the IED for `server start` |
-| `--debug` | | off | Log the underlying IEC 61850 and MMS calls |
+| `--connect-timeout` | | `10s` | Bound on each connect attempt: TCP, COTP and MMS association |
+| `--timeout` | | `10s` | Bound on each MMS request |
+| `--retry` | | `0` | Connect retries with exponential backoff and jitter |
+| `--retry-max-delay` | | `5s` | Cap on the delay between connect retries |
+| `--log-level` | | `warn` | Structured logs on stderr: `debug`, `info`, `warn`, `error`, `off` |
+| `--log-format` | | `text` | `text` or `json` |
+| `--debug` | | off | Shorthand for `--log-level debug` |
+
+Retries apply only to establishing the connection. Invalid input, authentication failures and interrupts are never retried, and logs never go to stdout.
 
 Set `--ied-name` when the server names its domains `<IED><LD>` (libiec61850 and IEC61850bean do this), so LD names appear bare. Leave it unset against `iec61850ctl server start`, whose domains are already bare LD names; setting it there breaks browse and read.
 
@@ -66,6 +74,8 @@ iec61850ctl
 ├── set object          Write a scalar attribute (rejects FC=CO)
 ├── scl                 parse | convert
 ├── server              start | generate-config
+├── goose               list | sniff | subscribe | publish | gocb get|set
+├── sv                  list | sniff | subscribe | publish | svcb get|set
 ├── http                Read-only REST API for one device
 ├── version
 └── completion          bash | zsh | fish | powershell
@@ -128,12 +138,12 @@ iec61850ctl get ds --ld MNSREF615LD0 --ln LLN0 --name MeasFlt --detailed
    ```
 </Steps>
 
-`--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`).
+`--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`). `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically, so a dropped association ends the subscription with exit code `3` instead of waiting silently.
 
 ## Control and scalar writes
 
 <Aside type="caution">
-`control operate` and `set object` change the state of the IED. On a protection relay or bay controller that can mean opening a breaker. Practise against `iec61850ctl server start` or an mms-interop adapter, inspect the control model first, and use `--confirm-ref` so the tool checks the result.
+`control operate` and `set object` change the state of the IED. On a protection relay or bay controller that can mean opening a breaker. Practise against `iec61850ctl server start` or an iec61850-interop adapter, inspect the control model first, and use `--confirm-ref` so the tool checks the result.
 </Aside>
 
 ```sh
@@ -179,6 +189,69 @@ iec61850ctl get journal --domain MNSREF615LD0 --journal LLN0\$EventLog \
 
 `--from` and `--to` accept RFC 3339, space-separated UTC or Unix milliseconds. Omit `--to` to read everything after `--from`.
 
+## GOOSE
+
+GOOSE runs on raw Ethernet, so these commands take an interface instead of a host. On Linux grant the capability once instead of running as root; on macOS and the BSDs you need access to `/dev/bpf*`. Windows exits with code `8`.
+
+```sh
+sudo setcap cap_net_raw+ep "$(command -v iec61850ctl)"
+
+# The GOOSE control blocks of an SCL file, with address and dataset (no network)
+iec61850ctl goose list --scl station.scd
+
+# Decode every GOOSE frame on the wire, optionally filtered
+iec61850ctl goose sniff --iface eth0 --appid 0x1001 --count 10 --format jsonl
+
+# A supervised subscription to one GoCB, validated against SCL
+iec61850ctl goose subscribe --iface eth0 --scl station.scd --gocb IED1/LD0/gcb1 --duration 30s
+
+# Read or disable a GoCB on an IED over MMS
+iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
+iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
+```
+
+`goose subscribe` checks `confRev`, `datSet`, `goID` and the member types, and supervises the stream the way an `LGOS` node does: timeouts, `stNum` and `sqNum` gaps, duplicates and restarts, with a summary per stream at the end. With `--count` it exits `4` if the count is not reached within `--duration`. `--gocb` takes the GSEControl name, `LD/name`, `IED/LD/name` or the gocbRef. Publishers whose MMS domain is the bare LD instance, such as go-iec61850 servers and `iec61850ctl server start`, need `--bare-domain`.
+
+## Sampled Values
+
+```sh
+# The SV control blocks of an SCL file: address, svID, rate, noASDU, profile and sample layout
+iec61850ctl sv list --scl merging-unit.cid
+
+# Decode SV ASDUs, with the 9-2LE layout, one sample per second
+iec61850ctl sv sniff --iface eth0 --appid 0x4000 --layout 9-2LE --sample-every 4000
+
+# A supervised subscription with live statistics
+iec61850ctl sv subscribe --iface eth0 --scl merging-unit.cid --svcb MSVCB01 \
+  --sample-every 4000 --duration 30s
+
+# Read or disable an MSVCB over MMS
+iec61850ctl sv svcb get --host 192.0.2.10 --ld LD0 --svcb MSVCB01
+iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable
+```
+
+`sv subscribe` validates `confRev`, `datSet`, `smpRate`, `smpMod` and the sample size, and supervises `smpCnt` per stream. Every `--stats-interval` it prints the rate, ASDUs, lost, duplicate and out-of-order samples, timeouts, the `smpCnt` wrap, `smpSynch` and `confRev`. `--sample-every` prints every Nth sample, with 9-2LE channels in amperes and volts.
+
+## Publishing on the station bus
+
+<Aside type="danger">
+Publishing puts frames on a bus that protection relays listen to. A GOOSE state or a Sampled Values stream that a relay subscribes to can trip a breaker or block a protection function. Publish only on a lab network or a test VLAN you are authorized to use, and never publish a control block that a real IED also publishes.
+</Aside>
+
+```sh
+# Three GOOSE state changes, one second apart, as test frames
+iec61850ctl goose publish --iface eth0 --scl device.cid --gocb gcb1 \
+  --value 0=true --changes 3 --interval 1s --yes
+
+# Ten seconds of a 9-2LE stream with three-phase sine currents, as simulation frames
+iec61850ctl sv publish --iface eth0 --scl merging-unit.cid --svcb MSVCB01 --yes --duration 10s \
+  --waveform IA=100 --waveform IB=100,50,-120 --waveform IC=100,50,120 --waveform VA=325
+```
+
+The guard rails are the same for both: an explicit `--iface` and `--yes`, and every frame carries the GOOSE `test` flag or the SV simulation bit unless you combine `--test=false` or `--simulation=false` with `--live`. A refused publish exits `2`. `sv publish` sets sample values by index, member reference or 9-2LE channel (`IA` to `VN`, with qualities `qIA` to `qVN`), and `--waveform CHANNEL=PEAK[,HZ[,PHASE]]` injects a sine computed from the sample index, so it stays exact under scheduling jitter. The summary reports samples, frames, late and skipped samples and send errors.
+
+`gocb set` and `svcb set` write the enable attribute last, and with `--enable` or `--disable` they read it back.
+
 ## SCL offline
 
 ```sh
@@ -217,9 +290,10 @@ iec61850ctl server start --scl device.cid --values device.json --port 102
 | `--host` / `--port` | Bind address (default `0.0.0.0:102`) |
 | `--ready-json` | Print one readiness JSON line on stdout after bind |
 | `--fixture-id` | Fixture revision included in the readiness line |
+| `--files-dir` | Serve a directory read-only through the MMS file services |
 | `--max-connections` | Reserved; not enforced |
 
-Binding port 102 may need elevated privileges; use `--port 1102` for testing. Every server registers handlers for `InteropLD/GGIO1.SPCSO1` (direct), `SPCSO2` (SBO) and `SPCSO3` (SBOw), which update the matching `stVal`; for other models they are inert. `server generate-config` exports a libiec61850 `.cfg` from serialized JSON for external C tooling; iec61850ctl does not run `.cfg` files.
+Binding port 102 may need elevated privileges; use `--port 1102` for testing, or `--port 0` for an ephemeral port that the readiness line reports. Every server registers handlers for `InteropLD/GGIO1.SPCSO1` (direct), `SPCSO2` (SBO) and `SPCSO3` (SBOw), which update the matching `stVal`; for other models they are inert. `server generate-config` exports a libiec61850 `.cfg` from serialized JSON for external C tooling; iec61850ctl does not run `.cfg` files.
 
 ## Output and exit codes
 
@@ -228,7 +302,9 @@ Binding port 102 may need elevated privileges; use `--port 1102` for testing. Ev
 | `list lds`, `list lns`, `list dos`, `list das` | `text`, `json`, `csv`, `table`, `yaml` |
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
 | `control inspect`, `control operate`, `set object` | `text`, `json` |
-| `subscribe report` | `text`, `jsonl` |
+| `subscribe report`, `goose sniff`, `goose subscribe`, `goose publish` | `text`, `jsonl` |
+| `sv sniff`, `sv subscribe`, `sv publish` | `text`, `jsonl` |
+| `goose list`, `goose gocb get`, `goose gocb set`, `sv list`, `sv svcb get`, `sv svcb set` | `text`, `json` |
 
 Results go to stdout; connection status, warnings and diagnostics go to stderr. Every JSON command prints exactly one document. An unknown format exits non-zero.
 
@@ -240,8 +316,23 @@ Results go to stdout; connection status, warnings and diagnostics go to stderr. 
 
 Booleans, integers, floats and strings have a stable JSON encoding. Timestamps, bit strings, octet strings, arrays and structures do not yet; do not script against their current form.
 
-Exit code is `0` on success and non-zero for invalid flags, validation failures, connection failures and remote errors. With `--format json`, `control operate` and `set object` still print their JSON document when they fail after reaching execution, and the exit code follows `status` or `write_ok`.
+Exit codes are stable, so scripts can tell failures apart:
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Failure (unclassified) |
+| `2` | Usage error or invalid input, including a refused `goose publish` or `sv publish` |
+| `3` | Connection failed or lost |
+| `4` | Timeout, or `--count` not reached before `--duration` |
+| `5` | Not found: object, file, IED, RCB, control block, network interface |
+| `6` | Rejected or access denied, including failed controls and raw-socket permission errors |
+| `7` | Write verification, control confirmation or control block enable read-back mismatch |
+| `8` | Service not supported by the server or platform, such as raw Ethernet on Windows |
+| `130` | Interrupted |
+
+With `--format json`, `control operate` and `set object` still print their JSON document when they fail after reaching execution, and the exit code follows `status` or `write_ok`. The full machine contract per command is in [docs/AUTOMATION.md](https://github.com/otfabric/iec61850ctl/blob/main/docs/AUTOMATION.md).
 
 ## Scope
 
-Not supported: GOOSE and Sampled Values, standalone or cross-process select, time-activated controls, complex (structured) MMS writes, and writes or controls over HTTP.
+Not supported: standalone or cross-process select, time-activated controls, complex (structured) MMS writes, writes or controls over HTTP, R-GOOSE and R-SV, and GOOSE or SV on Windows. The HTTP API has no authentication or TLS; bind it to loopback or put a reverse proxy in front.

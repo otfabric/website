@@ -1,14 +1,15 @@
 ---
 kind: protocol
-name: "IEC 61850 / MMS"
-standard: "IEC 61850-8-1 over MMS (ISO 9506)"
-summary: "IEC 61850 client/server communication for substation automation: the abstract services mapped onto MMS (IEC 61850-8-1) on TCP port 102."
+name: "IEC 61850"
+standard: "IEC 61850-8-1 (MMS, GOOSE) and IEC 61850-9-2 (Sampled Values)"
+summary: "IEC 61850 communication for substation automation: client/server services over MMS on TCP port 102, GOOSE events and Sampled Values streams on the station and process bus, all configured from SCL."
 order: 5
 facts:
-  - { label: 'Transport', value: 'MMS over ISO-on-TCP' }
-  - { label: 'Default port', value: '102' }
+  - { label: 'Mappings', value: 'MMS, GOOSE, Sampled Values' }
+  - { label: 'Default port', value: '102 (MMS); GOOSE and SV are layer 2' }
   - { label: 'Libraries', value: 'go-iec61850, go-mms' }
   - { label: 'CLI', value: 'iec61850ctl' }
+  - { label: 'Interop suite', value: 'iec61850-interop' }
 icon: go-iec61850
 docs: /docs/protocols/iec-61850/
 layers:
@@ -21,22 +22,26 @@ layers:
   - label: 'Communication mappings'
     items:
       - { name: 'MMS, client/server (8-1)', id: iec-61850, note: 'go-iec61850, go-mms' }
-      - { name: 'GOOSE (8-1)', note: 'Not implemented by OT Fabric' }
-      - { name: 'Sampled Values (9-2)', note: 'Not implemented by OT Fabric' }
+      - { name: 'GOOSE (8-1)', note: 'go-iec61850' }
+      - { name: 'Sampled Values (9-2, 9-2LE)', note: 'go-iec61850' }
   - label: 'Transport'
     items:
-      - { name: 'ISO-on-TCP: COTP over TPKT (RFC 1006)', note: 'go-cotp, go-tpkt' }
+      - { name: 'ISO-on-TCP: COTP over TPKT (RFC 1006), for MMS', note: 'go-cotp, go-tpkt' }
+      - { name: 'Raw Ethernet, EtherType 0x88B8 and 0x88BA, for GOOSE and SV', note: 'go-iec61850' }
 ---
 
 import Callout from '../../components/Callout.astro';
 
-IEC 61850 describes a substation as a model: an **IED** (intelligent electronic device) holds **logical devices**, each with **logical nodes** such as `MMXU` (measurements) or `XCBR` (circuit breaker), which hold **data objects** and **data attributes** grouped by functional constraint (`MX`, `ST`, `CO`, `CF` and so on). On the wire, client/server communication is mapped onto MMS (Manufacturing Message Specification). Devices and their configuration are described in **SCL** files (`.icd`, `.cid`, `.scd`).
+IEC 61850 describes a substation as a model: an **IED** (intelligent electronic device) holds **logical devices**, each with **logical nodes** such as `MMXU` (measurements) or `XCBR` (circuit breaker), which hold **data objects** and **data attributes** grouped by functional constraint (`MX`, `ST`, `CO`, `CF` and so on). Devices and their configuration are described in **SCL** files (`.icd`, `.cid`, `.scd`).
 
-This page covers communication: the client/server services and their mapping onto MMS. The classes, data objects and attributes themselves are the [IEC 61850 information model](/models/iec-61850/), which OT Fabric implements separately, without a transport, in go-iec61850-model. GOOSE and Sampled Values are further mappings of the same model that OT Fabric does not implement.
+The same model travels three ways. **MMS** (Manufacturing Message Specification, ISO 9506) carries client/server communication on TCP port 102: browsing, reads and writes, reports, controls, files and logs. **GOOSE** multicasts dataset values in Ethernet frames for fast events between IEDs, such as a trip or an interlock. **Sampled Values** stream digitized currents and voltages from merging units, thousands of samples a second. OT Fabric implements all three in one library, go-iec61850, with the MMS layer in go-mms.
+
+This page covers communication. The classes, data objects and attributes themselves are the [IEC 61850 information model](/models/iec-61850/), which OT Fabric implements separately, without a transport, in go-iec61850-model.
 
 ## Where you meet it
 
 - Protection relays, bay controllers and merging units in substations
+- Station buses carrying GOOSE between IEDs, and process buses carrying Sampled Values from instrument transformers
 - Battery storage, solar and wind plants connected at medium and high voltage
 - Gateways between station buses and SCADA
 
@@ -59,8 +64,9 @@ iec61850ctl subscribe report --host 192.0.2.10 \
   --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01 --type BR \
   --show-values --interrogation
 
-# Parse SCL offline
-iec61850ctl scl parse --input device.cid --flatten
+# Watch GOOSE and Sampled Values on the station bus
+iec61850ctl goose sniff --iface eth0 --count 5
+iec61850ctl sv subscribe --iface eth0 --scl station.scd --svcb MSVCB01 --duration 10s
 
 # Run a local MMS server from SCL
 iec61850ctl server start --scl device.cid --host 0.0.0.0 --port 102
@@ -72,7 +78,7 @@ iec61850ctl server start --scl device.cid --host 0.0.0.0 --port 102
 go get github.com/otfabric/go-iec61850
 ```
 
-List logical devices and read one attribute by its IEC 61850 reference:
+List logical devices and read one attribute by its IEC 61850 reference, retrying the connection with backoff:
 
 ```go title="main.go"
 package main
@@ -83,12 +89,15 @@ import (
 	"log"
 
 	"github.com/otfabric/go-iec61850"
+	"github.com/otfabric/go-mms"
 )
 
 func main() {
 	ctx := context.Background()
 
-	client, err := iec61850.Dial(ctx, "10.0.0.1:102", iec61850.DialOptions{})
+	client, err := iec61850.Dial(ctx, "10.0.0.1:102", iec61850.DialOptions{
+		Retry: mms.DefaultRetryPolicy(),
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,19 +120,26 @@ func main() {
 }
 ```
 
+GOOSE and Sampled Values publishers and subscribers are built from the SCL control block in the same way: `goose.ControlBlockFromSCL` and `sv.ControlBlockFromSCL` return the address, the dataset layout and the validation rules. The [Go library guide](/docs/protocols/iec-61850/library/) has both.
+
 ## What the libraries support
 
 | | |
 |---|---|
-| go-iec61850 | Client and SCL-driven server; browse, typed reads and writes, datasets, buffered and unbuffered reports, controls (direct, SBO, SBOw), files, journals, SCL parsing and validation |
-| go-mms | MMS client and server: variable access, named variable lists, file and journal services, information reports. The v1 API is stable. |
-| Not covered | GOOSE and Sampled Values (IEC 61850-8-1 GSE and 9-2); MMS semaphore, event and program invocation services |
+| MMS client | Browse, typed reads and writes, datasets, URCB and BRCB reports with EntryID resume, direct, SBO and SBOw controls, setting groups, journals, files, GoCB and MSVCB access |
+| MMS server | Built from SCL: reports, controls with CommandTermination, setting groups, journals, file services through a provider, Identify and Status, graceful shutdown |
+| GOOSE | Publisher with stNum, sqNum and retransmission; subscriber with SCL validation and supervision; server GoCBs published on data change |
+| Sampled Values | 9-2LE and generic datasets; paced publisher with `noASDU` batching; subscriber with loss, duplicate and reorder accounting; server MSVCBs |
+| SCL | SCD, ICD, CID and IID, schema editions 1.7 to 2007C5, semantic validation, flattening and export |
+| go-mms | MMS client and server: variable access, named variable lists, file and journal services, information reports, typed errors, metrics, retry and timeouts. The v1 API is stable. |
+| Not covered | R-GOOSE and R-SV (IEC 61850-90-5), IEC 62351-6 security for GOOSE and SV, unicast SV, GOOSE fixed-offset encoding, MMS semaphore, event and program invocation services |
+| Platforms | MMS and SCL everywhere Go runs; GOOSE and SV on Linux (`AF_PACKET`) and macOS and the BSDs (BPF) |
 | Go version | 1.24 or later for go-iec61850 |
 
 <Callout type="caution">
-`iec61850ctl` can operate controllable objects such as breakers and switches. Rehearse against `iec61850ctl server start` with your SCL file before you connect to a live IED.
+`iec61850ctl` can operate controllable objects such as breakers and switches, and can publish GOOSE and Sampled Values onto a live bus. Publishing needs an explicit interface and `--yes`, and frames carry the test or simulation flag unless you ask otherwise. Rehearse against `iec61850ctl server start` and a lab network before you go near a live IED.
 </Callout>
 
 ## Interoperability
 
-[mms-interop](https://github.com/otfabric/mms-interop) publishes adapter images for libiec61850 and IEC61850bean. The MMS and IEC 61850 interop tests live in go-mms and go-iec61850 and run against those images.
+[iec61850-interop](https://github.com/otfabric/iec61850-interop), formerly mms-interop, publishes container images of four independent IEC 61850 stacks: libiec61850 (C), IEC61850bean (Java), dscsystems/go-iec61850 (Go) and iec61850-rust (Rust). go-mms, go-iec61850 and iec61850ctl run their tests against those images in both directions, GOOSE and Sampled Values included. The [Testing and interop](/docs/protocols/iec-61850/testing/) page has the per-stack matrix. The libraries are not certified and have not yet been validated against physical IEDs.

@@ -23,12 +23,12 @@ layers:
       - { name: 'Logical nodes, data objects, CDCs, data attributes (7-3, 7-4, 7-4xx)', id: iec-61850-model, note: 'go-iec61850-model, nsdctl' }
   - label: 'Abstract services'
     items:
-      - { name: 'ACSI: associations, read and write, reports, controls, files (7-2)', note: 'Implemented over MMS by go-iec61850' }
+      - { name: 'ACSI: associations, read and write, reports, controls, files, GOOSE, sampled values (7-2)', note: 'Implemented by go-iec61850' }
   - label: 'Communication mappings'
     items:
       - { name: 'MMS, client/server (8-1)', id: iec-61850, note: 'go-iec61850, go-mms' }
-      - { name: 'GOOSE (8-1)', note: 'Not implemented by OT Fabric' }
-      - { name: 'Sampled Values (9-2)', note: 'Not implemented by OT Fabric' }
+      - { name: 'GOOSE (8-1)', note: 'go-iec61850' }
+      - { name: 'Sampled Values (9-2)', note: 'go-iec61850' }
 ---
 
 import Callout from '../../components/Callout.astro';
@@ -129,10 +129,10 @@ Using the information model does not mean speaking every IEC 61850 communication
 | Project | Layer | What it does |
 |---|---|---|
 | [go-iec61850-model](/projects/go-iec61850-model/) | Information model | The normative catalog from NSD: lookups, validation, resolution, semantics. No transport. |
-| [go-iec61850](/projects/go-iec61850/) | Communication, MMS mapping | IEC 61850 client and SCL-driven server over MMS: browse, read, write, datasets, reports, controls, files. No GOOSE or Sampled Values. |
+| [go-iec61850](/projects/go-iec61850/) | Communication: MMS, GOOSE and Sampled Values | IEC 61850 client and SCL-driven server over MMS: browse, read, write, datasets, reports, controls, files; GOOSE and Sampled Values publishers and subscribers. |
 | [go-mms](/projects/go-mms/) | Protocol | MMS (ISO 9506) client and server, the transport underneath go-iec61850. |
 
-go-iec61850-model imports neither go-iec61850 nor go-mms, and go-iec61850 does not depend on it today. See [IEC 61850 / MMS](/protocols/iec-61850/) for the communication side.
+go-iec61850-model imports neither go-iec61850 nor go-mms, and go-iec61850 does not depend on it today. See [IEC 61850](/protocols/iec-61850/) for the communication side.
 
 ## Standards and licensing
 
