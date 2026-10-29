@@ -1,0 +1,116 @@
+---
+title: Testing and interop
+description: Test PROFINET IO code on a real Layer 2 network against independent implementations with profinet-interop (rt-labs p-net, pnio-rs, profinet-py, pnio-dcp, umrp, Microchip MRP, Net-SNMP, Wireshark and scapy), and see what go-profinet and profinetctl have and have not been validated against.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Two kinds of OT Fabric repositories share the testing of PROFINET. [profinet-interop](/projects/profinet-interop/) owns the reference implementations: adapters around independent PROFINET stacks behind one container contract, pinned by commit or version and hash. It knows nothing about any library under test. [go-profinet](/projects/go-profinet/) is a consumer: its interop tests drive the images on Docker bridge networks, own the scenarios and assertions, and write the results that profinet-interop's matrix is generated from.
+
+<Aside type="note" title="Interoperability, not certification">
+Interoperability between implementations does not establish conformance: they can share the same misreading of a specification that is not public. PROFINET certification is a separate, mandatory programme at PI Test Labs with PI's test bundle, and go-profinet has not taken it. OT Fabric is not a PI member.
+</Aside>
+
+## profinet-interop
+
+profinet-interop v0.6.0 (container contract 1.2) packages:
+
+| Adapter | Implementation | Version | Licence | Role | go-profinet tested as |
+|---|---|---|---|---|---|
+| `pnet` | [rt-labs p-net](https://github.com/rtlabs-com/p-net) (C) | `ea5e554` (2023-11-10) | GPL-3.0-only or commercial | IO-Device | IO-Controller, DCP requester, LLDP agent |
+| `pnio-rs` | [pnio-rs](https://github.com/core-engineering/pnio-rs) (Rust) | v0.1.0 | MIT OR Apache-2.0 | IO-Device | IO-Controller, DCP requester |
+| `profinet-py` | [profinet-py](https://github.com/f0rw4rd/profinet-py) (Python) | 0.6.6 | GPL-3.0-only or commercial | IO-Controller, DCP tool | IO-Device, DCP responder |
+| `pnio-dcp` | [pnio-dcp](https://gitlab.com/pyshacks/pnio_dcp) (Python) | 1.2.0 | MIT | DCP tool | DCP responder |
+| `umrp` | [umrp](https://github.com/giometti/umrp) (C, user space) | v4.0 | GPL-2.0 | MRP ring node | MRP manager, client and automatic manager |
+| `mrp` | [microchip-ung/mrp](https://github.com/microchip-ung/mrp) (C, on the kernel's bridge MRP) | `177717e` | GPL-2.0 | MRP ring node | MRP manager, client and automatic manager |
+| `netsnmp` | [Net-SNMP](https://www.net-snmp.org) manager | 5.9.3 | BSD-style | SNMP manager | SNMP agent of the IO-Device |
+| `scapy`, `tshark` | scapy contrib pnio, Wireshark tshark | 2.6.1, 4.0.17 | GPL-2.0 | Decoders | Every capture |
+
+The p-net tree is the last complete public GPLv3 snapshot: since 2024 the public branch of p-net is an evaluation version without build files, ports or sample application. That tree predates p-net's v1.0.2 security fixes, so it is a lab oracle for isolated test networks only. Two candidates were evaluated and not used: profinet-python (no licence, and a Connect that compliant devices reject) and the PI Community Stack (members only, under an agreement that forbids combining it with copyleft code).
+
+Every upstream is pinned in [versions.yaml](https://github.com/otfabric/profinet-interop/blob/main/versions.yaml). No image is published: most of the implementations are GPL, so every user builds the images from upstream. A weekly workflow compares each pin with its latest upstream release, builds and smoke-tests a candidate, and keeps an issue open while any pin is behind; pins are never moved automatically.
+
+## Running the reference stacks
+
+<Steps>
+
+1. Build the images, tagged `profinet-interop-<adapter>:dev`:
+
+   ```sh
+   git clone https://github.com/otfabric/profinet-interop && cd profinet-interop
+   make images
+   ```
+
+2. Every container needs `NET_RAW` and `NET_ADMIN`, and except for the MRP ring nodes, a Docker bridge network with a static address:
+
+   ```sh
+   docker network create --subnet 10.77.0.0/24 pn
+   docker run -d --name pnet --network pn --ip 10.77.0.10 \
+     --cap-add NET_RAW --cap-add NET_ADMIN profinet-interop-pnet:dev device --station pnet-dut
+   ```
+
+3. Talk to it, with another adapter or your own code:
+
+   ```sh
+   docker run --rm --network pn --ip 10.77.0.4 --cap-add NET_RAW --cap-add NET_ADMIN \
+     profinet-interop-pnio-dcp:dev dcp identify-all
+   ```
+
+</Steps>
+
+Every image has the same entrypoint and commands for its roles: `print-capabilities` and `version`, `device` (runs until stopped and writes JSON Lines events), `controller` (one scenario, one report), `dcp <operation>`, `decode` and `check` for the decoders, `node` and `status` for the MRP ring nodes, and `snmp` for Net-SNMP. LLDP does not cross a Linux bridge unless the bridge forwards its group address, so the harness sets `group_fwd_mask`, and reports LLDP as not applicable where it cannot. The [container contract](https://github.com/otfabric/profinet-interop/blob/main/docs/CONTAINER_CONTRACT.md) has every flag and document.
+
+## go-profinet against the references
+
+go-profinet's Interop workflow runs on pull requests, pushes to main and weekly; a Kernel MRP workflow runs the microchip-ung/mrp tests in micro-VMs with a Linux kernel built with bridge MRP and without switchdev, which hosted runners do not have. Every exchange is captured and decoded by scapy and tshark, and a frame that cannot decode, or that tshark warns about, fails the test unless it is an attributed deviation of the peer.
+
+| Peer | go-profinet as | Pass | Fail | n/a | Peer deviation |
+|---|---|---:|---:|---:|---:|
+| rt-labs p-net | IO-Controller, DCP requester, LLDP agent | 56 | 0 | 1 | 0 |
+| pnio-rs | IO-Controller, DCP requester | 13 | 0 | 3 | 0 |
+| profinet-py | IO-Device, DCP responder | 32 | 0 | 1 | 3 |
+| pnio-dcp | DCP responder | 8 | 0 | 0 | 0 |
+| umrp | MRP manager, client and automatic manager | 32 | 0 | 0 | 2 |
+| microchip-ung/mrp | MRP manager, client and automatic manager | 31 | 0 | 1 | 0 |
+| Net-SNMP | SNMP agent of the IO-Device | 29 | 0 | 0 | 0 |
+| scapy and tshark | Decoder of every capture | 47 | 0 | 0 | 9 |
+| **Total** | | **248** | **0** | **6** | **14** |
+
+The n/a are limits of the peers: pnio-rs has no diagnosis records and no DCP Set, p-net and pnio-rs refuse re-parameterization in data exchange, profinet-py ignores a GSDML's UsedInSlots, and the kernel flushes its forwarding table where the mrp adapter cannot observe it. The deviations are profinet-py's I&M1 write with a block two octets too long, umrp's automatic manager reclaiming the manager role as a client, and decoder limits. The full matrix, feature by feature with the evidence of each check, is [MATRIX.md](https://github.com/otfabric/profinet-interop/blob/v0.6.0/docs/MATRIX.md), summarized in go-profinet's [FEATURE-STATUS.md](https://github.com/otfabric/go-profinet/blob/main/docs/FEATURE-STATUS.md).
+
+```sh
+make interop-images   # clones otfabric/profinet-interop and builds its images
+make interop          # runs the suite; results in interop-results/
+make interop-matrix   # regenerates profinet-interop's matrix from them
+```
+
+## Beyond interop
+
+go-profinet's own tests run a controller and devices on the in-memory virtual Ethernet: end-to-end tests of every service, chaos tests with seeded loss, duplication, reordering, corruption and jitter and pulled cables, a fuzz target for every decoder, and real AF_PACKET tests on a veth pair in a privileged container. Coverage is held at 90 % or more, and a release needs 25 green soak runs. profinetctl's tests run its command tree against go-profinet devices on the virtual network, and `make pnet-smoke` runs the DCP, record, I&M, diagnosis, topology and AR commands against p-net on a real Linux bridge.
+
+## What is and is not validated
+
+**Validated**: DCP in both roles against p-net, pnio-rs, profinet-py and pnio-dcp; the controller's legacy startup against p-net and advanced startup against p-net and pnio-rs, with cyclic data at 1 ms against p-net, records, I&M, diagnosis, alarms, ModuleDiff, shared device with two go-profinet controllers on p-net and port checks that p-net evaluates; the device against profinet-py's controller with cyclic data, alarms, records over a device access AR and re-parameterization; MRP rings with umrp and microchip-ung/mrp as manager, client and automatic manager, including cut cables; the SNMP agent against Net-SNMP.
+
+**Not validated**: there is no second open IO-Controller to test the device against, other than profinet-py. No commercial PLC, device or engineering tool has been tested, and no GSDML file generated by go-profinet has been imported by TIA Portal or CODESYS yet. Npcap on Windows is not tested. System redundancy S2 has no open peer and is an experiment.
+
+### Findings about the references
+
+Running the stacks against go-profinet changed go-profinet where it disagreed with every reference, because the standard is not public and the stacks agree with each other:
+
+- p-net ties an AR to the RPC activity of its Connect, so a PrmEnd on another activity is acknowledged but never processed.
+- p-net starts its input provider only after PrmEnd, so a consumer watchdog armed at the Connect expires.
+- p-net, pnio-rs and profinet-py all number the first alarm 0xFFFF, not 0.
+- p-net does not answer DCP Get with the AllSelector, and ignores another requester for 3 seconds after a Get or Set.
+- A Linux bridge with LLDP forwarding returns LLDP frames to their sender, so p-net lists itself as its own neighbour.
+- pnio-rs accepts only RT_CLASS_2 frame IDs, so a controller must use the advanced startup with it.
+
+Recorded and not worked around: p-net plugs any module a controller expects instead of reporting it in the ModuleDiffBlock, so a wrong module cannot be detected against p-net; pnio-rs answers diagnosis indices and I&M4 with invalid index and rejects a Connect without an exact ModuleDiff match.
+
+<CardGrid>
+  <LinkCard title="profinet-interop on GitHub" description="Container contract, matrix, interoperability notes and pins." href="https://github.com/otfabric/profinet-interop" />
+  <LinkCard title="go-profinet INTEROPERABILITY.md" description="Implemented services, interop matrix and peer discrepancies." href="https://github.com/otfabric/go-profinet/blob/main/INTEROPERABILITY.md" />
+</CardGrid>

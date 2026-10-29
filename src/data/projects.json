@@ -265,6 +265,28 @@
 		"icon": "go-ethernetip"
 	},
 	{
+		"id": "go-profinet",
+		"name": "go-profinet",
+		"repo": "go-profinet",
+		"category": "protocol",
+		"standards": [
+			"profinet"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-profinet",
+		"description": "PROFINET IO-Controller and IO-Device: DCP, LLDP, records, I&M, diagnosis, alarms, cyclic RT data, shared device, MRP rings and GSDML. Raw Ethernet on Linux, macOS and Windows. No dependencies.",
+		"icon": "go-profinet",
+		"highlights": [
+			"IO-Controller: finds devices by station name with DCP, optionally assigns their address, connects in legacy (RT_CLASS_1) or advanced (RT_CLASS_2) startup, writes parameters, exchanges cyclic data, acknowledges alarms and reconnects after a failure, one lifecycle per device.",
+			"IO-Device: DCP responder with Hello, LLDP, the RPC server for Connect, Read, Write, Control and Release, several ARs, shared device, process, diagnosis and plug alarms, I&M0 to I&M4, port data and port checks, with optional persistence of name, address and I&M.",
+			"Media redundancy on multiport devices: MRP client, manager and automatic manager on a software switch, plus a read-only SNMP agent with MIB-II and the LLDP-MIB.",
+			"GSDML: parse, validate against an independent schema catalog, convert to device models and generate a device's own file; a safe inspector for GSDX containers.",
+			"Raw Ethernet on Linux (AF_PACKET), macOS and the BSDs (BPF) and Windows (Npcap), and an in-memory virtual Ethernet with seeded faults, so a controller and devices run in one process without privileges.",
+			"Interop tested in CI against p-net, pnio-rs, profinet-py and pnio-dcp, two MRP implementations and Net-SNMP, with Wireshark and scapy decoding every capture: 248 checks pass, none fail.",
+			"Not certified by PI and no conformance claim. No IRT, PROFIsafe or PROFINET security classes; cyclic timing runs on Go timers, not a real-time OS."
+		]
+	},
+	{
 		"id": "modbusctl",
 		"name": "modbusctl",
 		"repo": "modbusctl",
@@ -445,6 +467,18 @@
 		"status": "available",
 		"description": "Discover and identify EtherNet/IP devices, read and write attributes, stream I/O, diagnose, read and write Logix tags, check EDS files, or simulate an adapter.",
 		"icon": "go-ethernetip"
+	},
+	{
+		"id": "profinetctl",
+		"name": "profinetctl",
+		"repo": "profinetctl",
+		"category": "cli",
+		"standards": [
+			"profinet"
+		],
+		"status": "available",
+		"description": "Discover PROFINET devices, set station names and IP addresses, read I&M, records and diagnosis, map the cabling, check GSDML files, and connect as IO-Controller to watch cyclic IO and alarms.",
+		"icon": "go-profinet"
 	},
 	{
 		"id": "sparkplugbctl",
@@ -689,6 +723,18 @@
 		"status": "available",
 		"description": "Twelve EtherNet/IP reference stacks in eight languages, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
 		"icon": "go-ethernetip"
+	},
+	{
+		"id": "profinet-interop",
+		"name": "profinet-interop",
+		"repo": "profinet-interop",
+		"category": "interop",
+		"standards": [
+			"profinet"
+		],
+		"status": "available",
+		"description": "Independent PROFINET references in containers: rt-labs p-net and pnio-rs as IO-Devices, profinet-py as IO-Controller, pnio-dcp, two MRP ring nodes, Net-SNMP, and Wireshark and scapy as decoders.",
+		"icon": "go-profinet"
 	},
 	{
 		"id": "sparkplugb-interop",

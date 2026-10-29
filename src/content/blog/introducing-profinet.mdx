@@ -1,0 +1,93 @@
+---
+title: 'PROFINET joins OT Fabric: go-profinet, profinetctl and independent reference stacks'
+description: PROFINET IO connects PLCs to the remote I/O, drives and field devices of a plant. go-profinet implements IO-Controller and IO-Device under MIT, with DCP, records, alarms, GSDML and MRP rings, profinetctl puts them on the command line, and profinet-interop tests both on real Layer 2 networks against independent implementations.
+date: 2026-10-29
+authors: [OT Fabric]
+tags: [announcement, profinet, automation, interop]
+featured: true
+cover:
+  alt: go-profinet in the middle, connected to the PROFINET stacks rt-labs p-net, pnio-rs, profinet-py and pnio-dcp on the left and the MRP ring nodes umrp and microchip-ung/mrp and the Net-SNMP manager on the right, with Wireshark and scapy decoding every capture below. 248 checks pass, none fail.
+  image: ../../assets/blog/profinet-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+Open the control cabinet of a machine built in Europe and there is a good chance the cables leaving the PLC carry PROFINET. It is the industrial Ethernet of Siemens SIMATIC controllers and of the hundreds of vendors whose remote I/O, drives, valve terminals, robots and sensors plug into them. A controller finds each device by its station name, sets up a connection with the configuration it expects, and then exchanges inputs and outputs in real-time frames directly on Ethernet, every few milliseconds, with alarms and diagnosis alongside.
+
+Today PROFINET becomes the twelfth communication protocol in OT Fabric, with the same three pieces as every other: a library, a command-line tool and an interoperability suite.
+
+## Why PROFINET, and why now
+
+After [EtherNet/IP](/blog/introducing-ethernet-ip/), PROFINET was the obvious next step on the factory floor:
+
+- **It is the other half of factory Ethernet.** Where EtherNet/IP dominates in North America, PROFINET leads in Europe and much of Asia. Battery storage, water treatment, tunnels and building plant are often run by the same controllers, so getting at the data of an energy or infrastructure site regularly means talking PROFINET.
+- **The open field is thin.** Our [research for the ecosystem map](#who-else-implements-profinet) found that the market is very established and almost entirely commercial: development kits from Siemens and Hilscher, SDKs from Softing and Phoenix Contact, the PI Community Stack for members only. Of the open stacks, rt-labs p-net is the only mature IO-Device, its public GPLv3 tree has been frozen since 2024, and an open IO-Controller barely exists.
+- **Commissioning is where the time goes.** Naming devices, assigning addresses, checking that the cabling matches the plan and reading diagnosis are everyday work, usually done with an engineering tool on a Windows laptop. A scriptable tool and a library for gateways and test benches fit next to [Modbus](/protocols/modbus/), [OPC UA](/protocols/opc-ua/), [Siemens S7](/protocols/s7/) and [EtherNet/IP](/protocols/ethernet-ip/) on the same plant network.
+
+go-profinet adds an MIT-licensed controller and device in one library, tested against the open stacks that exist.
+
+## go-profinet
+
+[go-profinet](/projects/go-profinet/) implements PROFINET IO in both roles, on raw Ethernet on Linux, macOS and Windows, with no dependencies outside the standard library.
+
+- **An IO-Controller** that finds its devices with DCP, connects with legacy or advanced startup, writes their parameters and runs cyclic data on RT_CLASS_1 or RT_CLASS_2, with alarms, diagnosis, ModuleDiff checks, shared devices and automatic reconnection.
+- **An IO-Device** with slots, subslots and modules, records and I&M0 to I&M4, diagnosis and alarms, device access ARs for supervisors, DCP Hello, and names and addresses that survive a restart.
+- **DCP, LLDP and topology**: Identify, Get, Set, Signal and reset in both directions, neighbours on every port, and a check of the real cabling against the expected one.
+- **Multiport devices and MRP**: a software switch on two ports and a Media Redundancy Protocol ring as client, manager or automatic manager, plus an SNMP agent with MIB-II and the LLDP-MIB.
+- **GSDML files**: a parser, validation, a writer for devices built with the library, and controller configurations built from a vendor's file.
+- **A virtual Ethernet** for tests and simulators, so a controller and its devices run in one process without privileges, plus seeded loss, reordering and pulled cables for chaos tests.
+
+The PROFINET specifications are licensed to PI members, and OT Fabric is not one. go-profinet is built from public sources, Wireshark's dissectors and the behaviour of independent implementations, and its [PI-MEMBERSHIP.md](https://github.com/otfabric/go-profinet/blob/main/docs/PI-MEMBERSHIP.md) lists what that costs. What it does not implement is said plainly: IRT and time synchronization, PROFIsafe and the PROFINET security classes.
+
+## profinetctl
+
+[profinetctl](/projects/profinetctl/) puts go-profinet on the command line, for commissioning and troubleshooting.
+
+```sh
+# Which PROFINET devices are on eth0?
+sudo profinetctl -i eth0 discover
+
+# Name a new device by its MAC address and give it an address
+sudo profinetctl -i eth0 name set io-rack-1 --mac 00:0e:cf:12:34:56 --permanent
+sudo profinetctl -i eth0 ip set 192.168.0.10/24 -s io-rack-1 --permanent
+
+# Flash its LED, then read identification and health
+sudo profinetctl -i eth0 signal -s io-rack-1
+sudo profinetctl -i eth0 im read -s io-rack-1
+sudo profinetctl -i eth0 diagnostics -s io-rack-1
+
+# Which device is plugged into which port?
+sudo profinetctl -i eth0 topology
+
+# Connect as IO-Controller with the device's GSDML file and watch its inputs
+sudo profinetctl -i eth0 io monitor -s io-rack-1 --gsdml GSDML-V2.35-Vendor-Device-20240101.xml
+```
+
+It also reads and writes records, inspects, validates and generates GSDML files, and follows a device's alarms as IO-Controller. Output is text, a table or JSON with stable exit codes, and every command that changes a device says so. The [profinetctl guide](/docs/protocols/profinet/cli/) walks through it.
+
+## Tested against independent stacks
+
+[profinet-interop](/projects/profinet-interop/) packages independent implementations as containers behind one contract, pinned by commit or version: rt-labs p-net (C) and pnio-rs (Rust) as IO-Devices, profinet-py (Python) as IO-Controller and DCP tool, pnio-dcp (Python) for DCP, umrp and microchip-ung/mrp (C) as MRP ring nodes, Net-SNMP as manager, and Wireshark's tshark and scapy as decoders. Because most of them are GPL, no image is published: every user builds them from upstream with one `make images`.
+
+go-profinet runs against them on real Layer 2 networks, on Docker bridges and, for the kernel's bridge MRP, in micro-VMs. Its controller connects to p-net and pnio-rs with cyclic data at 1 ms, records, I&M, diagnosis, alarms and a shared device with two controllers; its device is driven by profinet-py's controller; both answer every DCP tool; its rings run with umrp and microchip-ung/mrp as manager, client and automatic manager, with cables cut mid-test. Every frame is decoded by tshark and scapy, and a frame they cannot decode fails the test. **248 checks pass, none fail**, 6 are not applicable because a peer lacks the feature, and 14 are attributed deviations of a peer. The [coverage matrix](/docs/protocols/profinet/testing/) shows each one.
+
+The references disagreed with go-profinet in instructive ways, and because the standard is not public, where they all agreed we changed go-profinet. p-net, pnio-rs and profinet-py all number the first alarm 0xFFFF rather than 0. p-net ties an AR to the RPC activity of its Connect, starts its inputs only after PrmEnd, and ignores other requesters for three seconds after a DCP Get or Set. pnio-rs accepts only RT_CLASS_2 frame IDs. Others are recorded and not worked around: p-net plugs whatever module a controller expects instead of reporting the difference, and profinet-py writes an I&M1 block two octets too long.
+
+<Callout type="note" title="Interoperability, not certification">
+go-profinet and profinetctl v0.6.0 are pre-1.0 and interoperability tested. They are not certified by PI and make no conformance claim. Certification is mandatory for a PROFINET product and is done at PI Test Labs with PI's test bundle. No commercial PLC, device or engineering tool is in the suite yet, no GSDML file written by go-profinet has been imported by TIA Portal or CODESYS, and the device has only one open controller to test against. What is and is not covered is listed in [Testing and interop](/docs/protocols/profinet/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the PROFINET projects are built by people and AI agents together. Without the specification, the work is careful reading of public sources and a lot of testing: every disagreement with a reference stack is traced to a capture, attributed and written down, and the chaos tests, fuzz targets and soak runs are part of every release. The tests, the interop matrix and the list of limitations are public, so you can judge the result yourself.
+
+## Who else implements PROFINET
+
+The [ecosystem map](/ecosystem/implementations/?protocol=profinet) now covers PROFINET: 18 implementations, from p-net, pnio-rs and the Python DCP tools to smaller Go, Rust and Node.js projects, the PI Community Stack, and commercial stacks and SDKs from Siemens, Hilscher, Softing, Phoenix Contact, CODESYS and Beckhoff, with language, licence, roles and latest release.
+
+<MapLink protocol="profinet" title="Explore PROFINET on the ecosystem map" />
+
+Who maintains the standard, what certification costs and where plugfests are held is in [PI's entry](/ecosystem/organizations/pi/) in the standards and alliances directory.
+
+Start with the [PROFINET overview](/docs/protocols/profinet/), or `go get github.com/otfabric/go-profinet`.

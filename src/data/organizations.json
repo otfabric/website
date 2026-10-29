@@ -232,15 +232,15 @@
 		"acronym": "IEC",
 		"kind": "standards-body",
 		"summary": "Publishes IEC 61850 and IEC 60870-5 through TC 57, and the IEC 61158 and 61784 fieldbus series through SC 65C; experts join via national committees.",
-		"description": "The IEC is the international standards organization for electrical and electronic technologies. Its Technical Committee 57 (power systems management and associated information exchange) maintains the IEC 61850 substation automation series and the IEC 60870-5 telecontrol protocols, including IEC 60870-5-104. Subcommittee 65C (industrial networks) maintains the IEC 61158 fieldbus and IEC 61784 profile series, in which the CIP networks, EtherNet/IP among them, are Communication Profile Family 2.",
+		"description": "The IEC is the international standards organization for electrical and electronic technologies. Its Technical Committee 57 (power systems management and associated information exchange) maintains the IEC 61850 substation automation series and the IEC 60870-5 telecontrol protocols, including IEC 60870-5-104. Subcommittee 65C (industrial networks) maintains the IEC 61158 fieldbus and IEC 61784 profile series, in which the CIP networks, EtherNet/IP among them, are Communication Profile Family 2 and PROFINET and PROFIBUS are Communication Profile Family 3.",
 		"website": "https://tc57.iec.ch/",
 		"region": "global",
 		"domains": ["energy", "industrial"],
-		"protocols": ["iec-61850", "iec-61850-model", "iec-104", "ethernet-ip"],
+		"protocols": ["iec-61850", "iec-61850-model", "iec-104", "ethernet-ip", "profinet"],
 		"standards": [
 			{ "name": "IEC 61850 (TC 57 WG 10, power system IED communication)", "role": "publishes" },
 			{ "name": "IEC 60870-5 telecontrol protocols, including 60870-5-104 (TC 57 WG 3)", "role": "publishes" },
-			{ "name": "IEC 61158 and IEC 61784 industrial networks, including CPF 2 for the CIP networks (SC 65C)", "role": "publishes" }
+			{ "name": "IEC 61158 and IEC 61784 industrial networks, including CPF 2 for the CIP networks and CPF 3 for PROFINET and PROFIBUS (SC 65C)", "role": "publishes" }
 		],
 		"access": {
 			"specifications": { "answer": "no", "detail": "Standards are sold through the IEC webstore. The complete IEC 61850 series pack lists at CHF 26,508.", "source": "https://webstore.iec.ch/en/publication/6028" },
@@ -261,7 +261,8 @@
 		"related": [
 			{ "id": "uca-international", "relation": "Runs the IEC 61850 user group and interoperability testing; TC 57 writes the standard." },
 			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." },
-			{ "id": "odva", "relation": "ODVA maintains CIP and EtherNet/IP; IEC 61784-1-2 profiles them as CPF 2." }
+			{ "id": "odva", "relation": "ODVA maintains CIP and EtherNet/IP; IEC 61784-1-2 profiles them as CPF 2." },
+			{ "id": "pi", "relation": "PI maintains PROFINET and PROFIBUS; IEC 61784-2 profiles them as CPF 3." }
 		],
 		"sources": [
 			{ "label": "IEC TC 57", "url": "https://tc57.iec.ch/" },
@@ -479,6 +480,161 @@
 			"Open-source implementers work without the specifications. OpENer was first released by Rockwell Automation, and newer stacks such as go-ethernetip are built from public documents and the behaviour of other implementations. That keeps the code open, but leaves conformance to the companies that ship products on it.",
 			"The PlugFest is the cheapest way in for a young company: it needs no membership and tests a product against other vendors' devices in a live system, well before the formal conformance test.",
 			"ODVA does not publish its fees on its website, so comparing the cost of entry with the OPC Foundation or the DNP Users Group needs a quote."
+		]
+	},
+	{
+		"id": "pi",
+		"name": "PROFIBUS & PROFINET International",
+		"acronym": "PI",
+		"kind": "industry-alliance",
+		"summary": "Maintains PROFINET, PROFIBUS and IO-Link, runs mandatory PROFINET certification through PI Test Labs and offers members its Community Stack.",
+		"description": "PROFIBUS & PROFINET International is the umbrella of the PROFIBUS Nutzerorganisation (PNO) in Germany and the Regional PI Associations around the world. It maintains the PROFINET and PROFIBUS specifications and profiles such as PROFIsafe, PROFIdrive and PROFIenergy, and IO-Link. Certification by an independent PI Test Lab is mandatory for every PROFINET device, members get the specifications, the PROFINET Test Bundle and the PROFINET Community Stack, and regional associations hold Plugfests. The protocols are also in IEC 61158 and IEC 61784 as Communication Profile Family 3.",
+		"website": "https://www.profibus.com/",
+		"region": "global",
+		"domains": [
+			"industrial"
+		],
+		"protocols": [
+			"profinet"
+		],
+		"standards": [
+			{
+				"name": "PROFINET and PROFIBUS specifications, with the PROFIsafe, PROFIdrive and PROFIenergy profiles, and GSDML",
+				"role": "maintains"
+			},
+			{
+				"name": "PROFINET certification through PI Test Labs and the PI Certification Office",
+				"role": "certifies"
+			},
+			{
+				"name": "PROFINET Community Stack, for members",
+				"role": "publishes",
+				"note": "Source code for members under the PNO Community Source Code License, not an open-source licence."
+			}
+		],
+		"access": {
+			"specifications": {
+				"answer": "no",
+				"detail": "Access to the specifications is listed as a member benefit for device manufacturers. The IEC 61158 and 61784 versions are sold by the IEC.",
+				"source": "https://www.profibus.com/pi-organization/membership"
+			},
+			"community": {
+				"answer": "partial",
+				"detail": "Membership runs through a Regional PI Association; member-only training documents and webinars are listed as benefits, while public guides and the PI forum are open.",
+				"source": "https://www.profibus.com/pi-organization/membership"
+			},
+			"individualFree": {
+				"answer": "unknown",
+				"detail": "The membership pages describe device manufacturers, users and consultants, and a separate student membership; we found no free individual tier."
+			},
+			"organizationFree": {
+				"answer": "notPublished",
+				"detail": "Fees are not on the membership pages; applicants are sent to their Regional PI Association."
+			},
+			"workingGroups": {
+				"answer": "partial",
+				"detail": "Companies that join working groups must accept the TC/WG guidelines, the codes of conduct and the IPR policy; we found no statement on access for non-members.",
+				"source": "https://www.profibus.com/pi-organization/membership"
+			},
+			"interopTesting": {
+				"answer": "unknown",
+				"detail": "Regional associations hold Plugfests, such as PI North America's in April 2026 with thirteen companies; the page does not say whether membership is required.",
+				"source": "https://us.profinet.com/2026-north-american-profinet-plugfest/"
+			},
+			"certification": {
+				"answer": "partial",
+				"detail": "Certification is mandatory for PROFINET and open to non-members, but the certificate costs EUR 6,000 instead of EUR 1,800, the PROFINET Test Bundle is for members only, non-members must license the patents themselves and may not use the PROFINET logo.",
+				"source": "https://profibus.com/products/product-certification"
+			},
+			"openSource": {
+				"answer": "no",
+				"detail": "The PROFINET Community Stack is free of charge for members only, under the PNO Community Source Code License, which forbids combining it with copyleft code.",
+				"source": "https://www.profinet.com/profinet-explained/community-stack"
+			}
+		},
+		"memberships": [
+			{
+				"name": "Member, through a Regional PI Association",
+				"audience": "company",
+				"fee": {
+					"kind": "notPublished"
+				},
+				"eligibility": "Companies and research institutions; device manufacturers and users and consultants have different benefit sets.",
+				"note": "Specifications, patent rights, test tools, the Community Stack and certification discounts.",
+				"source": "https://www.profibus.com/pi-organization/membership"
+			}
+		],
+		"programs": [
+			{
+				"kind": "certification",
+				"name": "PROFINET certification",
+				"url": "https://profibus.com/products/product-certification",
+				"detail": "A test at an independent PI Test Lab, paid to the lab, then a certificate from the PI Certification Office: EUR 1,800 for members, EUR 6,000 for non-members. Valid for three years; any change to the device invalidates it. Device certificates for products, technology certificates for stacks, ASICs and evaluation boards.",
+				"openToNonMembers": "yes",
+				"source": "https://profibus.com/products/product-certification"
+			},
+			{
+				"kind": "test-tool",
+				"name": "PROFINET Test Bundle",
+				"detail": "The test software of the certification test, downloadable free of charge by members; non-members have no access.",
+				"openToNonMembers": "no",
+				"source": "https://profibus.com/products/product-certification"
+			},
+			{
+				"kind": "plugfest",
+				"name": "PROFINET Plugfest",
+				"url": "https://us.profinet.com/2026-north-american-profinet-plugfest/",
+				"detail": "Vendors test controllers and devices against each other, often before certification. PI North America's fourth was held in April 2026 with seven controllers and fifteen devices.",
+				"openToNonMembers": "unknown",
+				"source": "https://us.profinet.com/2026-north-american-profinet-plugfest/"
+			}
+		],
+		"openSource": [],
+		"documents": [
+			{
+				"label": "PROFINET Community Stack",
+				"url": "https://www.profinet.com/profinet-explained/community-stack"
+			},
+			{
+				"label": "Product certification",
+				"url": "https://profibus.com/products/product-certification"
+			}
+		],
+		"relatedProjects": [
+			"go-profinet",
+			"profinetctl",
+			"profinet-interop"
+		],
+		"related": [
+			{
+				"id": "iec",
+				"relation": "IEC 61158 and IEC 61784-2 include PROFINET and PROFIBUS as Communication Profile Family 3."
+			}
+		],
+		"sources": [
+			{
+				"label": "Membership",
+				"url": "https://www.profibus.com/pi-organization/membership"
+			},
+			{
+				"label": "Product certification",
+				"url": "https://profibus.com/products/product-certification"
+			},
+			{
+				"label": "The PROFINET Community Stack",
+				"url": "https://www.profinet.com/profinet-explained/community-stack"
+			},
+			{
+				"label": "2026 North American PROFINET Plugfest",
+				"url": "https://us.profinet.com/2026-north-american-profinet-plugfest/"
+			}
+		],
+		"verifiedAt": "2026-10-29",
+		"detail": true,
+		"insights": [
+			"PROFINET is the one protocol in this directory where certification is mandatory for every device, and it is open to non-members at a higher fee. The test software is not, so a young company in practice joins before it certifies.",
+			"PI's own source code, the Community Stack, is free but members-only and cannot be combined with copyleft code. Open implementers therefore work from public documents, Wireshark's dissectors and each other's behaviour, as go-profinet does with p-net, pnio-rs and profinet-py.",
+			"OT Fabric is not a PI member. go-profinet lists what that costs, from official schema validation to certification, in its PI-MEMBERSHIP document, and makes no conformance claim."
 		]
 	},
 	{

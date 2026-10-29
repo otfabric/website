@@ -96,6 +96,7 @@ export default defineConfig({
             { label: 'DNP3', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/dnp3' } }] },
             { label: 'IEEE 2030.5', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/ieee-2030-5' } }] },
             { label: 'EtherNet/IP', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/ethernet-ip' } }] },
+            { label: 'PROFINET', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/profinet' } }] },
           ],
         },
         {

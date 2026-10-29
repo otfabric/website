@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="go-profinet tested on a real Layer 2 network against independent implementations from profinet-interop v0.6.0: the rt-labs p-net and pnio-rs IO-Devices, the profinet-py IO-Controller and the pnio-dcp DCP tool on the left, the umrp and microchip-ung/mrp MRP ring nodes and the Net-SNMP manager on the right, with Wireshark and scapy decoding every capture. 248 checks pass and none fail.">
+  <rect width="720" height="400" fill="#F4F6F8"/>
+  <text x="40" y="44" font-size="15" font-weight="600" fill="#17212B">go-profinet against independent PROFINET implementations</text>
+  <text x="680" y="44" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">profinet-interop v0.6.0</text>
+  <g font-size="11" fill="#5A6875" font-family="IBM Plex Mono, monospace"><text x="40" y="80">PROFINET STACKS</text><text x="680" y="80" text-anchor="end">MRP AND SNMP</text></g>
+  <g fill="none" stroke="#0A7C80" stroke-width="1.5" stroke-linecap="round" opacity="0.55">
+    <path d="M240 116 C 275 116, 265 186, 300 186"/>
+    <path d="M240 166 C 275 166, 265 186, 300 186"/>
+    <path d="M240 216 C 275 216, 265 186, 300 186"/>
+    <path d="M240 266 C 275 266, 265 186, 300 186"/>
+    <path d="M420 186 C 455 186, 445 141, 480 141"/>
+    <path d="M420 186 C 455 186, 445 191, 480 191"/>
+    <path d="M420 186 C 455 186, 445 241, 480 241"/>
+    <path d="M360 238 V 310"/>
+  </g>
+  <g><rect x="40" y="96" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="112" font-size="12.5" font-weight="600" fill="#17212B">rt-labs p-net</text>
+    <text x="228" y="112" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="52" y="127" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">IO-Device · 56 pass</text></g>
+  <g><rect x="40" y="146" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="162" font-size="12.5" font-weight="600" fill="#17212B">pnio-rs</text>
+    <text x="228" y="162" font-size="11" fill="#5A6875" text-anchor="end">Rust</text>
+    <text x="52" y="177" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">IO-Device · 13 pass</text></g>
+  <g><rect x="40" y="196" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="212" font-size="12.5" font-weight="600" fill="#17212B">profinet-py</text>
+    <text x="228" y="212" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="52" y="227" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">IO-Controller · 32 pass</text></g>
+  <g><rect x="40" y="246" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="262" font-size="12.5" font-weight="600" fill="#17212B">pnio-dcp</text>
+    <text x="228" y="262" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="52" y="277" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">DCP tool · 8 pass</text></g>
+  <g><rect x="480" y="121" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="137" font-size="12.5" font-weight="600" fill="#17212B">umrp</text>
+    <text x="668" y="137" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="492" y="152" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">MRP ring node · 32 pass</text></g>
+  <g><rect x="480" y="171" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="187" font-size="12.5" font-weight="600" fill="#17212B">microchip-ung/mrp</text>
+    <text x="668" y="187" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="492" y="202" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">MRP, Linux bridge · 31 pass</text></g>
+  <g><rect x="480" y="221" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="237" font-size="12.5" font-weight="600" fill="#17212B">Net-SNMP</text>
+    <text x="668" y="237" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="492" y="252" font-size="10.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">SNMP manager · 29 pass</text></g>
+  <g><rect x="300" y="134" width="120" height="104" rx="10" fill="#0A7C80"/>
+    <text x="360" y="166" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">go-profinet</text>
+    <text x="360" y="188" font-size="10.5" fill="#DCEFEF" text-anchor="middle" font-family="IBM Plex Mono, monospace">controller</text>
+    <text x="360" y="202" font-size="10.5" fill="#DCEFEF" text-anchor="middle" font-family="IBM Plex Mono, monospace">device · MRP</text>
+    <text x="360" y="224" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">248 pass · 0 fail</text></g>
+  <g><rect x="40" y="310" width="640" height="40" rx="6" fill="#DCEFEF" stroke="#B9DEDF"/>
+    <text x="56" y="335" font-size="12.5" font-weight="600" fill="#17212B">Wireshark tshark 4.0.17 and scapy 2.6.1 decode every capture</text>
+    <text x="664" y="335" font-size="10.5" fill="#0A7C80" text-anchor="end" font-family="IBM Plex Mono, monospace">decoders · 47 pass</text></g>
+  <text x="40" y="380" font-size="11" fill="#5A6875">Interoperability, not PI certification. Real Layer 2 on Docker bridges; microchip-ung/mrp in micro-VMs with kernel MRP.</text>
+</svg>

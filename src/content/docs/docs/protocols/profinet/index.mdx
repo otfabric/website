@@ -1,0 +1,94 @@
+---
+title: PROFINET
+description: How PROFINET IO works (IO-Controllers, IO-Devices and IO-Supervisors, station names and DCP, application relationships, slots, subslots and modules, cyclic RT frames, records, I&M, alarms and diagnosis, GSDML, LLDP topology and MRP rings) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+PROFINET IO is the industrial Ethernet of PLCs, remote I/O, drives and field devices that PROFIBUS & PROFINET International (PI) maintains. It is also part of the international fieldbus standards, as IEC 61158-5-10 and 61158-6-10 for the services and protocol and IEC 61784-2 for the profiles, where it is Communication Profile Family 3. This page explains how PROFINET IO works on the wire, as far as it matters for using [go-profinet](/projects/go-profinet/) and [profinetctl](/projects/profinetctl/).
+
+## Controllers, devices and supervisors
+
+An **IO-Controller**, usually a PLC, owns the devices of its IO system: it connects to them, parameterizes them, and exchanges their inputs and outputs every cycle. An **IO-Device** is the field side: a remote I/O station, a drive, a valve terminal, a robot, a sensor or a gateway. An **IO-Supervisor** is an engineering or commissioning tool, a PC that names devices, reads their diagnosis and writes their records, often without taking over their IO.
+
+A device can serve more than one controller at a time. In a **shared device**, each submodule belongs to one controller, and the others see it as locked.
+
+## Station names, addresses and DCP
+
+PROFINET addresses a device by its **station name** (NameOfStation), a DNS-style label such as `io-rack-1` that the engineering project gives it. A new device has no name and is found by its MAC address. The **Discovery and Configuration Protocol** (DCP) runs directly on Ethernet (EtherType 0x8892) and does everything before a connection:
+
+| Service | What it does |
+|---|---|
+| Identify | Multicast to every device, or those with a given name, alias, IP or device ID; each answers after a random delay |
+| Get, Set | Read or set the station name and the IP suite, temporarily or permanently |
+| Signal | Flash a device's LED, to find it in the cabinet |
+| ResetToFactory | Reset communication parameters, application data or the whole device |
+| Hello | A device announces itself at power-up, so a controller can connect without waiting for an Identify (Fast Startup) |
+
+A controller starts each connection with an Identify by name, and optionally assigns the IP address it expects.
+
+## Application relationships
+
+The controller sets up an **application relationship** (AR) with a **Connect** request over connectionless DCE/RPC on UDP port 34964. The Connect carries the configuration the controller expects, the communication relationships (**IOCRs**) for inputs and outputs with their cycle time and watchdog, and an alarm relationship. The device answers with a **ModuleDiffBlock** for anything that differs from what it really has.
+
+Then the controller writes the parameters, ends parameterization with **PrmEnd**, and the device answers **ApplicationReady**. From then on the AR is in data exchange. A **Release** ends it; a watchdog, a data hold timeout or an activity timeout aborts it, and the controller connects again.
+
+| AR type | Used by |
+|---|---|
+| IOCAR | An IO-Controller: cyclic IO, alarms and records |
+| Device access AR (IOSAR) | A supervisor: records only, no IO data, without disturbing the owner |
+| ReadImplicit | Not an AR at all: one record read, for identification and diagnosis |
+
+**Legacy startup** runs RT_CLASS_1 frames; **advanced startup** runs RT_CLASS_2 (unsynchronized) and is what newer devices prefer.
+
+## Slots, subslots, modules and records
+
+A device is modelled as a rack. **Slot 0** holds the **device access point** (DAP), with the interface and its ports as subslots 0x8000 and up. The other slots hold **modules**, and each module has **submodules** in subslots. IO data, parameters and diagnosis belong to submodules.
+
+Acyclic data lives in **records**, addressed by slot, subslot and index: user parameters (0x0000 to 0x7FFF), identification and maintenance (**I&M0** to I&M4 at 0xAFF0 to 0xAFF4: order number, serial, revisions, function and location tags), the real configuration (RealIdentificationData), diagnosis, port data, and the logbook.
+
+## Cyclic data
+
+Process data travels in **RT frames** directly on Ethernet, with a VLAN priority tag and no IP header. Each frame carries one IOCR: the IO data objects of its submodules, each followed by an **IOPS** (provider status: good or bad), and the **IOCS** (consumer status) for the other direction. A cycle counter and a data status byte close the frame.
+
+The cycle is a send clock (in units of 31.25 µs, 1 ms by default) times a **reduction ratio**, commonly 1 to 128 ms. If no frame arrives for the **watchdog** factor times the cycle, the AR is aborted; outputs then go to their safe state. IRT (RT_CLASS_3) adds a synchronized, scheduled phase for motion control, which needs switch hardware.
+
+## Alarms and diagnosis
+
+A device reports events on the alarm channel, with high and low priority: **diagnosis** appears or disappears (a line break, a short circuit, a channel fault), a **process** alarm from the application, and **plug** and **pull** of modules. The controller acknowledges every alarm. Diagnosis can also be read from records at any time, by channel, by submodule or for the whole device.
+
+## GSDML
+
+Every PROFINET device comes with a **GSDML** file (General Station Description Markup Language): XML that names its device access points, the modules and submodules it accepts, their IO data lengths and parameter records with defaults, diagnosis texts and capabilities. Engineering tools build the controller's configuration from it, and a controller knows from it what to send in a Connect. The official schemas are licensed to PI members.
+
+## Topology and media redundancy
+
+Every PROFINET port runs **LLDP**, so each device knows its neighbour on each port and reports it in its port data. A controller or a tool can compare that with the expected cabling, and a replacement device can get its name from its position without an engineering tool.
+
+**MRP**, the Media Redundancy Protocol of IEC 62439-2, closes a line of devices into a ring. A **manager** blocks one of its ring ports and sends test frames around; when a cable breaks, the test frames stop, the manager opens its port, and traffic flows the other way within the profile's recovery time (200 ms or 500 ms for the common profiles). The other devices are **clients**.
+
+<Aside type="caution" title="Real equipment">
+PROFINET has no authentication of its own: anyone with Layer 2 access can rename, readdress or reset a device and take over its outputs. A controller drives real outputs, and a DCP Set or reset changes how a plant is wired logically. Use profinetctl and go-profinet on devices and isolated networks you own or are authorized to test, behind the zones and conduits of IEC 62443.
+</Aside>
+
+## Specifications and certification
+
+PI publishes the PROFINET specifications, the GSDML schemas and the test specifications to its members; the IEC versions are sold by the IEC. **Certification is mandatory** for a PROFINET device: a test at an independent PI Test Lab, then a certificate from PI's certification office, open to non-members at a higher fee; see [PI in the standards directory](/ecosystem/organizations/pi/). OT Fabric is not a PI member. The OT Fabric projects are built from public sources, Wireshark's dissectors and the behaviour of independent implementations, list what that costs in go-profinet's [PI-MEMBERSHIP.md](https://github.com/otfabric/go-profinet/blob/main/docs/PI-MEMBERSHIP.md), and make no conformance claim.
+
+## OT Fabric for PROFINET
+
+| Project | What it is |
+|---|---|
+| [go-profinet](/projects/go-profinet/) | PROFINET IO for Go: IO-Controller and IO-Device with DCP, LLDP, DCE/RPC, records, I&M, diagnosis, alarms, RT_CLASS_1 and RT_CLASS_2 cyclic data, shared device, MRP on multiport devices, SNMP and GSDML. Raw Ethernet on Linux, macOS and Windows, and a virtual Ethernet for tests. No dependencies outside the standard library. v0.6.0. |
+| [profinetctl](/projects/profinetctl/) | A command-line tool on go-profinet for commissioning and troubleshooting: discover, name and address devices, read I&M, records and diagnosis, map and check the topology, work with GSDML files, and connect as IO-Controller to watch cyclic IO and alarms. v0.6.0. |
+| [profinet-interop](/projects/profinet-interop/) | Docker images of independent references behind one container contract: p-net, pnio-rs, profinet-py and pnio-dcp, two MRP ring implementations, Net-SNMP, and Wireshark and scapy as decoders. v0.6.0. |
+
+<CardGrid>
+  <LinkCard title="Go library" description="IO-Controllers, IO-Devices, DCP, records, alarms and GSDML with go-profinet." href="/docs/protocols/profinet/library/" />
+  <LinkCard title="profinetctl" description="Discover, name and address, read records and diagnosis, check the topology and watch IO." href="/docs/protocols/profinet/cli/" />
+  <LinkCard title="Testing and interop" description="Reference stacks, the matrix and what has been validated." href="/docs/protocols/profinet/testing/" />
+  <LinkCard title="Ecosystem map" description="Who else implements PROFINET, in which language and licence." href="/ecosystem/implementations/?protocol=profinet" />
+</CardGrid>

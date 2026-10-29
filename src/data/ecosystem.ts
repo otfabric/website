@@ -96,7 +96,9 @@ export const maintenanceLabels: Record<string, string> = {
 export function licenseFamily(license: string) {
 	// Proprietary freeware has no licence fee but is closed source, so it sits with the vendor products.
 	if (license === 'Commercial' || /proprietary/i.test(license)) return 'Commercial';
-	if (/non-commercial/i.test(license)) return 'Source-available';
+	// Published source without an open-source licence: non-commercial terms, a members-only
+	// agreement, or no licence at all (all rights reserved).
+	if (/non-commercial|members only|none stated/i.test(license)) return 'Source-available';
 	if (/WITH|LGPL|MPL|EPL/.test(license)) return 'Weak copyleft';
 	if (/GPL/.test(license)) return 'Copyleft';
 	return 'Permissive';
