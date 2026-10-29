@@ -1,0 +1,108 @@
+---
+title: Testing and interop
+description: Test CAN code on Linux virtual CAN against independent implementations with canbus-interop (can-utils with the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix), and see what go-canbus and canbusctl have and have not been validated against.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Two kinds of OT Fabric repositories share the testing of CAN. [canbus-interop](/projects/canbus-interop/) owns the reference implementations: adapters around independent CAN, ISO-TP and database stacks behind one container contract, pinned by version and hash, with a self-test that runs them against each other. It knows nothing about any library under test. [go-canbus](/projects/go-canbus/) is a consumer: its interop suite drives the published images on Linux virtual CAN, owns the scenarios and assertions, and writes a result matrix where every scenario passes, fails, is skipped with a reason, or records a documented difference.
+
+<Aside type="note" title="Interoperability, not conformance">
+ISO 11898-1 and ISO 15765-2 are not public, and DBC has no public specification at all. Agreement between independent implementations is strong evidence, but they can share a misreading, and it is not ISO or CiA conformance. go-canbus makes no conformance claim.
+</Aside>
+
+## canbus-interop
+
+canbus-interop v0.5.0 (container contract 1.3) packages:
+
+| Adapter | Implementation | Version | Licence | Exercises |
+|---|---|---|---|---|
+| `canutils` | [linux-can/can-utils](https://github.com/linux-can/can-utils) (C) | v2025.01 | GPL-2.0-only OR BSD-3-Clause | The kernel's `CAN_RAW` (cansend, candump, canplayer) and **`CAN_ISOTP`** (isotpsend, isotprecv); CAN XL |
+| `pythoncan` | [python-can](https://github.com/hardbyte/python-can) (Python) | 4.6.1 | LGPL-3.0-only | `CAN_RAW` through Python; **slcan** through pyserial; candump, ASC, BLF, TRC and CSV logs |
+| `socketcanrs` | [socketcan-rs](https://github.com/socketcan-rs/socketcan-rs) (Rust) | 4.0.0 | MIT | `CAN_RAW` through libc |
+| `scapy` | [Scapy](https://github.com/secdev/scapy) (Python) | 2.8.0 | GPL-2.0-only | `CAN_RAW` with Scapy's own frame codec |
+| `pythoncanisotp` | [python-can-isotp](https://github.com/pylessard/python-can-isotp) (Python) | 2.0.7 | MIT | A **userspace ISO-TP** state machine |
+| `cantools` | [cantools](https://github.com/cantools/cantools) (Python) | 45.1.1 | MIT | DBC and ARXML parser, signal codec |
+| `canmatrix` | [canmatrix](https://github.com/ebroecker/canmatrix) (Python) | 1.3.3 | BSD-2-Clause | DBC, KCD and ARXML parser, signal codec, conversion |
+
+**What "independent" means here.** The four raw-CAN clients (can-utils, python-can, socketcan-rs, Scapy) are independently written userspace programs, but they all use the same Linux `CAN_RAW` code in the kernel. They are independent in how they build, parse and present frames (identifier flags, lengths, FD flags, filters, socket options, log formats), not in controller or bus behaviour. The two ISO-TP implementations, the kernel's and python-can-isotp's, are genuinely independent, and so are cantools and canmatrix as database tools.
+
+Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canbus-interop/blob/main/versions.yaml), and the multi-architecture images (amd64 and arm64) are published to GitHub Container Registry; the canutils image ships the source of its GPL binaries. A weekly workflow reports new upstream releases.
+
+## Running the reference stacks
+
+<Steps>
+
+1. On a Linux host with the CAN modules (Ubuntu: `linux-modules-extra-$(uname -r)`), create CAN FD capable virtual interfaces:
+
+   ```sh
+   git clone https://github.com/otfabric/canbus-interop && cd canbus-interop
+   make vcan
+   ```
+
+2. CAN interfaces belong to a network namespace and Docker networks do not carry CAN, so containers run with `--network host`. Start a receiver:
+
+   ```sh
+   docker run --rm --network host ghcr.io/otfabric/canbus-interop-canutils:v0.5.0 \
+       receive --interface vcan0 --count 1 --fd
+   ```
+
+3. Send to it with another stack, or with your own code:
+
+   ```sh
+   echo '{"id":291,"fd":true,"brs":true,"len":12,"data":"000102030405060708090a0b"}' |
+       docker run --rm -i --network host ghcr.io/otfabric/canbus-interop-socketcanrs:v0.5.0 send --fd
+   ```
+
+4. Run the self-test, every reference against every other:
+
+   ```sh
+   make images smoke selftest
+   ```
+
+</Steps>
+
+On macOS or Docker Desktop, whose kernel has no CAN, `make images smoke selftest-dbc` runs everything that needs no CAN interface. Every image speaks the same commands, flags, JSON documents and exit codes ([container contract](https://github.com/otfabric/canbus-interop/blob/main/docs/CONTAINER_CONTRACT.md)), and `print-capabilities` tells a test suite which scenarios a stack can run.
+
+## What go-canbus is tested on
+
+Against canbus-interop v0.5.0, on Linux with `vcan0` and the published images pinned by digest, in CI on amd64 and arm64: **170 scenarios pass, 0 fail, 13 are skipped**, and 132 records are documented differences.
+
+| Area | Scenarios | References |
+|---|---|---|
+| Raw CAN, both directions | Standard, extended, remote, CAN FD with BRS and with ESI, error frames, 2000-frame bursts for order and loss, many consumers at once | can-utils, python-can, socketcan-rs, Scapy |
+| CAN XL, both directions | Priorities 0 and 0x7FF, SEC and RRS, SDU types, acceptance fields, VCIDs, 1 to 2048 bytes; a candump capture read back | can-utils (the others have no CAN XL: skipped) |
+| Capture and replay | candump logs both ways; ASC, BLF and TRC files read and written | can-utils, python-can |
+| ISO-TP, both directions | 1 to 4095 bytes, normal, 29-bit, extended and mixed addressing, padding, block size and STmin, CAN FD; a receiver answering OVERFLOW | The kernel's ISO-TP, python-can-isotp |
+| slcan | Standard, extended, remote, CAN FD and 2000-frame bursts against python-can over TCP; the Linux kernel's slcan driver on a pseudo-terminal, including adapter status records | python-can, Linux |
+| DBC | Seven fixtures decoded and encoded: Intel and Motorola, cross-byte, signed, 64-bit, scaling, value tables, simple and extended multiplexing, CAN FD, float | cantools, canmatrix |
+| KCD, ARXML | KCD read and written; three ARXML fixtures and multiplexed I-PDUs decoded and encoded | canmatrix, cantools |
+
+The documented differences are places where DBC and ARXML have no normative answer and the tools disagree: cantools refuses a multiplexer value without a branch, canmatrix 1.3.3 cannot encode extended multiplexing and reads only the selector of a multiplexed ARXML PDU, and both place an ARXML PDU at byte 0 of its frame where AUTOSAR gives an offset. python-can reads some TRC and ASC records differently from PEAK's and Vector's meaning. None is a go-canbus defect, and each is listed with its reason in [INTEROPERABILITY.md](https://github.com/otfabric/go-canbus/blob/main/INTEROPERABILITY.md). The suite found two defects in go-canbus, both fixed: it rejected can-utils' newer CAN FD candump notation, and 64-bit physical values given as JSON numbers lost precision.
+
+### Beyond the interop suite
+
+- **Linux kernels**: SocketCAN, netlink administration, kernel ISO-TP and the slcan driver in micro-VMs on mainline 6.1, 6.6, 6.12 and 6.18 and Ubuntu's kernel, and on 7.0 in development; CAN XL on every kernel from 6.2.
+- **Wireshark and libpcap**: every frame kind written to pcap and pcapng is dissected by tshark into the same frame, and tcpdump captures of the kernel are read back.
+- **Chaos monkey**: random seeded fault schedules on the virtual bus and, on Linux, through the fault bridge to the kernel's ISO-TP, checking that every received message is one that was sent and every call returns by its deadline; 500 seeds nightly on amd64 and arm64.
+- **End to end**: three ECUs from generated code, a gateway recording into five trace formats at once and ISO-TP diagnostics alongside, every recording replayed and decoded to the same signals.
+- **Fuzzing** of every parser and decoder, the race detector, and a 90 % coverage gate (93 % at v0.7.0).
+
+## What has not been validated
+
+| Not validated | Why it matters |
+|---|---|
+| Real CAN hardware | Virtual CAN is a perfect medium: no bit timing, sample points, CAN FD data phase, arbitration, error counters or bus-off. These need a bench with real controllers, which is the next step |
+| More than one kernel CAN stack | The four raw-CAN references are clients of the same Linux `CAN_RAW` code; they catch encoding and socket-option mistakes, not controller differences |
+| CAN XL with more than one reference | Only can-utils has CAN XL among the references; python-can, socketcan-rs and Scapy gain it later |
+| ISO-TP WAIT and OVERFLOW from a reference | Neither reference can be told to send them, so go-canbus's handling is checked against its own receiver only |
+| ISO-TP timing | STmin and block sizes are exercised, not measured |
+| Vendor adapters and higher layers | PEAK, Kvaser and Vector drivers, CANopen, J1939 and UDS are not implemented yet |
+
+<CardGrid>
+  <LinkCard title="canbus-interop compatibility" description="The self-test matrix of the reference stacks against each other." href="https://github.com/otfabric/canbus-interop/blob/main/docs/COMPATIBILITY.md" />
+  <LinkCard title="go-canbus roadmap" description="Gaps in function and verification, and the follow-ups in order." href="https://github.com/otfabric/go-canbus/blob/main/ROADMAP.md" />
+</CardGrid>

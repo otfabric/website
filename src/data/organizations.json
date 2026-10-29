@@ -638,6 +638,185 @@
 		]
 	},
 	{
+		"id": "cia",
+		"name": "CAN in Automation",
+		"acronym": "CiA",
+		"kind": "industry-alliance",
+		"summary": "Nonprofit association of CAN users and manufacturers: CAN FD and CAN XL recommendations, CANopen and device profiles, conformance testing and plugfests.",
+		"description": "CAN in Automation was founded in March 1992 as a nonprofit association of users and manufacturers, with its office in Nuremberg, Germany, and lists 749 members. Its members develop and publish CiA specifications: CAN FD and CAN XL specifications and recommendations, CAN FD Light, CANopen and CANopen FD, and device and application profiles. CAN itself is standardized by ISO in the ISO 11898 series, where CiA representatives support the work. CiA tests CANopen devices for conformance, also for non-members, and holds plugfests for CAN XL, CAN FD and CANopen devices for its members.",
+		"website": "https://can-cia.org/",
+		"region": "global",
+		"domains": [
+			"industrial"
+		],
+		"protocols": [
+			"can-bus"
+		],
+		"standards": [
+			{
+				"name": "CAN FD and CAN XL specifications and recommendations (CiA 6xx), CAN FD Light",
+				"role": "publishes",
+				"note": "Classical CAN, CAN FD and CAN XL data link layers are standardized by ISO in ISO 11898-1."
+			},
+			{
+				"name": "CANopen (CiA 3xx) and CANopen FD (CiA 13xx), with device and application profiles (CiA 4xx)",
+				"role": "maintains"
+			},
+			{
+				"name": "CANopen CC and CANopen FD device conformance testing",
+				"role": "certifies"
+			},
+			{
+				"name": "CAN XL, CAN FD and CANopen plugfests",
+				"role": "tests"
+			}
+		],
+		"access": {
+			"specifications": {
+				"answer": "partial",
+				"detail": "Documents with the status Public Available Specification are free to the public. Draft Specifications are for members or by yearly subscription, such as EUR 1,024 for the CAN FD and CAN XL series (CiA 6xx); work drafts are for members only.",
+				"source": "https://can-cia.org/s/xgCdM",
+				"verifiedAt": "2026-10-29"
+			},
+			"community": {
+				"answer": "partial",
+				"detail": "Company- and product-neutral CAN information is offered publicly, while partnerships, workshops and specification work are listed as member benefits.",
+				"source": "https://can-cia.org/about-us/member-benefits",
+				"verifiedAt": "2026-10-29"
+			},
+			"individualFree": {
+				"answer": "no",
+				"detail": "The 2026 fee scale lists companies by size and nonprofit schools and universities; there is no individual or free tier.",
+				"source": "https://can-cia.org/fileadmin/cia/documents/membership_application_2026.pdf",
+				"verifiedAt": "2026-10-29"
+			},
+			"organizationFree": {
+				"answer": "no",
+				"detail": "Company membership costs EUR 833 a year for 1 to 9 employees, up to EUR 11,781 above 100,000, including German VAT; half the fee when joining after 1 July.",
+				"source": "https://can-cia.org/fileadmin/cia/documents/membership_application_2026.pdf",
+				"verifiedAt": "2026-10-29"
+			},
+			"workingGroups": {
+				"answer": "no",
+				"detail": "Membership gives access to all development stages, meeting minutes and the working groups; initiating and influencing CiA specifications is listed as a member benefit.",
+				"source": "https://can-cia.org/s/xgCdM",
+				"verifiedAt": "2026-10-29"
+			},
+			"interopTesting": {
+				"answer": "no",
+				"detail": "CiA plugfests for CAN XL, CAN FD and CANopen devices are free of charge for members and not open to non-members.",
+				"source": "https://www.can-cia.org/services/test-center/cia-plugfests",
+				"verifiedAt": "2026-10-29"
+			},
+			"certification": {
+				"answer": "yes",
+				"detail": "CANopen CC conformance testing is open to anyone: EUR 1,000 per device session for non-members, EUR 750 for members, certificate included. It covers CANopen, not CAN itself.",
+				"source": "https://www.can-cia.org/services/canopen-device-conformance-testing",
+				"verifiedAt": "2026-10-29"
+			},
+			"openSource": {
+				"answer": "unknown",
+				"detail": "We found no open-source code published by CiA. The CANopen CC conformance test tool is free for members."
+			}
+		},
+		"memberships": [
+			{
+				"name": "Company member",
+				"audience": "company",
+				"fee": {
+					"kind": "amount",
+					"amount": 833,
+					"max": 11781,
+					"currency": "EUR",
+					"period": "calendar-year"
+				},
+				"eligibility": "Companies, priced by number of employees from 1 to 9 up to more than 100,000.",
+				"note": "Fees include 19 % German VAT. Specifications in every status, plugfests, working groups, free CANopen vendor IDs and the CANopen CC conformance test tool.",
+				"source": "https://can-cia.org/fileadmin/cia/documents/membership_application_2026.pdf"
+			},
+			{
+				"name": "School or university",
+				"audience": "academic",
+				"fee": {
+					"kind": "amount",
+					"amount": 654.5,
+					"currency": "EUR",
+					"period": "calendar-year"
+				},
+				"eligibility": "Nonprofit schools and universities.",
+				"source": "https://can-cia.org/fileadmin/cia/documents/membership_application_2026.pdf"
+			}
+		],
+		"programs": [
+			{
+				"kind": "conformance-testing",
+				"name": "CANopen CC device conformance testing",
+				"url": "https://www.can-cia.org/services/canopen-device-conformance-testing",
+				"detail": "The CiA test center checks a device's electronic data sheet, SDO and PDO handling, object dictionary, SYNC, emergency and error control and the NMT state machine, and issues a certificate: EUR 1,000 per session for non-members, EUR 750 for members.",
+				"openToNonMembers": "yes",
+				"source": "https://www.can-cia.org/services/canopen-device-conformance-testing"
+			},
+			{
+				"kind": "plugfest",
+				"name": "CiA plugfests",
+				"url": "https://www.can-cia.org/services/test-center/cia-plugfests",
+				"detail": "Plugfests on request for CAN XL protocol controllers and transceivers (CiA 610-1, 610-3), CAN FD controllers and transceivers, and CANopen devices and profiles. Free for members.",
+				"openToNonMembers": "no",
+				"source": "https://www.can-cia.org/services/test-center/cia-plugfests"
+			}
+		],
+		"openSource": [],
+		"documents": [
+			{
+				"label": "Specification sale and subscriptions",
+				"url": "https://can-cia.org/s/xgCdM"
+			},
+			{
+				"label": "Member benefits",
+				"url": "https://can-cia.org/about-us/member-benefits"
+			}
+		],
+		"relatedProjects": [
+			"go-canbus",
+			"canbusctl",
+			"canbus-interop"
+		],
+		"related": [],
+		"sources": [
+			{
+				"label": "Who we are",
+				"url": "https://can-cia.org/about-us"
+			},
+			{
+				"label": "Member benefits",
+				"url": "https://can-cia.org/about-us/member-benefits"
+			},
+			{
+				"label": "Membership application 2026",
+				"url": "https://can-cia.org/fileadmin/cia/documents/membership_application_2026.pdf"
+			},
+			{
+				"label": "CiA specification sale",
+				"url": "https://can-cia.org/s/xgCdM"
+			},
+			{
+				"label": "CiA plugfests",
+				"url": "https://www.can-cia.org/services/test-center/cia-plugfests"
+			},
+			{
+				"label": "CANopen CC device conformance assessment",
+				"url": "https://www.can-cia.org/services/canopen-device-conformance-testing"
+			}
+		],
+		"verifiedAt": "2026-10-29",
+		"detail": true,
+		"insights": [
+			"The CAN data link itself belongs to ISO 11898, which is sold by ISO; CiA's own work sits around it, with CAN FD and CAN XL recommendations and the CANopen family. An implementer of CAN frames can work from Bosch's public CAN 2.0 and CAN FD documents and the Linux SocketCAN documentation, as go-canbus does.",
+			"CAN XL is where CiA is most active now: its plugfests test the first CAN XL controllers and transceivers. Open stacks are thin, with Linux since 6.2, can-utils, SocketCANSharp and go-canbus among the few that handle CAN XL frames.",
+			"OT Fabric is not a CiA member, implements no CiA specification yet and makes no conformance claim. CANopen is on the go-canbus roadmap, and CiA's conformance test is open to non-members."
+		]
+	},
+	{
 		"id": "openadr-alliance",
 		"name": "OpenADR Alliance",
 		"kind": "industry-alliance",

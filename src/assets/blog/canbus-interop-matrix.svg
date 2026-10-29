@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="go-canbus tested on Linux virtual CAN against independent implementations from canbus-interop v0.5.0: the raw CAN stacks can-utils, python-can, socketcan-rs and Scapy on the left, the Linux kernel ISO-TP, python-can-isotp, cantools and canmatrix on the right. 170 scenarios pass and none fail.">
+  <rect width="720" height="400" fill="#F4F6F8"/>
+  <text x="40" y="44" font-size="15" font-weight="600" fill="#17212B">go-canbus against independent CAN implementations</text>
+  <text x="680" y="44" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">canbus-interop v0.5.0</text>
+  <g font-size="11" fill="#5A6875" font-family="IBM Plex Mono, monospace"><text x="40" y="80">FRAMES AND TRACES</text><text x="680" y="80" text-anchor="end">ISO-TP AND DATABASES</text></g>
+  <g fill="none" stroke="#2F5D9E" stroke-width="1.5" stroke-linecap="round" opacity="0.55">
+    <path d="M240 116 C 275 116, 265 186, 300 186"/>
+    <path d="M240 166 C 275 166, 265 186, 300 186"/>
+    <path d="M240 216 C 275 216, 265 186, 300 186"/>
+    <path d="M240 266 C 275 266, 265 186, 300 186"/>
+    <path d="M420 186 C 455 186, 445 116, 480 116"/>
+    <path d="M420 186 C 455 186, 445 166, 480 166"/>
+    <path d="M420 186 C 455 186, 445 216, 480 216"/>
+    <path d="M420 186 C 455 186, 445 266, 480 266"/>
+    <path d="M360 238 V 310"/>
+  </g>
+  <g><rect x="40" y="96" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="112" font-size="12.5" font-weight="600" fill="#17212B">can-utils</text>
+    <text x="228" y="112" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="52" y="127" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">raw CAN · CAN XL · candump</text></g>
+  <g><rect x="40" y="146" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="162" font-size="12.5" font-weight="600" fill="#17212B">python-can</text>
+    <text x="228" y="162" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="52" y="177" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">raw CAN · slcan · logs</text></g>
+  <g><rect x="40" y="196" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="212" font-size="12.5" font-weight="600" fill="#17212B">socketcan-rs</text>
+    <text x="228" y="212" font-size="11" fill="#5A6875" text-anchor="end">Rust</text>
+    <text x="52" y="227" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">raw CAN · CAN FD</text></g>
+  <g><rect x="40" y="246" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="52" y="262" font-size="12.5" font-weight="600" fill="#17212B">Scapy</text>
+    <text x="228" y="262" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="52" y="277" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">raw CAN · CAN FD</text></g>
+  <g><rect x="480" y="96" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="112" font-size="12.5" font-weight="600" fill="#17212B">Linux kernel ISO-TP</text>
+    <text x="668" y="112" font-size="11" fill="#5A6875" text-anchor="end">C</text>
+    <text x="492" y="127" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">ISO-TP via isotpsend/recv</text></g>
+  <g><rect x="480" y="146" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="162" font-size="12.5" font-weight="600" fill="#17212B">python-can-isotp</text>
+    <text x="668" y="162" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="492" y="177" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">ISO-TP, userspace</text></g>
+  <g><rect x="480" y="196" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="212" font-size="12.5" font-weight="600" fill="#17212B">cantools</text>
+    <text x="668" y="212" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="492" y="227" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">DBC · ARXML codec</text></g>
+  <g><rect x="480" y="246" width="200" height="40" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <text x="492" y="262" font-size="12.5" font-weight="600" fill="#17212B">canmatrix</text>
+    <text x="668" y="262" font-size="11" fill="#5A6875" text-anchor="end">Python</text>
+    <text x="492" y="277" font-size="10.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">DBC · KCD · ARXML codec</text></g>
+  <g><rect x="300" y="134" width="120" height="104" rx="10" fill="#2F5D9E"/>
+    <text x="360" y="166" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">go-canbus</text>
+    <text x="360" y="188" font-size="10.5" fill="#E3EAF5" text-anchor="middle" font-family="IBM Plex Mono, monospace">CAN · FD · XL</text>
+    <text x="360" y="202" font-size="10.5" fill="#E3EAF5" text-anchor="middle" font-family="IBM Plex Mono, monospace">ISO-TP · DBC</text>
+    <text x="360" y="224" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">170 pass · 0 fail</text></g>
+  <g><rect x="40" y="310" width="640" height="40" rx="6" fill="#E3EAF5" stroke="#C6D3E8"/>
+    <text x="56" y="335" font-size="12.5" font-weight="600" fill="#17212B">Linux virtual CAN (vcan), kernels 6.1 to 7.0, amd64 and arm64</text>
+    <text x="664" y="335" font-size="10.5" fill="#2F5D9E" text-anchor="end" font-family="IBM Plex Mono, monospace">13 skipped · 0 failed</text></g>
+  <text x="40" y="380" font-size="11" fill="#5A6875">Interoperability, not ISO or CiA conformance. Virtual CAN: no bit timing, arbitration or bus-off; not yet on real hardware.</text>
+</svg>

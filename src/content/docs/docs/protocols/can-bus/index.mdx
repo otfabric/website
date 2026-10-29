@@ -1,0 +1,88 @@
+---
+title: CAN bus
+description: How CAN works (one shared two-wire bus, identifiers that name messages and set their priority, arbitration, classical CAN, CAN FD and CAN XL frames, error handling and bus-off, ISO-TP for longer messages, DBC, KCD and ARXML databases, SocketCAN and serial-line adapters) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+CAN, the Controller Area Network, is a serial bus for controllers that share one pair of wires. Bosch published CAN 2.0 in 1991 and CAN FD 1.0 in 2012; both are standardized in ISO 11898-1, whose 2024 edition adds CAN XL. ISO 15765-2, ISO-TP, carries messages longer than one frame. This page explains how CAN works, as far as it matters for using [go-canbus](/projects/go-canbus/) and [canbusctl](/projects/canbusctl/).
+
+## One bus, no addresses
+
+All nodes of a CAN network hang on the same **twisted pair**, CAN_H and CAN_L, terminated with 120 Ω at both ends. The bus has two states: **dominant** (a 0, the wires driven apart) and **recessive** (a 1, the wires at rest). Any node that drives dominant wins over every node that sends recessive.
+
+A frame has no source or destination address. It has an **identifier**, 11 bits in the standard format (CAN 2.0A) or 29 bits in the extended format (CAN 2.0B), and the identifier names the *message*: engine speed, cell voltages, a charger's status. Every node sees every frame and keeps the ones it is interested in, usually through hardware acceptance filters. A CAN identifier therefore says nothing about which device sent a frame.
+
+## Arbitration and priority
+
+Any node may start sending when the bus is idle. When two start at once, they send their identifiers bit by bit and listen: a node that sends recessive and reads dominant has lost, stops, and tries again after the frame. The frame with the **lowest identifier** wins without being destroyed, so the identifier is also the priority. A network designer picks identifiers so that brakes beat infotainment.
+
+## Frames
+
+| Frame | Payload | What else it carries |
+|---|---|---|
+| Classical CAN data frame | 0 to 8 bytes | Identifier, the data length code (DLC), a 15-bit CRC, an acknowledgement slot that every receiver drives |
+| Remote frame | none | A request for the data frame with the same identifier; classical CAN only |
+| CAN FD frame | 0 to 64 bytes (lengths 12, 16, 20, 24, 32, 48, 64 above 8) | **BRS**: the data phase switches to a faster bit rate, typically 2 or 5 Mbit/s after a 500 kbit/s arbitration phase. **ESI**: the sender is error passive |
+| CAN XL frame | 1 to 2048 bytes | An 11-bit **priority**, a virtual CAN network ID (**VCID**), an **SDU type** saying what the payload is, and a 32-bit **acceptance field**, so it can carry Ethernet frames and tunnel other protocols |
+| Error frame | none | Six dominant bits that destroy a frame a node found faulty; Linux reports them to applications as error frames with a class |
+
+Classical CAN runs at up to 1 Mbit/s; common rates are 125, 250 and 500 kbit/s, depending on the length of the bus.
+
+## Errors and bus-off
+
+Every node checks every frame: bit, stuff, CRC, form and acknowledgement errors. A node that finds one sends an **error frame**, and the sender retransmits. Each controller keeps a transmit and a receive **error counter**. Above 127 it becomes **error passive** and may no longer destroy frames; above 255 transmit errors it goes **bus-off** and stops sending until it is restarted, so that one faulty node cannot block the bus. On Linux, `restart-ms` restarts a bus-off controller automatically.
+
+## ISO-TP: messages longer than a frame
+
+ISO-TP (ISO 15765-2) segments a message into frames. A short message fits in a **single frame**. A longer one starts with a **first frame** that carries the total length; the receiver answers with a **flow control** frame that sets the **block size** (how many frames before the next flow control) and **STmin** (the minimum gap between frames), or asks the sender to wait, or refuses with overflow. **Consecutive frames** follow with a 4-bit sequence number. Classical ISO-TP carries up to 4095 bytes; the 2016 edition adds an escape for up to 4 GiB and CAN FD frames.
+
+ISO-TP needs a pair of identifiers per connection and has **normal**, **extended** (the first data byte is a target address) and **mixed** addressing. It is the carrier of UDS diagnostics (ISO 14229) and of OBD-II on CAN.
+
+## Databases: DBC, KCD and ARXML
+
+A frame is only bytes. A **database** says which message an identifier is, how long it is, and where each **signal** sits: start bit and length, Intel (little-endian) or Motorola (big-endian) byte order, signed or unsigned or float, a scale and offset to the physical value, a unit, a range, and labels for values such as `Gear=Second`. **Multiplexing** lets one signal choose which other signals are present.
+
+| Format | What it is |
+|---|---|
+| DBC | Vector's text format, the de facto standard; it has no public specification, so tools follow Vector's tools and each other |
+| KCD | An open XML format from the Kayak project |
+| ARXML | The AUTOSAR system description: clusters, frames, PDUs and signals, of which go-canbus reads the CAN part of AUTOSAR 4 |
+
+The databases are message definitions, not protocols: the same frames can be described by any of them.
+
+## Interfaces on a computer
+
+On Linux, CAN controllers are network interfaces through **SocketCAN**: `can0` for a real controller, `vcan0` for a virtual one, `vxcan` for a pair between network namespaces. Applications open `CAN_RAW` or `CAN_ISOTP` sockets, and `ip link` sets the bit rate. Most USB adapters with a gs_usb, PEAK or Kvaser driver appear as SocketCAN interfaces.
+
+**Serial-line CAN** (slcan, the LAWICEL ASCII protocol) adapters such as the CANable, CANtact and USBtin show up as a serial port on every OS. go-canbus talks to them directly, without the Linux slcan driver, so they also work on macOS and Windows. Traces are recorded as **candump** logs, **pcap** and **pcapng** for Wireshark, **ASC** and **BLF** from Vector tools, or **TRC** from PEAK.
+
+## Layers on top
+
+CAN itself stops at frames. Applications use a higher layer: **CANopen** (CiA 301) in machines and automation, **SAE J1939** in trucks and mobile machines, **UDS** over ISO-TP for diagnostics, **NMEA 2000** on boats, **ISOBUS** on tractors and implements, **DroneCAN** and Cyphal on drones. OT Fabric does not implement them yet; they are on the [roadmap](https://github.com/otfabric/go-canbus/blob/main/ROADMAP.md) as separate libraries on top of go-canbus.
+
+<Aside type="caution" title="Real equipment">
+CAN has no authentication and no encryption: any node can send any identifier, and on vehicles and machines frames move brakes, drives and power electronics. canbusctl is passive by default and needs `--yes` before it transmits on a real interface. Test on a virtual bus or an isolated bench bus you own or are authorized to test.
+</Aside>
+
+## Specifications
+
+ISO 11898-1 (data link), ISO 11898-2 (high-speed transceivers) and ISO 15765-2 (ISO-TP) are sold by ISO. Bosch's CAN 2.0 and CAN FD 1.0 specifications are public. CAN in Automation (CiA) publishes CAN FD and CAN XL recommendations, CANopen and many device profiles, some free and most for members or by subscription; see [CiA in the standards directory](/ecosystem/organizations/cia/). go-canbus is built from public material (the Linux SocketCAN documentation and headers, the Bosch specifications and public protocol descriptions), tested against independent implementations, and makes no claim of ISO or CiA conformance.
+
+## OT Fabric for CAN bus
+
+| Project | What it is |
+|---|---|
+| [go-canbus](/projects/go-canbus/) | CAN for Go: classical CAN, CAN FD and CAN XL frames on Linux SocketCAN, slcan adapters on every OS and a virtual bus, interface administration, ISO-TP, capture and replay in seven trace formats, DBC, KCD and ARXML databases with a signal codec and a code generator, and a fault-injecting bridge. No cgo. v0.7.0. |
+| [canbusctl](/projects/canbusctl/) | A command-line toolkit on go-canbus: monitor, record, convert and replay traces, decode and encode with a database, generate Go, run ISO-TP, simulate a database's traffic and test under faults, with safety guards for real buses. v0.6.0. |
+| [canbus-interop](/projects/canbus-interop/) | Docker images of seven independent CAN, ISO-TP and database implementations behind one container contract, for tests on Linux virtual CAN. v0.5.0. |
+
+<CardGrid>
+  <LinkCard title="Go library" description="Frames, transports, ISO-TP, traces, databases and code generation with go-canbus." href="/docs/protocols/can-bus/library/" />
+  <LinkCard title="canbusctl" description="Monitor, record, replay, decode, ISO-TP, simulation and fault testing from the command line." href="/docs/protocols/can-bus/cli/" />
+  <LinkCard title="Testing and interop" description="Reference stacks, the matrix and what has been validated." href="/docs/protocols/can-bus/testing/" />
+  <LinkCard title="Ecosystem map" description="Who else implements CAN, in which language and licence." href="/ecosystem/implementations/?protocol=can-bus" />
+</CardGrid>
