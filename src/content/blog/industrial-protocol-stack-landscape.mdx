@@ -1,6 +1,6 @@
 ---
 title: The industrial protocol stack landscape
-description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET and the Sparkplug B profile? 199 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
+description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CAN bus and the Sparkplug B profile? 223 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
 updated: 2026-10-29
 authors: [OT Fabric]
@@ -17,7 +17,7 @@ import Callout from '../../components/Callout.astro';
 
 Nobody connects a plant, a substation or a building with one library. Every integration leans on stacks written by other people: a C library in a gateway, a Python tool on a laptop, a Java server in a SCADA system, a vendor SDK inside a controller. OT Fabric only makes sense as part of that ecosystem, which is why each of our protocols ships with an interop suite that tests against the established implementations.
 
-So we mapped the ecosystem. This post is the research: twelve protocol families, one application profile on top of MQTT, 199 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
+So we mapped the ecosystem. This post is the research: thirteen protocol families, one application profile on top of MQTT, 223 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
 
 <MapLink />
 
@@ -148,9 +148,17 @@ Most of the open field reads and writes Logix tags: libplctag (C, with a .NET wr
 
 In the open field, rt-labs p-net is the one widely used IO-Device stack, dual-licensed GPL-3.0 and commercial; since 2024 its public repository is an evaluation snapshot without build files or ports, so open projects build its last complete tree from 2023. Everything else is young or small. pnio-rs is a 2026 Rust IO-Device for Linux, OpenPNIO an IO-Device core that says itself it is not functional yet, and profinet-py, with its Rust port profinet-rs, is the only open IO-Controller next to go-profinet. Most other projects are DCP tools that find devices and set their names and addresses: pnio-dcp, ProfinetTools, OpenProfinet and a Node.js addon. Four of them run in [profinet-interop](https://github.com/otfabric/profinet-interop): p-net, pnio-rs, profinet-py and pnio-dcp, next to two MRP ring implementations. None of the open stacks implements IRT, which needs switch hardware, and only p-net reports a pass of PI's test bundle.
 
+## CAN bus
+
+**Very mature, centred on one kernel.** CAN is older and more widespread than any other protocol on the map: every car, truck and tractor, most battery packs and chargers, and many machines run it. The open field looks different from the rest because it has a centre. Since 2008 the Linux kernel treats CAN controllers as network interfaces, SocketCAN, and almost every open tool is a client of it: can-utils, whose candump log is the common trace format, python-can, which also drives the PEAK, Kvaser and Vector adapters, and bindings for Rust, Go, Java, .NET and Node.js. The kernel has carried ISO-TP since 5.10 and CAN XL since 6.2.
+
+<LandscapeTable protocol="can-bus" />
+
+Above the frames, the databases that give them meaning have their own ecosystem. DBC has no public specification, so cantools and canmatrix, which read DBC, KCD, ARXML and more, act as references, and comma.ai's opendbc collects reverse-engineered DBC files for hundreds of car models. The commercial side is mostly the adapter vendors: Vector, PEAK and Kvaser give their APIs away with their hardware and sell analysis tools such as CANoe. CAN XL is the young part: of the open stacks, only the kernel, can-utils, SocketCANSharp and go-canbus handle CAN XL frames so far. Eight of them run in [canbus-interop](https://github.com/otfabric/canbus-interop) or through it: can-utils with the kernel's CAN_RAW and ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix. CANopen, J1939 and UDS stacks sit on top of CAN and are not on the map yet.
+
 ## Sparkplug B, an application profile
 
-**A mature reference, a young independent field.** Sparkplug B is not a protocol of its own: it is a profile of MQTT that fixes a topic namespace, a Protobuf payload and session state, so that edge nodes and SCADA hosts from different vendors share one broker. The map keeps it apart from the twelve protocols for that reason, as the first [application profile](/profiles/sparkplugb/). The specification, Eclipse Sparkplug 3.0.0, is free to implement and was adopted as ISO/IEC 20237:2023.
+**A mature reference, a young independent field.** Sparkplug B is not a protocol of its own: it is a profile of MQTT that fixes a topic namespace, a Protobuf payload and session state, so that edge nodes and SCADA hosts from different vendors share one broker. The map keeps it apart from the thirteen protocols for that reason, as the first [application profile](/profiles/sparkplugb/). The specification, Eclipse Sparkplug 3.0.0, is free to implement and was adopted as ISO/IEC 20237:2023.
 
 <LandscapeTable protocol="sparkplug-b" />
 
@@ -174,6 +182,7 @@ The commercial side looks different from the other protocols: few SDKs, and most
 | IEEE 2030.5 | Young, growing, profile-driven | Certification-driven | Envoy, GridAPPS-D, py20305, EPRI client (unmaintained) |
 | EtherNet/IP | Mature for tag access, thin for I/O | Very established | OpENer, libplctag, pylogix, pycomm3, EIPScanner |
 | PROFINET | Mature market, thin open field | Very established | p-net, profinet-py, pnio-rs, pnio-dcp |
+| CAN bus | Very mature around Linux SocketCAN; CAN XL emerging | Very established, adapter vendors | Linux SocketCAN, can-utils, python-can, cantools, canmatrix |
 | Sparkplug B (profile over MQTT) | Mature reference, young independent field | Established around SCADA and brokers | Eclipse Tahu, SparkplugNet, pysparkplug, srad |
 
 These are judgements about maturity and visibility, not measured conformance, security or quality. Our interop suites are where we test behaviour; this map is where we record who is out there.

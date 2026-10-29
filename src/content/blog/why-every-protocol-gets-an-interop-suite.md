@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Thirteen interop suites package 63 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Fourteen interop suites package 70 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
 updated: 2026-10-29
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Thirteen OT Fabric interop suites and their 63 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
+  alt: Fourteen OT Fabric interop suites and their 70 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Thirteen suites, 63 reference stacks
+## Fourteen suites, 70 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -30,6 +30,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [IEEE 2030.5](/protocols/ieee-2030-5/) | [ieee20305-interop](/projects/ieee20305-interop/) | ANU Envoy (Python), GridAPPS-D (Go), DER Security py20305 (Python), EPRI client (C) |
 | [EtherNet/IP](/protocols/ethernet-ip/) | [ethernetip-interop](/projects/ethernetip-interop/) | OpENer (C), EIPScanner (C++), pycomm3 (Python), cpppo (Python), libplctag (C), gologix (Go), pylogix (Python), etherip (Java), eip-rs (Rust), node-ethernet-ip (TypeScript), EEIP.NET (C#), loki-os go-ethernet-ip (Go) |
 | [PROFINET](/protocols/profinet/) | [profinet-interop](/projects/profinet-interop/) | rt-labs p-net (C), pnio-rs (Rust), profinet-py (Python), pnio-dcp (Python); the MRP ring nodes umrp and microchip-ung/mrp, Net-SNMP, Wireshark and scapy are test tools, not counted as PROFINET stacks |
+| [CAN bus](/protocols/can-bus/) | [canbus-interop](/projects/canbus-interop/) | can-utils with the Linux kernel's ISO-TP (C), python-can (Python), socketcan-rs (Rust), Scapy (Python), python-can-isotp (Python), and cantools and canmatrix (Python) for DBC, KCD and ARXML, on Linux virtual CAN |
 | [Sparkplug B](/profiles/sparkplugb/) (profile over MQTT) | [sparkplugb-interop](/projects/sparkplugb-interop/) | Eclipse Tahu (Java), Eclipse Tahu sparkplug-client (JavaScript), pysparkplug (Python), SparkplugNet (C#), srad (Rust), sparkplughost (Go), on four MQTT brokers |
 
 SunSpec is the exception: it is a register model on top of Modbus, so go-sunspec is tested through its own server, offline decoding and a weekly comparison with the SunSpec Alliance's model definitions, and its Modbus layer is covered by modbus-interop.
@@ -75,6 +76,7 @@ A library runs its own scenarios against the images, in both roles: our client a
 - **go-iec61850**: MMS client and server against all four IEC 61850 stacks in both directions, and GOOSE and Sampled Values against the libiec61850, dscsystems and iec61850-rust publishers and subscribers in both directions, on a Docker bridge. go-mms alone passes 120 MMS scenarios against libiec61850 and against iec61850-rust.
 - **go-ethernetip**: 184 cases pass against twelve stacks in eight languages, in both roles, none fail, with Class 1 I/O against OpENer, EIPScanner and EEIP.NET, multicast with a listen-only connection, and the Logix drivers of pycomm3, eip-rs and node-ethernet-ip reading and writing structures on its emulated controller.
 - **go-profinet**: 248 checks pass on a real Layer 2 network, none fail: its IO-Controller against the p-net and pnio-rs devices, its IO-Device against profinet-py's controller, DCP against pnio-dcp, MRP rings with cut cables against umrp and microchip-ung/mrp, and its SNMP agent against Net-SNMP, with Wireshark and scapy decoding every frame.
+- **go-canbus**: 170 scenarios pass on Linux virtual CAN, none fail: classical, CAN FD and CAN XL frames in both directions against four SocketCAN clients, ISO-TP against the kernel and python-can-isotp, slcan against python-can and the kernel's driver, traces with python-can, and DBC, KCD and ARXML decoded and encoded byte for byte against cantools and canmatrix.
 
 Each protocol's *Testing and interop* page in the [documentation](/docs/protocols/) has the full matrix, and what has not been validated yet.
 
@@ -82,14 +84,14 @@ Each protocol's *Testing and interop* page in the [documentation](/docs/protocol
 
 The suites earn their keep by finding things nobody was looking for, on both sides.
 
-In our own code: go-mms encoded and read MMS file directory listings with the wrong tag, so it could not list files on conforming servers, and fifteen more MMS bugs surfaced when the suite grew to every public method. The go-iec61850 server did not send the CommandTermination that the dscsystems controller waits for. The go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. go-ocpp lost frames on close and refused `20000.0` for an integer field. Each was fixed in a release.
+In our own code: go-mms encoded and read MMS file directory listings with the wrong tag, so it could not list files on conforming servers, and fifteen more MMS bugs surfaced when the suite grew to every public method. The go-iec61850 server did not send the CommandTermination that the dscsystems controller waits for. The go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. go-ocpp lost frames on close and refused `20000.0` for an integer field. go-canbus rejected the CAN FD notation that can-utils has written since 2023. Each was fixed in a release.
 
-In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. pycomm3 sends each Logix Write Tag twice in one message. OpenMUC j60870 1.8.0 closes the connection when it receives a read command. libiec61850's Sampled Values subscriber drops samples whose `smpMod` is encoded in two octets, the form its own publisher sends. p-net plugs any module a controller expects instead of reporting the difference, and ties an AR to the RPC activity of its Connect. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
+In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. pycomm3 sends each Logix Write Tag twice in one message. OpenMUC j60870 1.8.0 closes the connection when it receives a read command. libiec61850's Sampled Values subscriber drops samples whose `smpMod` is encoded in two octets, the form its own publisher sends. p-net plugs any module a controller expects instead of reporting the difference, and ties an AR to the RPC activity of its Connect. cantools and canmatrix place an ARXML PDU at the start of its frame, ignoring the offset AUTOSAR gives it. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
 
 ## What interop is not
 
-Interoperability with several independent stacks is strong evidence, but it is not conformance testing and it is not certification by the OPC Foundation, BACnet International, the Open Charge Alliance, PI or anyone else. Nor is it a field test: real devices, gateways and certified test equipment behave in ways no open-source stack reproduces. Every protocol page says plainly what has and has not been validated, and interop reports from real installations are very welcome.
+Interoperability with several independent stacks is strong evidence, but it is not conformance testing and it is not certification by the OPC Foundation, BACnet International, the Open Charge Alliance, PI, CiA or anyone else. Nor is it a field test: real devices, gateways and certified test equipment behave in ways no open-source stack reproduces. Every protocol page says plainly what has and has not been validated, and interop reports from real installations are very welcome.
 
 ## Usable by anyone
 
-The suites are client-neutral. They live in their own repositories, contain no library under test, and do not depend on our code, so any implementation in any language can use them. If you maintain a Modbus, OPC UA, BACnet, S7, IEC 104, IEC 61850, DNP3, OCPP, OpenADR, IEEE 2030.5, EtherNet/IP or PROFINET stack, try them, and if your stack belongs in one, open an issue.
+The suites are client-neutral. They live in their own repositories, contain no library under test, and do not depend on our code, so any implementation in any language can use them. If you maintain a Modbus, OPC UA, BACnet, S7, IEC 104, IEC 61850, DNP3, OCPP, OpenADR, IEEE 2030.5, EtherNet/IP, PROFINET or CAN stack, try them, and if your stack belongs in one, open an issue.

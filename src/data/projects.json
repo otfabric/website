@@ -287,6 +287,29 @@
 		]
 	},
 	{
+		"id": "go-canbus",
+		"name": "go-canbus",
+		"repo": "go-canbus",
+		"category": "protocol",
+		"standards": [
+			"can-bus"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-canbus",
+		"description": "Classical CAN, CAN FD and CAN XL on Linux SocketCAN, serial-line (slcan) adapters on every OS and a virtual bus, with ISO-TP, capture and replay in seven trace formats, and DBC, KCD and ARXML databases with a signal codec and a Go code generator. No cgo.",
+		"icon": "go-canbus",
+		"highlights": [
+			"Frames: classical CAN with 11- and 29-bit identifiers, CAN FD with bit rate switching and error state indicator, remote and error frames, and CAN XL with priority, VCID, SDU type and up to 2048 bytes; filters with the exact semantics of Linux CAN_RAW_FILTER.",
+			"Transports: Linux SocketCAN with kernel filters, timestamps, drop accounting and allocation-free I/O; serial-line (slcan) adapters such as CANable, CANtact and USBtin on Linux, macOS and Windows; a deterministic virtual bus with seeded faults; one Bus shared by many filtered subscriptions.",
+			"Interface administration through rtnetlink, kept apart from the transport: list and inspect interfaces, bit timing and error counters, bit rates, CAN FD, restart, vcan and vxcan.",
+			"ISO-TP (ISO 15765-2) in userspace and through the Linux kernel: normal, extended and mixed addressing, flow control with block size, STmin, WAIT and OVERFLOW, padding, CAN FD and messages above 4095 bytes.",
+			"Traces: candump, lossless JSON Lines, pcap and pcapng (checked against tcpdump and Wireshark), Vector ASC and BLF, PEAK TRC, with streaming replay at original, scaled or maximum speed.",
+			"Databases: DBC and KCD read and write, AUTOSAR 4 ARXML read, with Intel and Motorola byte order, signed, float, scaling, value tables, simple and extended multiplexing and exact 64-bit raw values; typed Go generated from a database.",
+			"Interop tested in CI on Linux virtual CAN against can-utils and the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix: 170 scenarios pass, none fail. Kernels 6.1 to 7.0 in micro-VMs.",
+			"No ISO or CiA conformance claim, and not yet tested on real CAN hardware: virtual CAN shows frame encoding and protocol logic, not bit timing, arbitration or bus-off. No vendor adapters (PEAK, Kvaser, Vector) and no CANopen, J1939 or UDS yet."
+		]
+	},
+	{
 		"id": "modbusctl",
 		"name": "modbusctl",
 		"repo": "modbusctl",
@@ -479,6 +502,18 @@
 		"status": "available",
 		"description": "Discover PROFINET devices, set station names and IP addresses, read I&M, records and diagnosis, map the cabling, check GSDML files, and connect as IO-Controller to watch cyclic IO and alarms.",
 		"icon": "go-profinet"
+	},
+	{
+		"id": "canbusctl",
+		"name": "canbusctl",
+		"repo": "canbusctl",
+		"category": "cli",
+		"standards": [
+			"can-bus"
+		],
+		"status": "available",
+		"description": "Monitor, record, convert and replay CAN, CAN FD and CAN XL traffic, decode and encode with DBC, KCD or ARXML, run ISO-TP, simulate a database and test under faults. Passive by default; transmitting on a real bus needs --yes.",
+		"icon": "go-canbus"
 	},
 	{
 		"id": "sparkplugbctl",
@@ -735,6 +770,18 @@
 		"status": "available",
 		"description": "Independent PROFINET references in containers: rt-labs p-net and pnio-rs as IO-Devices, profinet-py as IO-Controller, pnio-dcp, two MRP ring nodes, Net-SNMP, and Wireshark and scapy as decoders.",
 		"icon": "go-profinet"
+	},
+	{
+		"id": "canbus-interop",
+		"name": "canbus-interop",
+		"repo": "canbus-interop",
+		"category": "interop",
+		"standards": [
+			"can-bus"
+		],
+		"status": "available",
+		"description": "Seven independent CAN references in containers behind one contract: can-utils with the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix, on Linux virtual CAN.",
+		"icon": "go-canbus"
 	},
 	{
 		"id": "sparkplugb-interop",

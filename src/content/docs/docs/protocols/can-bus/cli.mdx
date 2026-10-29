@@ -1,0 +1,189 @@
+---
+title: canbusctl
+description: Installing and using canbusctl, the CAN command-line toolkit to monitor, record, convert and replay CAN, CAN FD and CAN XL traffic, decode and encode with DBC, KCD or ARXML, generate Go, run ISO-TP, simulate a database and test under faults, with safety guards for real buses.
+sidebar:
+  label: canbusctl
+  order: 2
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+[canbusctl](https://github.com/otfabric/canbusctl) is a command-line toolkit for CAN, CAN FD, CAN XL, ISO-TP and CAN databases, built on [go-canbus](/docs/protocols/can-bus/library/). It watches and records traffic, converts and replays traces, decodes and encodes frames with a DBC, KCD or ARXML database and generates Go from it, sends and receives ISO-TP messages, simulates a database's traffic and puts a fault-injecting bridge between two interfaces. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.6.0; the full reference is [docs/cli.md](https://github.com/otfabric/canbusctl/blob/main/docs/cli.md).
+
+## Install
+
+<Tabs>
+  <TabItem label="Release binary">
+    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/canbusctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
+  </TabItem>
+  <TabItem label="Go">
+    ```sh
+    go install github.com/otfabric/canbusctl@latest
+    ```
+  </TabItem>
+</Tabs>
+
+To try it without hardware on Linux, create a CAN FD capable virtual interface:
+
+```sh
+sudo ip link add vcan0 type vcan && sudo ip link set vcan0 mtu 72 up
+canbusctl monitor -i vcan0 &
+canbusctl send-fd -i vcan0 123##1DEADBEEF
+```
+
+## Interfaces
+
+`-i` (`--interface`) takes:
+
+| Value | What it is | Where |
+|---|---|---|
+| `can0`, `vcan0`, `vxcan0` | A SocketCAN interface | Linux |
+| `slcan:/dev/ttyACM0`, `slcan:COM3` | A serial-line (LAWICEL) adapter such as a CANable, CANtact or USBtin, opened at `--slcan-bitrate` (500000 by default) | Linux, macOS, Windows |
+| `slcan:tcp://host:port` | An slcan adapter behind a serial server | every OS |
+| `virtual` | An in-process bus, for `simulate`, `inject` and `replay` | every OS |
+
+`interfaces` lists the CAN interfaces of a Linux host and `info can0` shows one with its bit timing, controller state and error counters. `configure`, `up` and `down` change an interface through rtnetlink, like `ip link`, and need `--yes` and `CAP_NET_ADMIN`:
+
+```sh
+sudo canbusctl down can0 --yes
+sudo canbusctl configure can0 --bitrate 500000 --fd --dbitrate 2000000 --restart-ms 100 --yes
+sudo canbusctl up can0 --yes
+```
+
+## Safety
+
+CAN frames can move brakes, drives and power electronics, so canbusctl is **passive by default**:
+
+- `monitor`, `record`, `stats`, `isotp monitor`, `xl monitor` and every `dbc` and `trace` command never transmit. On an slcan adapter they open it listen-only, so the adapter does not even acknowledge frames.
+- Every command that transmits refuses an interface that is not virtual (`vcan`, `vxcan` or `virtual`) unless `--yes` is given (exit 9). The kind is read from the kernel, and an slcan adapter always needs `--yes`.
+- Transmissions are bounded by `--max-frames` (10000 by default), `--duration` and `--rate`; `simulate` always has a duration.
+- Nothing probes the bus: canbusctl never guesses identifiers or sends traffic you did not ask for. `isotp receive` sends flow control frames, as any ISO-TP receiver must.
+- A transmitting command checks everything first: if it exits 2, 3, 8 or 9 it has sent nothing.
+
+## Watch, record and count
+
+```sh
+# Decode known messages while watching, passively
+canbusctl monitor -i can0 --dbc vehicle.dbc
+
+# Only two identifiers, in candump filter notation, and error frames too
+canbusctl monitor -i can0 --filter 0C0:7FF --filter 0C1:7FF --errors
+
+# Record ten minutes to a Vector BLF file (format from the extension)
+canbusctl record -i can0 -o trip.blf --duration 10m
+
+# Frames per identifier and rate over 30 seconds
+canbusctl stats -i can0 --duration 30s
+```
+
+`record` and `monitor -o` write candump logs (`.log`), JSON Lines (`.jsonl`), pcap and pcapng for Wireshark, Vector ASC and BLF, or PEAK TRC.
+
+## Send and replay
+
+```sh
+canbusctl send -i vcan0 123#DEADBEEF 18DAF110#0322F190        # classical, standard and extended
+canbusctl send-fd -i vcan0 123##1000102030405060708090A0B      # CAN FD with bit rate switch
+canbusctl send -i can0 123#DEADBEEF --yes                     # a real bus needs --yes
+canbusctl replay trip.blf -i vcan0 --speed 2                  # twice as fast
+canbusctl replay trip.log -i can0 --filter 0C0:7FF --max-frames 500 --yes
+```
+
+Frames use cansend notation: `<id>#<data>` for classical CAN, `<id>##<flags><data>` for CAN FD, `<id>#R` for a remote frame; an eight-digit identifier is extended.
+
+## Traces
+
+```sh
+canbusctl trace info trip.blf                     # frame kinds, identifiers, rates
+canbusctl trace convert trip.blf trip.pcapng      # open in Wireshark
+canbusctl trace convert trip.pcapng trip.asc      # reports what ASC cannot keep
+```
+
+`trace convert` reports every loss: interface names in ASC and BLF, error classes, CAN XL frames in formats that have no place for them. JSON Lines is lossless. ASC, BLF and TRC hold local times without a time zone, so set `TZ` to match a file recorded elsewhere.
+
+## Databases
+
+```sh
+canbusctl dbc inspect vehicle.dbc --message Engine         # messages, or one message's signals
+canbusctl dbc validate vehicle.dbc --strict                # warnings count as errors
+canbusctl dbc decode vehicle.dbc 0C0#3412142000000000      # one frame
+canbusctl dbc decode vehicle.dbc --trace trip.blf          # a whole trace
+canbusctl dbc encode vehicle.dbc Engine Speed=1500 Gear=Second
+canbusctl dbc convert system.arxml --to kcd -o system.kcd  # DBC, KCD, ARXML in; DBC, KCD, JSON out
+canbusctl dbc generate vehicle.dbc -o vehicle/vehicle.go   # typed Go
+```
+
+Every `dbc` command reads DBC, KCD or ARXML (the CAN part of AUTOSAR 4) and needs no interface. Constructs a format cannot carry are printed as warnings, never dropped silently.
+
+## ISO-TP
+
+```sh
+# Watch a diagnostic connection without sending anything
+canbusctl isotp monitor -i can0 --tx-id 7E0 --rx-id 7E8
+
+# Receive messages, answering with flow control (block size 8, STmin 1 ms)
+canbusctl isotp receive -i vcan0 --tx-id 7E8 --rx-id 7E0 --bs 8 --stmin 1ms
+
+# Send a request, or a 4000-byte test payload over CAN FD
+canbusctl isotp send -i vcan0 --tx-id 7E0 --rx-id 7E8 --data 0322F190
+canbusctl isotp send -i vcan0 --tx-id 7E0 --rx-id 7E8 --size 4000 --fd
+
+# The same through the Linux kernel's ISO-TP sockets
+canbusctl isotp send -i vcan0 --tx-id 7E0 --rx-id 7E8 --data 0322F190 --kernel
+```
+
+Normal, extended and mixed addressing, 29-bit identifiers, padding and CAN FD are flags. UDS services on top of ISO-TP are not decoded.
+
+## CAN XL
+
+CAN XL needs a SocketCAN interface with the CAN XL MTU (Linux 6.2 or later; VCIDs from 6.9) or the virtual bus:
+
+```sh
+sudo ip link add vcanxl0 type vcan && sudo ip link set vcanxl0 mtu 2060 up
+canbusctl xl monitor -i vcanxl0 -o xl.pcapng                 # CAN, CAN FD and CAN XL frames
+canbusctl xl send -i vcanxl0 00242#80:03:00C0FFEE#11223344  # priority 0x242, SDT 0x03, AF 0x00C0FFEE
+canbusctl record --xl -i vcanxl0 -o trip.pcapng
+```
+
+CAN XL frames use can-utils notation. candump logs, JSON Lines, pcap and pcapng carry them; Wireshark dissects them from version 4.4.
+
+## Simulation and fault testing
+
+```sh
+# A database's messages at their cycle times, in this process
+canbusctl simulate --dbc vehicle.dbc --duration 5s
+
+# The same on vcan, with random values from a fixed seed
+canbusctl simulate --dbc vehicle.dbc -i vcan0 --pattern random --seed 7 --duration 1m
+
+# Frames from a trace onto a test bus, with 1 % loss and reordering
+canbusctl inject -i vcan0 --trace trip.log --drop 0.01 --reorder 0.01
+
+# A seeded fault bridge between a device under test and its tester
+canbusctl bridge -a vcan0 -b vcan1 --drop 0.01 --delay-probability 0.1 --delay 5ms --duration 1m
+```
+
+The faults are emulated in userspace: frames are dropped, duplicated, delayed, reordered or corrupted before delivery. Bit errors, arbitration loss and bus-off need real hardware.
+
+## Output and exit codes
+
+`--format text` (the default), `table` or `json`, or `CANBUSCTL_FORMAT`. JSON documents carry a `schemaVersion` and follow published [JSON Schemas](https://github.com/otfabric/canbusctl/tree/main/schemas); streams such as `monitor` write one JSON record per line.
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Findings: `dbc validate` found errors, `dbc decode` met frames that do not decode |
+| 2 | Usage error |
+| 3 | Invalid input: a frame, file, database or trace that does not make sense |
+| 4 | Transport: the interface does not exist, is down or failed |
+| 5 | Timeout: an ISO-TP peer did not answer |
+| 6 | ISO-TP protocol failure |
+| 7 | Permission: `CAP_NET_ADMIN` missing |
+| 8 | Unsupported here, such as SocketCAN on macOS or Windows |
+| 9 | Refused for safety: transmission or a change without `--yes` |
+| 10 | Output or internal error |
+
+<Aside type="note" title="Limitations">
+Linux SocketCAN and slcan adapters only: no PEAK, Kvaser or Vector drivers yet. slcan has no error state indicator, echo or hardware filters. `simulate` generates values from patterns and does not model ECU behaviour. A CAN identifier names a message, not a device, so canbusctl does no device discovery. [LIMITATIONS.md](https://github.com/otfabric/canbusctl/blob/main/LIMITATIONS.md) has the details.
+</Aside>
+
+<LinkCard title="Testing and interop" description="How canbusctl and go-canbus are tested against independent stacks." href="/docs/protocols/can-bus/testing/" />

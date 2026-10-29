@@ -1,0 +1,165 @@
+---
+title: Go library
+description: Use go-canbus to work with CAN, CAN FD and CAN XL in Go, on Linux SocketCAN, serial-line (slcan) adapters on every OS and a virtual bus, with filters, ISO-TP, capture and replay, DBC, KCD and ARXML databases, code generation, fault injection, errors and observability.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+[go-canbus](/projects/go-canbus/) is a pure Go library for the Controller Area Network: frames, transports, ISO-TP, traces and message databases. It has no cgo; its one dependency outside the standard library is [go-serial](/projects/go-serial/), also pure Go, for serial-line adapters. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-canbus); [API.md](https://github.com/otfabric/go-canbus/blob/main/API.md) in the repository is the map. This page follows v0.7.0.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-canbus
+```
+
+Go 1.23 or later. The packages:
+
+| Package | Contents |
+|---|---|
+| `canbus` | Frames, CAN XL frames, DLC tables, filters, error frames, the `Transport` interface and `Bus` |
+| `socketcan` | Linux `CAN_RAW` sockets, CAN FD and CAN XL, kernel ISO-TP sockets (`DialISOTP`) |
+| `socketcan/link` | rtnetlink administration: list, inspect, configure and create interfaces |
+| `slcan` | Serial-line (LAWICEL) adapters on every OS, or slcan over any byte stream |
+| `virtual` | An in-memory bus with SocketCAN delivery rules and seeded faults |
+| `isotp` | ISO-TP in userspace over a `Bus` |
+| `capture` | candump, JSON Lines, pcap, pcapng, ASC, BLF and TRC readers and writers; replay |
+| `candb`, `dbc`, `kcd`, `arxml` | The message model and signal codec; DBC and KCD parsers and writers, an ARXML reader |
+| `codegen` | Typed Go generated from a database |
+| `chaos` | A fault-injecting bridge between two transports |
+
+## Frames
+
+A `canbus.Frame` is a value: an identifier, flags and up to 64 bytes. Constructors validate it:
+
+```go
+f, err := canbus.NewStandard(0x123, []byte{0xDE, 0xAD, 0xBE, 0xEF})
+x, err := canbus.NewExtended(0x18DAF110, data)       // 29-bit
+fd, err := canbus.NewFD(0x18DA10F1, true, true, payload) // 29-bit, CAN FD, bit rate switch
+r, err := canbus.NewRemote(0x123, false, 4)
+fmt.Println(f) // 123#DEADBEEF, cansend notation
+```
+
+`FlagFD`, `FlagBRS`, `FlagESI`, `FlagRemote`, `FlagExtended` and `FlagError` describe the frame, `DLCToLen`, `LenToDLC` and `PadFD` handle CAN FD lengths, and `ParseError` decodes an error frame into its class, controller state and protocol violation. `canbus.XLFrame` holds a CAN XL frame (priority, VCID, SEC and RRS flags, SDU type, acceptance field and 1 to 2048 bytes), written in can-utils notation.
+
+## Transports and the Bus
+
+Every way to reach a bus is a `canbus.Transport`: a `socketcan.Conn`, an `slcan.Conn` or a `virtual` port. A `canbus.Bus` shares one transport between many users, each with a filtered, bounded `Subscription`:
+
+```go
+conn, err := socketcan.Open("can0", socketcan.WithFD())
+bus, err := canbus.NewBus(conn, canbus.WithStartOnSubscribe())
+defer bus.Close()
+
+engine, _ := bus.Subscribe(canbus.WithFilters(canbus.FilterSet{
+	Filters: []canbus.Filter{canbus.ExactStandard(0x0C0), canbus.ExactStandard(0x0C1)},
+}), canbus.WithQueueSize(1024), canbus.WithOverflow(canbus.DropOldest))
+
+f, err := engine.Receive(ctx)
+err = bus.Send(ctx, &f) // from any goroutine
+```
+
+Filters follow Linux `CAN_RAW_FILTER` exactly, so the same `FilterSet` runs in the kernel on SocketCAN and in software elsewhere. A subscription drops the newest frame when its queue is full, unless it asks for `DropOldest` or `Block`. `WithStartOnSubscribe` makes the bus read only from the first subscription on, so no frame is lost in between.
+
+### SocketCAN (Linux)
+
+`socketcan.Open` takes `WithFD`, `WithXL`, `WithFilters`, `WithoutLoopback`, `WithRecvOwn`, `WithReceiveBuffer` and more. Send and receive are allocation free, carry kernel timestamps and report drops. `"any"` receives from every CAN interface. Opening a socket never changes an interface; that is `socketcan/link`:
+
+```go
+ifs, _ := link.List()
+_ = link.SetDown("can0")
+_ = link.Configure("can0", link.Config{Bitrate: 500000, DataBitrate: 2000000, Set: link.ModeFD})
+_ = link.SetUp("can0")
+_ = link.AddVCAN("vcan0", true) // CAN FD capable
+```
+
+Administration needs `CAP_NET_ADMIN`; raw and ISO-TP sockets need no capability.
+
+### Serial-line adapters (every OS)
+
+```go
+conn, err := slcan.Open("/dev/ttyACM0", 0, slcan.Config{Bitrate: 500000, ListenOnly: true})
+bus, err := canbus.NewBus(conn)
+```
+
+CANable, CANtact, USBtin and LAWICEL adapters work on Linux, macOS and Windows, including CAN FD on a CANable 2.0 (`DataBitrate`). `slcan.New` runs the protocol over any byte stream, such as a TCP connection to a serial server. Error frames come from adapters that send status records; slcan has no error state indicator or hardware filters.
+
+### The virtual bus
+
+```go
+vb := virtual.New(virtual.Config{Name: "sim0", Seed: 42})
+vb.SetFaults(virtual.Faults{Drop: 0.05, Duplicate: 0.02})
+ecu, _ := vb.Open()
+tester, _ := vb.Open(virtual.WithFD())
+```
+
+Every port of a virtual bus receives what the others send, with the delivery rules of SocketCAN (loopback, receive-own, filters, FD capability). Seeded faults drop, duplicate, delay or corrupt frames reproducibly, and `InjectError` and `SetUp` simulate controller errors and an interface going down. It models delivery only: no arbitration, timing or bus-off.
+
+## ISO-TP
+
+```go
+conn, err := isotp.Dial(bus, isotp.Config{TxID: 0x7E0, RxID: 0x7E8, Padding: true})
+err = conn.Send(ctx, []byte{0x22, 0xF1, 0x90})
+resp, err := conn.Receive(ctx)
+```
+
+The userspace implementation has normal, extended and mixed addressing, 29-bit identifiers, flow control with block size, STmin, WAIT and OVERFLOW, timeouts, padding, CAN FD with a chosen data length and messages above 4095 bytes. A first frame announcing more than `MaxMessageSize` (4095 by default) is answered with OVERFLOW, and nothing is allocated for it. On Linux, `socketcan.DialISOTP` uses the kernel's ISO-TP sockets behind the same `Endpoint` interface.
+
+## Capture and replay
+
+```go
+r, format, err := capture.NewReader(f) // detects candump, JSON Lines, pcap, pcapng, ASC, BLF, TRC
+w, err := capture.NewWriter(out, capture.FormatFromPath("trip.pcapng"))
+stats, err := capture.Replay(ctx, r, bus, capture.ReplayOptions{Speed: 2})
+```
+
+| Format | Read | Write | CAN XL |
+|---|---|---|---|
+| candump log | yes | yes | yes |
+| JSON Lines (lossless) | yes | yes | yes |
+| pcap, pcapng (`LINKTYPE_CAN_SOCKETCAN`) | yes | yes | yes |
+| Vector ASC, BLF | yes | yes | no |
+| PEAK TRC | 1.0 to 2.1 | 2.1 | no |
+
+pcap and pcapng are checked against tcpdump and Wireshark. Replay keeps the original timing, scales it or runs at full speed, with filters and limits.
+
+## Databases and code generation
+
+```go
+db, diags, err := dbc.ParseFile("vehicle.dbc")   // also kcd.ParseFile, arxml.ParseFile
+msg, signals, err := db.DecodeFrame(&f)
+for _, s := range signals {
+	fmt.Println(s.Signal.Name, s.Signal.RawString(s.Value), s.Physical, s.Signal.Unit)
+}
+engine := db.MessageByName("Engine")
+frame, err := engine.Frame(map[string]candb.Input{
+	"Speed": candb.Phys(1500),
+	"Gear":  candb.Label("Second"),
+}, candb.EncodeOptions{})
+```
+
+`candb` is the format-independent model and codec: Intel and Motorola byte order, signed, unsigned and float signals, scale and offset, value tables, simple and extended multiplexing and CAN FD lengths. Raw values are exact to 64 bits; physical values are float64, and `candb.PhysText` encodes a 64-bit physical value given as decimal text. Every parser returns diagnostics for what it does not support instead of guessing. DBC and KCD are read and written; ARXML, the CAN subset of AUTOSAR 4, is read.
+
+`codegen.Generate` turns a database into a Go package: a struct per message, enums for value tables, physical accessors and multiplexer-aware `Encode` and `Decode`. The generated code is checked against the dynamic codec on random payloads.
+
+## Fault injection
+
+```go
+bridge := chaos.New(chaos.Config{Seed: 7, Drop: 0.01, Delay: 0.1, DelayBy: 5 * time.Millisecond, Reorder: 0.01})
+err := bridge.Both(ctx, vcan0, vcan1)
+```
+
+A `chaos.Bridge` sits between two transports, for example a device on one interface and its tester on another, and drops, duplicates, delays, reorders and corrupts frames from a seed. It tests how real stacks behave under faults that a single CAN bus seldom produces on demand.
+
+## Errors and observability
+
+Errors are sentinel values for `errors.Is`: `canbus.ErrClosed`, `ErrInterfaceDown`, `ErrUnsupported` and `ErrBufferOverflow`, ISO-TP's `isotp.ErrTimeout`, `ErrOverflow` and `ErrSequence`, and `*ParseError` with diagnostics for databases; [ERRORS.md](https://github.com/otfabric/go-canbus/blob/main/ERRORS.md) lists them. A `Bus` logs through `slog` and reports to a `canbus.Metrics` implementation: frames, drops by reason, error frames and the controller's state.
+
+<Aside type="note" title="What the library does not do yet">
+No vendor adapters other than SocketCAN and slcan (PEAK PCAN-Basic, Kvaser CANlib and Vector XL can be added as a `canbus.Transport`); no CANopen, J1939 or UDS; CAN XL only on SocketCAN (Linux 6.2 or later, VCIDs from 6.9), the virtual bus and four trace formats; no ARXML writer. [LIMITATIONS.md](https://github.com/otfabric/go-canbus/blob/main/LIMITATIONS.md) has the full list.
+</Aside>
+
+<LinkCard title="Testing and interop" description="The reference stacks go-canbus is tested against, and what has not been validated." href="/docs/protocols/can-bus/testing/" />

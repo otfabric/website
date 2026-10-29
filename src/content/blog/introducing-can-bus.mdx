@@ -1,0 +1,92 @@
+---
+title: 'CAN bus joins OT Fabric: go-canbus, canbusctl and independent reference stacks'
+description: CAN connects the controllers inside battery packs, inverters, chargers, vehicles and machines. go-canbus implements classical CAN, CAN FD and CAN XL under MIT, with ISO-TP, seven trace formats and DBC, KCD and ARXML databases, canbusctl puts it on the command line with safety guards for real buses, and canbus-interop tests it against seven independent implementations.
+date: 2026-10-29
+authors: [OT Fabric]
+tags: [announcement, can-bus, energy, interop]
+featured: true
+cover:
+  alt: go-canbus in the middle, connected to the raw CAN stacks can-utils, python-can, socketcan-rs and Scapy on the left and the Linux kernel ISO-TP, python-can-isotp, cantools and canmatrix on the right, all on Linux virtual CAN. 170 scenarios pass, none fail.
+  image: ../../assets/blog/canbus-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+Open a battery storage container, an EV charger or a heat pump, and somewhere inside two twisted wires run from board to board. They carry CAN: the cell voltages from the battery management system, the setpoints for the power electronics, the status of the charger's power modules. The same bus runs every car and truck on the road, tractors and excavators, robots, lifts and medical devices. Every controller on it can send, frames are short, and the identifier of a frame names the message and sets its priority.
+
+Today CAN bus becomes the thirteenth communication protocol in OT Fabric, with the same three pieces as every other: a library, a command-line tool and an interoperability suite.
+
+## Why CAN, and why now
+
+The other protocols in OT Fabric connect devices to each other and to the control room. CAN is what sits inside many of those devices:
+
+- **It is the bus inside energy equipment.** Battery packs, inverters, DC/DC converters and chargers talk CAN internally, and many expose their data only that way. A gateway that turns a BMS's CAN frames into [Modbus](/protocols/modbus/), [OPC UA](/protocols/opc-ua/) or [IEEE 2030.5](/protocols/ieee-2030-5/) is everyday work for an energy startup.
+- **The tools are scattered.** Linux has excellent CAN support in the kernel and in can-utils, Python has python-can and cantools, and every vendor ships its own Windows tool. What is missing is one MIT-licensed library and tool that covers frames, ISO-TP, traces and databases together, runs on Linux, macOS and Windows, and can be scripted on a test bench or embedded in a gateway.
+- **CAN FD and CAN XL are arriving.** CAN FD is now common in new designs, and CAN XL, standardized in ISO 11898-1:2024, carries up to 2048 bytes per frame. Support in open tools is still uneven, so it was worth building in from the start.
+
+## go-canbus
+
+[go-canbus](/projects/go-canbus/) is a library for the Controller Area Network, with no cgo and nothing outside the standard library except a pure Go serial port.
+
+- **Frames**: classical CAN with 11- and 29-bit identifiers, remote and error frames, CAN FD with bit rate switch and ESI, and CAN XL with priority, VCID, SDU type and acceptance field.
+- **Transports**: Linux SocketCAN with kernel filters, timestamps and drop accounting; serial-line (slcan) adapters such as the CANable, CANtact and USBtin on Linux, macOS and Windows; and an in-memory virtual bus with SocketCAN's delivery rules and seeded faults for tests. A shared `Bus` gives many users their own filtered, bounded subscription.
+- **Interface administration** through rtnetlink: bit rates, CAN FD, restart and virtual interfaces, kept apart from opening a socket.
+- **ISO-TP** in userspace and through the Linux kernel's sockets, with normal, extended and mixed addressing, flow control, CAN FD and messages above 4095 bytes.
+- **Traces**: candump logs, JSON Lines, pcap and pcapng for Wireshark, Vector ASC and BLF and PEAK TRC, read, written, converted and replayed with the original or scaled timing.
+- **Databases**: DBC and KCD read and written, the CAN part of AUTOSAR 4 ARXML read, a signal codec with exact 64-bit raw values, and typed Go generated from a database.
+- **Fault injection**: a seeded bridge between two interfaces that drops, duplicates, delays, reorders and corrupts frames.
+
+ISO 11898 and ISO 15765-2 are sold by ISO, and DBC has no public specification at all. go-canbus is built from public material, the Linux SocketCAN documentation and headers, Bosch's CAN specifications and the behaviour of independent implementations. What it does not do yet is said plainly: no PEAK, Kvaser or Vector drivers, no ARXML writer, and no CANopen, J1939 or UDS, which are planned as separate libraries on top.
+
+## canbusctl
+
+[canbusctl](/projects/canbusctl/) puts go-canbus on the command line, for engineers at a test bench or in front of a gateway.
+
+```sh
+# Watch a bus and decode it with a DBC file, without transmitting
+canbusctl monitor -i can0 --dbc vehicle.dbc
+
+# Record a trip to a Vector BLF file, then open it in Wireshark
+canbusctl record -i can0 -o trip.blf --duration 10m
+canbusctl trace convert trip.blf trip.pcapng
+
+# A CANable or other serial-line adapter on any OS, listen-only
+canbusctl monitor -i slcan:/dev/ttyACM0 --slcan-bitrate 250000
+
+# Encode a message from a database, or send a diagnostic request over ISO-TP
+canbusctl dbc encode vehicle.dbc Engine Speed=1500 Gear=Second
+canbusctl isotp send -i vcan0 --tx-id 7E0 --rx-id 7E8 --data 0322F190
+
+# Simulate a database's traffic on a virtual bus, or put faults between two interfaces
+canbusctl simulate --dbc vehicle.dbc -i vcan0 --duration 1m
+canbusctl bridge -a vcan0 -b vcan1 --drop 0.01 --duration 1m
+```
+
+Because CAN frames can move brakes, drives and power electronics, canbusctl is passive by default. Monitoring, recording and every database command never transmit, an slcan adapter is opened listen-only for them, and every command that transmits refuses a real interface without `--yes` and stops at limits on count, rate and duration. Output is text, a table or JSON with stable exit codes. The [canbusctl guide](/docs/protocols/can-bus/cli/) walks through it.
+
+## Tested against independent stacks
+
+[canbus-interop](/projects/canbus-interop/) packages seven independent implementations as multi-architecture containers behind one contract, pinned by version and hash: can-utils (C) with the Linux kernel's ISO-TP, python-can, Scapy and python-can-isotp (Python), socketcan-rs (Rust), and cantools and canmatrix for DBC, KCD and ARXML.
+
+go-canbus runs against them on Linux virtual CAN, in CI on amd64 and arm64. Frames go both ways with every reference, from standard identifiers to CAN FD with BRS and 2000-frame bursts, and CAN XL with can-utils. ISO-TP messages from 1 to 4095 bytes cross both the kernel's implementation and python-can-isotp in every addressing mode. slcan is checked against python-can and the kernel's slcan driver, traces against can-utils and python-can, and seven DBC fixtures and three ARXML files are decoded and encoded by cantools and canmatrix. **170 scenarios pass, none fail**, and 13 are skipped where a reference lacks a feature such as CAN XL.
+
+The suite found two defects in go-canbus, both fixed: it rejected the newer CAN FD notation of can-utils' candump, and 64-bit physical values given as JSON numbers lost precision. It also records 132 documented differences, almost all of them between the database tools, where DBC and ARXML have no normative answer: cantools refuses a multiplexer value without a branch, canmatrix cannot encode extended multiplexing, and both place an ARXML PDU at byte 0 of its frame. Outside the interop suite, go-canbus runs on Linux kernels 6.1 to 7.0 in micro-VMs, every pcap file it writes is dissected by Wireshark, and seeded chaos tests run nightly.
+
+<Callout type="note" title="Interoperability, not conformance">
+go-canbus v0.7.0, canbusctl v0.6.0 and canbus-interop v0.5.0 are pre-1.0 and interoperability tested. They make no claim of ISO or CiA conformance. The four raw-CAN references are independent programs but share the kernel's CAN_RAW code, and virtual CAN is a perfect medium: it shows frame encoding and protocol logic, not bit timing, arbitration, error counters or bus-off. Nothing has been tested on real CAN hardware yet; that bench is the next step. What is and is not covered is listed in [Testing and interop](/docs/protocols/can-bus/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the CAN projects are built by people and AI agents together. With standards that are not public and a database format that has never been specified, the work is careful reading of public sources and a lot of testing: every disagreement with a reference is traced, attributed and written down, and the fuzz targets, chaos runs and kernel matrix are part of every release. The tests, the interop matrix and the list of limitations are public, so you can judge the result yourself.
+
+## Who else implements CAN
+
+The [ecosystem map](/ecosystem/implementations/?protocol=can-bus) now covers CAN bus: 24 implementations, from the Linux kernel's SocketCAN, can-utils and python-can to Rust, Go, Java, .NET and Node.js libraries, DBC tools such as cantools, canmatrix and opendbc, Zephyr's CAN drivers and SavvyCAN, and the commercial driver libraries from Vector, PEAK-System and Kvaser, with language, licence, roles and latest release.
+
+<MapLink protocol="can-bus" title="Explore CAN bus on the ecosystem map" />
+
+Who maintains CANopen and the CAN FD and CAN XL recommendations, and what membership and certification cost, is in [CAN in Automation's entry](/ecosystem/organizations/cia/) in the standards and alliances directory.
+
+Start with the [CAN bus overview](/docs/protocols/can-bus/), or `go get github.com/otfabric/go-canbus`.

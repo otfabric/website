@@ -118,6 +118,15 @@
    "summary": "The industrial Ethernet of Siemens and many other automation vendors runs almost entirely on licensed stacks. In the open field, rt-labs p-net is the one widely used device stack, most other projects are DCP tools, and open IO-Controllers are few and young."
   },
   {
+   "id": "can-bus",
+   "name": "CAN bus",
+   "standard": "ISO 11898-1 (CAN, CAN FD, CAN XL), ISO 15765-2 (ISO-TP); Bosch CAN 2.0 and CAN FD 1.0",
+   "focus": "Classical CAN, CAN FD and CAN XL frames, SocketCAN and adapters, ISO-TP, DBC, KCD and ARXML databases",
+   "maturity": "Very mature (CAN XL emerging)",
+   "commercial": "Very established",
+   "summary": "Ubiquitous in vehicles, machines and energy equipment. The open field centres on Linux SocketCAN with can-utils, python-can and bindings for most languages, and on cantools and canmatrix for databases; the commercial side is adapter vendors' drivers and analysis tools. CAN XL is in Linux since 6.2, with few stacks yet."
+  },
+  {
    "id": "sparkplug-b",
    "kind": "profile",
    "name": "Sparkplug B",
@@ -6548,6 +6557,899 @@
    "notes": "TwinCAT 3 function that turns a standard Ethernet port with an Intel chipset into a PROFINET RT controller, on Windows, TwinCAT/BSD and Beckhoff RT Linux.",
    "sources": [
     "https://www.beckhoff.com/en-us/products/automation/twincat/tfxxxx-twincat-3-functions/tf6xxx-connectivity/tf6271.html"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "otfabric-go-canbus",
+   "name": "go-canbus",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-canbus",
+   "repo": "otfabric/go-canbus",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.7.0",
+    "date": "2026-10-29",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-canbus/@v/v0.7.0.info"
+   },
+   "roles": [
+    "bus access",
+    "ISO-TP",
+    "database tools"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "CAN XL",
+    "SocketCAN",
+    "slcan",
+    "ISO-TP",
+    "DBC",
+    "KCD",
+    "ARXML",
+    "pcap"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-canbus",
+   "notes": "Classical CAN, CAN FD and CAN XL in pure Go: SocketCAN with netlink administration, serial-line adapters on every OS, a virtual bus with seeded faults, ISO-TP in userspace and through the kernel, seven trace formats with replay, DBC and KCD read and write, ARXML read, and a Go code generator. No cgo. Tested against can-utils, the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix on virtual CAN; not yet on real hardware.",
+   "sources": [
+    "https://github.com/otfabric/go-canbus",
+    "https://proxy.golang.org/github.com/otfabric/go-canbus/@latest"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "linux-socketcan",
+   "name": "Linux SocketCAN",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "GPL-2.0-only",
+   "url": "https://docs.kernel.org/networking/can.html",
+   "stars": null,
+   "historySince": "2008",
+   "lastCommit": "2026-10-18",
+   "release": {
+    "version": "v7.3",
+    "date": "2026-10-18",
+    "source": "Linux kernel release",
+    "url": "https://github.com/torvalds/linux/tree/v7.3"
+   },
+   "roles": [
+    "bus access",
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "CAN XL",
+    "ISO-TP",
+    "J1939"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "notes": "CAN in the Linux kernel: controllers as network interfaces, CAN_RAW, CAN_BCM, CAN_ISOTP (since 5.10) and CAN_J1939 (since 5.4) sockets, vcan and vxcan, the slcan and gs_usb drivers and many controller drivers; CAN XL since 6.2. Almost every open CAN tool on Linux is a client of it. canbus-interop exercises its CAN_RAW and ISO-TP through can-utils.",
+   "sources": [
+    "https://docs.kernel.org/networking/can.html",
+    "https://github.com/torvalds/linux/tree/v7.3/net/can"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "can-utils",
+   "name": "can-utils",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "GPL-2.0-only OR BSD-3-Clause",
+   "url": "https://github.com/linux-can/can-utils",
+   "repo": "linux-can/can-utils",
+   "stars": 2900,
+   "forks": 793,
+   "historySince": "2006",
+   "lastCommit": "2026-10-14",
+   "release": {
+    "version": "v2025.01",
+    "date": "2025-01-24",
+    "source": "GitHub release",
+    "url": "https://github.com/linux-can/can-utils/releases/tag/v2025.01"
+   },
+   "roles": [
+    "analyzer",
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "CAN XL",
+    "ISO-TP",
+    "J1939",
+    "slcan"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "notes": "The Linux CAN project's userspace tools: candump, cansend, canplayer, cangen, cansniffer, isotpsend and isotprecv, the J1939 tools and slcand. Its candump log and cansend notation are the lingua franca of CAN traces.",
+   "sources": [
+    "https://github.com/linux-can/can-utils"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "python-can",
+   "name": "python-can",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "LGPL-3.0-only",
+   "url": "https://github.com/hardbyte/python-can",
+   "repo": "hardbyte/python-can",
+   "stars": 1600,
+   "forks": 697,
+   "historySince": "2009",
+   "lastCommit": "2026-06-06",
+   "release": {
+    "version": "4.6.1",
+    "date": "2025-08-12",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/python-can/4.6.1/"
+   },
+   "roles": [
+    "bus access",
+    "analyzer"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "SocketCAN",
+    "slcan",
+    "ASC",
+    "BLF",
+    "TRC"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/python-can/",
+   "notes": "The standard CAN library for Python: one Bus API over SocketCAN, slcan and the drivers of PEAK, Kvaser, Vector, IXXAT, NI and others, with log readers and writers (candump, ASC, BLF, TRC, CSV, MF4) and the can.viewer and can.logger tools.",
+   "sources": [
+    "https://github.com/hardbyte/python-can",
+    "https://pypi.org/pypi/python-can/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "socketcan-rs",
+   "name": "socketcan-rs",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/socketcan-rs/socketcan-rs",
+   "repo": "socketcan-rs/socketcan-rs",
+   "stars": 210,
+   "forks": 96,
+   "historySince": "2016",
+   "lastCommit": "2026-09-05",
+   "release": {
+    "version": "4.0.0",
+    "date": "2026-09-05",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/socketcan/4.0.0"
+   },
+   "roles": [
+    "bus access"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "SocketCAN",
+    "netlink"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "package": "https://crates.io/crates/socketcan",
+   "notes": "SocketCAN for Rust (crate socketcan): classical and CAN FD frames, filters, error frames, blocking and async (tokio, async-io, smol) sockets, and interface configuration over netlink.",
+   "sources": [
+    "https://github.com/socketcan-rs/socketcan-rs",
+    "https://index.crates.io/so/ck/socketcan"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "scapy-can",
+   "name": "Scapy",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "GPL-2.0-only",
+   "url": "https://github.com/secdev/scapy",
+   "repo": "secdev/scapy",
+   "stars": 12600,
+   "forks": 2300,
+   "historySince": "2003",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "2.8.0",
+    "date": "2026-10-02",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/scapy/2.8.0/"
+   },
+   "roles": [
+    "analyzer",
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "ISO-TP",
+    "UDS"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/scapy/",
+   "notes": "The packet manipulation library has its own CAN and CAN FD codec on native SocketCAN sockets, with contrib layers for ISO-TP, UDS, GMLAN and OBD and scanners used in automotive security testing. Stars and forks are those of the whole Scapy repository.",
+   "sources": [
+    "https://github.com/secdev/scapy",
+    "https://pypi.org/pypi/scapy/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "python-can-isotp",
+   "name": "python-can-isotp",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/pylessard/python-can-isotp",
+   "repo": "pylessard/python-can-isotp",
+   "stars": 315,
+   "forks": 86,
+   "historySince": "2017",
+   "lastCommit": "2026-08-22",
+   "release": {
+    "version": "2.0.7",
+    "date": "2025-05-14",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/can-isotp/2.0.7/"
+   },
+   "roles": [
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "ISO-TP"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/can-isotp/",
+   "notes": "A userspace ISO-TP state machine in Python on python-can or any CAN layer, with every addressing mode, flow control and CAN FD, plus a wrapper for the kernel's ISO-TP sockets. The transport under python-udsoncan.",
+   "sources": [
+    "https://github.com/pylessard/python-can-isotp",
+    "https://pypi.org/pypi/can-isotp/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "cantools",
+   "name": "cantools",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/cantools/cantools",
+   "repo": "cantools/cantools",
+   "stars": 2300,
+   "forks": 657,
+   "historySince": "2015",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "45.1.2",
+    "date": "2026-10-29",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/cantools/45.1.2/"
+   },
+   "roles": [
+    "database tools",
+    "analyzer"
+   ],
+   "capabilities": [
+    "DBC",
+    "KCD",
+    "ARXML",
+    "SYM",
+    "Code generation"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/cantools/",
+   "notes": "The reference open-source database tool: parses DBC, KCD, SYM, ARXML and CDD, encodes and decodes signals, monitors a bus with python-can, plots traces and generates C code. canbus-interop runs 45.1.1.",
+   "sources": [
+    "https://github.com/cantools/cantools",
+    "https://pypi.org/pypi/cantools/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "canmatrix",
+   "name": "canmatrix",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "BSD-2-Clause",
+   "url": "https://github.com/ebroecker/canmatrix",
+   "repo": "ebroecker/canmatrix",
+   "stars": 1100,
+   "forks": 441,
+   "historySince": "2013",
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "1.3.3",
+    "date": "2026-10-21",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/canmatrix/1.3.3/"
+   },
+   "roles": [
+    "database tools"
+   ],
+   "capabilities": [
+    "DBC",
+    "KCD",
+    "ARXML",
+    "SYM",
+    "XLSX"
+   ],
+   "interop": "canbus-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/canmatrix/",
+   "notes": "Reads and writes CAN matrices in DBC, KCD, ARXML, SYM, FIBEX, XLS(X), JSON and more, and converts between them; also decodes frames. canbus-interop uses it as its second database oracle.",
+   "sources": [
+    "https://github.com/ebroecker/canmatrix",
+    "https://pypi.org/pypi/canmatrix/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "einride-can-go",
+   "name": "can-go (Einride)",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/einride/can-go",
+   "repo": "einride/can-go",
+   "stars": 240,
+   "forks": 49,
+   "historySince": "2019",
+   "lastCommit": "2026-04-07",
+   "release": {
+    "version": "v0.17.0",
+    "date": "2026-02-27",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/go.einride.tech/can/@v/v0.17.0.info"
+   },
+   "roles": [
+    "bus access",
+    "database tools"
+   ],
+   "capabilities": [
+    "SocketCAN",
+    "DBC",
+    "Code generation"
+   ],
+   "maintenance": "active",
+   "package": "https://pkg.go.dev/go.einride.tech/can",
+   "notes": "Einride's Go module go.einride.tech/can: SocketCAN, a DBC parser and a generator of typed Go message code, used on autonomous trucks.",
+   "sources": [
+    "https://github.com/einride/can-go",
+    "https://proxy.golang.org/go.einride.tech/can/@latest"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "brutella-can",
+   "name": "can (brutella)",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/brutella/can",
+   "repo": "brutella/can",
+   "stars": 229,
+   "forks": 58,
+   "historySince": "2016",
+   "lastCommit": "2019-05-20",
+   "release": {
+    "version": "v0.0.2",
+    "date": "2019-05-20",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/brutella/can/@v/v0.0.2.info"
+   },
+   "roles": [
+    "bus access"
+   ],
+   "capabilities": [
+    "SocketCAN"
+   ],
+   "maintenance": "quiet",
+   "package": "https://pkg.go.dev/github.com/brutella/can",
+   "notes": "A small Go library to send and receive classical CAN frames on Linux SocketCAN, with handlers per identifier. Unchanged since 2019.",
+   "sources": [
+    "https://github.com/brutella/can",
+    "https://proxy.golang.org/github.com/brutella/can/@latest"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "javacan",
+   "name": "JavaCAN",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Java"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/pschichtel/JavaCAN",
+   "repo": "pschichtel/JavaCAN",
+   "stars": 69,
+   "forks": 23,
+   "historySince": "2018",
+   "lastCommit": "2026-10-22",
+   "release": {
+    "version": "3.5.3",
+    "date": "2026-10-21",
+    "source": "Maven Central",
+    "url": "https://repo1.maven.org/maven2/tel/schich/javacan-core/3.5.3/"
+   },
+   "roles": [
+    "bus access",
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "SocketCAN",
+    "ISO-TP",
+    "J1939"
+   ],
+   "maintenance": "active",
+   "package": "https://central.sonatype.com/artifact/tel.schich/javacan-core",
+   "notes": "SocketCAN bindings for Java through JNI: raw CAN and CAN FD, broadcast manager, ISO-TP and J1939 sockets, with epoll-based non-blocking I/O. No CAN XL yet.",
+   "sources": [
+    "https://github.com/pschichtel/JavaCAN",
+    "https://repo1.maven.org/maven2/tel/schich/javacan-core/maven-metadata.xml"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "socketcansharp",
+   "name": "SocketCANSharp",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "BSD-3-Clause",
+   "url": "https://github.com/derek-will/SocketCANSharp",
+   "repo": "derek-will/SocketCANSharp",
+   "stars": 84,
+   "forks": 20,
+   "historySince": "2021",
+   "lastCommit": "2025-02-22",
+   "release": {
+    "version": "0.13.0",
+    "date": "2025-02-22",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/SocketCANSharp/0.13.0"
+   },
+   "roles": [
+    "bus access",
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "CAN XL",
+    "SocketCAN",
+    "ISO-TP",
+    "J1939"
+   ],
+   "maintenance": "slowing",
+   "package": "https://www.nuget.org/packages/SocketCANSharp",
+   "notes": "A .NET wrapper for SocketCAN: raw CAN, CAN FD and CAN XL (with VCIDs), broadcast manager, ISO-TP and J1939 sockets, and netlink interface configuration.",
+   "sources": [
+    "https://github.com/derek-will/SocketCANSharp",
+    "https://api.nuget.org/v3/registration5-gz-semver2/socketcansharp/index.json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "node-can",
+   "name": "node-can",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C++",
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/sebi2k1/node-can",
+   "repo": "sebi2k1/node-can",
+   "stars": 245,
+   "forks": 76,
+   "historySince": "2012",
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "4.3.2",
+    "date": "2026-10-03",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/socketcan/v/4.3.2"
+   },
+   "roles": [
+    "bus access",
+    "database tools"
+   ],
+   "capabilities": [
+    "SocketCAN",
+    "KCD"
+   ],
+   "maintenance": "active",
+   "package": "https://www.npmjs.com/package/socketcan",
+   "notes": "SocketCAN for Node.js (npm package socketcan), a native addon that sends and receives frames and decodes signals from a KCD network description.",
+   "sources": [
+    "https://github.com/sebi2k1/node-can",
+    "https://registry.npmjs.org/socketcan"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "opendbc",
+   "name": "opendbc",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Python",
+    "C++"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/commaai/opendbc",
+   "repo": "commaai/opendbc",
+   "stars": 3400,
+   "forks": 2300,
+   "historySince": "2017",
+   "lastCommit": "2026-10-27",
+   "release": {
+    "version": "0.3.1",
+    "date": "2026-04-22",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/opendbc/0.3.1/"
+   },
+   "roles": [
+    "database tools"
+   ],
+   "capabilities": [
+    "DBC"
+   ],
+   "maintenance": "active",
+   "package": "https://pypi.org/project/opendbc/",
+   "notes": "comma.ai's collection of DBC files for hundreds of car models, with a C++ CAN parser and packer behind a Python API and the car interfaces that openpilot drives. Many of its DBC files were reverse engineered by the community.",
+   "sources": [
+    "https://github.com/commaai/opendbc",
+    "https://pypi.org/pypi/opendbc/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "can-dbc",
+   "name": "can-dbc",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/oxibus/can-dbc",
+   "repo": "oxibus/can-dbc",
+   "stars": 111,
+   "forks": 42,
+   "historySince": "2018",
+   "lastCommit": "2026-07-15",
+   "release": {
+    "version": "10.0.0",
+    "date": "2026-07-15",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/can-dbc/10.0.0"
+   },
+   "roles": [
+    "database tools"
+   ],
+   "capabilities": [
+    "DBC"
+   ],
+   "maintenance": "active",
+   "package": "https://crates.io/crates/can-dbc",
+   "notes": "A DBC parser for Rust, now maintained in the oxibus organization, with a companion code generator (dbc-codegen) for typed messages.",
+   "sources": [
+    "https://github.com/oxibus/can-dbc",
+    "https://index.crates.io/ca/n-/can-dbc"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "isotp-c",
+   "name": "isotp-c",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/lishen2/isotp-c",
+   "repo": "lishen2/isotp-c",
+   "stars": 291,
+   "forks": 101,
+   "historySince": "2018",
+   "lastCommit": "2022-01-30",
+   "release": null,
+   "roles": [
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "ISO-TP"
+   ],
+   "maintenance": "quiet",
+   "notes": "A small, platform-independent ISO-TP implementation in C for microcontrollers, with user callbacks for sending frames and timing. No tagged release.",
+   "sources": [
+    "https://github.com/lishen2/isotp-c"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "savvycan",
+   "name": "SavvyCAN",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/collin80/SavvyCAN",
+   "repo": "collin80/SavvyCAN",
+   "stars": 1800,
+   "forks": 467,
+   "historySince": "2015",
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "V220",
+    "date": "2025-05-08",
+    "source": "GitHub release",
+    "url": "https://github.com/collin80/SavvyCAN/releases/tag/V220"
+   },
+   "roles": [
+    "analyzer"
+   ],
+   "capabilities": [
+    "DBC",
+    "SocketCAN"
+   ],
+   "maintenance": "active",
+   "notes": "A Qt desktop tool to capture, decode, graph, filter and reverse engineer CAN traffic, with DBC support and connections to SocketCAN, GVRET hardware and serial adapters. Continuous builds follow the last numbered release.",
+   "sources": [
+    "https://github.com/collin80/SavvyCAN"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "zephyr-can",
+   "name": "Zephyr CAN",
+   "protocol": "can-bus",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://docs.zephyrproject.org/latest/services/connectivity/canbus/index.html",
+   "stars": null,
+   "historySince": "2017",
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "v4.5.0",
+    "date": "2026-10-28",
+    "source": "Zephyr release",
+    "url": "https://github.com/zephyrproject-rtos/zephyr/tree/v4.5.0"
+   },
+   "roles": [
+    "bus access",
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "ISO-TP"
+   ],
+   "maintenance": "active",
+   "notes": "The CAN subsystem of the Zephyr RTOS: a controller API with drivers for many microcontrollers' CAN and CAN FD peripherals, transceiver support, a shell, and an ISO-TP transport protocol.",
+   "sources": [
+    "https://docs.zephyrproject.org/latest/services/connectivity/canbus/index.html",
+    "https://github.com/zephyrproject-rtos/zephyr/tree/v4.5.0"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "caringcaribou",
+   "name": "Caring Caribou",
+   "protocol": "can-bus",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/CaringCaribou/caringcaribou",
+   "repo": "CaringCaribou/caringcaribou",
+   "stars": 951,
+   "forks": 231,
+   "historySince": "2015",
+   "lastCommit": "2026-06-13",
+   "release": {
+    "version": "0.6",
+    "date": "2024-03-28",
+    "source": "git tag",
+    "url": "https://github.com/CaringCaribou/caringcaribou/tree/0.6"
+   },
+   "roles": [
+    "analyzer"
+   ],
+   "capabilities": [
+    "ISO-TP",
+    "UDS"
+   ],
+   "upstream": [
+    "python-can"
+   ],
+   "relation": "Security tool on python-can",
+   "maintenance": "active",
+   "notes": "A car security exploration tool on python-can: discovery of diagnostic services, UDS and XCP scanners, ISO-TP fuzzing and dumps, aimed at penetration testers.",
+   "sources": [
+    "https://github.com/CaringCaribou/caringcaribou"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "can-isotp-module",
+   "name": "can-isotp (module)",
+   "protocol": "can-bus",
+   "type": "legacy",
+   "languages": [
+    "C"
+   ],
+   "license": "GPL-2.0",
+   "url": "https://github.com/hartkopp/can-isotp",
+   "repo": "hartkopp/can-isotp",
+   "stars": 289,
+   "forks": 74,
+   "historySince": "2017",
+   "lastCommit": "2022-05-20",
+   "release": null,
+   "roles": [
+    "ISO-TP"
+   ],
+   "capabilities": [
+    "ISO-TP"
+   ],
+   "maintenance": "quiet",
+   "notes": "The out-of-tree Linux kernel module for ISO-TP sockets. It is part of the mainline kernel since Linux 5.10, so this repository only serves older kernels.",
+   "sources": [
+    "https://github.com/hartkopp/can-isotp"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "vector-xl-driver",
+   "name": "Vector XL Driver Library",
+   "protocol": "can-bus",
+   "type": "commercial",
+   "languages": [
+    "C",
+    "C#"
+   ],
+   "license": "Proprietary freeware",
+   "url": "https://www.vector.com/en/business-unit/testing-validation-diagnostics/products/network-interfaces/xl-driver-library/",
+   "stars": null,
+   "release": {
+    "version": "26.30.16",
+    "date": "2026-07-23",
+    "source": "Vector",
+    "url": "https://www.vector.com/en/business-unit/testing-validation-diagnostics/products/network-interfaces/xl-driver-library/"
+   },
+   "roles": [
+    "bus access"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "LIN",
+    "FlexRay"
+   ],
+   "maintenance": "n/a",
+   "notes": "Vector's free programming interface for its network interfaces on Windows: CAN and CAN FD, LIN, FlexRay, automotive Ethernet and more from C, C++ or .NET. The interfaces themselves, and Vector's CANoe and CANalyzer tools, are commercial.",
+   "sources": [
+    "https://www.vector.com/en/business-unit/testing-validation-diagnostics/products/network-interfaces/xl-driver-library/"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "peak-pcan-basic",
+   "name": "PEAK PCAN-Basic",
+   "protocol": "can-bus",
+   "type": "commercial",
+   "languages": [
+    "C++",
+    "C#",
+    "Java",
+    "Python"
+   ],
+   "license": "Proprietary freeware",
+   "url": "https://www.peak-system.com/products/software/development-packages/pcan-basic/",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "bus access"
+   ],
+   "capabilities": [
+    "CAN FD",
+    "CAN XL"
+   ],
+   "maintenance": "n/a",
+   "notes": "PEAK-System's API for its PCAN adapters on Windows and Linux, from C++, C#, Java, Python and more; CAN FD since version 4 and CAN XL since version 5. Free to use with PEAK hardware under PEAK's licence.",
+   "sources": [
+    "https://www.peak-system.com/products/software/development-packages/pcan-basic/"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "kvaser-canlib",
+   "name": "Kvaser CANlib SDK",
+   "protocol": "can-bus",
+   "type": "commercial",
+   "languages": [
+    "C",
+    "C#",
+    "Python"
+   ],
+   "license": "Proprietary freeware",
+   "url": "https://kvaser.com/developer/canlib-sdk",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "bus access"
+   ],
+   "capabilities": [
+    "DBC"
+   ],
+   "maintenance": "n/a",
+   "notes": "Kvaser's free SDK for all of its interfaces: CANlib, LINlib, a database library for DBC files and trace conversion, with virtual channels for testing and a separate Linux edition. Free to use with Kvaser hardware.",
+   "sources": [
+    "https://kvaser.com/developer/canlib-sdk"
    ],
    "verified": "2026-10-29"
   },
