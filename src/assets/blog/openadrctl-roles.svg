@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 336" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="openadrctl in three terminals: a test VTN started from its seed, a site acting as a VEN that checks the VTN with ping and lays out a day-ahead price event interval by interval, and the utility acting as Business Logic that publishes an evening-peak price event the VEN then receives over a WebSocket.">
+  <rect width="720" height="336" fill="#F4F6F8"/>
+  <text x="40" y="44" font-size="15" font-weight="600" fill="#17212B">One tool, every OpenADR 3 role</text>
+  <text x="680" y="44" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">openadrctl v0.3.0</text>
+
+  <!-- VTN -->
+  <rect x="40" y="62" width="200" height="236" rx="8" fill="#FFFFFF" stroke="#D9DFE4"/>
+  <rect x="40" y="62" width="200" height="30" rx="8" fill="#17212B"/>
+  <rect x="40" y="84" width="200" height="8" fill="#17212B"/>
+  <text x="54" y="82" font-size="12" font-weight="600" fill="#FFFFFF">VTN</text>
+  <text x="226" y="82" font-size="10" fill="#B9C3CC" text-anchor="end" font-family="IBM Plex Mono, monospace">the server</text>
+  <g font-size="10" font-family="IBM Plex Mono, monospace" fill="#17212B">
+    <text x="54" y="114" fill="#5A6875">$ openadrctl vtn start</text>
+    <text x="70" y="128" fill="#5A6875">--websocket</text>
+    <text x="54" y="150"><tspan x="54">listening</tspan><tspan x="124">:8080</tspan></text>
+    <text x="54" y="166"><tspan x="54">client</tspan><tspan x="124">utility (bl)</tspan></text>
+    <text x="54" y="182"><tspan x="54">client</tspan><tspan x="124">site-42 (ven)</tspan></text>
+    <text x="54" y="198"><tspan x="54">seeded</tspan><tspan x="124">6 objects</tspan></text>
+    <text x="54" y="224" fill="#5A6875">OAuth2 token endpoint</text>
+    <text x="54" y="240" fill="#5A6875">webhook · MQTT · WebSocket</text>
+    <text x="54" y="256" fill="#5A6875">resource groups</text>
+    <text x="54" y="272" fill="#5A6875">store in a file, https</text>
+  </g>
+
+  <!-- VEN -->
+  <rect x="260" y="62" width="220" height="236" rx="8" fill="#FFFFFF" stroke="#D9DFE4"/>
+  <rect x="260" y="62" width="220" height="30" rx="8" fill="#B35A1F"/>
+  <rect x="260" y="84" width="220" height="8" fill="#B35A1F"/>
+  <text x="274" y="82" font-size="12" font-weight="600" fill="#FFFFFF">VEN</text>
+  <text x="466" y="82" font-size="10" fill="#F6E3D6" text-anchor="end" font-family="IBM Plex Mono, monospace">the site</text>
+  <g font-size="10" font-family="IBM Plex Mono, monospace" fill="#17212B">
+    <text x="274" y="114" fill="#5A6875">$ openadrctl ping</text>
+    <text x="274" y="130"><tspan x="274">connect</tspan><tspan x="354" fill="#0A7C80" font-weight="600">ok</tspan></text>
+    <text x="274" y="144"><tspan x="274">token</tspan><tspan x="354" fill="#0A7C80" font-weight="600">ok</tspan><tspan x="384">valid 1h</tspan></text>
+    <text x="274" y="158"><tspan x="274">api</tspan><tspan x="354" fill="#0A7C80" font-weight="600">ok</tspan></text>
+    <text x="274" y="172"><tspan x="274">notifiers</tspan><tspan x="354" fill="#0A7C80" font-weight="600">ok</tspan><tspan x="384">websocket</tspan></text>
+    <text x="274" y="196" fill="#5A6875">$ openadrctl ven events timeline</text>
+    <text x="274" y="212"><tspan x="274">00:00-01:00</tspan><tspan x="354">PRICE</tspan><tspan x="394">0.17</tspan></text>
+    <text x="274" y="226"><tspan x="274">01:00-02:00</tspan><tspan x="354">PRICE</tspan><tspan x="394">0.21</tspan></text>
+    <text x="274" y="240"><tspan x="274">02:00-03:00</tspan><tspan x="354">PRICE</tspan><tspan x="394">0.25</tspan></text>
+    <text x="274" y="264" fill="#5A6875">$ openadrctl ven listen</text>
+    <text x="274" y="280">EVENT CREATE <tspan fill="#B35A1F" font-weight="600">evening-peak</tspan></text>
+  </g>
+
+  <!-- BL -->
+  <rect x="500" y="62" width="180" height="236" rx="8" fill="#FFFFFF" stroke="#D9DFE4"/>
+  <rect x="500" y="62" width="180" height="30" rx="8" fill="#2F5D9E"/>
+  <rect x="500" y="84" width="180" height="8" fill="#2F5D9E"/>
+  <text x="514" y="82" font-size="12" font-weight="600" fill="#FFFFFF">Business Logic</text>
+  <text x="666" y="82" font-size="10" fill="#DCE7F4" text-anchor="end" font-family="IBM Plex Mono, monospace">utility</text>
+  <g font-size="10" font-family="IBM Plex Mono, monospace" fill="#17212B">
+    <text x="514" y="114" fill="#5A6875">$ openadrctl bl events</text>
+    <text x="530" y="128" fill="#5A6875">create</text>
+    <text x="530" y="142" fill="#5A6875">--program dynamic-price</text>
+    <text x="530" y="156" fill="#5A6875">--name evening-peak</text>
+    <text x="530" y="170" fill="#5A6875">--type PRICE</text>
+    <text x="530" y="184" fill="#5A6875">--value 0.35</text>
+    <text x="530" y="198" fill="#5A6875">--value 0.42 --yes</text>
+    <text x="514" y="222">created event</text>
+    <text x="514" y="236" fill="#B35A1F" font-weight="600">(evening-peak)</text>
+    <text x="514" y="264" fill="#5A6875">$ openadrctl bl reports</text>
+    <text x="514" y="280"><tspan x="514">site-42</tspan><tspan x="568">USAGE</tspan><tspan x="610">meter-1</tspan></text>
+  </g>
+
+  <text x="40" y="320" font-size="11" fill="#5A6875">OpenADR 3.1.0 in every role; as a VEN and as Business Logic also 3.0.1 with --spec 3.0.1</text>
+</svg>

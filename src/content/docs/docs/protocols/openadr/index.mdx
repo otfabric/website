@@ -13,7 +13,7 @@ OpenADR (Open Automated Demand Response) is the protocol between a utility or ag
 This page explains OpenADR 3 as the OT Fabric projects implement it. The reference is **OpenADR 3.1.0**, as published by the OpenADR Alliance: the OpenAPI document, the Definition and the User Guide. The documents are public in [grid-coordination/openadr3-specification](https://github.com/grid-coordination/openadr3-specification).
 
 <Aside type="caution" title="Pre-release">
-go-openadr is pre-release software. It implements OpenADR 3.1.0 only, and its API may still change. Pin a version and read the release notes before you upgrade.
+go-openadr is pre-release software. It implements OpenADR 3.1.0, and 3.0.1 for its clients, and its API may still change. Pin a version and read the release notes before you upgrade.
 </Aside>
 
 ## The three roles
@@ -45,7 +45,7 @@ Two further endpoints sit beside the objects. `GET /auth/server` names the token
 
 Searches return at most 50 objects per page, with `skip` and `limit` parameters. Names, targets and payload types are limited to 128 characters, and object IDs to 1 to 128 characters of `[a-zA-Z0-9_-]`.
 
-OpenADR 3.1 is not backward compatible with 3.0: targets changed from `valuesMap` objects to strings, VEN resources moved from `/vens/{venID}/resources` to `/resources`, and the scopes were redefined.
+OpenADR 3.1 is not backward compatible with 3.0: targets changed from `valuesMap` objects to strings, VEN resources moved from `/vens/{venID}/resources` to `/resources`, and the scopes were redefined. go-openadr's clients and openadrctl map those differences for a VTN that still speaks 3.0.1.
 
 ## Intervals, payloads and timing
 
@@ -120,7 +120,7 @@ mDNS is not authenticated. Anyone on the link can answer. What discovery finds i
 | Revision | Status in go-openadr |
 |---|---|
 | OpenADR 3.1.0 | Implemented. All 45 operations in the VTN |
-| OpenADR 3.0.1 | Planned, not implemented |
+| OpenADR 3.0.1 | The VEN and Business Logic clients and the webhook handler, since v0.5.0, with `client.Config.Version`. The VTN serves 3.1.0 only |
 | OpenADR 2.x | Out of scope |
 
 Two features go beyond 3.1.0, both shared with OpenLEADR and both off unless configured: WebSocket notifications, and **resource groups** (`/resource_groups`), which are proposed for a later revision and will change when a revision adopts them.
@@ -145,21 +145,24 @@ An event a VEN acts on can switch a heat pump, charger or battery. Test with the
 - **Dynamic tariffs.** A VTN publishes a price schedule as an event of `PRICE` intervals, such as 24 hourly day-ahead prices. A VTN can make such a public tariff readable without authentication.
 - **Flexibility.** Batteries, chargers and heat pumps behind a VEN follow the schedule, and the VEN reports metered usage per interval so that the response can be checked.
 
-## No command-line tool
+## From the command line
 
-OT Fabric has no OpenADR command-line tool. A CLI is out of scope for go-openadr. The closest equivalents are three example programs in the repository, one per role: `examples/vtn` (a standalone VTN), `examples/tariff` (Business Logic that publishes a schedule from a CSV file) and `examples/ven` (a VEN that prints its schedule and reports). See [Example programs](/docs/protocols/openadr/library/#example-programs) on the library page.
+[openadrctl](/docs/protocols/openadr/cli/) speaks OpenADR 3 in every role. As a VEN it reads the programs and events meant for a site, lays out an event's intervals in time and sends reports. As Business Logic it publishes prices and limits and reads what VENs report. It listens for notifications by webhook, MQTT or WebSocket, and `vtn start` serves a test VTN from a seed file. As a VEN and as Business Logic it also talks to a VTN of OpenADR 3.0.1, with `--spec 3.0.1`.
 
 ## OT Fabric for OpenADR
 
 | Project | What it is |
 |---|---|
-| [go-openadr](/projects/go-openadr/) | OpenADR 3.1.0 for Go: VEN and Business Logic clients, an embeddable VTN, webhook (durable with an outbox), MQTT and WebSocket notifications, a rate limiting hook, a timeline of intervals, and mDNS discovery. No dependencies outside the standard library. Pre-release, v0.4.0. |
-| [openadr-interop](/projects/openadr-interop/) | Docker images of reference OpenADR 3 implementations (the OpenLEADR VTN and the ElaadNL client), deterministic fixtures, and a conformance suite that checks any VTN against the specification's OpenAPI document. v0.4.0, container contract 1.3. |
+| [go-openadr](/projects/go-openadr/) | OpenADR 3.1.0 for Go: VEN and Business Logic clients (which also speak 3.0.1), an embeddable VTN, webhook (durable with an outbox), MQTT and WebSocket notifications, a rate limiting hook, a timeline of intervals, and mDNS discovery. No dependencies outside the standard library. Pre-release, v0.5.0. |
+| [openadrctl](/projects/openadrctl/) | The command-line tool: a VEN, Business Logic or a test VTN from a shell, notifications by webhook, MQTT or WebSocket, `ping` to diagnose a VTN, JSON output and stable exit codes. Built on go-openadr. v0.3.0. |
+| [openadr-interop](/projects/openadr-interop/) | Docker images of reference OpenADR 3 implementations (the OpenLEADR VTN of 3.1.0 and of 3.0.1, and the ElaadNL client), deterministic fixtures, and a conformance suite that checks any VTN against the specification's OpenAPI document. v0.5.0, container contract 1.4. |
 
 <CardGrid>
   <LinkCard title="go-openadr" description="Project page for the Go library." href="/projects/go-openadr/" />
   <LinkCard title="openadr-interop" description="Project page for the reference containers and conformance suite." href="/projects/openadr-interop/" />
+  <LinkCard title="openadrctl" description="Project page for the command-line tool." href="/projects/openadrctl/" />
   <LinkCard title="Go library" description="Clients, a VTN, notifications, timeline and discovery with go-openadr." href="/docs/protocols/openadr/library/" />
+  <LinkCard title="Command-line tool" description="A VEN, Business Logic and a test VTN from a shell with openadrctl." href="/docs/protocols/openadr/cli/" />
   <LinkCard title="Testing and interop" description="Reference stacks, the conformance suite and what has been validated." href="/docs/protocols/openadr/testing/" />
   <LinkCard title="go-openadr on GitHub" description="github.com/otfabric/go-openadr" href="https://github.com/otfabric/go-openadr" />
   <LinkCard title="openadr-interop on GitHub" description="github.com/otfabric/openadr-interop" href="https://github.com/otfabric/openadr-interop" />

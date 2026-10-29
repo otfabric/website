@@ -1,0 +1,251 @@
+---
+title: openadrctl
+description: Installing and using openadrctl, the OpenADR 3 command-line tool to act as a VEN or as Business Logic against any VTN, publish prices and limits, listen for notifications by webhook, MQTT or WebSocket, serve a test VTN from a seed, and talk to OpenADR 3.0.1 VTNs.
+sidebar:
+  label: openadrctl
+  order: 2
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+[openadrctl](https://github.com/otfabric/openadrctl) is a command-line tool for OpenADR 3 in every role, built on [go-openadr](/docs/protocols/openadr/library/). As a **VEN** it reads the programs and events meant for a site, lays out an event's intervals in time, sends reports and manages its VEN object and resources. As **Business Logic** it creates programs and events, such as price signals and load limits, reads what VENs report, and manages VENs, resources and resource groups. `listen` prints notifications as they arrive by webhook, MQTT or WebSocket, and `vtn start` serves a **test VTN** from a YAML seed. It speaks OpenADR 3.1.0, and as a VEN and as Business Logic also 3.0.1 with `--spec 3.0.1`. Output is text, a table or JSON, with stable exit codes. This page follows v0.3.0.
+
+<Aside type="caution" title="Responsible use">
+An event reaches real sites: whatever Business Logic publishes, the VENs of a program act on. Creating, changing and deleting events, and every delete, need `--yes`, and `--dry-run` shows an object without sending it. Use a test program or a test VTN, and point openadrctl at VTNs you run or are authorized to use.
+</Aside>
+
+It is meant for developing a VEN or a VTN, regression tests in CI, commissioning (can this site reach the utility's VTN with these credentials, and what does it see?), operations such as publishing a price curve from a CSV file, and learning OpenADR 3 with a VTN on your laptop. It is not an OpenADR Alliance certification test, and `vtn start` is not a utility's production server.
+
+## Install
+
+Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/openadrctl/releases), with SHA-256 checksums. One static binary, no runtime dependencies.
+
+<Tabs>
+  <TabItem label="Linux">
+```sh
+VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/openadrctl/releases/latest | sed 's|.*/v||')
+case "$(uname -m)" in x86_64) ARCH=amd64 ;; aarch64|arm64) ARCH=arm64 ;; armv7l) ARCH=armv7 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
+FILE="openadrctl-${VERSION}-linux-${ARCH}.tar.gz"
+BASE="https://github.com/otfabric/openadrctl/releases/download/v${VERSION}"
+curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/openadrctl-${VERSION}-checksums.txt"
+grep "${FILE}" "openadrctl-${VERSION}-checksums.txt" | sha256sum -c -
+mkdir -p openadrctl-dl && tar -xzf "${FILE}" -C openadrctl-dl
+sudo install -m 0755 "$(find openadrctl-dl -type f -name 'openadrctl*' | head -n1)" /usr/local/bin/openadrctl
+```
+  </TabItem>
+  <TabItem label="macOS">
+```sh
+VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/openadrctl/releases/latest | sed 's|.*/v||')
+case "$(uname -m)" in arm64) ARCH=arm64 ;; x86_64) ARCH=amd64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
+FILE="openadrctl-${VERSION}-darwin-${ARCH}.tar.gz"
+BASE="https://github.com/otfabric/openadrctl/releases/download/v${VERSION}"
+curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/openadrctl-${VERSION}-checksums.txt"
+grep "${FILE}" "openadrctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
+mkdir -p openadrctl-dl && tar -xzf "${FILE}" -C openadrctl-dl
+sudo install -m 0755 "$(find openadrctl-dl -type f -name 'openadrctl*' | head -n1)" /usr/local/bin/openadrctl
+```
+  </TabItem>
+  <TabItem label="Go">
+```sh
+go install github.com/otfabric/openadrctl@latest
+```
+  </TabItem>
+</Tabs>
+
+Building from source needs Go 1.26.8 or later. The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/openadrctl#windows-powershell). Check the install with `openadrctl version`, which also names the go-openadr version inside.
+
+## Command tree
+
+```
+openadrctl
+├── ven                       the site's side
+│   ├── programs list, get    the programs the VEN may see
+│   ├── events list, get, timeline, watch
+│   ├── reports list, get, create, update, delete
+│   ├── vens …, resources …   its VEN object and resources
+│   ├── resource-groups list, get
+│   ├── subscriptions …, notifiers, topics
+│   └── listen                subscribe and print notifications
+├── bl                        Business Logic, the utility's side
+│   ├── programs list, get, create, update, delete
+│   ├── events list, get, create, update, delete, timeline, watch
+│   ├── reports list, get     what VENs sent
+│   ├── vens …, resources …, resource-groups …
+│   ├── subscriptions …, notifiers, topics
+│   └── listen
+├── vtn start, generate-config   a test VTN from a seed
+├── ping                      check a VTN step by step
+├── token                     fetch an OAuth2 token
+├── discover                  find VTNs with DNS-SD
+├── validate <kind> <file>    check an object against the schema, offline
+├── timeline <event-file>     lay out the intervals of an event, offline
+└── completion, version
+```
+
+Every command has `--help` with examples, and every command with a result `--format text|table|json`.
+
+## A test VTN
+
+`vtn start` serves OpenADR 3.1.0 from a seed file. Without `--config` it serves the example seed: a Business Logic client `utility`, a VEN client `site-42`, two programs, the VEN object of site-42 with a meter, and a day-ahead price event.
+
+```console
+$ openadrctl vtn start --insecure-webhooks --websocket --resource-groups
+2026-10-28T23:47:52Z  listening      http://127.0.0.1:8080 on 127.0.0.1:8080
+2026-10-28T23:47:52Z  client         utility (bl)
+2026-10-28T23:47:52Z  client         site-42 (ven)
+2026-10-28T23:47:52Z  seeded         6 objects
+```
+
+It has its own OAuth2 token endpoint, webhooks, MQTT (to a broker of your own), WebSockets, resource groups, anonymous reads and rate limits. `--tls-cert` and `--tls-key` serve https, `--store` keeps the objects in a file across restarts, and `--advertise` announces the VTN with DNS-SD. `openadrctl vtn generate-config` writes the example seed; the [seed file](https://github.com/otfabric/openadrctl/blob/main/docs/server-config.md) is YAML.
+
+## Connecting to a VTN
+
+A client command connects to `--url`, the base URL of the VTN's API (the one `/programs` is appended to). It fetches a token with `--client-id` and a secret from `OPENADRCTL_CLIENT_SECRET` or `--client-secret-file`, never from a flag, so that it stays out of the process list and shell history. `--ca` names the CA of the VTN, and `--cert` and `--key` a client certificate for mutual TLS. Every connection flag can come from the environment, so a shell session sets the VTN and the client once:
+
+```sh
+export OPENADRCTL_URL=http://127.0.0.1:8080
+export OPENADRCTL_CLIENT_ID=site-42 OPENADRCTL_CLIENT_SECRET=site-42-secret
+```
+
+`ping` runs every step a client needs, and stops at the first that fails:
+
+```console
+$ openadrctl ping
+connect    ok           0ms  127.0.0.1:8080
+tls        skipped      0ms  plain http
+token      ok           1ms  from http://127.0.0.1:8080/auth/token, valid 1h0m0s
+api        ok           0ms  GET /programs: dynamic-price, ...
+notifiers  ok           0ms  webhook, websocket
+http://127.0.0.1:8080 answers
+```
+
+A failed step says what to check, such as `--ca` for a certificate signed by an unknown authority, or a missing token for a 401. `openadrctl token --format json` shows the scopes the VTN granted.
+
+## Reading as a VEN
+
+A VEN sees the programs without targets, and those whose targets it names:
+
+```console
+$ openadrctl ven programs list --target group-a
+ID            NAME          TARGETS  PAYLOADS
+--            ----          -------  --------
+flex-group-a  flex-group-a  group-a  -
+```
+
+An event's intervals are relative. `timeline` works out when each one is in force:
+
+```console
+$ openadrctl ven events timeline price-2030-01-01
+INTERVAL  START                 END                   TYPE   VALUES
+--------  -----                 ---                   ----   ------
+0         2030-01-01T00:00:00Z  2030-01-01T01:00:00Z  PRICE  0.17
+1         2030-01-01T01:00:00Z  2030-01-01T02:00:00Z  PRICE  0.21
+2         2030-01-01T02:00:00Z  2030-01-01T03:00:00Z  PRICE  0.25
+```
+
+`--at <time>` keeps the rows in force at a time, which answers "what is the price now?", and `--csv` writes the table as CSV. Every list fetches every page by default. A VEN reports on an event with a value per interval for one of its resources:
+
+```sh
+openadrctl ven reports create --event price-2030-01-01 --client-name site-42 --resource meter-1 \
+    --type USAGE --units KWH --start 2030-01-01T00:00:00Z --interval PT1H \
+    --value 1.2 --value 0.9 --value 1.4
+```
+
+## Publishing prices and limits as Business Logic
+
+An event from flags: one `--type`, a `--value` per interval, and the start and length of the intervals. VENs act on events, so creating one needs `--yes`:
+
+```console
+$ openadrctl bl events create --program dynamic-price --name evening-peak --type PRICE \
+    --start 2030-01-01T17:00:00Z --interval PT1H --value 0.35 --value 0.42 --yes
+created event 5e80b71cdd49704f1f080c225570d7f6 (evening-peak)
+```
+
+A price curve comes from a CSV file in the form `timeline --csv` writes (`--csv prices.csv`), and `--report USAGE` asks VENs for a report. A load limit for the VENs of `group-a`, checked with `--dry-run` first, is built and validated without anything being sent:
+
+```sh
+openadrctl bl events create --program flex-group-a --name evening-limit --target group-a \
+    --priority 1 --type IMPORT_CAPACITY_LIMIT --start 2030-01-01T17:00:00Z --interval PT2H \
+    --value 5 --dry-run
+```
+
+An object that breaks the schema is not sent, and the error names the property at fault. `get --format json` writes an object as OpenADR has it, and `update --file` sends it back; `validate` checks a file offline and refuses a misspelt property instead of losing it.
+
+## Notifications
+
+`listen` subscribes, prints one record per notification, and deletes its subscription when it ends, unless `--keep`:
+
+| `--via` | How it works | Use it when |
+|---|---|---|
+| `websocket` | The client connects out to the VTN (an extension of OpenLEADR and go-openadr) | Behind NAT, if the VTN offers it |
+| `webhook` | openadrctl serves the callback on `--listen`, http or https, and subscribes with `--callback-url` | The VTN can reach you |
+| `mqtt` | Reads the broker from `GET /notifiers` and the topics from the VTN, and subscribes at the broker | The VTN publishes to a broker; logs in with its OAuth2 token when the VTN announces `OAUTH2_BEARER_TOKEN` |
+
+```console
+$ openadrctl ven listen --via websocket --object EVENT --count 1
+subscribed: subscription c4ddda8c8362de1d492bfbc319bdc1bb, CREATE,UPDATE,DELETE of EVENT
+listening: WebSocket open
+2026-10-28T23:49:30Z  websocket EVENT        CREATE 81dd06eb4a42f2509a14e5c8296e59df (late)
+unsubscribed: subscription c4ddda8c8362de1d492bfbc319bdc1bb
+```
+
+`notifiers` tells how a VTN notifies, and `topics` names the MQTT topics of a set, such as `ven-events:site-42`. Without a subscription, callback or broker, `events watch` searches every `--interval` and prints what was created, updated or deleted, against any VTN.
+
+## OpenADR 3.0.1
+
+`--spec 3.0.1` (or `OPENADRCTL_SPEC=3.0.1`) talks to a VTN of the earlier revision as a VEN and as Business Logic. What changes on the command line:
+
+| | With `--spec 3.0.1` |
+|---|---|
+| `--target` | `TYPE=value`, such as `--target GROUP=group-a`: 3.0.1 targets have a type |
+| Token | From `/auth/token` of the VTN unless `--token-url` says otherwise: 3.0.1 has no `GET /auth/server` |
+| Resources | Reached through their VEN: `--ven` on `resources list`, `get`, `update` and `delete` |
+| Reports | Name their program, which openadrctl reads from the event |
+| `listen` | `--via webhook` with `--program` only: 3.0.1 has no MQTT or WebSockets |
+| Not there | `notifiers`, `topics` and resource groups exit 3 with `not_in_revision`, without sending anything; `ping` skips its `notifiers` step |
+
+Against OpenLEADR v0.1.4, the 3.0.1 VTN of [openadr-interop](/docs/protocols/openadr/testing/):
+
+```console
+$ openadrctl ping
+connect    ok           0ms  127.0.0.1:18091
+tls        skipped      0ms  plain http
+token      ok           7ms  from http://127.0.0.1:18091/auth/token, valid 720h0m0s
+api        ok           3ms  GET /programs: group-a-flex, ...
+notifiers  skipped      0ms  not in OpenADR 3.0.1
+http://127.0.0.1:18091 answers
+```
+
+`vtn start` serves 3.1.0 only. OpenADR 2.0 is a different protocol (XML) and is not supported.
+
+## Output formats and exit codes
+
+Results go to stdout as text, `--format table` or `--format json`, whose fields are documented in [json-output.md](https://github.com/otfabric/openadrctl/blob/main/docs/json-output.md). Objects are JSON as OpenADR has them, so `get --format json` can be edited and sent back with `--file`. The streams (`listen`, `events watch`, `vtn start`, `discover`) write a record per event, JSON Lines with `--format json`. Diagnostics go to stderr; `--debug` shows the causes of an error.
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 2 | Usage: an unknown command or flag, a missing argument, a change without `--yes` |
+| 3 | Invalid input: nothing was sent |
+| 4 | Transport: no connection, a failed TLS handshake, a port that cannot be opened |
+| 5 | Timeout; `outcome_unknown` when a request that changes the VTN got no answer, which is never sent again by itself |
+| 6 | The VTN refused (an HTTP error, a token refused) or broke the protocol |
+| 10 | Output or internal error |
+
+With `--format json`, a failure is an object with `error.kind`, a stable `error.code`, and the VTN's problem object when it sent one. [exitcodes.md](https://github.com/otfabric/openadrctl/blob/main/docs/exitcodes.md) lists every code.
+
+## Tested against
+
+openadrctl runs against the reference VTNs of openadr-interop v0.5.0 in its own scripts: 25 checks in both roles against OpenLEADR v0.2.7, 37 checks with `--spec 3.0.1` against OpenLEADR v0.1.4, and 5 checks of MQTT logins by OAuth2 token on EMQX 6.3.1. Webhook delivery is tested against openadrctl's own VTN only, because OpenLEADR has no webhook sender. See [Testing and interop](/docs/protocols/openadr/testing/#openadrctl-against-the-references).
+
+## Limitations
+
+- **`vtn start` is a test VTN.** Its clients and secrets come from the seed; it has no administration API and no user interface. Business Logic commands are how you change it while it runs.
+- **No OpenADR 2.0**, and no certification: passing a check says what you checked, not that a product conforms.
+- **MQTT needs a broker of your own** for `vtn start --mqtt`; openadrctl does not embed one.
+- **Webhooks need a reachable callback.** Many VTNs accept only https on a public address, and `vtn start` does too unless `--insecure-webhooks`.
+- **WebSockets and resource groups are extensions** of OpenLEADR and go-openadr, not part of OpenADR 3.1.0.
+- **OpenADR 3.0.1 as a client only.** With `--spec 3.0.1` an event's `--duration` is refused, as 3.0.1 events have none, and the 3.1.0 searches 3.0.1 lacks, such as `events list --active`, exit 3.
+- **DNS-SD** needs multicast on the local network; it finds nothing across routers or in most container networks.
+
+<LinkCard title="The openadrctl guide" description="Every scenario with real output: a development VTN, reading as a VEN, publishing prices and limits, reports, notifications by WebSocket, webhook and MQTT, TLS and a store, OpenLEADR, OpenADR 3.0.1 and scripting with JSON." href="https://github.com/otfabric/openadrctl/blob/main/docs/guide.md" />

@@ -514,7 +514,7 @@
 			{ "kind": "certification", "name": "OpenADR certification", "detail": "Conformance testing and certification for Contributor and Sponsor members; test houses can apply for approved status.", "openToNonMembers": "no", "source": "https://www.openadr.org/join" }
 		],
 		"openSource": [],
-		"relatedProjects": ["go-openadr", "openadr-interop"],
+		"relatedProjects": ["go-openadr", "openadrctl", "openadr-interop"],
 		"related": [{ "id": "lf-energy", "relation": "Hosts OpenLEADR, open-source OpenADR 2.0b and 3.x implementations." }],
 		"sources": [
 			{ "label": "Join the OpenADR Alliance", "url": "https://www.openadr.org/join" },
