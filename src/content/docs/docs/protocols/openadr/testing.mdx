@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Test OpenADR 3 code against the OpenLEADR VTN and the ElaadNL client with openadr-interop, run the specification-driven conformance suite, and see what go-openadr has and has not been validated against.
+description: Test OpenADR 3 code against the OpenLEADR VTN (3.1.0 and 3.0.1) and the ElaadNL client with openadr-interop, run the specification-driven conformance suite, and see what go-openadr and openadrctl have and have not been validated against.
 sidebar:
   label: Testing and interop
   order: 3
@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Steps, Badge, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-Two OT Fabric repositories share the testing of OpenADR 3. [openadr-interop](/projects/openadr-interop/) owns the reference implementations, their fixtures, a container contract and a conformance suite. It knows nothing about any library under test. [go-openadr](/projects/go-openadr/) is one consumer: it pulls the images and owns its own scenarios, assertions and compatibility claims, in its `interop/` directory.
+Two OT Fabric repositories share the testing of OpenADR 3. [openadr-interop](/projects/openadr-interop/) owns the reference implementations, their fixtures, a container contract and a conformance suite. It knows nothing about any library under test. [go-openadr](/projects/go-openadr/) is one consumer: it pulls the images and owns its own scenarios, assertions and compatibility claims, in its `interop/` directory. [openadrctl](/projects/openadrctl/) is another, with scripts that drive the command-line tool against the reference VTNs.
 
 <Aside type="note" title="Not certification">
 A passing run of anything here is not an OpenADR certification. Certification is a separate process of the [OpenADR Alliance](https://www.openadr.org/openadr-3-certification), with its own test assets.
@@ -20,10 +20,11 @@ openadr-interop wraps independent OpenADR 3 implementations in Docker images wit
 
 | Adapter | Implementation | Language | VTN | Client (VEN, BL) | Image |
 |---|---|---|:---:|:---:|---|
-| `openleadr` | [OpenLEADR openleadr-rs](https://github.com/OpenLEADR/openleadr-rs) v0.2.7 (commit `f586cc3c`) | Rust | yes | no | `ghcr.io/otfabric/openadr-interop-openleadr` |
+| `openleadr` | [OpenLEADR openleadr-rs](https://github.com/OpenLEADR/openleadr-rs) v0.2.7 (commit `f586cc3c`), OpenADR 3.1.0 | Rust | yes | no | `ghcr.io/otfabric/openadr-interop-openleadr` |
+| `openleadr301` | OpenLEADR openleadr-rs v0.1.4 (commit `92f4ba12`), OpenADR **3.0.1** | Rust | yes | no | `ghcr.io/otfabric/openadr-interop-openleadr301` |
 | `elaadnl` | [ElaadNL openadr3-client](https://github.com/ElaadNL/openadr3-client) 2.4.0 | Python | no | yes | `ghcr.io/otfabric/openadr-interop-elaadnl` |
 
-Both speak OpenADR 3.1.0 over plain HTTP on port 8080. Images are built natively for linux/amd64 and linux/arm64, run as a non-root user (uid 10001), and are pinned by digest in each release's `manifest.json`. This page follows openadr-interop **v0.4.0**, container contract 1.3, which is also the release go-openadr v0.4.0 is tested against. Releases are immutable tags: a new operation or feature is a minor version, a contract change that breaks consumers a major one.
+`openleadr` and `elaadnl` speak OpenADR 3.1.0. `openleadr301` is a VTN of the earlier revision: OpenLEADR v0.1.4, the last OpenLEADR release for OpenADR 3.0, with no MQTT, no mDNS and no notifiers. All serve plain HTTP on port 8080. Images are built natively for linux/amd64 and linux/arm64, run as a non-root user (uid 10001), and are pinned by digest in each release's `manifest.json`. This page follows openadr-interop **v0.5.0**, container contract 1.4, which is also the release go-openadr v0.5.0 and openadrctl v0.3.0 are tested against. Releases are immutable tags: a new operation or feature is a minor version, a contract change that breaks consumers a major one.
 
 Each image says what it supports with `print-capabilities`, so a test can skip what a pairing cannot do instead of failing. Features include `serverTokenEndpoint`, `serverMqtt` (the OpenLEADR image runs a Mosquitto broker), `serverMdns` (the OpenLEADR VTN announces itself as `_openadr3._tcp`), `serverResourceGroups`, `mdnsDiscover`, `clientTokenDiscovery`, and since v0.4.0 the ElaadNL client's `clientAnonymous`, `clientResourceGroups`, `clientMqtt` and `clientSubscriptionOperations310`. Every feature is optional: an image that does not name one is an older image.
 
@@ -39,7 +40,7 @@ A fixture is what a reference VTN holds when it reports ready. The `baseline` fi
 | Programs | `day-ahead`, open to all; `group-a-flex`, targeted at `group-a` |
 | Events | `day-ahead-prices`: three hourly `PRICE` intervals and a `USAGE` report request; `group-a-limit`: one `IMPORT_CAPACITY_LIMIT` interval, targeted at `group-a` |
 
-It is built so that the access rules show: `ven-1` can reach the targeted program and event, `ven-2` cannot. A second fixture, `descriptors`, holds a program with both an event and a report payload descriptor. Object IDs differ from run to run: look objects up by name.
+It is built so that the access rules show: `ven-1` can reach the targeted program and event, `ven-2` cannot. A second fixture, `descriptors`, holds a program with both an event and a report payload descriptor. A third, `baseline-301`, is the baseline in OpenADR 3.0.1, with the same client IDs and secrets and its targets as typed `valuesMap` objects; its targeted program and event name the `VEN_NAME` `site-1`. Every adapter refuses a fixture of a revision it does not serve, and `make interop` pairs a client with a server only when they share a revision. Object IDs differ from run to run: look objects up by name.
 
 ## Running the reference stacks
 
@@ -102,7 +103,7 @@ The images run VTNs over plain HTTP with client secrets published in the reposit
 
 ## The conformance suite
 
-`conformance/` in openadr-interop is a Go test runner that checks any VTN against the OpenADR 3.1.0 OpenAPI document, pinned by checksum. Every response is validated against the schema, and every scenario names the operations and sections of the Definition it checks. It needs Go 1.25 or later, a running VTN, one Business Logic client and at least one VEN client.
+`conformance/` in openadr-interop is a Go test runner that checks any VTN against the OpenADR 3.1.0 OpenAPI document, pinned by checksum. It stays of 3.1.0, so it does not run against `openleadr301`. Every response is validated against the schema, and every scenario names the operations and sections of the Definition it checks. It needs Go 1.25 or later, a running VTN, one Business Logic client and at least one VEN client.
 
 ```sh
 export OPENADR_INTEROP_BL_SECRET=...
@@ -149,10 +150,10 @@ go run ./cmd/openadr-interop -url http://127.0.0.1:8080 \
 ## go-openadr against the references
 
 ```sh
-make interop     # needs Docker; openadr-interop v0.4.0 images pinned by digest in the Makefile
+make interop     # needs Docker; openadr-interop v0.5.0 images pinned by digest in the Makefile
 ```
 
-`make interop` fails when an image cannot be pulled. A test that needs an operation an older image lacks is skipped, saying which. With `go test -tags=interop ./interop/...` a test whose image is missing is skipped unless `OPENADR_INTEROP_REQUIRE` is set. `OPENADR_INTEROP_OPENLEADR_IMAGE` and `OPENADR_INTEROP_ELAADNL_IMAGE` select other images.
+`make interop` fails when an image cannot be pulled. A test that needs an operation an older image lacks is skipped, saying which. With `go test -tags=interop ./interop/...` a test whose image is missing is skipped unless `OPENADR_INTEROP_REQUIRE` is set. `OPENADR_INTEROP_OPENLEADR_IMAGE`, `OPENADR_INTEROP_OPENLEADR301_IMAGE` and `OPENADR_INTEROP_ELAADNL_IMAGE` select other images.
 
 | Client | Server | Result |
 |---|---|---|
@@ -164,11 +165,14 @@ make interop     # needs Docker; openadr-interop v0.4.0 images pinned by digest 
 | go-openadr MQTT subscriber | OpenLEADR v0.2.7, its Mosquitto | Passing, run locally |
 | go-openadr WebSocket subscriber | OpenLEADR v0.2.7 | Passing, run locally |
 | go-openadr BL and VEN, resource groups | OpenLEADR v0.2.7 | Passing, run locally |
-| Conformance suite of openadr-interop v0.4.0 | go-openadr | 24 of 24 scenarios |
+| go-openadr VEN and BL, **OpenADR 3.0.1** | OpenLEADR v0.1.4 | Passing, run locally |
+| Conformance suite of openadr-interop v0.5.0 | go-openadr | 24 of 24 scenarios |
 
-Last run 2026-10-13, against the published v0.4.0 images; the `Interop` workflow runs the same tests in CI on linux/amd64.
+Last run 2026-10-29, against the published v0.5.0 images; the `Interop` workflow runs the same tests in CI on linux/amd64.
 
 Against OpenLEADR, the tests cover the program, event and report workflow with every kind of payload value, token discovery and the client credentials grant, error mapping (404, 409, 403), and targeting. Against the ElaadNL client, they cover 34 read operations as Business Logic and three VENs, a write workflow checked in the VTN's own store, and access rules (target hiding, 404 for another VEN's objects, 409 for a duplicate `venName`).
+
+Against OpenLEADR v0.1.4, the clients run with `Config.Version: openadr.Version301`: typed targets in objects and searches, the program properties 3.1.0 made attributes, a report that names its program, VENs and resources through their VEN, and the operations 3.0.1 does not have, refused without a request.
 
 Since go-openadr v0.4.0 the ElaadNL client also tests the VTN's side of what goes beyond objects:
 
@@ -178,6 +182,18 @@ Since go-openadr v0.4.0 the ElaadNL client also tests the VTN's side of what goe
 - **Subscriptions.** A VEN creates, reads, searches, updates and deletes a subscription, which another VEN does not see. When Business Logic deletes an event, the notification arrives at the callback URL with its bearer token. The receiver is go-openadr's own `webhook.Handler`, because neither reference has one.
 - **MQTT.** The client reads the broker and the topics of ten scopes, and its MQTT client receives on Mosquitto what the VTN publishes, as Business Logic and as a VEN on its own topic.
 - **Resource groups.** Create, read, search by name and target, update and delete, a group of groups, and what each VEN may see.
+
+### openadrctl against the references
+
+openadrctl is go-openadr from a shell, and its own scripts run the command-line tool against the images of openadr-interop v0.5.0:
+
+| Script | Against | Checks |
+|---|---|---|
+| `scripts/interop.sh` | OpenLEADR v0.2.7 (OpenADR 3.1.0) | 25 passed: programs, events, reports, a VEN's token refused (403), `events watch`, and notifications by WebSocket and by MQTT on the image's broker, in both roles |
+| `scripts/interop301.sh` | OpenLEADR v0.1.4 (OpenADR 3.0.1), with `--spec 3.0.1` | 37 passed: typed targets in objects and searches, resources through their VEN, a report that names its program, `validate --spec 3.0.1` of what `get` wrote, and the operations 3.0.1 does not have, refused before anything is sent |
+| `scripts/mqtt-token.sh` | EMQX 6.3.1, its HTTP authenticator asking `vtn start` | 5 passed: Business Logic and a VEN receive with their OAuth2 tokens, and a password that is not a token is refused |
+
+Webhook delivery is tested against openadrctl's own VTN only, because no reference VTN sends webhooks.
 
 ### MQTT brokers
 
@@ -234,14 +250,16 @@ The tests assert consistency, privacy and recovery. Failures are random and foll
 | WebSocket notifications, VTN side | <Badge text="own sides only" variant="caution" /> neither reference has a WebSocket client |
 | Durable webhooks, rate limiting, notifications of reads | <Badge text="own sides only" variant="caution" /> `make e2e` |
 | MQTT with TLS or logins with another client | <Badge text="partial" variant="caution" /> go-openadr's subscriber with a login on Mosquitto only; the ElaadNL MQTT client cannot log in |
-| OpenADR 3.0.x | <Badge text="not tested" variant="danger" /> |
+| OpenADR 3.0.1, clients | Tested against OpenLEADR v0.1.4, go-openadr and openadrctl |
+| OpenADR 3.0.1, subscriptions and webhooks | <Badge text="schema only" variant="caution" /> OpenLEADR v0.1.4 serves no subscriptions, so this path is tested against the specification's schema and a test double |
 | Any VTN other than OpenLEADR, any client other than ElaadNL and the conformance suite | <Badge text="not tested" variant="danger" /> |
+| A VTN of OpenADR 3.0.1 in go-openadr or openadrctl | Not planned: both serve 3.1.0 |
 
 Since v0.4.0 the ElaadNL reference client manages subscriptions and resource groups and listens on MQTT, so a VTN's side of those can be tested against it. Neither reference has a webhook receiver or a WebSocket client, so what a VTN sends that way is still received by the library under test.
 
 ### Findings about the references
 
-Interop runs found differences in OpenLEADR v0.2.7 that a client should expect: a forged token is answered 403 instead of 401; `ven` objects have no `objectType`; the MQTT topics it names for a VEN (`events/vens/{id}/...`) are not the ones it publishes on (`vens/{id}/events/...`); `GET /notifiers` does not follow the schema; it allows one VEN object and one WebSocket per client; and it writes durations in full (`P0Y0M0DT1H0M0S`). The ElaadNL client 2.4.0 cannot read a program that has a report payload descriptor, and needs an absolute token URL. It names the operations of a subscription as OpenADR 3.0.1 did (`GET`, `POST`, `PUT`, `DELETE`), so against a 3.1.0 VTN only a subscription to `DELETE` can be made and read; it requires `MQTT` in `GET /notifiers` and a `CREATE` topic in every topics answer, which the specification does not; it cannot read OpenLEADR's `GET /notifiers`; and it cannot log in to an MQTT broker with a user name and password. The full list is in openadr-interop's [docs/COMPATIBILITY.md](https://github.com/otfabric/openadr-interop/blob/main/docs/COMPATIBILITY.md).
+Interop runs found differences in OpenLEADR v0.2.7 that a client should expect: a forged token is answered 403 instead of 401; `ven` objects have no `objectType`; the MQTT topics it names for a VEN (`events/vens/{id}/...`) are not the ones it publishes on (`vens/{id}/events/...`); `GET /notifiers` does not follow the schema; it allows one VEN object and one WebSocket per client; and it writes durations in full (`P0Y0M0DT1H0M0S`). The ElaadNL client 2.4.0 cannot read a program that has a report payload descriptor, and needs an absolute token URL. It names the operations of a subscription by HTTP method (`GET`, `POST`, `PUT`, `DELETE`), where both 3.1.0 and 3.0.1 have `READ`, `CREATE`, `UPDATE` and `DELETE` (3.0.1 uses the HTTP methods for the operation of a notification, not of a subscription), so against a 3.1.0 VTN only a subscription to `DELETE` can be made and read; it requires `MQTT` in `GET /notifiers` and a `CREATE` topic in every topics answer, which the specification does not; it cannot read OpenLEADR's `GET /notifiers`; and it cannot log in to an MQTT broker with a user name and password. OpenLEADR v0.1.4, the 3.0.1 VTN, keeps a program's `VEN_NAME` targets apart, so a search for them finds no program (a search for `GROUP` works), and it does not let a VEN delete its own report (403). The full list is in openadr-interop's [docs/COMPATIBILITY.md](https://github.com/otfabric/openadr-interop/blob/main/docs/COMPATIBILITY.md).
 
 <CardGrid>
   <LinkCard title="openadr-interop" description="Project page for the reference containers and conformance suite." href="/projects/openadr-interop/" />

@@ -209,7 +209,7 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-openadr",
-		"description": "OpenADR 3.1 VEN and Business Logic clients and an embeddable VTN, with webhook, MQTT and WebSocket notifications. No dependencies.",
+		"description": "OpenADR 3.1 VEN and Business Logic clients that also speak 3.0.1, and an embeddable VTN, with webhook, MQTT and WebSocket notifications. No dependencies.",
 		"icon": "go-openadr"
 	},
 	{
@@ -385,6 +385,18 @@
 		"status": "available",
 		"description": "Siemens S7 command-line client for ISO-on-TCP (port 102).",
 		"icon": "go-s7comm"
+	},
+	{
+		"id": "openadrctl",
+		"name": "openadrctl",
+		"repo": "openadrctl",
+		"category": "cli",
+		"standards": [
+			"openadr"
+		],
+		"status": "available",
+		"description": "Act as a VEN or as Business Logic against any OpenADR 3 VTN, publish prices and limits, listen for notifications by webhook, MQTT or WebSocket, or serve a test VTN from a seed file.",
+		"icon": "go-openadr"
 	},
 	{
 		"id": "ocppctl",

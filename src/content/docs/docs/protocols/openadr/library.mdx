@@ -8,10 +8,10 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
-[go-openadr](/projects/go-openadr/) implements both sides of the OpenADR 3.1.0 REST API in Go: a VEN client and a Business Logic client for any OpenADR 3.1 VTN, and a VTN as an embeddable `http.Handler`. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-openadr); [API.md](https://github.com/otfabric/go-openadr/blob/main/API.md) in the repository is the map.
+[go-openadr](/projects/go-openadr/) implements both sides of the OpenADR 3.1.0 REST API in Go: a VEN client and a Business Logic client for any OpenADR 3.1 VTN, which also speak OpenADR 3.0.1, and a VTN as an embeddable `http.Handler`. For the same from a shell, see [openadrctl](/docs/protocols/openadr/cli/). The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-openadr); [API.md](https://github.com/otfabric/go-openadr/blob/main/API.md) in the repository is the map.
 
 <Aside type="caution" title="Pre-release">
-go-openadr is pre-release. It implements OpenADR 3.1.0 only, and the API may still change. Pin a version. This page follows v0.4.0.
+go-openadr is pre-release. It implements OpenADR 3.1.0, and 3.0.1 for its clients, and the API may still change. Pin a version. This page follows v0.5.0.
 </Aside>
 
 ## Install
@@ -139,6 +139,35 @@ What a client may actually do is decided by its token. A `BL` built with a VEN's
 - Objects are validated against the 3.1.0 schema before they are sent. An invalid object is an `*openadr.ValidationError` and no request is made.
 - Leave `Metadata` zero in an object to create. An update names its object by `Metadata.ID`.
 - Build report descriptors with `openadr.NewReportDescriptor(payloadType)`. The zero `ReportDescriptor` does not have the specification's defaults and fails `Validate`.
+
+## OpenADR 3.0.1
+
+A VTN that has not moved to 3.1 is reached by the same clients with `Config.Version`. The domain model stays that of 3.1.0; what 3.0.1 writes differently is mapped, and what one revision cannot carry is refused before anything is sent, never dropped.
+
+```go
+bl, err := client.NewBL(client.Config{
+	BaseURL:     "https://vtn.example.com/openadr3",
+	Version:     openadr.Version301,
+	Credentials: &client.Credentials{ClientID: id, ClientSecret: secret},
+})
+if err != nil {
+	return err
+}
+
+// 3.0.1 targets have a type: TypedTargets, and TargetType in a search.
+programs, err := bl.Programs(ctx, client.ProgramQuery{TargetType: "GROUP", Targets: []string{"group-a"}})
+```
+
+| | 3.1.0 | 3.0.1, as the client maps it |
+|---|---|---|
+| Targets | `Targets`, strings | `TypedTargets`, values maps; `TargetType` in a search |
+| `programLongName`, `retailerName`, `country`, `localPrice` and the other program properties 3.1.0 made attributes | program attributes `PROGRAM_LONG_NAME` … `LOCAL` | those properties, read into and written from the same attributes |
+| A report's program | — | `Report.ProgramID`, required; `CreateReport` reads it from the event when it is empty |
+| Resources | `/resources` | `/vens/{venID}/resources`: `ResourceQuery.VENID`, `ResourceOf`, `DeleteResourceOf` |
+| Token endpoint | `GET /auth/server` | `/auth/token` of the VTN, unless `Credentials.TokenURL` says otherwise |
+| Notifications | webhook, MQTT | webhook only: `webhook.Handler` with `Version` |
+
+What 3.0.1 does not have at all, such as `Notifiers`, `MQTTTopics` and resource groups, returns an error that matches `errors.ErrUnsupported`, without a request. Package `objectjson` gives an object the JSON of either revision, for tools that show objects or read them from files, and [examples/openadr301](https://github.com/otfabric/go-openadr/blob/main/examples/openadr301/main.go) runs a 3.0.1 VEN end to end. The VTN serves 3.1.0 only.
 
 ## A VTN
 
@@ -533,7 +562,7 @@ Operations are labelled by route (`GET /events/{id}`), a small fixed set fit to 
 
 ## Example programs
 
-go-openadr has no command-line tool. The closest equivalents are three example programs, one per role, that work together. Each runs with `go run` from a checkout of the repository.
+Three example programs, one per role, work together and show how the library is used. Each runs with `go run` from a checkout of the repository. For a ready-made tool in every role, use [openadrctl](/docs/protocols/openadr/cli/).
 
 | Program | Role | Flags |
 |---|---|---|
@@ -579,11 +608,12 @@ start,end,type,values
 `examples/vtn` serves plain HTTP and is for local use only. The `ven` example reports made-up usage numbers, and `-insecure` accepts an unverifiable TLS certificate. Do not point these programs at a production VTN.
 </Aside>
 
-Other self-contained examples: `quickstart`, `notifications`, `websocket`, `prices` (a public tariff and an anonymous client), `resourcegroups`, `discovery`, `observability` and `storage`.
+Other self-contained examples: `quickstart`, `notifications`, `websocket`, `prices` (a public tariff and an anonymous client), `resourcegroups`, `discovery`, `observability`, `storage` and `openadr301`.
 
 ## Limitations
 
-- **OpenADR 3.1.0 only.** 3.0.1 is planned; 2.x is out of scope.
+- **3.0.1 for the clients only.** The VTN serves 3.1.0, and a 3.0.1 VTN is not planned. MQTT and WebSocket subscribers are of 3.1.0, as 3.0.1 has neither. 2.x is out of scope.
+- **One 3.0.1 peer.** Only OpenLEADR v0.1.4 has been met as a 3.0.1 VTN. It serves no subscriptions, so the 3.0.1 subscription and webhook path is tested against the specification's schema and a test double, not another implementation.
 - **Not implemented:** keeping properties the schema does not define (they are ignored).
 - **Durable means webhooks**, at least once and with one VTN per outbox. MQTT and WebSocket notifications are not kept.
 - **No TLS configuration or audit log** in the library, and the rate limiter sees only identified clients. Put TLS and limits for unauthenticated traffic in the embedding program or a proxy.
@@ -591,6 +621,6 @@ Other self-contained examples: `quickstart`, `notifications`, `websocket`, `pric
 - MQTT with a login or over TLS has met no other implementation's client, and the MQTT client has met only Mosquitto with a login.
 - Resource groups and WebSocket notifications are not 3.1.0, and resource groups will change when a revision adopts them.
 - No ready-made Prometheus or OpenTelemetry adapters.
-- Out of scope: dispatch or optimization logic, integrations with physical resources (Modbus, OPC UA), a web UI and a CLI.
+- Out of scope: dispatch or optimization logic, integrations with physical resources (Modbus, OPC UA) and a web UI. The command-line tool is a project of its own, [openadrctl](/docs/protocols/openadr/cli/).
 
 <LinkCard title="go-openadr on GitHub" description="Source, API.md, ERRORS.md, OBSERVABILITY.md and SECURITY.md." href="https://github.com/otfabric/go-openadr" />

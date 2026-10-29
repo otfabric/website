@@ -7,9 +7,10 @@ order: 8
 facts:
   - { label: 'Transport', value: 'HTTPS, REST and JSON' }
   - { label: 'Notifications', value: 'Webhook, MQTT, WebSocket (extension)' }
-  - { label: 'Version', value: '3.1.0' }
+  - { label: 'Version', value: '3.1.0; clients also 3.0.1' }
   - { label: 'Library', value: 'go-openadr' }
-  - { label: 'Interop', value: 'openadr-interop v0.4.0' }
+  - { label: 'CLI', value: 'openadrctl' }
+  - { label: 'Interop', value: 'openadr-interop v0.5.0' }
 icon: go-openadr
 docs: /docs/protocols/openadr/
 ---
@@ -26,15 +27,42 @@ OpenADR (Open Automated Demand Response) is how a utility or an aggregator tells
 
 ## Quickstart
 
-OpenADR has no OT Fabric command-line tool. The library ships example programs instead: a standalone VTN, a VEN and a Business Logic client that publishes a tariff from a CSV file.
+### From the command line
 
-### Run the example programs
-
-From a checkout of [go-openadr](https://github.com/otfabric/go-openadr), run a VTN, a Business Logic client and a VEN through the program, event and report workflow in one process:
+Download `openadrctl` from [GitHub Releases](https://github.com/otfabric/openadrctl/releases). It brings a test VTN with an example seed, so you can start without a utility:
 
 ```sh
-go run ./examples/quickstart
+# A VTN with two clients: utility (Business Logic) and site-42 (a VEN)
+openadrctl vtn start --websocket
 ```
+
+act as the site in a second terminal:
+
+```sh
+export OPENADRCTL_URL=http://127.0.0.1:8080
+export OPENADRCTL_CLIENT_ID=site-42 OPENADRCTL_CLIENT_SECRET=site-42-secret
+
+# Connection, TLS, token, API and notifiers, step by step
+openadrctl ping
+
+# What does the VTN ask of this site, interval by interval?
+openadrctl ven events list
+openadrctl ven events timeline price-2030-01-01
+
+# Wait for new events
+openadrctl ven listen --via websocket --object EVENT
+```
+
+and publish a price as the utility in a third:
+
+```sh
+OPENADRCTL_CLIENT_ID=utility OPENADRCTL_CLIENT_SECRET=utility-secret \
+  openadrctl bl events create --url http://127.0.0.1:8080 --program dynamic-price \
+    --name evening-peak --type PRICE --start 2030-01-01T17:00:00Z --interval PT1H \
+    --value 0.35 --value 0.42 --yes
+```
+
+The same commands talk to any OpenADR 3.1.0 VTN, and to a VTN of OpenADR 3.0.1 with `--spec 3.0.1`.
 
 ### From Go
 
@@ -76,6 +104,7 @@ The client finds the token endpoint from the VTN, gets a token with OAuth2 clien
 |---|---|
 | Roles | VEN client, Business Logic client, and a VTN as an embeddable `http.Handler` |
 | Operations | All 45 operations of OpenADR 3.1.0 in the VTN |
+| OpenADR 3.0.1 | The VEN and Business Logic clients and the webhook handler, for a VTN that has not moved to 3.1 |
 | Authentication | OAuth2 client credentials, JSON Web Tokens with static keys or JWKS, scopes, object ownership, targeting; anonymous clients when allowed |
 | Notifications | Webhooks (durable across restarts with an outbox) and MQTT; WebSocket and resource groups as opt-in extensions shared with OpenLEADR |
 | In production | Logging, metrics, client retries with `Retry-After`, and a rate limiting hook on the VTN that answers 429 |
@@ -83,5 +112,5 @@ The client finds the token endpoint from the VTN, gets a token with OAuth2 clien
 | Dependencies | None outside the Go standard library |
 
 <Callout type="note" title="Pre-release">
-go-openadr v0.4.0 implements OpenADR 3.1.0 only, and its API may still change. OpenADR 3.0.1 is planned, and 2.x is out of scope. Its clients are tested against the OpenLEADR VTN, and its VTN against the ElaadNL client (over TLS, with subscriptions, MQTT and resource groups) and the conformance suite, through the reference images of [openadr-interop](https://github.com/otfabric/openadr-interop) v0.4.0. Passing those tests is not an OpenADR Alliance certification.
+go-openadr v0.5.0 implements OpenADR 3.1.0, and 3.0.1 for its clients, and its API may still change. Its VTN serves 3.1.0 only, and 2.x is out of scope. Its clients are tested against the OpenLEADR VTN of 3.1.0 and of 3.0.1, and its VTN against the ElaadNL client (over TLS, with subscriptions, MQTT and resource groups) and the conformance suite, through the reference images of [openadr-interop](https://github.com/otfabric/openadr-interop) v0.5.0. Passing those tests is not an OpenADR Alliance certification.
 </Callout>

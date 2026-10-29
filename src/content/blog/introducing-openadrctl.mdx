@@ -1,0 +1,69 @@
+---
+title: 'openadrctl: OpenADR 3 from the command line, in every role'
+description: openadrctl acts as a VEN or as Business Logic against any OpenADR 3 VTN, publishes prices and limits, listens for notifications by webhook, MQTT or WebSocket, and serves a test VTN from a seed file. With go-openadr v0.5.0 it also talks to VTNs of OpenADR 3.0.1.
+date: 2026-10-29
+authors: [OT Fabric]
+tags: [announcement, openadr, tools, energy, interop]
+featured: true
+cover:
+  alt: openadrctl in three terminals. A test VTN starts from its seed with two clients. The site, as a VEN, checks the VTN with ping and lays out a day-ahead price event interval by interval. The utility, as Business Logic, publishes an evening-peak price event, which the VEN receives over a WebSocket.
+  image: ../../assets/blog/openadrctl-roles.svg
+---
+
+import Callout from '../../components/Callout.astro';
+
+[OpenADR](/protocols/openadr/) was the one protocol on OT Fabric without a command-line tool. Its library, [go-openadr](/projects/go-openadr/), shipped three example programs instead, which is fine for a developer with a checkout and not much use at a site with a laptop. Today that gap closes with [openadrctl](/projects/openadrctl/).
+
+OpenADR 3 is a REST API, so `curl` can reach every endpoint. What it cannot do by itself is fetch and renew an OAuth2 token, page through a search, check an object against the schema before it goes out, work out when each interval of an event is in force, or hold a webhook, MQTT or WebSocket subscription open. openadrctl does all of that, in every role.
+
+## Every role, from one binary
+
+- **As a VEN**, the site's side: read the programs and events meant for the site, see an event's intervals laid out in time, send reports, and manage the VEN object and its resources.
+- **As Business Logic**, the utility's side: create programs and events such as price signals and load limits, from flags or a CSV file, read what VENs report, and manage VENs, resources and resource groups.
+- **As a VTN**: `vtn start` serves a test VTN from a YAML seed, with its own OAuth2 token endpoint, webhooks, MQTT, WebSockets and a store in a file.
+
+```sh frame="terminal"
+openadrctl vtn start --websocket                       # terminal 1: a VTN with an example seed
+
+export OPENADRCTL_URL=http://127.0.0.1:8080            # terminal 2: the site
+export OPENADRCTL_CLIENT_ID=site-42 OPENADRCTL_CLIENT_SECRET=site-42-secret
+openadrctl ping                                        # every step, timed
+openadrctl ven events timeline price-2030-01-01        # interval by interval
+openadrctl ven listen --via websocket --object EVENT   # wait for new events
+```
+
+From a third terminal, the utility publishes an evening peak price, and the VEN prints it as it arrives:
+
+```console
+$ OPENADRCTL_CLIENT_ID=utility OPENADRCTL_CLIENT_SECRET=utility-secret \
+    openadrctl bl events create --url http://127.0.0.1:8080 --program dynamic-price \
+    --name evening-peak --type PRICE --start 2030-01-01T17:00:00Z --interval PT1H \
+    --value 0.35 --value 0.42 --yes
+created event 919fe864521e897f30c7b9a2ffed4491 (evening-peak)
+```
+
+## Built for the field and for CI
+
+`ping` checks connect, TLS, token, API and notifiers one by one, and says which step failed and what to check. Secrets come from the environment or a file, never from a flag. Every command with a result has `--format json`, the streams write JSON Lines, and the exit codes are stable, so a VTN regression test is a shell script. Events and deletes need `--yes`, and `--dry-run` shows an object without sending it, because an event reaches real sites.
+
+## OpenADR 3.0.1 too
+
+Not every VTN has moved to 3.1. [go-openadr v0.5.0](/docs/protocols/openadr/library/#openadr-301), released today as well, teaches its clients OpenADR 3.0.1: typed targets, resources under their VEN, reports that name their program, and the token from `/auth/token`. openadrctl exposes it as `--spec 3.0.1`. What 3.0.1 does not have, such as MQTT topics and resource groups, is refused before anything is sent.
+
+## Tested against independent stacks
+
+openadrctl runs against the reference VTNs of [openadr-interop v0.5.0](/docs/protocols/openadr/testing/), which now adds OpenLEADR v0.1.4 as a VTN of OpenADR 3.0.1:
+
+| Run | Result |
+|---|---|
+| Both roles against OpenLEADR v0.2.7 (3.1.0): programs, events, reports, a refused token, `events watch`, WebSocket and MQTT | 25 checks passed |
+| `--spec 3.0.1` against OpenLEADR v0.1.4: typed targets, resources through their VEN, reports, `validate` | 37 checks passed |
+| MQTT logins by OAuth2 token, checked by EMQX 6.3.1 against `vtn start` | 5 checks passed |
+
+<Callout type="note" title="What it is not">
+openadrctl is a test, development and diagnostic tool. It is not an OpenADR Alliance certification test, and `vtn start` is a test VTN, not a utility's production server. Webhook delivery is tested against its own VTN only, because the reference VTNs do not send webhooks.
+</Callout>
+
+## Get it
+
+Prebuilt binaries for Linux, macOS and Windows are on the [releases page](https://github.com/otfabric/openadrctl/releases), and the [openadrctl docs](/docs/protocols/openadr/cli/) cover installing and every command. The [guide](https://github.com/otfabric/openadrctl/blob/main/docs/guide.md) walks through each scenario with real output. openadrctl is MIT-licensed. Security issues go to security@otfabric.io.
