@@ -7,7 +7,7 @@ export const ogImage = {
 	src: '/og-image.png',
 	width: 1200,
 	height: 630,
-	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP and PROFINET, and the SunSpec Modbus and IEC 61850 information models.',
+	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP and PROFINET, the SunSpec Modbus and IEC 61850 information models, and the Sparkplug B profile.',
 };
 
 /** Meta description for the homepage: what OT Fabric is, with the protocols and models people search for. */
