@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-28",
+ "verified": "2026-10-29",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -107,6 +107,15 @@
    "maturity": "Mature for tag access, thin for I/O",
    "commercial": "Very established",
    "summary": "The open field is dominated by clients for Rockwell Logix tags; independent stacks that do cyclic I/O are few, and only one open adapter, OpENer, is widely used."
+  },
+  {
+   "id": "profinet",
+   "name": "PROFINET",
+   "standard": "IEC 61158-5-10 and 6-10, IEC 61784-2 (CPF 3); PROFIBUS & PROFINET International",
+   "focus": "PROFINET IO between IO-Controllers and IO-Devices: DCP, DCE/RPC records, cyclic RT frames, alarms, GSDML, MRP rings",
+   "maturity": "Mature market, thin open field",
+   "commercial": "Very established",
+   "summary": "The industrial Ethernet of Siemens and many other automation vendors runs almost entirely on licensed stacks. In the open field, rt-labs p-net is the one widely used device stack, most other projects are DCP tools, and open IO-Controllers are few and young."
   },
   {
    "id": "sparkplug-b",
@@ -5954,6 +5963,593 @@
     "https://download.beckhoff.com/download/document/automation/twincat3/TF6281_TC3_EthernetIP_Scanner_EN.pdf"
    ],
    "verified": "2026-10-26"
+  },
+  {
+   "id": "otfabric-go-profinet",
+   "name": "go-profinet",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-profinet",
+   "repo": "otfabric/go-profinet",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.6.0",
+    "date": "2026-10-29",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-profinet/@v/v0.6.0.info"
+   },
+   "roles": [
+    "IO-Controller",
+    "IO-Device"
+   ],
+   "capabilities": [
+    "RT_CLASS_1",
+    "RT_CLASS_2",
+    "DCP",
+    "LLDP",
+    "Shared device",
+    "MRP",
+    "GSDML"
+   ],
+   "interop": "profinet-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-profinet",
+   "notes": "IO-Controller and IO-Device with no dependencies outside the standard library: DCP requester and responder, LLDP, connectionless DCE/RPC, records, I&M0-4, diagnosis, alarms, shared device, device access ARs, MRP client and manager on multiport devices, a read-only SNMP agent and GSDML parsing, validation and generation. Raw Ethernet on Linux, macOS and Windows, and a virtual Ethernet for tests. Conformance class A features without IRT. Not certified by PI. Tested against p-net, pnio-rs, profinet-py and pnio-dcp.",
+   "sources": [
+    "https://github.com/otfabric/go-profinet",
+    "https://proxy.golang.org/github.com/otfabric/go-profinet/@latest"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "p-net",
+   "name": "p-net",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "GPL-3.0-only",
+   "commercialLicense": true,
+   "url": "https://github.com/rtlabs-com/p-net",
+   "repo": "rtlabs-com/p-net",
+   "stars": 599,
+   "forks": 234,
+   "historySince": "2018",
+   "lastCommit": "2026-06-15",
+   "release": {
+    "version": "public/v1.0.2",
+    "date": "2025-04-23",
+    "source": "GitHub Releases",
+    "url": "https://github.com/rtlabs-com/p-net/releases/tag/public/v1.0.2"
+   },
+   "roles": [
+    "IO-Device"
+   ],
+   "capabilities": [
+    "RT_CLASS_1",
+    "RT_CLASS_2",
+    "DCP",
+    "LLDP",
+    "Shared device",
+    "SNMP"
+   ],
+   "interop": "profinet-interop",
+   "maintenance": "active",
+   "notes": "rt-labs' IO-Device stack for embedded devices, the best-known open PROFINET implementation, dual-licensed GPL-3.0 and commercial. Its v1.0.2 release notes report a pass of the PROFINET test bundle. Since 2024 the public branch is an evaluation snapshot without build files, ports or sample application; releases ship binaries. profinet-interop builds the last complete GPL tree (ea5e554, 2023), which predates the v1.0.2 security fixes.",
+   "sources": [
+    "https://github.com/rtlabs-com/p-net",
+    "https://github.com/otfabric/profinet-interop/blob/main/versions.yaml",
+    "https://github.com/otfabric/go-profinet/blob/main/docs/research/STACKS.md"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "pnio-rs",
+   "name": "pnio-rs",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/core-engineering/pnio-rs",
+   "repo": "core-engineering/pnio-rs",
+   "stars": 7,
+   "forks": 1,
+   "historySince": "2026",
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "0.1.0",
+    "date": "2026-08-31",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/pnio/0.1.0"
+   },
+   "roles": [
+    "IO-Device"
+   ],
+   "capabilities": [
+    "RT_CLASS_1",
+    "DCP",
+    "GSDML"
+   ],
+   "interop": "profinet-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/pnio",
+   "notes": "A young pure Rust IO-Device for Linux with PREEMPT_RT, conformance class A, tested by its author against an S7-1500. One AR, RT class 1, channel diagnosis, I&M0-3 and GSDML generation from a Rust device description; DCP Identify and Set IP only, no LLDP. Not certified by PI.",
+   "sources": [
+    "https://github.com/core-engineering/pnio-rs",
+    "https://crates.io/api/v1/crates/pnio"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "profinet-py",
+   "name": "profinet-py",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "GPL-3.0-only",
+   "commercialLicense": true,
+   "url": "https://github.com/f0rw4rd/profinet-py",
+   "repo": "f0rw4rd/profinet-py",
+   "stars": 14,
+   "historySince": "2026",
+   "lastCommit": "2026-10-07",
+   "release": {
+    "version": "0.6.6",
+    "date": "2026-10-07",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/profinet-py/0.6.6/"
+   },
+   "roles": [
+    "IO-Controller",
+    "DCP tool"
+   ],
+   "capabilities": [
+    "RT_CLASS_1",
+    "DCP",
+    "Records",
+    "Alarms"
+   ],
+   "interop": "profinet-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/profinet-py/",
+   "notes": "A Python IO-Controller library and DCP tool: discovery and configuration, record reads and writes over device access ARs, I&M, diagnosis, alarms and cyclic IO, which its README still marks experimental. Dual-licensed GPL-3.0 and commercial.",
+   "sources": [
+    "https://github.com/f0rw4rd/profinet-py",
+    "https://pypi.org/pypi/profinet-py/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "pnio-dcp",
+   "name": "pnio-dcp",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://gitlab.com/pyshacks/pnio_dcp",
+   "stars": null,
+   "historySince": "2019",
+   "lastCommit": "2024-01-17",
+   "release": {
+    "version": "1.2.0",
+    "date": "2024-01-17",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/pnio-dcp/1.2.0/"
+   },
+   "roles": [
+    "DCP tool"
+   ],
+   "capabilities": [
+    "DCP"
+   ],
+   "interop": "profinet-interop",
+   "maintenance": "slowing",
+   "package": "https://pypi.org/project/pnio-dcp/",
+   "notes": "Codewerk's DCP client in Python: identify all or one device, set station name and IP address, permanent or temporary, read parameters, blink and reset to factory. Hosted on GitLab.",
+   "sources": [
+    "https://gitlab.com/pyshacks/pnio_dcp",
+    "https://pypi.org/pypi/pnio-dcp/json"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "openpnio",
+   "name": "OpenPNIO",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/DDex89/OpenPNIO",
+   "repo": "DDex89/OpenPNIO",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-17",
+   "release": null,
+   "roles": [
+    "IO-Device"
+   ],
+   "capabilities": [
+    "DCP",
+    "GSDML"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "An experimental portable IO-Device core in C11. Its README says it is not yet a functional IO-Device: DCP Identify, Get and Set and an LLDP codec work, GSDML import into TIA Portal was checked, but there is no AR or cyclic exchange yet. No tagged release.",
+   "sources": [
+    "https://github.com/DDex89/OpenPNIO"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "profinettools",
+   "name": "ProfinetTools",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/fbarresi/ProfinetTools",
+   "repo": "fbarresi/ProfinetTools",
+   "stars": 82,
+   "forks": 24,
+   "historySince": "2018",
+   "lastCommit": "2021-01-30",
+   "release": {
+    "version": "1.0.17",
+    "date": "2021-01-30",
+    "source": "git tag",
+    "url": "https://github.com/fbarresi/ProfinetTools/tree/1.0.17"
+   },
+   "roles": [
+    "DCP tool"
+   ],
+   "capabilities": [
+    "DCP"
+   ],
+   "maintenance": "slowing",
+   "notes": "A Windows desktop tool on WinPcap or Npcap that scans a network with DCP and assigns station names and IP settings, a WPF rewrite of the older profinetexplorer.",
+   "sources": [
+    "https://github.com/fbarresi/ProfinetTools"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "openprofinet",
+   "name": "OpenProfinet",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/naresh97/OpenProfinet",
+   "repo": "naresh97/OpenProfinet",
+   "stars": 21,
+   "forks": 7,
+   "historySince": "2021",
+   "lastCommit": "2021-11-05",
+   "release": {
+    "version": "v0.9.2",
+    "date": "2021-11-02",
+    "source": "git tag",
+    "url": "https://github.com/naresh97/OpenProfinet/tree/v0.9.2"
+   },
+   "roles": [
+    "DCP tool"
+   ],
+   "capabilities": [
+    "DCP"
+   ],
+   "maintenance": "quiet",
+   "notes": "pntool, a Linux command-line tool on libpcap that searches for devices with DCP and sets their station name and IP address.",
+   "sources": [
+    "https://github.com/naresh97/OpenProfinet"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "node-profinetdcp",
+   "name": "profinetdcp (Node.js)",
+   "protocol": "profinet",
+   "type": "independent",
+   "languages": [
+    "C++",
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/ktemelkov/node-profinetdcp",
+   "repo": "ktemelkov/node-profinetdcp",
+   "stars": 11,
+   "historySince": "2020",
+   "lastCommit": "2021-04-30",
+   "release": {
+    "version": "1.0.7",
+    "date": "2021-04-30",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/profinetdcp/v/1.0.7"
+   },
+   "roles": [
+    "DCP tool"
+   ],
+   "capabilities": [
+    "DCP"
+   ],
+   "maintenance": "quiet",
+   "package": "https://www.npmjs.com/package/profinetdcp",
+   "notes": "A native Node.js addon on libpcap or Npcap that sends DCP requests: identify, get and set.",
+   "sources": [
+    "https://github.com/ktemelkov/node-profinetdcp",
+    "https://registry.npmjs.org/profinetdcp"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "profinet-rs",
+   "name": "profinet-rs",
+   "protocol": "profinet",
+   "type": "derived",
+   "languages": [
+    "Rust"
+   ],
+   "license": "GPL-3.0-only",
+   "url": "https://github.com/pasrom/profinet-rs",
+   "repo": "pasrom/profinet-rs",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-07",
+   "release": {
+    "version": "v0.6.0",
+    "date": "2026-10-07",
+    "source": "git tag",
+    "url": "https://github.com/pasrom/profinet-rs/tree/v0.6.0"
+   },
+   "roles": [
+    "IO-Controller",
+    "DCP tool"
+   ],
+   "capabilities": [
+    "RT_CLASS_1",
+    "DCP",
+    "GSDML"
+   ],
+   "upstream": [
+    "profinet-py"
+   ],
+   "relation": "Rust port",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "A Rust port of profinet-py for bench and commissioning work, checked byte for byte against profinet-py's frames: DCP, DCE/RPC over UDP or raw Layer 2, records, cyclic RT_CLASS_1 IO, I&M, diagnosis and alarms, with explicit arming before it drives any output. Not published to crates.io.",
+   "sources": [
+    "https://github.com/pasrom/profinet-rs"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "alfredkrohmer-profinet",
+   "name": "profinet (alfredkrohmer)",
+   "protocol": "profinet",
+   "type": "legacy",
+   "languages": [
+    "Python"
+   ],
+   "license": "None stated",
+   "url": "https://github.com/alfredkrohmer/profinet",
+   "repo": "alfredkrohmer/profinet",
+   "stars": 147,
+   "historySince": "2015",
+   "lastCommit": "2015-07-17",
+   "release": null,
+   "roles": [
+    "DCP tool"
+   ],
+   "capabilities": [
+    "DCP"
+   ],
+   "maintenance": "quiet",
+   "notes": "A minimal Python DCP and RPC experiment from 2015, still the most-starred Python PROFINET repository. It has no licence file, so all rights are reserved; M256-Automation/profinet-python is a fork.",
+   "sources": [
+    "https://github.com/alfredkrohmer/profinet",
+    "https://github.com/otfabric/go-profinet/blob/main/docs/research/STACKS.md"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "pi-community-stack",
+   "name": "PI Community Stack",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "PI members only (PNO Community Source Code License)",
+   "url": "https://www.profinet.com/profinet-explained/community-stack",
+   "stars": null,
+   "release": {
+    "version": "v3.0.0",
+    "source": "PI",
+    "url": "https://www.profinet.com/profinet-explained/community-stack"
+   },
+   "roles": [
+    "IO-Device"
+   ],
+   "capabilities": [
+    "RT",
+    "IRT"
+   ],
+   "maintenance": "n/a",
+   "notes": "PI's own IO-Device stack, free of charge for PI members under a signed agreement that forbids combining it with copyleft code. Conformance classes A and B, IRT with a hardware driver of your own; v3.0.0 adds the Service Exchange Protocol of specification 2.5. The demo runs on a Raspberry Pi 4.",
+   "sources": [
+    "https://www.profinet.com/profinet-explained/community-stack"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "siemens-pn-devkit",
+   "name": "Siemens PN DevKits",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "Commercial",
+   "url": "https://cache.industry.siemens.com/dl/files/249/109782249/att_1040117/v1/Interface_Description_PN_IO_DevKits_V4.7.0.pdf",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "IO-Device"
+   ],
+   "capabilities": [
+    "RT",
+    "IRT"
+   ],
+   "maintenance": "n/a",
+   "notes": "Siemens' development kits for IO-Devices on its ERTEC 200P chip, or as RT only on standard Ethernet, delivered with the complete source code of the IO stack, an example application and a porting example.",
+   "sources": [
+    "https://cache.industry.siemens.com/dl/files/249/109782249/att_1040117/v1/Interface_Description_PN_IO_DevKits_V4.7.0.pdf"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "hilscher-netx-pn",
+   "name": "Hilscher netX",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.hilscher.com/products/multiprotocol-socs-stacks/stacks-for-industrial-ethernet-fieldbus/nxlfw-pns",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "IO-Controller",
+    "IO-Device"
+   ],
+   "capabilities": [
+    "IRT",
+    "MRP",
+    "Shared device"
+   ],
+   "maintenance": "n/a",
+   "notes": "Loadable firmware for Hilscher's netX chips: a precertified IO-Device (NXLFW-PNS, also for Single Pair Ethernet) and an IRT IO-Controller (NXLFW-PNM-IRT) with MRP, configured by a host through the dual-port memory.",
+   "sources": [
+    "https://www.hilscher.com/products/multiprotocol-socs-stacks/stacks-for-industrial-ethernet-fieldbus/nxlfw-pns",
+    "https://www.hilscher.com/na/products/multiprotocol-socs-stacks/stacks-for-industrial-ethernet-fieldbus/nxlfw-pnm-irt"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "softing-profinet",
+   "name": "Softing PROFINET",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://me.profibus.com/products/ident-numbers/product-guide/profinet-device-stack",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "IO-Controller",
+    "IO-Device"
+   ],
+   "maintenance": "n/a",
+   "notes": "Softing's portable protocol software: a device stack with a simple device application interface and an access kit, and IO-Controller and supervisor software for automation devices that already have Ethernet hardware.",
+   "sources": [
+    "https://me.profibus.com/products/ident-numbers/product-guide/profinet-device-stack",
+    "https://uk.profibus.com/products/product-guide/profinet-io-controller-software"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "phoenix-pnc-sdk",
+   "name": "Phoenix Contact PNC SDK",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.phoenixcontact.com/ro-ro/produse/software-pnc-391-arm-lx-sdk-2403500",
+   "stars": null,
+   "release": {
+    "version": "3.91",
+    "source": "Phoenix Contact",
+    "url": "https://www.phoenixcontact.com/ro-ro/produse/software-pnc-391-arm-lx-sdk-2403500"
+   },
+   "roles": [
+    "IO-Controller"
+   ],
+   "maintenance": "n/a",
+   "notes": "An IO-Controller software development kit for Linux on Arm, from the stack family that KW-Software developed before it became Phoenix Contact Software.",
+   "sources": [
+    "https://www.phoenixcontact.com/ro-ro/produse/software-pnc-391-arm-lx-sdk-2403500",
+    "https://www.automationworld.com/home/news/13312050/kwsoftware-set-to-become-phoenix-contact-software"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "codesys-profinet",
+   "name": "CODESYS PROFINET",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [
+    "IEC 61131-3"
+   ],
+   "license": "Commercial",
+   "url": "https://store.codesys.com/media/n98_media_assets/files/2303000015-F/4/CODESYS PROFINET Controller SL_en.pdf",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "IO-Controller",
+    "IO-Device"
+   ],
+   "capabilities": [
+    "Shared device",
+    "MRP",
+    "S2"
+   ],
+   "maintenance": "n/a",
+   "notes": "IO-Controller and IO-Device add-ons for CODESYS runtimes on Windows, Linux and VxWorks. The controller follows specification 2.45, conformance class B, with shared device, device access, MRP client and system redundancy S2, from 64 up to 1024 connections.",
+   "sources": [
+    "https://store.codesys.com/media/n98_media_assets/files/2303000015-F/4/CODESYS PROFINET Controller SL_en.pdf",
+    "https://store.codesys.com/media/n98_media_assets/files/2303000021-F/4/CODESYS PROFINET Device SL_en.pdf"
+   ],
+   "verified": "2026-10-29"
+  },
+  {
+   "id": "beckhoff-tf6271",
+   "name": "Beckhoff TF6271",
+   "protocol": "profinet",
+   "type": "commercial",
+   "languages": [],
+   "license": "Commercial",
+   "url": "https://www.beckhoff.com/en-us/products/automation/twincat/tfxxxx-twincat-3-functions/tf6xxx-connectivity/tf6271.html",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "IO-Controller"
+   ],
+   "maintenance": "n/a",
+   "notes": "TwinCAT 3 function that turns a standard Ethernet port with an Intel chipset into a PROFINET RT controller, on Windows, TwinCAT/BSD and Beckhoff RT Linux.",
+   "sources": [
+    "https://www.beckhoff.com/en-us/products/automation/twincat/tfxxxx-twincat-3-functions/tf6xxx-connectivity/tf6271.html"
+   ],
+   "verified": "2026-10-29"
   },
   {
    "id": "tahu-java",

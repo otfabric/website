@@ -1,0 +1,238 @@
+---
+title: profinetctl
+description: Installing and using profinetctl, the PROFINET IO command-line tool to discover devices, assign station names and IP addresses, read I&M, records and diagnosis, map and check the topology, inspect, validate and generate GSDML files, and connect as IO-Controller to watch cyclic IO and alarms.
+sidebar:
+  label: profinetctl
+  order: 2
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+[profinetctl](https://github.com/otfabric/profinetctl) is a command-line tool for PROFINET IO, built on [go-profinet](/docs/protocols/profinet/library/) for commissioning, troubleshooting and test benches. It finds the devices on a network and assigns their station names and IP addresses with DCP, reads their identification (I&M0 to I&M4), records and diagnosis over DCE/RPC, lists LLDP neighbours and maps the cabling, inspects, validates and generates GSDML files, and connects to a device as IO-Controller to watch its cyclic IO data and alarms. Output is text, a table or JSON, with stable exit codes. This page follows v0.6.0; every example below is real output from [docs/EXAMPLES.md](https://github.com/otfabric/profinetctl/blob/main/docs/EXAMPLES.md), against rt-labs p-net and go-profinet devices on a Docker network.
+
+## Install
+
+<Tabs>
+  <TabItem label="Release binary">
+    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/profinetctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
+  </TabItem>
+  <TabItem label="Go">
+    ```sh
+    go install github.com/otfabric/profinetctl@latest
+    ```
+    Go 1.25 or later.
+  </TabItem>
+  <TabItem label="From source">
+    ```sh
+    git clone https://github.com/otfabric/profinetctl && cd profinetctl
+    make build-nocheck   # bin/profinetctl
+    ```
+  </TabItem>
+</Tabs>
+
+### Privileges
+
+DCP, LLDP and the cyclic data are raw Ethernet frames (EtherType 0x8892 and 0x88CC), which ordinary users cannot send:
+
+| Platform | Backend | Needs |
+|---|---|---|
+| Linux | AF_PACKET | root, or `sudo setcap cap_net_raw,cap_net_admin+ep $(which profinetctl)` |
+| macOS | BPF | root, or membership of the `access_bpf` group (Wireshark's ChmodBPF installs it) |
+| Windows | Npcap | Npcap installed in WinPcap API-compatible mode |
+
+A missing privilege exits with code 4 and the error code `permission_denied`. `interfaces` and the `gsdml` commands need none. Records, I&M and diagnosis use DCE/RPC over the host's UDP stack on port 34964.
+
+## Command tree
+
+| Command | What it does |
+|---|---|
+| `interfaces` | The Ethernet interfaces |
+| `discover`, `identify` | DCP Identify: every device or those matching a station, alias, IP or vendor and device ID, with duplicate names flagged; the full identity of one device |
+| `name get`, `name set`, `ip get`, `ip set` | Read or assign the station name and IP suite, temporary or `--permanent` |
+| `signal`, `reset` | Flash a device's LED; DCP ResetToFactory, with `--confirm` |
+| `device info`, `status` | Identity, I&M0 and the real configuration; reachability, diagnosis by severity and each port's link and neighbour |
+| `im read`, `im write` | I&M0 and the I&M1 to I&M4 a device lists; write I&M1 to I&M4 |
+| `record read`, `record write` | Any record, as hex, with the blocks it holds; writes in a device access AR, or in an IOCAR with `--gsdml` or `--model` |
+| `diagnostics` | The decoded diagnosis of a device or one submodule |
+| `lldp neighbors`, `topology`, `topology check` | LLDP neighbours of the host, every device's port neighbours and the links between them, and a check against the expected cabling |
+| `mrp status` | A device's media redundancy role, domain and ring state |
+| `hello listen` | The DCP Hello frames devices send at start and on link up |
+| `gsdml inspect`, `validate`, `check`, `modules`, `submodules`, `gsdx`, `generate` | Work with GSDML files and GSDX containers, and generate the file of a go-profinet device model |
+| `connect`, `ar`, `iocr`, `io status`, `io monitor`, `io statistics`, `alarms`, `disconnect` | Act as IO-Controller: establish an AR and run it, show what Connect negotiated and the IOCR layout, watch inputs and cyclic counters, stream alarms, release an AR left behind |
+| `version`, `completion` | Version; shell completion for bash, zsh, fish and PowerShell |
+
+A device is selected by `--station NAME` (`-s`, resolved with DCP Identify) or `--mac`; `--ip` overrides the address it reports. `-i` (or `PROFINETCTL_INTERFACE`) names the interface. `--pcap FILE` records every frame sent and received for Wireshark, and `--debug` writes go-profinet's diagnostics to stderr.
+
+## Discover and identify
+
+```console
+$ profinetctl discover --wait 2s
+ce:48:e6:dc:9f:d5  otf-a                    vendor 0xF000 device 0x0101  10.143.5.20  go-profinet interop device
+e2:d7:d0:a5:23:0e  otf-b                    vendor 0xF000 device 0x0101  10.143.5.21  go-profinet interop device
+fe:12:d3:70:32:0a  pnet-dut                 vendor 0x0493 device 0x0002  10.143.5.10  P-Net Sample Application
+3 device(s)
+```
+
+```console
+$ profinetctl identify -s pnet-dut
+MAC:              fe:12:d3:70:32:0a
+NameOfStation:    pnet-dut
+TypeOfStation:    P-Net Sample Application
+Vendor/Device ID: 0x0493 / 0x0002
+Instance:         0
+Role:             IO-Device
+IP:               10.143.5.10 mask 255.255.255.0 gateway 10.143.5.1 (static)
+```
+
+`--wait` (2 s) sets how long answers are collected and `--response-delay` how far devices spread them.
+
+## Names, addresses and signal
+
+A Set is temporary, lost at the next power cycle, unless `--permanent` is given. A new device without a name is selected by MAC:
+
+```sh
+profinetctl name set io-rack-1 --mac 00:0e:cf:12:34:56 --permanent
+profinetctl ip set 192.168.0.10/24 --gateway 192.168.0.1 -s io-rack-1 --permanent
+profinetctl signal -s io-rack-1
+```
+
+```console
+$ profinetctl ip set 10.143.5.22/24 -s otf-b
+ip set: e2:d7:d0:a5:23:0e otf-b → 10.143.5.22/24 (temporary: lost on power cycle)
+```
+
+## Identification, records and diagnosis
+
+Reads use ReadImplicit, so no AR is needed:
+
+```console
+$ profinetctl im read -s pnet-dut
+pnet-dut (fe:12:d3:70:32:0a) slot 0 subslot 0x0001
+I&M0: vendor 0x0493, order "12345 Abcdefghijk", serial "007", hardware 3, software V0.2.0, revision counter 0, profile 0x1234/0x5678, I&M 1.1, supports I&M1, I&M2, I&M3
+I&M1: function "my function", location "my location"
+I&M2: installation date "2022-03-01 10:03"
+I&M3: descriptor "my descriptor"
+```
+
+```console
+$ profinetctl record read -s pnet-dut --index 0xF000
+pnet-dut slot 0 subslot 0x0001 index 0xF000: 40 octets
+0000  00 13 00 24 01 01 00 01 00 00 00 00 00 01 00 00
+0010  00 00 00 01 00 03 00 01 00 00 00 01 80 00 00 00
+0020  80 00 80 01 00 00 80 01
+blocks: RealIdentificationData
+```
+
+```console
+$ profinetctl status -s otf-a
+otf-a (ce:48:e6:dc:9f:d5) 10.143.5.20
+DCP: ok  RPC: ok
+Diagnosis: none
+Port 0x8001 port-001: link up, peer pnet-dut port-001, pnet-renamed port-001, otf-b port-001
+```
+
+Writes need an AR. go-profinet devices accept a device access AR; devices that refuse one, such as p-net, are written in an IOCAR when profinetctl gets the expected configuration:
+
+```console
+$ profinetctl record write -s pnet-dut --slot 1 --index 123 --data 01020304 --model pnet-model.json
+record write: fe:12:d3:70:32:0a pnet-dut → 0/1/0x0001 index 0x007B: 4 octets
+```
+
+## Topology
+
+`lldp neighbors` listens on the host's own interface. `topology` reads each device's port data and builds the links, and `topology check` compares them with the expected cabling, from flags or a file, exiting with code 7 when they differ:
+
+```console
+$ profinetctl topology check --link otf-a/port-001=otf-b/port-001
+otf-a/port-001 — otf-b/port-001: ok
+topology as expected
+```
+
+`mrp status` shows a device's ring role and state; `connect --mrp-role client|manager|off` gives a multiport device its role.
+
+## GSDML files
+
+```console
+$ profinetctl gsdml inspect otf-device.xml
+File:     otf-device.xml
+Schema:   GSDML 2.35
+Vendor:   OT Fabric (0xF000)
+Device:   0x0101, family I/O Interop
+Valid:    yes
+Device access points: 1
+  DAP  "go-profinet interop DAP" ident 0x00000100 class B, 1 port(s), 3 plugged slot(s), 3 usable module(s)
+```
+
+```console
+$ profinetctl gsdml check otf-device.xml
+otf-device.xml: 0 error(s), 0 warning(s), 0 unvalidated
+checked: go-profinet's GSDML catalog and semantic rules (IO data length, slots, record indexes, ident numbers, subslots, reduction ratios); not PI's GSDML checker
+```
+
+`gsdml modules` and `gsdml submodules` list what a device accepts with IO lengths and records, `gsdml gsdx` inspects a GSDX container (signatures are reported, not verified), and `gsdml generate --model` writes the GSDML file of a go-profinet device model.
+
+## Connecting as IO-Controller
+
+`connect`, `ar`, `iocr`, `io` and `alarms` act as IO-Controller, in conformance class A with RT_CLASS_1, or RT_CLASS_2 with `--advanced`. They need the expected configuration: the device's GSDML file (`--gsdml`, with `--dap` when it has several access points and `--plug SLOT=IDENT` for modules from its catalog), or a go-profinet model in JSON (`--model`).
+
+```console
+$ profinetctl ar -s pnet-dut --model pnet-model.json --reduction-ratio 8
+Device:      pnet-dut (fe:12:d3:70:32:0a, 10.143.5.10)
+AR:          10f0bcfc-c1d2-46d8-8d62-e38e98b8ac6d, type IOCARSingle, session key 1
+Startup:     legacy, RT class 1
+Alarm refs:  local 1, remote 1
+Input CR:    FrameID 0xC000, 40 octets, cycle 8ms (send clock 32 × reduction 8), watchdog 10, data hold 10
+Output CR:   FrameID 0xC001, 40 octets, cycle 8ms (send clock 32 × reduction 8), watchdog 10, data hold 10
+```
+
+```console
+$ profinetctl io monitor -s otf-a --gsdml otf-device.xml --plug 3=0x30 --interval 500ms --duration 2s
+02:01:08.903 state Offline → Resolving
+02:01:08.904 state Resolving → Connecting
+02:01:08.909 state Connecting → Parameterizing
+02:01:08.910 state Parameterizing → WaitApplicationReady
+02:01:08.910 state WaitApplicationReady → Running
+02:01:09.410 0/0x0001=- 0/0x8000=- 0/0x8001=- 1/0x0001=8485868788898a8b 3/0x0001=8485
+02:01:09.911 0/0x0001=- 0/0x8000=- 0/0x8001=- 1/0x0001=898a8b8c8d8e8f90 3/0x0001=898a
+```
+
+```console
+$ profinetctl io statistics -s pnet-dut --model pnet-model.json --duration 3s
+pnet-dut: Running for 3.001s, cycle 4ms
+provider:  742 frames sent, 0 send errors
+consumer:  749 frames received (249.6/s), 0 stale, 0 malformed, 0 from another source, 0 watchdog expiries
+scheduler: 742 cycles, 8 missed, lateness max 3.366292ms mean 636.279µs, interval 1.214542ms..16.960541ms
+AR:        1 connect(s), 0 abort(s), 0 alarm(s)
+```
+
+- The cycle is `--send-clock` (units of 31.25 µs, 32 = 1 ms) times `--reduction-ratio`, 4 ms by default. `--watchdog-factor` and `--data-hold-factor` default to 10 cycles, because a general-purpose OS stalls for 10 to 20 ms now and then.
+- Outputs not given with `--output SLOT:SUBSLOT:HEX` are sent as zeros with IOPS bad, so the device keeps them in their safe state.
+- When the real configuration differs, the AR still runs: profinetctl warns and streams a `module-diff` event.
+- `--slot N` expects only some modules (shared device), `--peer-check` has the device watch a port's neighbour, and `--reparam` re-parameterizes the running AR.
+
+<Aside type="caution" title="Real equipment">
+profinetctl sends real PROFINET frames. `name set`, `ip set`, `reset`, `record write`, `im write` and `connect --output` change devices or what they drive, and taking over a device's IO displaces the controller that owns it. Use it only on devices and networks you own or are authorized to work on.
+</Aside>
+
+## Output formats and exit codes
+
+`--format text|json|table` (`-o`, or `PROFINETCTL_FORMAT`) controls the result on stdout. The streaming commands (`connect`, `alarms`, `io monitor`, `hello listen`) write JSON Lines with `--format json`. A fatal error is one line on stderr, or with JSON one `{"error": {"kind", "code", "message"}}` object on stdout. Field names are snake_case and stable ([docs/json-output.md](https://github.com/otfabric/profinetctl/blob/main/docs/json-output.md)).
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 2 | Usage: unknown command or flag, missing selection or confirmation |
+| 3 | Invalid input: a flag value, GSDML or model file that does not make sense; nothing was sent |
+| 4 | Transport: the interface cannot be opened (privileges), a socket cannot be bound |
+| 5 | Timeout: the device did not answer |
+| 6 | Refused or protocol error: a PNIO error status, a DCP block error, a duplicate station name |
+| 7 | Partial: a GSDML file with issues, a topology check with differences, an I&M record that could not be read |
+| 8 | Not found: no device answers to the station name |
+| 10 | Output or internal error |
+| 130 | Interrupted before a result |
+
+## Tested against
+
+profinetctl's tests run it in process against go-profinet IO-Devices on a virtual Ethernet network, without privileges or hardware, and `make pnet-smoke` runs the DCP, record, I&M, diagnosis, topology and AR commands against rt-labs p-net on a real Linux bridge, in the images of [profinet-interop](/docs/protocols/profinet/testing/). The library underneath is tested against p-net, pnio-rs, profinet-py and pnio-dcp. profinetctl is not certified by PI and claims no conformance. If it has trouble with a device, [open an issue](https://github.com/otfabric/profinetctl/issues) with the `--debug` output and a `--pcap` capture.
+
+<LinkCard title="profinetctl on GitHub" description="README, docs/EXAMPLES.md, docs/json-output.md, docs/exitcodes.md, SECURITY.md" href="https://github.com/otfabric/profinetctl" />

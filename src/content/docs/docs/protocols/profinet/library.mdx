@@ -1,0 +1,221 @@
+---
+title: Go library
+description: Use go-profinet to build PROFINET IO-Controllers and IO-Devices in Go, with DCP, records, I&M, diagnosis, alarms, cyclic RT data, shared device, MRP, GSDML, raw Ethernet on Linux, macOS and Windows, a virtual Ethernet for tests, errors and observability.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+[go-profinet](/projects/go-profinet/) implements PROFINET IO in Go, in both roles: an IO-Controller (package `controller`) and an IO-Device (package `device`), on its own DCP, LLDP, connectionless DCE/RPC, PNIO block codecs, RT cyclic layer and alarm transport. It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-profinet); [API.md](https://github.com/otfabric/go-profinet/blob/main/API.md) in the repository is the map. This page follows v0.6.0.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-profinet
+```
+
+Go 1.23 or later. The main packages:
+
+| Package | Contents |
+|---|---|
+| `controller` | IO-Controller, record client, device access (supervisor) ARs |
+| `device` | IO-Device |
+| `model` | The device model: identity, DAP, slots, modules, submodules, records |
+| `dcp`, `lldp` | DCP requester and responder; LLDP codec, agent and neighbor table |
+| `rpc`, `pnio` | Connectionless DCE/RPC; PNIO blocks, NDR, status codes |
+| `rt`, `alarm` | Cyclic frames, layout, provider, consumer and scheduler; the RTA alarm transport |
+| `gsdml`, `gsdml/gsdx` | GSDML documents, validation and model conversion; an inspector of GSDX containers |
+| `mrp`, `snmp`, `l2/bridge` | Media redundancy, a read-only SNMP agent, the software switch of a multiport device |
+| `l2/osport`, `vnet`, `netstack` | Raw Ethernet of the platform, a virtual Ethernet with seeded faults, a small ARP/IPv4/UDP stack |
+
+## On a real network
+
+PROFINET runs partly on raw Ethernet, so the first step is a port and a frame demultiplexer. `osport` picks AF_PACKET on Linux, BPF on macOS and the BSDs, and Npcap on Windows:
+
+```go
+port, err := osport.Open("eth0", osport.Options{})
+if err != nil {
+	return err // needs CAP_NET_RAW, /dev/bpf* or Npcap
+}
+defer port.Close()
+mux := l2.NewMux(port)
+defer mux.Close()
+```
+
+Records and the Connect use the operating system's UDP stack on port 34964, unless you give a component a `ListenPacket` of its own.
+
+## An IO-Controller
+
+```go
+ctrl, err := controller.New(controller.Config{
+	Mux:         mux,
+	StationName: "plc-1",                        // CMInitiatorStationName
+	VendorID:    0xF000, DeviceID: 1, Instance: 1, // the controller's object UUID
+})
+defer ctrl.Close() // releases every AR
+
+d, err := ctrl.AddDevice(controller.DeviceConfig{
+	StationName:    "io-rack-1",
+	Model:          m,                     // from gsdml.ToModel or written by hand
+	IP:             suite, AssignIP: true, // set the address with DCP if it differs
+	ReductionRatio: 4,                     // 4 ms with the 1 ms send clock
+	Parameters:     []controller.Parameter{{Slot: 2, Subslot: 1, Index: 0x10, Data: []byte{0, 2}}},
+	OnState:        func(from, to controller.State, err error) { log.Printf("%s → %s %v", from, to, err) },
+	OnAlarm:        func(a controller.AlarmEvent) { log.Printf("alarm %s slot %d", a.Notification.Type, a.Notification.Slot) },
+})
+err = d.WaitState(ctx, controller.StateRunning)
+```
+
+Each device runs its lifecycle on its own goroutine: Resolving (DCP Identify by name, optionally Set IP), Connecting, Parameterizing (the `Parameters`, then PrmEnd), WaitApplicationReady and Running. A failure in any state goes back to Offline and retries with exponential backoff (200 ms doubling to 10 s, with optional jitter). A DCP Hello from the device skips the wait. `Advanced: true` uses the advanced startup with RT_CLASS_2, which pnio-rs needs; otherwise the controller uses the legacy startup with RT_CLASS_1.
+
+While it runs:
+
+```go
+d.SetOutput(2, 1, out, pnio.IOxSGood)
+in, iops, ok := d.Input(1, 1)
+b, err := d.ReadRecord(ctx, controller.Record{Slot: 1, Subslot: 1, Index: 0x10}, 0)
+err = d.WriteRecord(ctx, controller.Record{Slot: 2, Subslot: 1, Index: 0x10}, []byte{0, 3})
+im0, err := d.ReadIM0(ctx)
+diags, err := d.ReadDiagnosis(ctx)
+diff := d.ModuleDiff() // what the device reported as different
+st := d.Stats()        // connects, aborts, alarms, provider, consumer, cycle jitter
+```
+
+Alarms are acknowledged before `OnAlarm` runs. A device whose real configuration differs still runs: the ModuleDiffBlock says which submodules are wrong, and their IO data carries IOPS bad.
+
+### Engineering access without an AR
+
+A record client reads records with ReadImplicit, and a device access AR (IOSAR) writes them without IO data:
+
+```go
+rc := controller.NewRecordClient(ctrl.RPC(), &net.UDPAddr{IP: ip, Port: rpc.Port}, pnio.ObjectUUID(inst, devID, vendorID))
+im0, err := rc.ReadIM0(ctx, rpc.NilUUID, 0, 1)
+sar, err := rc.OpenSupervisor(ctx, controller.SupervisorConfig{InitiatorMAC: mux.HardwareAddr(), InitiatorObject: ctrl.ObjectUUID()})
+err = sar.Write(ctx, controller.Record{Slot: 2, Subslot: 1, Index: 0x10}, data)
+err = sar.Release(ctx)
+```
+
+Devices that do not accept device access ARs, such as p-net, refuse it; write in an IOCAR instead.
+
+### Shared devices, re-parameterization and port checks
+
+Several controllers can share a device: give each a model with only its slots (`m.WithSlots(1, 3)`). A submodule another controller owns comes back in the ModuleDiff as locked. When its owner leaves, the device hands it over with a Released alarm, and the controller parameterizes it and takes over its data. `d.Reparameterize(ctx, params)` re-parameterizes a running AR (PrmBegin, writes, PrmEnd, ApplicationReady) while cyclic data goes on. `DeviceConfig.PeerChecks` writes the expected neighbour of a port, and `DeviceConfig.MRP` the MRP role of a multiport device.
+
+## An IO-Device
+
+Describe the device with a model. The same model generates its GSDML file and is what a go-profinet controller expects:
+
+```go
+m := &model.Device{
+	Identity: model.Identity{VendorID: 0xF000, DeviceID: 0x0001, VendorName: "ACME", TypeOfStation: "ACME IO",
+		OrderID: "ACME-IO-1", SerialNumber: "0001", HardwareRevision: 1,
+		SoftwareRevision: pnio.SoftwareRevision{Prefix: 'V', FunctionalEnhance: 1}},
+	Capabilities: model.Capabilities{MaxARs: 2, MinDeviceInterval: 32, ConformanceClass: "B", Ports: 1, LLDP: true},
+	DAP:          model.StandardDAP("ACME DAP", 0x00000100, 1), // identity, interface and one port
+	Slots: []model.Slot{
+		{Number: 1, Module: model.Module{Name: "8 in", IdentNumber: 0x10,
+			Submodules: []model.Submodule{{Name: "Inputs", IdentNumber: 0x11, Subslot: 1, InputLen: 8}}}},
+		{Number: 2, Module: model.Module{Name: "4 out", IdentNumber: 0x20,
+			Submodules: []model.Submodule{{Name: "Outputs", IdentNumber: 0x21, Subslot: 1, OutputLen: 4,
+				Records: []model.Record{{Index: 0x10, Name: "Mode", Length: 2, Default: []byte{0, 1}}}}}}},
+	},
+}
+
+dev, err := device.New(device.Config{
+	Model: m, Mux: mux, StationName: "acme-io-1", IP: suite,
+	ApplyIP: func(s dcp.IPSuite, permanent bool) error { return configureOS(s) },
+	Handler: &app{}, // embed device.NopHandler
+})
+defer dev.Close()
+
+dev.SetInput(1, 1, data, pnio.IOxSGood) // every AR's next frames carry it
+out, iops, ok := dev.Output(2, 1)       // what the controller last sent
+```
+
+go-profinet never changes the operating system's addresses: a DCP Set IP reaches `ApplyIP`, which must configure the interface. The `Handler` decides what the application handles itself: records without a model entry, the end of parameterization (return nil when the application is ready, and the device sends ApplicationReady), AR state changes and DCP Signal, reset, name and IP events.
+
+```go
+err := dev.SendAlarm(ctx, device.Alarm{Type: pnio.AlarmProcess, Slot: 1, Subslot: 1, HasItem: true, USI: 0x10, Data: []byte{1}})
+err = dev.AddDiagnosis(ctx, 1, 1, pnio.DiagnosisItem{ChannelNumber: 1, ErrorType: pnio.ChannelErrLineBreak})
+```
+
+More options on `device.Config`:
+
+- **Persistence.** `Store` (package `store`) keeps the station name and IP suite of a permanent DCP Set and every I&M1 to I&M4 write across restarts; a temporary Set is lost on restart, as on p-net.
+- **DCP Hello.** `Hello: dcp.HelloOnLinkUp` announces the device at start and on link up while no controller is connected.
+- **Multiport devices and MRP.** `Bridge` runs the ports on a software switch, and `MRP` makes two of them a ring port pair as client, manager or automatic manager, with the 200 ms or 500 ms profile.
+- **SNMP.** `SNMP` starts a read-only v1/v2c agent with MIB-II and the LLDP-MIB of the ports.
+- **DCP policy.** `DCPPolicy` can make the device read-only for DCP Set and reset, rate-limit requests and audit every Set. It is not a security class: MAC addresses can be forged.
+
+## DCP on its own
+
+```go
+c, err := dcp.NewClient(mux, dcp.ClientOptions{}) // or ctrl.DCP()
+devices, err := c.Identify(ctx, dcp.FilterAll(), dcp.IdentifyOptions{Wait: 2 * time.Second, ResponseDelay: 10})
+id, err := c.IdentifyName(ctx, "io-rack-1", time.Second) // profinet.ErrNotFound when none answers
+err = c.SetName(ctx, mac, "io-rack-1", true)              // permanent
+err = c.SetIP(ctx, mac, dcp.IPSuite{Addr: ip, Mask: mask, Gateway: gw}, false)
+err = c.Signal(ctx, mac)
+```
+
+Station names are validated before anything is sent. Get and Set are retransmitted, because devices ignore other requesters for 3 seconds after a Get or Set.
+
+## GSDML
+
+```go
+doc, err := gsdml.Parse(f)                // UTF-8 or ISO-8859-1
+err = gsdml.Validate(doc)                 // *gsdml.ValidationError lists each issue
+m, err := gsdml.ToModel(doc, "")          // the first device access point
+out, err := gsdml.FromModel(m, gsdml.GenerateOptions{SupervisorAR: true})
+b, err := gsdml.Marshal(out)
+name := gsdml.FileName(m, "", time.Now()) // GSDML-V2.35-<vendor>-<family>-<date>.xml
+```
+
+`ToModel` turns one device access point into a model: identity, capabilities, the modules fixed or used in slots and the rest as a catalog to plug from, with IO data lengths and parameter records with defaults. Validation follows an independent catalog of the schema for versions 2.25 to 2.45, because the official schemas are licensed to PI members; a file it accepts may still fail PI's checker.
+
+## A virtual network for tests
+
+`vnet` is an in-memory switch with seeded loss, duplication, corruption, reordering, delay and jitter, and `netstack` a small ARP, IPv4 and UDP stack on top. A controller and any number of devices run in one process, with no privileges, which is how the quickstart and the end-to-end and chaos tests work.
+
+## Errors
+
+Every error matches one of the sentinels of the root package with `errors.Is`: `ErrTimeout`, `ErrRejected`, `ErrNotFound`, `ErrUnsupported`, `ErrInvalidState`, `ErrAborted`, `ErrMalformed`, `ErrResourceExhausted`, `ErrLinkDown`, `ErrInvalidConfig` and `ErrClosed`. Typed errors keep the protocol's codes: `*pnio.StatusError` carries the PNIO status, `*dcp.SetError` the refused block, `*rpc.Fault` the RPC status.
+
+```go
+_, err := d.ReadRecord(ctx, controller.Record{Slot: 1, Subslot: 1, Index: 0x10}, 0)
+var se *pnio.StatusError
+switch {
+case errors.As(err, &se) && errors.Is(err, profinet.ErrNotFound):
+	log.Printf("no such record: %s", se.Status) // DE 80 B0 00 (read: access: invalid index)
+case errors.Is(err, profinet.ErrTimeout):
+	log.Print("no answer")
+}
+```
+
+Record calls are never retried behind the application's back, so a write is not repeated by surprise. [ERRORS.md](https://github.com/otfabric/go-profinet/blob/main/ERRORS.md) lists every code.
+
+## Logging and metrics
+
+Every component takes an optional `profinet.Logger`, with adapters for `log/slog` and the standard logger; nothing is logged per frame. `controller.Config.Metrics` and `device.Config.Metrics` take a `profinet.Metrics` with callbacks for state changes, connects, aborts, record accesses with their durations, alarms and retries, and every component keeps counters. See [OBSERVABILITY.md](https://github.com/otfabric/go-profinet/blob/main/OBSERVABILITY.md).
+
+## Example programs
+
+The [examples](https://github.com/otfabric/go-profinet/tree/main/examples) directory has runnable programs, most of them self-contained on the virtual network: `quickstart`, `discovery`, `hello`, `alarms`, `records`, `topology`, `observability`, `mrp` (a ring with a cut cable), `chaos`, `gsdml`, `gsdmlimport` and `gsdx`; `device` and `controller` work on a real interface.
+
+```sh
+go run ./examples/quickstart
+```
+
+## Limitations
+
+- **Conformance class A features as controller and device**, with RT_CLASS_1 and unsynchronized RT_CLASS_2, shared device, multiport devices and MRP (no MRPD, no interconnection). This is feature coverage, not conformance.
+- **Not implemented**: IRT (RT_CLASS_3) and PTCP time synchronization, PROFIsafe, the PROFINET security classes, shared input, MCR, RT over UDP beyond codecs, SNMP writes, SNMPv3 and traps. System redundancy S2 is an experiment that is off by default and not interoperable.
+- **Timing**: cyclic data runs on Go timers on a general-purpose OS. A 1 ms cycle holds on Linux and macOS with occasional outliers that the default watchdog of 10 cycles absorbs; it is not for motion control or safety reaction times.
+- **Platforms**: AF_PACKET is tested in CI and by the interop suite, BPF on macOS in CI as root; Npcap on Windows is cross-compiled but not tested against Npcap.
+- **Not certified by PI**, and no conformance claim. OT Fabric is not a PI member, so GSDML validation uses an independent catalog and GSDX signatures are not verified. A product needs its own vendor ID; examples use 0xF000.
+
+The complete list is in [LIMITATIONS.md](https://github.com/otfabric/go-profinet/blob/main/LIMITATIONS.md), and what PI membership would change in [docs/PI-MEMBERSHIP.md](https://github.com/otfabric/go-profinet/blob/main/docs/PI-MEMBERSHIP.md).
+
+<LinkCard title="profinetctl" description="The command-line tool built on go-profinet." href="/docs/protocols/profinet/cli/" />
