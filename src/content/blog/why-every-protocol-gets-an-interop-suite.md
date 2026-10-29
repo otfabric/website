@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Thirteen interop suites package 65 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Thirteen interop suites package 63 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
 updated: 2026-10-29
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Thirteen OT Fabric interop suites and their 65 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
+  alt: Thirteen OT Fabric interop suites and their 63 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Thirteen suites, 65 reference stacks
+## Thirteen suites, 63 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -29,7 +29,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [OpenADR](/protocols/openadr/) | [openadr-interop](/projects/openadr-interop/) | OpenLEADR (Rust), ElaadNL openadr3-client (Python), plus a specification-driven conformance suite |
 | [IEEE 2030.5](/protocols/ieee-2030-5/) | [ieee20305-interop](/projects/ieee20305-interop/) | ANU Envoy (Python), GridAPPS-D (Go), DER Security py20305 (Python), EPRI client (C) |
 | [EtherNet/IP](/protocols/ethernet-ip/) | [ethernetip-interop](/projects/ethernetip-interop/) | OpENer (C), EIPScanner (C++), pycomm3 (Python), cpppo (Python), libplctag (C), gologix (Go), pylogix (Python), etherip (Java), eip-rs (Rust), node-ethernet-ip (TypeScript), EEIP.NET (C#), loki-os go-ethernet-ip (Go) |
-| [PROFINET](/protocols/profinet/) | [profinet-interop](/projects/profinet-interop/) | rt-labs p-net (C), pnio-rs (Rust), profinet-py (Python), pnio-dcp (Python), and the MRP ring nodes umrp (C) and microchip-ung/mrp (C), with Net-SNMP, Wireshark and scapy checking every capture |
+| [PROFINET](/protocols/profinet/) | [profinet-interop](/projects/profinet-interop/) | rt-labs p-net (C), pnio-rs (Rust), profinet-py (Python), pnio-dcp (Python); the MRP ring nodes umrp and microchip-ung/mrp, Net-SNMP, Wireshark and scapy are test tools, not counted as PROFINET stacks |
 | [Sparkplug B](/profiles/sparkplugb/) (profile over MQTT) | [sparkplugb-interop](/projects/sparkplugb-interop/) | Eclipse Tahu (Java), Eclipse Tahu sparkplug-client (JavaScript), pysparkplug (Python), SparkplugNet (C#), srad (Rust), sparkplughost (Go), on four MQTT brokers |
 
 SunSpec is the exception: it is a register model on top of Modbus, so go-sunspec is tested through its own server, offline decoding and a weekly comparison with the SunSpec Alliance's model definitions, and its Modbus layer is covered by modbus-interop.
