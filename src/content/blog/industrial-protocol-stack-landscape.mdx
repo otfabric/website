@@ -1,6 +1,6 @@
 ---
 title: The industrial protocol stack landscape
-description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CAN bus, CANopen and the Sparkplug B profile? 244 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
+description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX and the Sparkplug B profile? 268 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
 updated: 2026-10-30
 authors: [OT Fabric]
@@ -17,7 +17,7 @@ import Callout from '../../components/Callout.astro';
 
 Nobody connects a plant, a substation or a building with one library. Every integration leans on stacks written by other people: a C library in a gateway, a Python tool on a laptop, a Java server in a SCADA system, a vendor SDK inside a controller. OT Fabric only makes sense as part of that ecosystem, which is why each of our protocols ships with an interop suite that tests against the established implementations.
 
-So we mapped the ecosystem. This post is the research: fourteen protocol families, one application profile on top of MQTT, 244 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
+So we mapped the ecosystem. This post is the research: fifteen protocol families, one application profile on top of MQTT, 268 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
 
 <MapLink />
 
@@ -164,9 +164,17 @@ Above the frames, the databases that give them meaning have their own ecosystem.
 
 The commercial side is where most CANopen devices come from: emotas, port and Embedded Systems Academy's MicroCANopen sell C source stacks, HMS sells a CANopen master for its Ixxat interfaces, and CODESYS controllers run CANopen managers and devices. CANopen FD is the young part: none of the three open references implements CiA 1301 yet. The three run in [canopen-interop](https://github.com/otfabric/canopen-interop), as devices and as masters, with LSS, MPDOs and the CiA 302 boot-up where each stack has them.
 
+## KNX
+
+**Mature, with a strong open field on the IP side.** KNX is the building control standard of switches, dimmers, blinds, heating valves and presence detectors, from homes to offices and hotels. Devices sit mostly on twisted pair; servers, visualizations and gateways reach them through KNXnet/IP interfaces and routers, and that IP side has four mature, independent open stacks. Calimero (Java, GPL-2.0 with the Classpath exception) has the library, a KNXnet/IP server and command-line tools, with KNX IP Secure and Data Secure; its stable release is 2.6, and version 3 has been published as milestones since 2025, with 3.0-M2 in April 2026. knxd (C++, GPL-2.0), the fork of eibd, runs inside many Linux gateways, routes between interfaces and serves tunnelling. xknx (Python, MIT) is the engine of Home Assistant's KNX integration, and KNXUltimate (TypeScript, MIT) of node-red-contrib-knx-ultimate, both with KNX Secure. openHAB's binding embeds Calimero, so it does not count as an engine of its own.
+
+<LandscapeTable protocol="knx" />
+
+Around them, the older libraries have gone quiet: knx-go for Go says it is no longer maintained, KNX.net for .NET and esp-knx-ip for the ESP8266 have not changed in years, and knx.js on npm last released in 2024. The newcomers are in Rust, knx-rs, knust and KNXyz, all from 2026. On the device side, thelsing's knx stack and its OpenKNX fork run on ESP32, RP2040 and other microcontrollers and are programmed with ETS, while certified commercial stacks such as TAPKO's KAIstack sit in most products. KNX Association publishes its own .NET Falcon SDK on NuGet, and had Cascoda build an open-source stack for KNX IoT, which is not KNXnet/IP and is not on the map. Calimero, knxd, xknx and KNXUltimate run in [knx-interop](https://github.com/otfabric/knx-interop), with a raw probe for malformed input.
+
 ## Sparkplug B, an application profile
 
-**A mature reference, a young independent field.** Sparkplug B is not a protocol of its own: it is a profile of MQTT that fixes a topic namespace, a Protobuf payload and session state, so that edge nodes and SCADA hosts from different vendors share one broker. The map keeps it apart from the fourteen protocols for that reason, as the first [application profile](/profiles/sparkplugb/). The specification, Eclipse Sparkplug 3.0.0, is free to implement and was adopted as ISO/IEC 20237:2023.
+**A mature reference, a young independent field.** Sparkplug B is not a protocol of its own: it is a profile of MQTT that fixes a topic namespace, a Protobuf payload and session state, so that edge nodes and SCADA hosts from different vendors share one broker. The map keeps it apart from the fifteen protocols for that reason, as the first [application profile](/profiles/sparkplugb/). The specification, Eclipse Sparkplug 3.0.0, is free to implement and was adopted as ISO/IEC 20237:2023.
 
 <LandscapeTable protocol="sparkplug-b" />
 
@@ -192,6 +200,7 @@ The commercial side looks different from the other protocols: few SDKs, and most
 | PROFINET | Mature market, thin open field | Very established | p-net, profinet-py, pnio-rs, pnio-dcp |
 | CAN bus (transport) | Very mature around Linux SocketCAN; CAN XL emerging | Very established, adapter vendors | Linux SocketCAN, can-utils, python-can, cantools, canmatrix |
 | CANopen (on CAN) | Mature, few complete open stacks; CANopen FD not yet open | Very established | CANopenNode, Lely CANopen, python canopen |
+| KNX | Mature on the IP side; device stacks mostly commercial | Very established, certification-driven | Calimero, knxd, xknx, KNXUltimate |
 | Sparkplug B (profile over MQTT) | Mature reference, young independent field | Established around SCADA and brokers | Eclipse Tahu, SparkplugNet, pysparkplug, srad |
 
 These are judgements about maturity and visibility, not measured conformance, security or quality. Our interop suites are where we test behaviour; this map is where we record who is out there.

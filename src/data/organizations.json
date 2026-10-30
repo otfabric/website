@@ -262,7 +262,8 @@
 			{ "id": "uca-international", "relation": "Runs the IEC 61850 user group and interoperability testing; TC 57 writes the standard." },
 			{ "id": "isa", "relation": "The 62443 security series is published jointly as ISA/IEC 62443." },
 			{ "id": "odva", "relation": "ODVA maintains CIP and EtherNet/IP; IEC 61784-1-2 profiles them as CPF 2." },
-			{ "id": "pi", "relation": "PI maintains PROFINET and PROFIBUS; IEC 61784-2 profiles them as CPF 3." }
+			{ "id": "pi", "relation": "PI maintains PROFINET and PROFIBUS; IEC 61784-2 profiles them as CPF 3." },
+			{ "id": "knx-association", "relation": "KNX Association maintains KNX, published as the international standard ISO/IEC 14543-3." }
 		],
 		"sources": [
 			{ "label": "IEC TC 57", "url": "https://tc57.iec.ch/" },
@@ -815,6 +816,219 @@
 			"The CAN data link itself belongs to ISO 11898, which is sold by ISO; CiA's own work sits around it, with CAN FD and CAN XL recommendations and the CANopen family. An implementer of CAN frames can work from Bosch's public CAN 2.0 and CAN FD documents and the Linux SocketCAN documentation, as go-canbus does.",
 			"CAN XL is where CiA is most active now: its plugfests test the first CAN XL controllers and transceivers. Open stacks are thin, with Linux since 6.2, can-utils, SocketCANSharp and go-canbus among the few that handle CAN XL frames.",
 			"OT Fabric is not a CiA member, implements no CiA specification yet and makes no conformance claim. CANopen is on the go-canbus roadmap, and CiA's conformance test is open to non-members."
+		]
+	},
+	{
+		"id": "knx-association",
+		"name": "KNX Association",
+		"acronym": "KNX",
+		"kind": "industry-alliance",
+		"summary": "Owner of the KNX standard for home and building control: specifications, ETS, product certification through accredited test labs, and training of KNX Partners.",
+		"description": "KNX Association cvba was founded in May 1999 by members of EIBA, EHSA and BCI, the associations behind the European Installation Bus, the European Home Systems and BatiBUS, and is governed by Belgian law. It owns and maintains the KNX standard, published internationally as ISO/IEC 14543-3 and in Europe as EN 50090, with KNXnet/IP as ISO 22510, and develops ETS, the engineering tool every KNX installation is configured with. Its manufacturer members, more than 500, have more than 8,000 certified devices, and more than 75,000 KNX Partners in over 190 countries are trained installers and integrators. Products are certified after testing at KNX accredited test labs.",
+		"website": "https://www.knx.org/",
+		"region": "global",
+		"domains": [
+			"buildings",
+			"energy"
+		],
+		"protocols": [
+			"knx"
+		],
+		"standards": [
+			{
+				"name": "KNX Standard (v3.0), including KNXnet/IP, KNX IP Secure, KNX Data Secure and KNX IoT",
+				"role": "maintains",
+				"note": "Published internationally as ISO/IEC 14543-3 and EN 50090; KNXnet/IP as ISO 22510."
+			},
+			{
+				"name": "KNX product certification",
+				"role": "certifies"
+			},
+			{
+				"name": "Conformity and interworking tests at accredited test labs",
+				"role": "tests"
+			},
+			{
+				"name": "KNX IoT Point API stack",
+				"role": "hosts-oss",
+				"note": "Implemented by Cascoda on behalf of KNX Association."
+			}
+		],
+		"access": {
+			"specifications": {
+				"answer": "partial",
+				"detail": "A public version (3.0.0) of the KNX Specifications is listed at EUR 0.00 in the MyKNX shop; members get the latest version (v3.0.3) in their MyKNX account.",
+				"source": "https://my.knx.org/en/shop/knx-specifications",
+				"verifiedAt": "2026-10-30"
+			},
+			"community": {
+				"answer": "partial",
+				"detail": "KNX Partners are installers and integrators trained in KNX courses: more than 75,000 in over 190 countries. Specification work and development tools are for members.",
+				"source": "https://knx.org/news/knx-association-overview-our-legacy-mission-and-objectives",
+				"verifiedAt": "2026-10-30"
+			},
+			"individualFree": {
+				"answer": "partial",
+				"detail": "A MyKNX account is free and gives the public specifications; membership itself is for companies, by number of staff.",
+				"source": "https://support.knx.org/hc/en-us/articles/360000038460",
+				"verifiedAt": "2026-10-30"
+			},
+			"organizationFree": {
+				"answer": "no",
+				"detail": "The cheapest class, Interested Party, costs EUR 1,000 a year for fewer than 100 staff and EUR 2,000 above; KNX also runs a startup program for companies that cannot afford full membership yet.",
+				"source": "https://support.knx.org/hc/en-us/articles/360000038460",
+				"verifiedAt": "2026-10-30"
+			},
+			"workingGroups": {
+				"answer": "unknown",
+				"detail": "We found no public statement on who can join KNX Association's working groups."
+			},
+			"interopTesting": {
+				"answer": "unknown",
+				"detail": "Accredited test labs check interworking as part of certification; we found no public interoperability events open to non-members."
+			},
+			"certification": {
+				"answer": "no",
+				"detail": "Certification programs are listed as a member benefit; products are tested at one of 16 KNX accredited test labs, which check conformity and interoperability, KNX Secure and the KNX media.",
+				"source": "https://knx.org/manufacturers-hub/become-knx-member",
+				"verifiedAt": "2026-10-30"
+			},
+			"openSource": {
+				"answer": "yes",
+				"detail": "KNX Association had Cascoda implement an open-source KNX IoT Point API stack in C, under Apache-2.0.",
+				"source": "https://knx.org/news/knx-iot-part-7-open-source-knx-iot-stack",
+				"verifiedAt": "2026-10-30"
+			}
+		},
+		"memberships": [
+			{
+				"name": "Shareholder",
+				"audience": "company",
+				"fee": {
+					"kind": "amount",
+					"amount": 2500,
+					"max": 12500,
+					"currency": "EUR",
+					"period": "year"
+				},
+				"eligibility": "Companies, by number of staff, approved by the KNX Executive Board.",
+				"note": "Plus one share of about EUR 1,500, or ten shares above 100 staff, refunded on resignation depending on the year's result. Renews yearly.",
+				"source": "https://support.knx.org/hc/en-us/articles/360000038460"
+			},
+			{
+				"name": "Licensee",
+				"audience": "company",
+				"fee": {
+					"kind": "amount",
+					"amount": 1000,
+					"max": 2000,
+					"currency": "EUR",
+					"period": "year"
+				},
+				"eligibility": "Companies that pay a royalty instead of shares.",
+				"note": "1 % of KNX sales at the end of the year, with a minimum of EUR 1,000 below 100 staff and EUR 2,000 above; five-year term.",
+				"source": "https://support.knx.org/hc/en-us/articles/360000038460"
+			},
+			{
+				"name": "Interested Party",
+				"audience": "company",
+				"fee": {
+					"kind": "amount",
+					"amount": 1000,
+					"max": 2000,
+					"currency": "EUR",
+					"period": "year"
+				},
+				"eligibility": "Companies, without shares: EUR 1,000 below 100 staff, EUR 2,000 above.",
+				"source": "https://support.knx.org/hc/en-us/articles/360000038460"
+			},
+			{
+				"name": "Scientific Partner",
+				"audience": "academic",
+				"fee": {
+					"kind": "amount",
+					"amount": 500,
+					"currency": "EUR",
+					"period": "unstated"
+				},
+				"eligibility": "Universities, technical institutes and research bodies.",
+				"note": "A one-off fee.",
+				"source": "https://support.knx.org/hc/en-us/articles/115001596290-What-are-the-fees-to-KNX-for-becoming-a-KNX-Scientific-partner"
+			}
+		],
+		"programs": [
+			{
+				"kind": "certification",
+				"name": "KNX product certification",
+				"url": "https://knx.org/community/test-labs",
+				"detail": "Devices are tested by KNX accredited test labs, which work independently from manufacturers, for conformity and interoperability, including interworking, KNX Secure, RF and the lower layers of the KNX media; 16 labs are listed.",
+				"openToNonMembers": "no",
+				"source": "https://knx.org/manufacturers-hub/become-knx-member"
+			}
+		],
+		"openSource": [
+			{
+				"name": "KNX IoT Point API stack",
+				"url": "https://github.com/knx-iot/knx-iot-stack"
+			}
+		],
+		"documents": [
+			{
+				"label": "KNX Specifications in the MyKNX shop",
+				"url": "https://my.knx.org/en/shop/knx-specifications"
+			},
+			{
+				"label": "How to apply for KNX membership",
+				"url": "https://support.knx.org/hc/en-us/articles/360000038460"
+			}
+		],
+		"relatedProjects": [
+			"go-knx",
+			"knxctl",
+			"knx-interop"
+		],
+		"related": [
+			{
+				"id": "iec",
+				"relation": "KNX is published as the international standard ISO/IEC 14543-3."
+			}
+		],
+		"sources": [
+			{
+				"label": "KNX Association: legacy, mission and objectives",
+				"url": "https://knx.org/news/knx-association-overview-our-legacy-mission-and-objectives"
+			},
+			{
+				"label": "How to apply for KNX membership",
+				"url": "https://support.knx.org/hc/en-us/articles/360000038460"
+			},
+			{
+				"label": "Become a KNX member",
+				"url": "https://knx.org/manufacturers-hub/become-knx-member"
+			},
+			{
+				"label": "KNX Specifications",
+				"url": "https://my.knx.org/en/shop/knx-specifications"
+			},
+			{
+				"label": "Accredited test labs",
+				"url": "https://knx.org/community/test-labs"
+			},
+			{
+				"label": "Fees for KNX Scientific partners",
+				"url": "https://support.knx.org/hc/en-us/articles/115001596290-What-are-the-fees-to-KNX-for-becoming-a-KNX-Scientific-partner"
+			},
+			{
+				"label": "The open-source KNX IoT stack",
+				"url": "https://knx.org/news/knx-iot-part-7-open-source-knx-iot-stack"
+			}
+		],
+		"verifiedAt": "2026-10-30",
+		"detail": true,
+		"insights": [
+			"On the IP side KNX has an unusually strong open field: four mature, independent stacks, Calimero, knxd, xknx and KNXUltimate, carry KNXnet/IP into Home Assistant, openHAB, Node-RED and many gateways, and the public specification is free with a MyKNX account.",
+			"Devices are a different story. Certification and a manufacturer code need membership, which sets the open device stacks, thelsing's knx and its OpenKNX fork, apart from certified commercial stacks such as TAPKO's; open libraries mostly reach the bus through certified IP interfaces and routers.",
+			"go-knx implements KNXnet/IP and KNX Secure from public sources, has no manufacturer code of its own, is not KNX certified and makes no conformance claim; it uses the word KNX descriptively, as a registered trademark of KNX Association cvba."
 		]
 	},
 	{

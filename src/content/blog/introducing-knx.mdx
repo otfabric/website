@@ -1,0 +1,89 @@
+---
+title: 'KNX joins OT Fabric: go-knx, knxctl and four independent reference stacks'
+description: KNX is the building control standard of switches, dimmers, blinds and heating valves. go-knx implements KNX over KNXnet/IP under MIT, with tunnelling, routing, a KNXnet/IP server, KNX IP Secure and Data Secure, knxctl puts it on the command line passive by default, and knx-interop tests it against Calimero, knxd, xknx and KNXUltimate.
+date: 2026-10-30
+authors: [OT Fabric]
+tags: [announcement, knx, buildings, interop]
+featured: true
+cover:
+  alt: go-knx in the middle, connected to the reference stacks Calimero, knxd, xknx and KNXUltimate on the left and to what is tested both ways on the right, discovery and tunnelling, routing and group values, device management and busmonitor, and KNX IP Secure and Data Secure, all in one Docker network. 423 results pass, none fail.
+  image: ../../assets/blog/knx-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+Walk into an office, a hotel or a modern home in Europe and press a light switch: there is a good chance it does not switch the light. It sends a telegram on a two-wire bus, and the actuator that owns the light acts on it. That bus is **KNX**, the standard for home and building control that KNX Association maintains and more than 500 manufacturers build for. It runs lighting, blinds, heating per room, presence detection and metering, and through **KNXnet/IP** it meets the IP world: building management systems, Home Assistant and openHAB, visualizations and energy gateways.
+
+Today KNX joins OT Fabric, with the same three pieces as every protocol: a library, a command-line tool and an interoperability suite.
+
+## Why KNX
+
+- **Buildings are where energy is used.** Heating, cooling, shading and lighting decide most of a building's consumption, and in a KNX building they are all group objects on one bus. Getting those values into an energy platform, or setting a heating mode from one, means talking KNX.
+- **It sits next to the other building protocols.** A plant room often has [BACnet](/protocols/bacnet/) controllers, [Modbus](/protocols/modbus/) meters and a KNX line for the rooms, and a gateway between them is everyday work.
+- **The open field is strong, but not in Go.** Calimero, knxd, xknx and KNXUltimate are mature and independent. Go had knx-go, which is no longer maintained, and nothing with KNX Secure or a server.
+
+## go-knx
+
+[go-knx](/projects/go-knx/) is a native Go implementation of KNX over KNXnet/IP, with no dependencies and no cgo:
+
+- **The frames**: KNXnet/IP with every standard DIB, cEMI, TPCI and APCI, and 209 datapoint subtypes from DPT 1 to 251, with strict codecs that never panic and are fuzzed.
+- **Discovery** with multicast, directed and extended search, and description.
+- **Tunnelling** over UDP, with sequence handling, retransmission, the `L_Data.con` of every write, heartbeats, NAT and reconnection, and over TCP with tunnelling v2 address requests and feature services.
+- **Routing** with flow control, a rate limit and echo suppression, and **group communication** over either: write, read, respond and subscriptions.
+- **Device management** of interface object properties, and **busmonitor** connections with TP1 frame decoding.
+- **A KNXnet/IP server** for several tunnelling clients, with discovery, busmonitor, device management, routing and virtual devices whose group objects store writes and answer reads by their flags. ETS-style tools, Home Assistant through xknx, Calimero and knxd connect to it like to a real IP interface.
+- **KNX IP Secure** sessions over TCP and UDP and secure routing, in client and server; **KNX Data Secure** for group communication, including the surrogate role through which Calimero sends secured telegrams; and **ETS keyrings**, read and written.
+
+go-knx is written from the public KNX material. The public version of the KNX Standard is free with a MyKNX account; the application notes behind KNX Secure were not available to the project, so KNX IP Secure and Data Secure are implemented from public sources, xknx's MIT implementation and KNX's keyring article, and verified against xknx and Calimero instead. The repository says exactly which parts of the standard each package follows, and what it decided where the public sources are silent. What it does not do yet is listed too: no TP1, RF or powerline media directly, no ETS project import, and no point-to-point Data Secure beyond the surrogate service.
+
+## knxctl
+
+[knxctl](/projects/knxctl/) puts go-knx on the command line, for commissioning, diagnosis and scripts:
+
+```sh
+# Find the KNXnet/IP interfaces, then check one
+knxctl discover
+knxctl diagnose 192.168.1.10
+
+# Watch every group telegram, decoding two groups
+knxctl monitor -g 192.168.1.10 --map 1/2/4=9.001 --map 1/2/3=1.001
+
+# Read a temperature, switch a light
+knxctl group read 1/2/4 --dpt 9.001 -g 192.168.1.10
+knxctl group write 1/2/3 on -g 192.168.1.10
+
+# The same over KNX IP Secure, with the keys of an ETS keyring
+knxctl group read 1/2/4 --gateway 192.168.1.10 --keyring project.knxkeys
+
+# A simulated KNXnet/IP interface to try it all against
+knxctl serve --object 1/2/3:1.001=off --object 1/2/4:9.001:CRT=21.5
+```
+
+Group telegrams switch real loads, so knxctl is passive by default. Discovery talks only to the IP interface, monitoring only listens, `dpt` and `decode` work offline, and only the four `group` commands that write, respond, answer or read send telegrams, after they validate the address, type and value. Output is text, a table or JSON with stable exit codes, and secrets come from the keyring or the environment, never from the output. The [knxctl guide](/docs/protocols/knx/cli/) walks through it.
+
+## Tested against independent stacks
+
+[knx-interop](/projects/knx-interop/) packages four independent KNX engines as containers behind one contract, pinned by version and digest: **Calimero** 3.0-M1 (Java) as a server and as tools, **knxd** 0.14.73 (C++), **xknx** 4.0.0 (Python) and **KNXUltimate** 6.3.1 (TypeScript), with a raw probe that sends malformed datagrams. It holds third-party stacks only and depends on nothing of ours. Among themselves they give 215 passes and no failures, with five known differences recorded with their evidence.
+
+go-knx then joins the matrix with an adapter built from its own sources: every client against every server and every routing peer against every other, in one Docker network, with multicast discovery and routing, twelve datapoint values decoded octet for octet, the negative probe, TCP, device management, busmonitor and KNX Secure. **423 results pass, none fail.** Its server answers Calimero tools, knxd, xknx and KNXUltimate, also through NAT; its client works against Calimero's and knxd's servers; routing works both ways with all four; secure sessions work with xknx and Calimero clients and against Calimero's secure server; and secure routing and Data Secure work both ways with both, keyrings written by go-knx included.
+
+The suite found defects in go-knx before it shipped, all fixed: route back endpoints for clients behind NAT, a default routing source address that knxd would drop, and extended search parameters numbered one too high, which xknx's describe exposed. It also found problems in the references, reported upstream: knxd 0.14.73's tunnel client never sends its disconnect request, which filled Calimero server's tunnelling slots ([knxd#667](https://github.com/knxd/knxd/issues/667)), and KNXUltimate's description request names a port it does not listen on ([KNXUltimate#117](https://github.com/Supergiovane/KNXUltimate/issues/117)).
+
+<Callout type="note" title="Interoperability, not certification">
+go-knx v0.4.2, knxctl v0.5.1 and knx-interop v0.5.0 are pre-1.0 and interoperability tested. go-knx is not KNX certified and makes no conformance claim; certification needs KNX membership and an accredited test lab. KNX Secure is implemented from public sources and checked against xknx and Calimero, not against KNX's test procedures, and nothing has been tested with a physical KNX IP interface yet. KNX is a registered trademark of KNX Association cvba, and these projects are independent of it. What is and is not covered is listed in [Testing and interop](/docs/protocols/knx/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the KNX projects are built by people and AI agents together. With a standard whose security notes were not available, the work is careful reading of what is, and then testing against the stacks that thousands of buildings already run: every disagreement is traced to a frame, attributed and written down. The fuzz targets and the interop matrix are part of every release, and they are public, so you can judge the result yourself.
+
+## Who else implements KNX
+
+The [ecosystem map](/ecosystem/implementations/?protocol=knx) now has KNX: 24 implementations, from Calimero, knxd, xknx and KNXUltimate to Home Assistant, openHAB and Node-RED on top of them, the Rust newcomers knx-rs, knust and KNXyz, the device stacks of thelsing and OpenKNX, older libraries for Go, .NET, Node.js and the ESP8266, and KNX Association's Falcon SDK and TAPKO's KAIstack, with language, licence, roles and latest release.
+
+<MapLink protocol="knx" title="Explore KNX on the ecosystem map" />
+
+What KNX Association publishes, how certification works and what membership costs is in [its entry](/ecosystem/organizations/knx-association/) in the standards and alliances directory.
+
+Start with the [KNX overview](/docs/protocols/knx/), or `go get github.com/otfabric/go-knx`.

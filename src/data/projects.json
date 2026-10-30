@@ -336,6 +336,29 @@
 		]
 	},
 	{
+		"id": "go-knx",
+		"name": "go-knx",
+		"repo": "go-knx",
+		"category": "protocol",
+		"standards": [
+			"knx"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-knx",
+		"description": "KNX over KNXnet/IP: frames, cEMI and 209 datapoint subtypes, discovery, tunnelling over UDP and TCP, routing, group communication, device management, busmonitor and a KNXnet/IP server with virtual devices, with KNX IP Secure, KNX Data Secure and ETS keyrings. Pure Go, no dependencies, no cgo.",
+		"icon": "go-knx",
+		"highlights": [
+			"Frames: KNXnet/IP header, HPAI, every standard DIB, CRI and CRD, core, device management, tunnelling, routing and secure bodies; cEMI L_Data, L_Busmon, L_Raw and property services; TPCI and APCI. Strict codecs that never panic, fuzzed.",
+			"Datapoint types 1 to 14, 16 to 22, 26, 29, 232, 242 and 251: 209 subtypes with ranges, units and text formatting and parsing.",
+			"Discovery with multicast, directed and extended search and description; a tunnelling client over UDP with sequence handling, retransmission, L_Data.con, heartbeats, NAT and reconnection, and over TCP with tunnelling v2 address requests and feature services.",
+			"Routing with ROUTING_BUSY flow control, rate limit and echo suppression; group write, read, respond and subscriptions over a tunnel or routing; device management of interface object properties; busmonitor with TP1 frame decoding.",
+			"A KNXnet/IP server for several tunnelling clients over UDP and TCP, with discovery, busmonitor, device management, routing and virtual devices whose group objects store writes and answer reads by their flags. ETS-style tools, Home Assistant through xknx, Calimero and knxd connect to it like to an IP interface.",
+			"KNX IP Secure sessions over TCP and UDP and secure routing with timer synchronisation, in client and server; KNX Data Secure for group communication with S-A_Sync and the surrogate role; ETS keyrings read and written. Implemented from public sources and verified against xknx and Calimero.",
+			"Interop tested in both directions against Calimero 3.0-M1, knxd 0.14.73, xknx 4.0.0 and KNXUltimate 6.3.1, with a raw probe for malformed input: the full knx-interop matrix passes 423 results, none fail.",
+			"Not KNX certified and no conformance claim; not yet tested with a physical KNX IP interface. No TP1, RF or powerline media directly, no ETS project import, no point-to-point Data Secure beyond the surrogate service."
+		]
+	},
+	{
 		"id": "modbusctl",
 		"name": "modbusctl",
 		"repo": "modbusctl",
@@ -555,6 +578,18 @@
 		"status": "available",
 		"description": "Monitor and decode CANopen traffic, read and write object dictionaries over SDO or USDO, manage nodes with NMT, assign node-IDs with LSS, boot a network as a CiA 302 manager, configure PDOs and MPDOs, work with EDS, DCF and concise DCF files, drive CiA 402 axes and simulate devices. Read-only by default; changes on a real bus need --yes.",
 		"icon": "go-canopen"
+	},
+	{
+		"id": "knxctl",
+		"name": "knxctl",
+		"repo": "knxctl",
+		"category": "cli",
+		"standards": [
+			"knx"
+		],
+		"status": "available",
+		"description": "Discover and diagnose KNXnet/IP interfaces, monitor group telegrams, read and switch group objects, watch routing and busmonitor traffic, read interface properties, use KNX Secure with ETS keyrings, encode and decode datapoint types and frames, and run a simulated KNXnet/IP server. Passive by default.",
+		"icon": "go-knx"
 	},
 	{
 		"id": "sparkplugbctl",
@@ -835,6 +870,18 @@
 		"status": "available",
 		"description": "Three independent CANopen stacks in containers behind one contract, as devices and masters: CANopenNode, Lely CANopen and python canopen, with EDS checkers, LSS, MPDOs and the CiA 302 boot-up, on Linux virtual CAN.",
 		"icon": "go-canopen"
+	},
+	{
+		"id": "knx-interop",
+		"name": "knx-interop",
+		"repo": "knx-interop",
+		"category": "interop",
+		"standards": [
+			"knx"
+		],
+		"status": "available",
+		"description": "Four independent KNX implementations in containers behind one contract: Calimero server and tools, knxd, xknx and KNXUltimate, with a raw probe for negative tests, across tunnelling, routing, datapoint types, TCP, device management and KNX Secure.",
+		"icon": "go-knx"
 	},
 	{
 		"id": "sparkplugb-interop",

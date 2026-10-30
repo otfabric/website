@@ -1,0 +1,108 @@
+---
+title: Testing and interop
+description: Test KNXnet/IP code against Calimero, knxd, xknx and KNXUltimate with knx-interop, and see what go-knx and knxctl have and have not been validated against, including routing, TCP tunnelling, device management, busmonitor, KNX IP Secure and KNX Data Secure.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Two kinds of OT Fabric repositories share the testing of KNX. [knx-interop](/projects/knx-interop/) owns the reference implementations: adapters around independent KNX stacks behind one container contract, pinned by version and digest, with a matrix that runs them against each other. It holds third-party stacks only and depends on no system under test. [go-knx](/projects/go-knx/) is a consumer: it builds its own adapter from its own sources, runs knx-interop's matrix with it, and runs a second suite of its own against the same images from the host.
+
+<Aside type="note" title="Interoperability, not conformance">
+go-knx is written from the public KNX material and implements KNX IP Secure and Data Secure from public sources. Agreement with four independent stacks is strong evidence, but they can share a misreading, and it is not KNX certification, which needs KNX membership and an accredited test lab. go-knx is not KNX certified and claims no conformance.
+</Aside>
+
+## knx-interop
+
+knx-interop v0.5.0 (container contract 1.3) packages four independent KNX engines and a probe:
+
+| Adapter | Implementation | Version | Roles |
+|---|---|---|---|
+| `calimero-server` | Calimero KNXnet/IP server (Java), emulated subnet | 3.0-M1, official image pinned by digest | server |
+| `calimero-tools` | Calimero tools (Java), the same engine as the server | 3.0-M1, official image pinned by digest | client |
+| `knxd` | knxd and knxtool (C++), dummy bus | 0.14.73-1, Debian trixie | server, client |
+| `xknx` | xknx (Python), the library behind Home Assistant's KNX integration | 4.0.0 | client |
+| `knxultimate` | KNXUltimate (TypeScript), the library behind node-red-contrib-knx-ultimate | 6.3.1 | client |
+| `probe` | Hand-built datagrams, Python standard library | 1.0 | negative tests |
+
+How each was chosen, and the rejected candidates, is in [docs/CANDIDATES.md](https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md): the openHAB KNX binding was rejected because it embeds Calimero, and knx-go, knx-rs and knust are on a watch list. The Calimero and knxd images contain GPL software and are built when needed, never published.
+
+| Suite | What it tests |
+|---|---|
+| tunnel | Multicast discovery, description, connect and disconnect, a group write seen by an independent observer, a group read answered by an independent responder |
+| dpt | Twelve values of DPT 1, 5, 7, 9, 12, 13, 14 and 16, written by one implementation and decoded octet for octet by another, against fixtures recomputed from the encoding rules |
+| negative | The probe against each server: malformed headers, lengths, HPAIs and CRIs, unknown services, status codes, duplicate and out-of-order sequence numbers, roll-over, channel exhaustion |
+| routing | A routing indication sent by one implementation and received by another on `224.0.23.12:3671` |
+| v2 | Group write and read over TCP, device management, a busmonitor that sees another client's write |
+| secure | KNX IP Secure tunnelling over TCP and UDP with a bound user address, Data Secure through the tunnel, secure device management, refusal of plain connections; secure routing and Data Secure between secure routers; each server's secure routing. All with a public test profile, never with keys of a real installation |
+
+Every result is `pass`, `fail`, `unsupported`, `not-tested` or `known-difference`, and each records the implementations and versions. Among themselves the third-party stacks give **215 pass, 5 known differences, 39 unsupported and 0 fail** (2026-10-30). The known differences:
+
+- KNXUltimate 6.3.1 announces port 3671 in its description request while it listens on another port, so servers that answer to the address it gives are not heard ([KNXUltimate#117](https://github.com/Supergiovane/KNXUltimate/issues/117)).
+- calimero-server 3.0-M1 stops answering for about 10 seconds after a 3-octet datagram or a connect request with an empty CRI; fixed on Calimero's master branch, not released yet.
+- Calimero tools send Data Secure group telegrams only through a surrogate device, which none of the third-party stacks implements.
+
+Two failures between third-party stacks were traced to their cause: knxd 0.14.73's tunnel client never sends its disconnect request, which filled Calimero server's tunnelling slots ([knxd#667](https://github.com/knxd/knxd/issues/667)), and a probe check ran during Calimero server's restart. Both are handled in the harness.
+
+## go-knx
+
+go-knx is tested two ways against the same images:
+
+- **The knx-interop matrix** with go-knx's own adapter (`make interop-matrix`), built from the library's sources: every client against every server and every routing peer against every other, in one Docker network, with multicast discovery and routing, the DPT vectors, the negative suite and KNX Secure. **423 pass, 0 fail** (2026-10-30, knx-interop v0.5.0).
+- **Its own interop suite** (`make interop`): go-knx used as a library from the host, through published UDP ports with route back (NAT) endpoints.
+
+| Peer (version) | go-knx as client | go-knx as server | Routing with go-knx |
+|---|---|---|---|
+| Calimero server 3.0-M1 | Discovery, description, connect, confirmed write, read, inbound telegrams, 12 DPT vectors, TCP, device management | | |
+| Calimero tools 3.0-M1 | | Discovery, description, connect, write, read, 12 DPT vectors, also through NAT; TCP, property read, busmonitor | Both directions |
+| knxd 0.14.73 | Discovery, description, connect, confirmed write, read, inbound telegrams, 12 DPT vectors, busmonitor | Connect, write, read, 12 DPT vectors, also through NAT | Both directions |
+| xknx 4.0.0 | Observer and responder in every scenario | Discovery, description, connect, write, read, 12 DPT vectors, also through NAT; TCP | Both directions |
+| KNXUltimate 6.3.1 | | Discovery, connect, write, read, 12 DPT vectors; description is KNXUltimate's known difference | Both directions |
+| knx-interop probe | | 23 of 23 negative checks pass | |
+
+### KNX Secure
+
+| Scenario | xknx 4.0.0 | Calimero 3.0-M1 |
+|---|---|---|
+| Secure tunnelling, peer client to the go-knx server | Pass | Tools: pass |
+| Secure tunnelling, go-knx client to the peer server, wrong password and plain connection refused | No server | Server: pass |
+| Secure device management, go-knx to the peer server | | Server: pass |
+| Secure sessions over UDP, both ways | TCP only | Tools and server: pass |
+| Secure routing both ways, with timer synchronisation | Pass | Tools: pass |
+| Data Secure group write, go-knx to the peer | Pass | Tools: pass, decrypted |
+| Data Secure group write, peer to go-knx | Pass | Tools: pass, through go-knx as the surrogate |
+| Keyring written by go-knx, loaded by the peer | Pass | Pass |
+
+The suite found defects in go-knx before its first release, all fixed: route back data endpoints for NAT clients, a missing default routing source address (routers drop `0.0.0`), ACK status handling and multicast write deadlines. Later it found extended search parameter types that were off by one, which xknx's describe exposed once the server announced KNXnet/IP core v2.
+
+## knxctl
+
+knxctl's tests run its commands against go-knx's KNXnet/IP server in the same process, and its commands sit on the library that runs the matrix above. It has no interop suite of its own against the knx-interop images.
+
+## Run it yourself
+
+<Steps>
+
+1. Clone knx-interop and build the images: `make images` (Docker and Python 3; Docker Desktop on macOS works).
+2. Run the matrix of the third-party stacks: `make matrix`. Reports go to `reports/latest.json` and `reports/latest.md`.
+3. Add your own implementation as an external adapter that follows the [container contract](https://github.com/otfabric/knx-interop/blob/main/docs/CONTAINER_CONTRACT.md): `make matrix ADAPTER=sut=my/image:tag GATE=sut`. It joins every role its capabilities declare.
+4. For go-knx, run `make interop-images interop-matrix` in the go-knx repository.
+
+</Steps>
+
+## Not validated yet
+
+| Area | Status |
+|---|---|
+| Real hardware | No physical KNX IP interface or router has been tested; everything runs between containers |
+| KNX media | TP1, RF and powerline are not implemented directly, only reached through IP interfaces |
+| Conformance | Not KNX certified; KNX Secure is checked against xknx and Calimero, not against the application notes' test procedures |
+| Data Secure | Point-to-point security beyond the surrogate service is not implemented |
+| Other stacks | knxd, KNXUltimate and xknx as servers, and knxd and KNXUltimate in the secure suite, are not covered: their adapters or stacks do not offer it |
+
+<CardGrid>
+  <LinkCard title="go-knx interoperability" description="The full results in the repository." href="https://github.com/otfabric/go-knx/blob/main/INTEROPERABILITY.md" />
+  <LinkCard title="knx-interop matrix" description="The third-party stacks among themselves." href="https://github.com/otfabric/knx-interop/blob/main/docs/INTEROPERABILITY.md" />
+</CardGrid>

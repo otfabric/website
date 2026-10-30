@@ -1,0 +1,198 @@
+---
+title: Go library
+description: Use go-knx to talk KNX over KNXnet/IP in Go, with discovery, tunnelling over UDP and TCP, routing, group communication and datapoint types, device management, busmonitor, a KNXnet/IP server with virtual devices, KNX IP Secure, KNX Data Secure, ETS keyrings, errors and observability.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+[go-knx](/projects/go-knx/) is a native Go implementation of KNX over KNXnet/IP: frames, cEMI, datapoint types, discovery, a tunnelling client, routing, group communication and a KNXnet/IP server with virtual devices, with KNX IP Secure and Data Secure. It is pure Go with no dependencies outside the standard library and no cgo, and runs on embedded Linux (ARM, ARM64), servers, macOS and Windows. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-knx). This page follows v0.4.2.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-knx
+```
+
+Go 1.23 or later. The packages:
+
+| Package | Purpose |
+|---|---|
+| `knx` | Individual and group addresses, priorities, errors, `Logger`, `Metrics`, `State` |
+| `knxnetip` | KNXnet/IP frames: header, HPAI, DIBs, CRI and CRD, core, device management, tunnelling, routing and secure bodies |
+| `cemi` | cEMI frames: `L_Data`, `L_Busmon`, `L_Raw`, `M_PropRead` and `M_PropWrite`, function properties, reset; TP1 frames |
+| `apdu` | TPCI and APCI |
+| `dpt` | Datapoint types: 209 subtypes of DPT 1 to 14, 16 to 22, 26, 29, 232, 242 and 251, with ranges, units and text |
+| `discovery` | Search and description |
+| `tunnel` | Tunnelling client over UDP and TCP, busmonitor, feature services |
+| `routing` | Routing on the multicast group |
+| `client` | Group communication over a tunnel or routing |
+| `devmgmt` | Device management client: interface object properties |
+| `server`, `device` | KNXnet/IP server, virtual devices and group objects |
+| `secure`, `datasecure`, `keyring` | KNX IP Secure, KNX Data Secure, ETS keyrings |
+
+The codecs (`knxnetip`, `cemi`, `apdu`, `dpt`) are pure functions over byte slices: no I/O, no goroutines, strict decoding that never panics, and the KNXnet/IP encoder refuses to produce a frame its own decoder would reject. They are fuzzed.
+
+## Addresses
+
+```go
+ga := knx.MustParseGroupAddress("1/2/3")       // three levels; "1/515" and "2563" parse too
+ia := knx.MustParseIndividualAddress("1.1.10")
+ga2, err := knx.ParseGroupAddress(userInput)    // errors.Is(err, knx.ErrInvalidAddress)
+```
+
+## Discovery
+
+```go
+servers, err := discovery.Search(ctx, discovery.WithTimeout(3*time.Second))
+for _, s := range servers {
+	d := s.Device()
+	fmt.Println(s.Endpoint(), d.Name, d.Address)
+}
+
+dibs, err := discovery.Describe(ctx, "192.168.1.10")
+```
+
+`discovery.WithInterface` chooses the network interface for the multicast search, `discovery.WithUnicast` searches one server directly, and `discovery.WithExtended` sends an extended search (KNXnet/IP core v2) with parameters such as programming mode, MAC address or service.
+
+## Group communication through a tunnel
+
+`client.DialTunnel` opens a tunnelling connection to a KNXnet/IP interface and wraps it in a `client.Client`:
+
+```go
+c, err := client.DialTunnel(ctx, "192.168.1.10", nil)
+if err != nil {
+	return err
+}
+defer c.Close()
+
+// Write: a bool for DPT 1, other types by name.
+err = c.GroupWrite(ctx, knx.MustParseGroupAddress("1/2/3"), true)
+err = c.GroupWrite(ctx, knx.MustParseGroupAddress("1/2/4"), 21.5, client.WithDPT("9.001"))
+
+// Read: no response is guaranteed, so a read can end in knx.ErrTimeout.
+r, err := c.GroupRead(ctx, knx.MustParseGroupAddress("1/2/5"), client.WithDPT("9.001"))
+fmt.Println(r.Source, r.Decoded)
+
+// Subscribe to some or all groups.
+sub := c.Subscribe(64, knx.MustParseGroupAddress("1/2/3"))
+for t := range sub.C() {
+	fmt.Println(t.Source, t.Group, t.Service, t.Value.Data)
+}
+```
+
+The tunnel handles sequence numbers, acknowledgements and retransmission, waits for the `L_Data.con` of every write (`tunnel.WithConfirm`), and sends heartbeats (`tunnel.WithHeartbeat`). The tunnel options choose the rest:
+
+| Option | |
+|---|---|
+| `tunnel.WithNAT(true)` | Route back HPAIs, for clients behind NAT such as Docker port mappings |
+| `tunnel.WithReconnect(min, max)` | Reconnect with backoff after a lost connection |
+| `tunnel.WithTCP()` | KNXnet/IP over TCP (tunnelling v2): no acknowledgements, one client per TCP connection |
+| `tunnel.WithIndividualAddress(a)` | Ask for a specific tunnelling address (tunnelling v2) |
+| `tunnel.WithLayer(knxnetip.TunnelBusmonitor)` | A busmonitor connection that receives every raw frame (`L_Busmon.ind`) |
+| `tunnel.WithDeviceManagement()` | A device management connection, used by `devmgmt` |
+| `tunnel.WithStateHandler(f)` | Called on every state change: connecting, connected, reconnecting, closed |
+
+`client.WithSource` sets the source address of telegrams, and `client.WithPriority` their priority.
+
+## Routing
+
+```go
+c, err := client.ListenRouting(ctx, []routing.Option{routing.WithInterface("eth0")},
+	client.WithSource(knx.MustParseIndividualAddress("1.1.250")))
+```
+
+Routing joins `224.0.23.12:3671` (`routing.WithGroup` for another), handles `ROUTING_BUSY` flow control, limits the send rate (`routing.WithRate`) and suppresses its own echoes. Give it a source address of your line: some routers, such as knxd, drop telegrams from `0.0.0`, so go-knx uses `15.15.255` when none is set.
+
+## Datapoint types
+
+```go
+t := dpt.MustLookup("9.001")
+b, _ := t.Encode(21.5)    // 0C 33
+v, _ := t.Decode(b)       // 21.5
+fmt.Println(t.Format(v))  // 21.5 °C
+```
+
+Every type knows its range and unit, formats and parses text, and refuses values outside its range with `knx.ErrInvalidValue`. DPT 9's "invalid data" value `0x7FFF` is `dpt.ErrFloat16Invalid`.
+
+## Device management
+
+```go
+c, err := devmgmt.Dial(ctx, "192.168.1.10")
+// Read the serial number: interface object 0 (device), property 11.
+```
+
+`devmgmt` reads and writes the interface object properties of a KNXnet/IP interface or router itself (`M_PropRead`, `M_PropWrite`) over UDP or TCP. It manages the interface, not the devices on the bus.
+
+## A KNXnet/IP server with virtual devices
+
+```go
+s, _ := server.New(server.WithName("simulator"),
+	server.WithTunnelAddresses(knx.MustParseIndividualAddress("1.1.10"), knx.MustParseIndividualAddress("1.1.11")))
+dev := device.New("living room", knx.MustParseIndividualAddress("1.1.1"))
+light, _ := device.NewGroupObject("light", "1.001", "CRWU", "1/2/3")
+temp, _ := device.NewGroupObject("temperature", "9.001", "CRT", "1/2/4")
+_ = temp.Set(21.5)
+dev.Add(light, temp)
+s.AddDevice(dev)
+err := s.Serve(ctx) // until ctx is done
+```
+
+The server answers discovery and description, accepts tunnelling over UDP and TCP from several clients (one per tunnelling address), offers busmonitor and device management connections, and routes when `server.WithRouting(true)` is set. Virtual devices store written values and answer reads according to their group object flags; `device.OnChange` reports writes. KNXnet/IP clients connect to it like to a real IP interface: ETS-style tools, Home Assistant through xknx, Calimero and knxd. It is a KNXnet/IP server with an application-level device model, not an emulation of a TP line.
+
+<Aside type="note" title="Serial numbers">
+go-knx has no KNX manufacturer code. The server's serial number starts with the placeholder `0x00FA`; a product built on it sets its own with `server.WithSerial`.
+</Aside>
+
+## KNX IP Secure
+
+A secure tunnelling session needs the user's credentials, from a keyring or given directly:
+
+```go
+kr, err := keyring.LoadFile("project.knxkeys", password)
+creds, err := kr.Tunnels(knx.MustParseIndividualAddress("1.1.0"))[0].Credentials()
+
+c, err := client.DialTunnel(ctx, "192.168.1.10", []tunnel.Option{tunnel.WithSecure(creds)})
+```
+
+Secure sessions run over TCP by default and over UDP with `tunnel.WithUDP()`. The client verifies the server's device authentication when it has the code. On the server, `server.WithSecure` binds secure users to tunnelling addresses and allows secure device management for user 1, the management user, only; plain connections to a secure server are refused with `E_CONNECTION_TYPE`. Secure routing uses the backbone key with timer synchronisation: `routing.WithSecure(key, latency)` in a client, `server.WithSecureRouting` in the server, and `kr.BackboneKey()` from a keyring.
+
+## KNX Data Secure
+
+```go
+table, err := kr.DataSecure(seq) // group keys and senders from the keyring
+c, err := client.DialTunnel(ctx, "192.168.1.10", nil, client.WithDataSecure(table))
+```
+
+With a Data Secure table the client secures outgoing telegrams to groups that have a key and opens incoming ones, with per-sender sequence numbers, and answers `S-A_Sync`. With a tool key for its own address it also acts as the **surrogate** through which tools such as Calimero send secured group telegrams. General point-to-point Data Secure, beyond the surrogate service, is not implemented.
+
+## Keyrings
+
+`keyring.Load` and `LoadFile` verify the signature of an ETS keyring and decrypt it, with lookups for interfaces, tunnelling users, devices, group keys, senders and the backbone key. `Keyring.Encode` writes keyrings, which go-knx uses for test keyrings that xknx and Calimero load.
+
+## Errors
+
+Every error matches a sentinel of the root package with `errors.Is`:
+
+| Sentinel | Meaning |
+|---|---|
+| `knx.ErrInvalidAddress`, `knx.ErrInvalidValue`, `knx.ErrInvalidOption` | Bad input, refused before anything is sent |
+| `knx.ErrMalformed`, `knx.ErrUnsupported` | A frame that cannot be decoded, or a service, version or type not implemented |
+| `knx.ErrTimeout` | No answer in time: connect, description, group read |
+| `knx.ErrConnectionLost`, `knx.ErrClosed` | The tunnel is gone, or was closed |
+| `knx.ErrRejected`, `knx.ErrBusy` | The peer refused with a KNXnet/IP status code, or a limit was reached |
+| `knx.ErrNotConfirmed` | The `L_Data.con` reported an error or did not arrive |
+
+`knxnetip.StatusOf(err)` returns the KNXnet/IP status code behind an `ErrRejected`. The full list is in [ERRORS.md](https://github.com/otfabric/go-knx/blob/main/ERRORS.md).
+
+## Logging and metrics
+
+`WithLogger` and `WithMetrics` take small interfaces from the root package, with no dependency on a logging or metrics library; every queue is bounded and drops with a metric when full. See [OBSERVABILITY.md](https://github.com/otfabric/go-knx/blob/main/OBSERVABILITY.md).
+
+## What is not implemented
+
+KNX TP1, RF and powerline media directly (go-knx reaches them through IP interfaces and routers), ETS project import, point-to-point Data Secure beyond the surrogate service, asking peers by `S-A_Sync` automatically, and KNX IoT. Status and roadmap: [IMPLEMENTATION-STATUS.md](https://github.com/otfabric/go-knx/blob/main/docs/IMPLEMENTATION-STATUS.md).
+
+<LinkCard title="knxctl" description="The same library on the command line." href="/docs/protocols/knx/cli/" />

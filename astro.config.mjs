@@ -99,6 +99,7 @@ export default defineConfig({
             { label: 'PROFINET', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/profinet' } }] },
             { label: 'CAN bus', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/can-bus' } }] },
             { label: 'CANopen', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/canopen' } }] },
+            { label: 'KNX', collapsed: true, items: [{ autogenerate: { directory: 'docs/protocols/knx' } }] },
           ],
         },
         {
