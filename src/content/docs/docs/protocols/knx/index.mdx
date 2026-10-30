@@ -1,0 +1,82 @@
+---
+title: KNX
+description: How KNX works (individual and group addresses, group objects and datapoint types, the KNX media and line topology, KNXnet/IP discovery, tunnelling and routing, cEMI frames, device management, KNX IP Secure and KNX Data Secure) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+KNX is the standard for home and building control that KNX Association maintains: ISO/IEC 14543-3 and EN 50090 for the system, and ISO 22510 for KNXnet/IP, its transport over IP. This page explains how KNX works, as far as it matters for using [go-knx](/projects/go-knx/) and [knxctl](/projects/knxctl/). Both work on KNXnet/IP, the side of KNX that IP networks, servers and gateways see.
+
+## Devices, lines and addresses
+
+A KNX installation is a set of small devices: push-buttons, switch and dimming actuators, blind actuators, heating valves, presence detectors, thermostats, meters and weather stations. Most of them sit on **twisted pair (TP1)**, a two-wire bus at 9600 bit/s that also powers them; KNX RF (radio) and powerline exist too. Devices are grouped in **lines**, lines in **areas**, and couplers or IP routers join them.
+
+Every device has an **individual address** that says where it sits: `area.line.device`, such as `1.1.10`. ETS, KNX Association's engineering tool, assigns it during commissioning, and it is used for programming and management, not for daily operation.
+
+## Group communication
+
+Daily operation is **group communication**. A device has **group objects**: a push-button has a switch object, a dimmer has switching, dimming and brightness objects, a thermostat has a measured temperature. ETS links each group object to one or more **group addresses**, written in three levels (`1/2/3`, main, middle and sub group), two levels (`1/515`) or as a number. When a push-button is pressed it sends a telegram to its group address, and every device with a group object on that address acts on it.
+
+| Service | What it does |
+|---|---|
+| `A_GroupValue_Write` | Sets a value: the push-button writes "on" to `1/2/3`, the actuator switches |
+| `A_GroupValue_Read` | Asks for the current value of a group |
+| `A_GroupValue_Response` | Answers a read; only a group object with the read flag answers, so a read can go unanswered |
+
+Group objects carry **flags**: communication (C), read (R), write (W), transmit (T), update (U) and read on init (I). They decide which telegrams a group object sends, accepts and answers.
+
+### Datapoint types
+
+A telegram carries bytes; the **datapoint type** (DPT) says what they mean. The main number names the format and the sub number the meaning: 1.001 is a switch (one bit), 5.001 a percentage (0 to 100 % in one octet), 9.001 a temperature in °C (a two-octet float), 14 a four-octet float, 16 a 14-character string, 20.102 an HVAC mode. Values of six bits or less fit inside the application header itself. The DPT is not in the telegram, so a tool that reads a group must be told its type; in a project it comes from ETS.
+
+## KNXnet/IP
+
+KNXnet/IP connects KNX to IP networks. Everything runs on **port 3671**, mostly over UDP:
+
+| Part | What it does |
+|---|---|
+| **Discovery** | A client multicasts a search request to `224.0.23.12:3671`; IP interfaces and routers answer with their name, individual address, serial number, MAC and the services they offer. An extended search (core v2) filters by programming mode, MAC or service, and a description request asks one server directly |
+| **Tunnelling** | A client opens a point-to-point connection to an IP interface and gets a **tunnelling address** of its own on the line. Every telegram is acknowledged with a sequence number, and the interface confirms that it reached the bus with an `L_Data.con`; heartbeats keep the connection alive. Tunnelling v2 runs over TCP, without acknowledgements, and adds feature services |
+| **Routing** | IP routers send every telegram as a routing indication to the multicast group `224.0.23.12:3671`, to which every other router and client listens: no connection, no acknowledgement, with `ROUTING_BUSY` for flow control |
+| **Device management** | A connection to the interface itself, to read and write its own interface object properties, such as its serial number or friendly name |
+| **Busmonitor** | A tunnelling connection that sees every raw frame on the line, including acknowledgements, for diagnosis |
+
+The telegrams inside tunnelling and routing frames are **cEMI** frames, the common external message interface: an `L_Data` frame with a message code, source, destination, priority and hop count, around the **TPCI** and **APCI** headers of the transport and application layers.
+
+### Behind NAT
+
+A tunnelling client tells the server where to send its frames, in an HPAI. Behind NAT, such as Docker port mappings, the address the client knows is not the one the server sees, so the client sends an empty HPAI ("route back") and the server answers to where the frames came from. go-knx calls this `tunnel.WithNAT(true)` and knxctl `--nat`.
+
+## Security
+
+KNXnet/IP on its own has **no authentication and no encryption**: anyone on the network can read every telegram and send their own. KNX added two layers:
+
+- **KNX IP Secure** protects the IP side. A secure tunnelling session starts with an X25519 key exchange and authenticates a user with a password; every frame then travels in a `SECURE_WRAPPER` with AES-CCM and replay protection. Secure routing encrypts routing indications with the backbone key and keeps a shared timer that rejects old frames.
+- **KNX Data Secure** protects the application layer, end to end from device to device on any medium. A secured group telegram (`S-A_Data`) is authenticated and usually encrypted with the group's key, with a sequence number per sender; `S-A_Sync` synchronizes those sequence numbers.
+
+ETS holds the keys and passwords of a secure project and exports them as a **keyring** (`.knxkeys`), an XML file encrypted with a password. go-knx and knxctl read keyrings, and go-knx writes test keyrings.
+
+<Aside type="caution" title="Isolate KNX IP networks">
+A plain KNXnet/IP network trusts everyone on it, and group telegrams switch real loads: lights, blinds, heating and access control. Keep KNX IP traffic on its own network, and use KNX IP Secure and Data Secure where the installation supports them. See the [go-knx security notes](https://github.com/otfabric/go-knx/blob/main/SECURITY.md).
+</Aside>
+
+## Specifications and certification
+
+KNX Association publishes the KNX Standard; a public version (3.0.0) is free through a MyKNX account, and members get the latest versions and the application notes. KNXnet/IP is also ISO 22510:2019. Certification of KNX products needs KNX membership and testing at an accredited test lab. go-knx is written from the public material, implements KNX IP Secure and Data Secure from public sources (xknx's MIT implementation and KNX's keyring article), and is verified against independent implementations instead. It is **not KNX certified** and claims no conformance; see [CONFORMANCE](https://github.com/otfabric/go-knx/blob/main/docs/standards/CONFORMANCE.md) and [LICENSING](https://github.com/otfabric/go-knx/blob/main/docs/standards/LICENSING.md) in the repository. KNX is a registered trademark of KNX Association cvba.
+
+## OT Fabric projects
+
+| Project | Role |
+|---|---|
+| [go-knx](/projects/go-knx/) | The Go library: frames, cEMI, datapoint types, discovery, tunnelling and routing clients, group communication, a KNXnet/IP server with virtual devices, KNX IP Secure, Data Secure and keyrings. |
+| [knxctl](/projects/knxctl/) | The command-line tool on go-knx: discover, describe, monitor, read, write, decode and simulate. |
+| [knx-interop](/projects/knx-interop/) | Calimero, knxd, xknx and KNXUltimate in containers, to test any KNXnet/IP implementation against. |
+
+<CardGrid>
+  <LinkCard title="Go library" description="Tunnelling, routing, group communication, the server, KNX Secure and keyrings in go-knx." href="/docs/protocols/knx/library/" />
+  <LinkCard title="knxctl" description="Discover, monitor, read, write, decode and simulate from the command line." href="/docs/protocols/knx/cli/" />
+  <LinkCard title="Testing and interop" description="knx-interop and what has been validated against Calimero, knxd, xknx and KNXUltimate." href="/docs/protocols/knx/testing/" />
+</CardGrid>

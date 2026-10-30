@@ -1,0 +1,165 @@
+---
+title: knxctl
+description: Installing and using knxctl, the KNX command-line tool to discover KNXnet/IP interfaces, monitor group telegrams, read and write group objects, watch routing and busmonitor traffic, read interface properties, use KNX IP Secure and Data Secure with ETS keyrings, encode and decode datapoint types and frames, and run a simulated KNXnet/IP server, passive by default.
+sidebar:
+  label: knxctl
+  order: 2
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+[knxctl](https://github.com/otfabric/knxctl) is a command-line tool for KNX over KNXnet/IP, built on [go-knx](/docs/protocols/knx/library/). It finds gateways and inspects them, monitors group telegrams, reads and switches group objects, encodes and decodes datapoint types and frames, and runs a simulated KNXnet/IP server. It is one static binary, and output is text, a table or JSON with stable exit codes. This page follows v0.5.1; the full reference is [docs/cli.md](https://github.com/otfabric/knxctl/blob/main/docs/cli.md).
+
+## Install
+
+<Tabs>
+  <TabItem label="Release binary">
+    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/knxctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
+  </TabItem>
+  <TabItem label="Go">
+    ```sh
+    go install github.com/otfabric/knxctl@latest
+    ```
+  </TabItem>
+</Tabs>
+
+Shell completion: `knxctl completion bash|zsh|fish|powershell`.
+
+## Passive by default
+
+knxctl sends nothing onto the KNX network unless the command says so:
+
+- `discover`, `describe`, `diagnose` and `tunnel connect` talk only to the KNXnet/IP server; `discover` sends one search request, no scan.
+- `monitor`, `group listen`, `routing monitor` and `busmonitor` only listen.
+- `property read` reads the interface's own properties; nothing reaches the bus.
+- `dpt` and `decode` work offline.
+- Only `group write`, `group respond`, `group answer` and `group read` send telegrams, and they validate the address, datapoint type and value before they connect: a command that exits 2 or 3 has sent nothing.
+
+<Aside type="caution">
+Writing to group addresses switches real loads: lights, blinds, heating, access control. Try commands against `knxctl serve` first.
+</Aside>
+
+## Find and inspect gateways
+
+```sh
+knxctl discover                              # multicast search on 224.0.23.12:3671, 5 s window
+knxctl discover --interface eth0 --timeout 2s
+knxctl discover --extended --format json     # extended search (core v2)
+knxctl discover --unicast 192.168.1.10       # directed search of one server
+knxctl describe 192.168.1.10                 # services, tunnelling slots, addresses
+knxctl diagnose 192.168.1.10                 # search, description, tunnelling, heartbeat; exits 1 when a check fails
+knxctl tunnel connect 192.168.1.10 --hold 1m --heartbeat 30s
+```
+
+`discover` filters with `--programming-mode`, `--mac` and `--service`. Every command that tunnels takes `--tcp` for KNXnet/IP over TCP where the server supports it, and `--nat` behind NAT.
+
+## Monitor group telegrams
+
+```sh
+knxctl monitor -g 192.168.1.10
+knxctl monitor -g 192.168.1.10 --map 1/2/4=9.001 --map 1/2/3=1.001
+knxctl group listen 1/2/3 1/2/4 --map 1/2/4=9.001 -g 192.168.1.10
+knxctl monitor -g 192.168.1.10 --count 100 --format json > telegrams.jsonl
+knxctl monitor -g 192.168.1.10 --duration 10m --dpt 9.001
+```
+
+A telegram does not say its datapoint type, so `--map group=dpt` decodes a group with a type and `--dpt` decodes all others; telegrams that do not fit are shown as undecodable. Streams end at `--count`, `--duration` or Ctrl-C, with exit 0.
+
+## Read and write group objects
+
+```sh
+knxctl group read 1/2/4 --dpt 9.001 -g 192.168.1.10
+# 2026-10-29T10:00:00.12Z 1.1.1     -> 1/2/4     response 0C33 (21.5 °C)
+knxctl group read 1/2/4 --all 2s -g 192.168.1.10           # every device that answers
+
+knxctl group write 1/2/3 on -g 192.168.1.10                 # DPT 1: on/off, true/false, 1/0
+knxctl group write 1/2/5 50 --dpt 5.001 -g 192.168.1.10     # 50 % brightness
+knxctl group write 1/2/7 comfort --dpt 20.102 -g 192.168.1.10
+knxctl group write 1/2/8 --raw 0C33 -g 192.168.1.10         # octets as given
+knxctl group write --dpt 9.001 -g 192.168.1.10 -- 1/2/6 -5.5   # "--" before a negative value
+
+knxctl group answer 1/2/4 21.5 --dpt 9.001 -g 192.168.1.10 --count 1   # answer reads like a device with the R flag
+```
+
+A response is not guaranteed: a read exits 5 when no device answers within `--timeout`. `KNXCTL_GATEWAY` sets a default `--gateway`, so `knxctl group read 1/2/4` needs no flag.
+
+## Routing, busmonitor and device management
+
+```sh
+knxctl routing monitor --interface eth0
+knxctl monitor --routing --count 10 --format json
+knxctl group write 1/2/3 on --routing --source 1.1.250 --interface eth0
+
+knxctl busmonitor 192.168.1.10 --count 20                         # raw TP1 frames, decoded
+knxctl property read 192.168.1.10 device 11                       # serial number
+knxctl property read 192.168.1.10 knxnetip 76 --count 15 --tcp    # friendly name
+knxctl tunnel feature get 192.168.1.10 max-apdu
+```
+
+Routing joins `224.0.23.12:3671` and sends with the source address `--source`; set it to an address of your line. A busmonitor connection is exclusive on an interface: it cannot open while a tunnel is connected, and blocks tunnels while it is open.
+
+## KNX Secure
+
+knxctl speaks KNX IP Secure (secure tunnelling and secure routing) and KNX Data Secure (secured group communication), with the keys of an ETS keyring or given directly:
+
+```sh
+export KNXCTL_KEYRING=project.knxkeys KNXCTL_KEYRING_PASSWORD=...
+knxctl keyring show project.knxkeys                     # users, groups, devices, no secrets
+knxctl group read 1/2/4 --gateway 192.168.1.10          # secure tunnel as the keyring's first user
+knxctl group write 1/2/3 on --gateway 192.168.1.10 --user-id 3
+knxctl group write 1/2/3 on --gateway 192.168.1.10 --user-id 2 --udp   # the secure session over UDP
+knxctl monitor --routing                                # secure routing with the backbone key
+```
+
+Secured telegrams are marked `[secure]` (`"secure": true` in JSON). Secrets come from the keyring or from environment variables (`KNXCTL_USER_PASSWORD`, `KNXCTL_DEVICE_PASSWORD`, `KNXCTL_BACKBONE_KEY`), and knxctl never prints keys or passwords unless `keyring show --secrets` asks for them. With a tool key for its own address, knxctl answers `S-A_Sync` and acts as the surrogate through which tools such as Calimero send secured group telegrams. KNX Secure in go-knx follows public sources and is verified against xknx and Calimero, not certified.
+
+## Datapoint types and frames, offline
+
+```sh
+knxctl dpt list --main 9 --format table
+knxctl dpt describe 20.102
+knxctl dpt encode 10.001 'Mon 12:30:00'
+knxctl dpt decode 9.001 0C33
+knxctl decode 061004200015040100001100bce0110a0a03010081
+knxctl decode --cemi 2900bce0110a0a03010081 --format json
+```
+
+## A simulated KNXnet/IP server
+
+```sh
+# Terminal 1: a gateway with a switch and a temperature sensor
+knxctl serve --listen 127.0.0.1:3671 --no-discovery \
+  --object 1/2/3:1.001:CRWU=off --object 1/2/4:9.001:CRT=21.5 --tunnels 1.1.10,1.1.11
+
+# Terminal 2
+knxctl group read 1/2/4 --dpt 9.001 -g 127.0.0.1
+knxctl group write 1/2/3 on -g 127.0.0.1
+
+# A secure simulator from a keyring, or with secure routing
+knxctl serve --keyring project.knxkeys --keyring-host 1.1.0
+knxctl serve --routing --keyring project.knxkeys --keyring-host 1.1.0
+```
+
+Larger setups come from a JSON file (`--config site.json`): devices, group objects with flags and initial values, tunnelling addresses. ETS, Home Assistant, xknx and other KNXnet/IP clients connect to it as to an IP interface; [docs/serve.md](https://github.com/otfabric/knxctl/blob/main/docs/serve.md) says what is and is not emulated.
+
+## Output and exit codes
+
+`--format text|table|json` (or `KNXCTL_FORMAT`). Errors are one `error:` line on stderr, or one JSON error document with `--format json`.
+
+| Code | Meaning |
+|---|---|
+| 0 | Success; streams also end with 0 at `--count`, `--duration` or Ctrl-C |
+| 1 | Findings: `diagnose` had a failing check |
+| 2, 3 | Usage error or invalid input: nothing was sent |
+| 4 | Transport: a socket failed or the tunnel was lost |
+| 5 | Timeout: no answer to a connect or description, or no response to a read |
+| 6 | Protocol: a malformed frame, an unconfirmed telegram, a KNX Secure failure |
+| 7 | Permission refused by the operating system |
+| 8 | Not supported by the server or go-knx |
+| 9 | Rejected by the server: no free tunnelling slot, busy |
+| 10 | Output or internal error |
+| 130 | Interrupted before a result |
+
+The full table and the JSON shapes: [exitcodes.md](https://github.com/otfabric/knxctl/blob/main/docs/exitcodes.md) and [json-output.md](https://github.com/otfabric/knxctl/blob/main/docs/json-output.md).
+
+<LinkCard title="Testing and interop" description="What knxctl and go-knx have been validated against." href="/docs/protocols/knx/testing/" />

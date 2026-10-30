@@ -136,6 +136,15 @@
    "summary": "The higher-layer protocol of industrial machines, drives, lifts, medical and mobile equipment, standardized by CAN in Automation. Three open stacks carry the field, CANopenNode, Lely CANopen and python canopen; most others are young or cover one role, and none of those three implements CANopen FD yet."
   },
   {
+   "id": "knx",
+   "name": "KNX",
+   "standard": "KNX Standard v3.0 (ISO/IEC 14543-3, EN 50090); KNXnet/IP: ISO 22510:2019",
+   "focus": "Home and building control: group communication with datapoint types over twisted pair, radio and IP, KNXnet/IP discovery, tunnelling and routing, KNX IP Secure and KNX Data Secure",
+   "maturity": "Mature, with established open stacks",
+   "commercial": "Very established",
+   "summary": "The building control standard of switches, dimmers, blinds, heating and presence detectors, maintained by KNX Association. The open field is unusually strong on the IP side: Calimero, knxd, xknx behind Home Assistant and KNXUltimate behind Node-RED are mature and independent, and thelsing's knx stack with its OpenKNX fork runs on devices. Rust newcomers are arriving; most commercial work is in certified device stacks and KNX Association's own tools."
+  },
+  {
    "id": "sparkplug-b",
    "kind": "profile",
    "name": "Sparkplug B",
@@ -9030,6 +9039,935 @@
     "https://blog.opto22.com/optoblog/sparkplug-3-compatibility-brings-standardized-interoperability"
    ],
    "verified": "2026-10-27"
+  },
+  {
+   "id": "otfabric-go-knx",
+   "name": "go-knx",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-knx",
+   "repo": "otfabric/go-knx",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-30",
+   "release": {
+    "version": "v0.4.2",
+    "date": "2026-10-30",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-knx/@v/v0.4.2.info"
+   },
+   "roles": [
+    "client",
+    "server",
+    "router"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "TCP tunnelling",
+    "Busmonitor",
+    "ETS keyrings"
+   ],
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-knx",
+   "notes": "KNX over KNXnet/IP in pure Go: frames, cEMI and 209 datapoint subtypes, discovery, tunnelling over UDP and TCP, routing, group communication, device management, busmonitor and a KNXnet/IP server with virtual devices, with KNX IP Secure, Data Secure and ETS keyrings from public sources. Tested in both directions against Calimero, knxd, xknx and KNXUltimate; not KNX certified, not yet tested on a physical interface.",
+   "sources": [
+    "https://github.com/otfabric/go-knx",
+    "https://proxy.golang.org/github.com/otfabric/go-knx/@latest"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "calimero",
+   "name": "Calimero",
+   "type": "independent",
+   "languages": [
+    "Java"
+   ],
+   "license": "GPL-2.0 with Classpath exception",
+   "url": "https://github.com/calimero-project/calimero-core",
+   "repo": "calimero-project/calimero-core",
+   "stars": 164,
+   "forks": 72,
+   "lastCommit": "2026-10-27",
+   "release": {
+    "version": "2.6",
+    "date": "2025-06-26",
+    "source": "Maven Central",
+    "url": "https://repo1.maven.org/maven2/com/github/calimero/calimero-core/2.6/"
+   },
+   "prerelease": {
+    "version": "3.0-M2",
+    "date": "2026-04-04",
+    "source": "Maven Central",
+    "url": "https://repo1.maven.org/maven2/io/calimero/calimero-core/3.0-M2/"
+   },
+   "roles": [
+    "client",
+    "server",
+    "router"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "TCP tunnelling",
+    "USB and FT1.2 interfaces",
+    "Busmonitor"
+   ],
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "package": "https://central.sonatype.com/artifact/io.calimero/calimero-core",
+   "notes": "The Java KNX library behind the Calimero server and tools: KNXnet/IP tunnelling over UDP and TCP, routing, discovery, device management, busmonitor, KNX IP Secure and Data Secure, and KNX USB, KNX RF USB and FT1.2 serial interfaces. Version 3 moves to the io.calimero group and Java modules; its milestones are published, the last stable release is 2.6. The openHAB KNX binding embeds it.",
+   "sources": [
+    "https://github.com/calimero-project/calimero-core",
+    "https://repo1.maven.org/maven2/com/github/calimero/calimero-core/maven-metadata.xml",
+    "https://repo1.maven.org/maven2/io/calimero/calimero-core/maven-metadata.xml",
+    "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "calimero-server",
+   "name": "Calimero server",
+   "type": "derived",
+   "languages": [
+    "Java"
+   ],
+   "license": "GPL-2.0 with Classpath exception",
+   "url": "https://github.com/calimero-project/calimero-server",
+   "repo": "calimero-project/calimero-server",
+   "stars": 76,
+   "forks": 20,
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "v2.6",
+    "date": "2025-06-16",
+    "source": "git tag",
+    "url": "https://github.com/calimero-project/calimero-server/tree/v2.6"
+   },
+   "prerelease": {
+    "version": "v3.0-M2",
+    "date": "2026-04-04",
+    "source": "git tag",
+    "url": "https://github.com/calimero-project/calimero-server/tree/v3.0-M2"
+   },
+   "roles": [
+    "server",
+    "router"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "TCP tunnelling",
+    "Device management",
+    "Emulated subnet"
+   ],
+   "upstream": [
+    "calimero"
+   ],
+   "relation": "KNXnet/IP server on Calimero",
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "notes": "A KNXnet/IP server on Calimero: discovery including extended search, tunnelling v1 and v2 over UDP and TCP, routing, busmonitor, device management and KNX IP Secure, in front of a KNX interface or an emulated subnet. The official container image is at 3.0-M1; knx-interop runs it as a server.",
+   "sources": [
+    "https://github.com/calimero-project/calimero-server",
+    "https://github.com/otfabric/knx-interop/blob/main/versions.yaml"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "calimero-tools",
+   "name": "Calimero tools",
+   "type": "derived",
+   "languages": [
+    "Java"
+   ],
+   "license": "GPL-2.0 with Classpath exception",
+   "url": "https://github.com/calimero-project/calimero-tools",
+   "repo": "calimero-project/calimero-tools",
+   "stars": 38,
+   "forks": 20,
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "v2.6",
+    "date": "2025-06-23",
+    "source": "git tag",
+    "url": "https://github.com/calimero-project/calimero-tools/tree/v2.6"
+   },
+   "prerelease": {
+    "version": "v3.0-M2",
+    "date": "2026-04-04",
+    "source": "git tag",
+    "url": "https://github.com/calimero-project/calimero-tools/tree/v3.0-M2"
+   },
+   "roles": [
+    "client",
+    "tools"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "JSON output"
+   ],
+   "upstream": [
+    "calimero"
+   ],
+   "relation": "Command-line tools on Calimero",
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "notes": "Command-line tools on Calimero to discover, describe, read, write, monitor and manage KNX installations, with secure tunnelling and Data Secure from ETS keyrings. Sends Data Secure group telegrams through a surrogate device. knx-interop runs the official 3.0-M1 image as a client.",
+   "sources": [
+    "https://github.com/calimero-project/calimero-tools",
+    "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knxd",
+   "name": "knxd",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "GPL-2.0",
+   "url": "https://github.com/knxd/knxd",
+   "repo": "knxd/knxd",
+   "stars": 608,
+   "forks": 218,
+   "lastCommit": "2026-10-18",
+   "release": {
+    "version": "0.14.75",
+    "date": "2026-01-08",
+    "source": "git tag",
+    "url": "https://github.com/knxd/knxd/tree/0.14.75"
+   },
+   "roles": [
+    "server",
+    "router",
+    "client"
+   ],
+   "capabilities": [
+    "TP-UART and USB interfaces",
+    "Tunnelling server",
+    "Busmonitor"
+   ],
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "notes": "The KNX daemon of many Linux gateways and home servers, successor of eibd: it connects TP-UART, USB and IP interfaces, routes between them, serves KNXnet/IP tunnelling and routing, and offers its own protocol to clients such as knxtool, linknx and knxdclient. No KNX Secure. Debian trixie ships 0.14.73, which knx-interop uses.",
+   "sources": [
+    "https://github.com/knxd/knxd",
+    "https://github.com/otfabric/knx-interop/blob/main/versions.yaml"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "xknx",
+   "name": "xknx",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/XKNX/xknx",
+   "repo": "XKNX/xknx",
+   "stars": 349,
+   "forks": 124,
+   "lastCommit": "2026-10-25",
+   "release": {
+    "version": "4.0.0",
+    "date": "2026-10-15",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/xknx/4.0.0/"
+   },
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "TCP tunnelling",
+    "asyncio"
+   ],
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/xknx/",
+   "notes": "An asynchronous KNX library for Python: tunnelling over UDP and TCP with route back, routing, discovery including extended search, device abstractions, datapoint types, KNX IP Secure and Data Secure with ETS keyrings. The engine of Home Assistant's KNX integration. No server role.",
+   "sources": [
+    "https://github.com/XKNX/xknx",
+    "https://pypi.org/pypi/xknx/json"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knxultimate",
+   "name": "KNXUltimate",
+   "type": "independent",
+   "languages": [
+    "TypeScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/Supergiovane/KNXUltimate",
+   "repo": "Supergiovane/KNXUltimate",
+   "stars": 42,
+   "forks": 15,
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "6.3.1",
+    "date": "2026-10-28",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/knxultimate/v/6.3.1"
+   },
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "TCP tunnelling"
+   ],
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "package": "https://www.npmjs.com/package/knxultimate",
+   "notes": "A KNX library for Node.js: tunnelling over UDP and TCP, routing, discovery and description, datapoint types, KNX IP Secure and Data Secure, and a minimal tunnelling server without discovery. The engine of node-red-contrib-knx-ultimate.",
+   "sources": [
+    "https://github.com/Supergiovane/KNXUltimate",
+    "https://registry.npmjs.org/knxultimate",
+    "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "ha-knx",
+   "name": "Home Assistant KNX",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://www.home-assistant.io/integrations/knx",
+   "repo": "home-assistant/core",
+   "stars": null,
+   "release": {
+    "version": "2026.10.4",
+    "date": "2026-10-24",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/homeassistant/2026.10.4/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "ETS project import"
+   ],
+   "upstream": [
+    "xknx"
+   ],
+   "relation": "Home Assistant integration on xknx",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/homeassistant/",
+   "notes": "Home Assistant's KNX integration on xknx 4.0.0 and xknxproject: lights, covers, climate, sensors and the rest as entities, a group monitor, ETS project import and KNX Secure keyrings. Released with Home Assistant; its stars would be those of all of Home Assistant, so none are shown.",
+   "sources": [
+    "https://www.home-assistant.io/integrations/knx",
+    "https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/knx/manifest.json",
+    "https://pypi.org/pypi/homeassistant/json"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "openhab-knx",
+   "name": "openHAB KNX binding",
+   "type": "derived",
+   "languages": [
+    "Java"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://www.openhab.org/addons/bindings/knx/",
+   "repo": "openhab/openhab-addons",
+   "stars": null,
+   "release": {
+    "version": "5.2.3",
+    "date": "2026-10-09",
+    "source": "git tag",
+    "url": "https://github.com/openhab/openhab-addons/tree/5.2.3"
+   },
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "Calimero engine"
+   ],
+   "upstream": [
+    "calimero"
+   ],
+   "relation": "openHAB binding embedding calimero-core",
+   "maintenance": "active",
+   "notes": "openHAB's KNX binding, released with the openHAB add-ons, connects openHAB to KNX installations. It embeds calimero-core 3.0-M2, which is why knx-interop does not count it as an independent stack. Stars would be those of all openHAB add-ons, so none are shown.",
+   "sources": [
+    "https://www.openhab.org/addons/bindings/knx/",
+    "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "node-red-knx-ultimate",
+   "name": "node-red-contrib-knx-ultimate",
+   "type": "derived",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/Supergiovane/node-red-contrib-knx-ultimate",
+   "repo": "Supergiovane/node-red-contrib-knx-ultimate",
+   "stars": 178,
+   "forks": 35,
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "8.3.1",
+    "date": "2026-10-28",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/node-red-contrib-knx-ultimate/v/8.3.1"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "ETS import"
+   ],
+   "upstream": [
+    "knxultimate"
+   ],
+   "relation": "Node-RED nodes on KNXUltimate",
+   "maintenance": "active",
+   "package": "https://www.npmjs.com/package/node-red-contrib-knx-ultimate",
+   "notes": "KNX nodes for Node-RED by the author of KNXUltimate, on its engine: KNX/IP and KNX Secure communication, ETS project import, routing, diagnostics, virtual devices and automation utilities.",
+   "sources": [
+    "https://github.com/Supergiovane/node-red-contrib-knx-ultimate",
+    "https://registry.npmjs.org/node-red-contrib-knx-ultimate"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knx-go",
+   "name": "knx-go",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/vapourismo/knx-go",
+   "repo": "vapourismo/knx-go",
+   "stars": 113,
+   "forks": 67,
+   "lastCommit": "2026-08-13",
+   "release": null,
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "Datapoint types"
+   ],
+   "maintenance": "discontinued",
+   "package": "https://pkg.go.dev/github.com/vapourismo/knx-go",
+   "notes": "The first widely used KNX library for Go: tunnelling and routing clients, group communication and datapoint types. It has never been tagged, so Go resolves it as a pseudo-version, and its README now says the repository is no longer maintained.",
+   "sources": [
+    "https://github.com/vapourismo/knx-go",
+    "https://proxy.golang.org/github.com/vapourismo/knx-go/@latest"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knx-js",
+   "name": "knx.js",
+   "type": "independent",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/ekarak/knx",
+   "repo": "ekarak/knx",
+   "stars": 15,
+   "forks": 9,
+   "lastCommit": "2024-09-10",
+   "release": {
+    "version": "2.5.4",
+    "date": "2024-03-30",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/knx/v/2.5.4"
+   },
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "Datapoint types"
+   ],
+   "maintenance": "slowing",
+   "package": "https://www.npmjs.com/package/knx",
+   "notes": "The original KNXnet/IP client for Node.js, published as the knx package: tunnelling and routing, group reads and writes, and datapoint types. No KNX Secure.",
+   "sources": [
+    "https://github.com/ekarak/knx",
+    "https://registry.npmjs.org/knx"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knx-rs",
+   "name": "knx-rs",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/metaneutrons/knx-rs",
+   "repo": "metaneutrons/knx-rs",
+   "stars": 6,
+   "forks": 3,
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "0.12.0",
+    "date": "2026-10-29",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/knx-rs-core/0.12.0"
+   },
+   "roles": [
+    "client",
+    "router",
+    "device"
+   ],
+   "capabilities": [
+    "no_std",
+    "Tunnelling server",
+    "ETS programmable",
+    ".knxprod builder"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/knx-rs-core",
+   "notes": "A platform-independent KNX stack in Rust as a set of crates: no_std core types, cEMI and datapoint types; async KNXnet/IP tunnelling, routing, discovery and a device server on tokio; a device stack with group objects and ETS programming; a TP-UART data link in progress; and a .knxprod builder. Started in 2026.",
+   "sources": [
+    "https://github.com/metaneutrons/knx-rs",
+    "https://crates.io/api/v1/crates/knx-rs-core"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knust",
+   "name": "knust",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/dphi/knust",
+   "repo": "dphi/knust",
+   "stars": 0,
+   "forks": 0,
+   "lastCommit": "2026-10-24",
+   "release": {
+    "version": "0.2.0",
+    "date": "2026-07-19",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/knust/0.2.0"
+   },
+   "roles": [
+    "client",
+    "router",
+    "server"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure (experimental)",
+    "async (tokio)"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/knust",
+   "notes": "An asynchronous KNXnet/IP library for Rust: tunnelling and routing, gateway discovery, datapoint types, an optional tunnelling server, KNX IP Secure verified against hardware and KNX Data Secure marked experimental, with ETS CSV and keyring import.",
+   "sources": [
+    "https://github.com/dphi/knust",
+    "https://crates.io/api/v1/crates/knust"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knxyz",
+   "name": "KNXyz",
+   "type": "independent",
+   "languages": [
+    "Rust",
+    "Python",
+    "TypeScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/goznauk/KNXyz",
+   "repo": "goznauk/KNXyz",
+   "stars": 3,
+   "forks": 0,
+   "lastCommit": "2026-08-24",
+   "release": {
+    "version": "0.0.8",
+    "date": "2026-08-24",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/knxyz/0.0.8"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    ".knxproj import"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/knxyz",
+   "notes": "KNXnet/IP clients and ETS project loading from one Rust core, published for Rust, Python (PyPI) and Node.js (npm). Its README says it is under active development and that published packages may not match the source.",
+   "sources": [
+    "https://github.com/goznauk/KNXyz",
+    "https://crates.io/api/v1/crates/knxyz",
+    "https://pypi.org/pypi/knxyz/json"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "thelsing-knx",
+   "name": "knx (thelsing)",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/thelsing/knx",
+   "repo": "thelsing/knx",
+   "stars": 350,
+   "forks": 113,
+   "lastCommit": "2025-11-04",
+   "release": {
+    "version": "1.4",
+    "date": "2023-12-06",
+    "source": "git tag",
+    "url": "https://github.com/thelsing/knx/tree/1.4"
+   },
+   "roles": [
+    "device"
+   ],
+   "capabilities": [
+    "ETS programmable",
+    "TP, RF and IP",
+    "Arduino and ESP-IDF"
+   ],
+   "maintenance": "active",
+   "notes": "A KNX device stack for microcontrollers (ESP8266, ESP32, SAMD21, RP2040, STM32, CC1310 and others) and Linux that implements most of System B and is configured with ETS, using .knxprod files generated with Kaenx-Creator. The base of the OpenKNX devices.",
+   "sources": [
+    "https://github.com/thelsing/knx"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "openknx-knx",
+   "name": "OpenKNX knx",
+   "type": "derived",
+   "languages": [
+    "C++"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/OpenKNX/knx",
+   "repo": "OpenKNX/knx",
+   "stars": 32,
+   "forks": 9,
+   "lastCommit": "2026-08-14",
+   "release": {
+    "version": "V2.4.0",
+    "date": "2026-08-14",
+    "source": "git tag",
+    "url": "https://github.com/OpenKNX/knx/tree/V2.4.0"
+   },
+   "roles": [
+    "device"
+   ],
+   "capabilities": [
+    "ETS programmable",
+    "ESP32 and RP2040"
+   ],
+   "upstream": [
+    "thelsing-knx"
+   ],
+   "relation": "Fork for the OpenKNX devices",
+   "maintenance": "active",
+   "notes": "The OpenKNX team's fork of thelsing's knx stack, for ESP32 and RP2040, which runs the open hardware and firmware of the OpenKNX community: devices that are programmed with ETS like commercial ones.",
+   "sources": [
+    "https://github.com/OpenKNX/knx"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "esp-knx-ip",
+   "name": "esp-knx-ip",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/envy/esp-knx-ip",
+   "repo": "envy/esp-knx-ip",
+   "stars": 151,
+   "forks": 54,
+   "lastCommit": "2019-12-10",
+   "release": {
+    "version": "0.4.0",
+    "date": "2018-02-24",
+    "source": "git tag",
+    "url": "https://github.com/envy/esp-knx-ip/tree/0.4.0"
+   },
+   "roles": [
+    "device"
+   ],
+   "capabilities": [
+    "Arduino",
+    "Routing only",
+    "Web configuration"
+   ],
+   "maintenance": "quiet",
+   "notes": "A KNXnet/IP library for the ESP8266 on Arduino that sends and receives on the routing multicast group 224.0.23.12:3671, to build simple KNX IP devices that are configured from a web page instead of ETS.",
+   "sources": [
+    "https://github.com/envy/esp-knx-ip"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knx-net",
+   "name": "KNX.net",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/lifeemotions/knx.net",
+   "repo": "lifeemotions/knx.net",
+   "stars": 103,
+   "forks": 48,
+   "lastCommit": "2018-06-30",
+   "release": {
+    "version": "1.1.10",
+    "date": "2018-06-30",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/KNX.net/1.1.10"
+   },
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "Datapoint types"
+   ],
+   "maintenance": "quiet",
+   "package": "https://www.nuget.org/packages/KNX.net",
+   "notes": "A KNXnet/IP library for .NET with tunnelling and routing connections, group reads and writes and a set of datapoint types. Unchanged since 2018.",
+   "sources": [
+    "https://github.com/lifeemotions/knx.net",
+    "https://api.nuget.org/v3-flatcontainer/knx.net/index.json"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "linknx",
+   "name": "linknx",
+   "type": "derived",
+   "languages": [
+    "C++"
+   ],
+   "license": "GPL-2.0",
+   "url": "https://github.com/linknx/linknx",
+   "repo": "linknx/linknx",
+   "stars": 50,
+   "forks": 21,
+   "lastCommit": "2025-07-22",
+   "release": {
+    "version": "0.0.1.39",
+    "date": "2025-07-22",
+    "source": "git tag",
+    "url": "https://github.com/linknx/linknx/tree/0.0.1.39"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "Rules engine"
+   ],
+   "upstream": [
+    "knxd"
+   ],
+   "relation": "Rules and logic engine on knxd",
+   "maintenance": "slowing",
+   "notes": "An automation server for KNX that connects through eibd or knxd, with objects, timers, rules and actions in an XML configuration. Moved from SourceForge to GitHub; 0.0.1.39 fixes the build system.",
+   "sources": [
+    "https://github.com/linknx/linknx"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knxdclient",
+   "name": "knxdclient",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/mhthies/knxdclient",
+   "repo": "mhthies/knxdclient",
+   "stars": 14,
+   "forks": 3,
+   "lastCommit": "2026-06-16",
+   "release": {
+    "version": "1.2.0",
+    "date": "2025-02-23",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/knxdclient/1.2.0/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "asyncio"
+   ],
+   "upstream": [
+    "knxd"
+   ],
+   "relation": "asyncio client for knxd",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/knxdclient/",
+   "notes": "A pure Python asyncio client for knxd's own protocol: group sockets to send and receive group telegrams through a knxd daemon, with datapoint encoding helpers.",
+   "sources": [
+    "https://github.com/mhthies/knxdclient",
+    "https://pypi.org/pypi/knxdclient/json"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knxmap",
+   "name": "KNXmap",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/takeshixx/knxmap",
+   "repo": "takeshixx/knxmap",
+   "stars": 122,
+   "forks": 44,
+   "lastCommit": "2021-10-27",
+   "release": {
+    "version": "v0.10.0",
+    "date": "2017-03-28",
+    "source": "git tag",
+    "url": "https://github.com/takeshixx/knxmap/tree/v0.10.0"
+   },
+   "roles": [
+    "scanner"
+   ],
+   "capabilities": [
+    "Discovery",
+    "Bus scanning",
+    "Monitoring"
+   ],
+   "maintenance": "quiet",
+   "notes": "A tool for scanning and auditing KNXnet/IP gateways: it finds gateways, scans for devices on the bus behind them, monitors bus messages and writes values to group addresses. For assessments of installations you are allowed to test.",
+   "sources": [
+    "https://github.com/takeshixx/knxmap"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "knx-falcon-sdk",
+   "name": "KNX Falcon SDK",
+   "type": "commercial",
+   "languages": [
+    "C#"
+   ],
+   "license": "Proprietary (KNX Association)",
+   "url": "https://www.nuget.org/packages/Knx.Falcon.Sdk",
+   "stars": null,
+   "release": {
+    "version": "6.4.8671",
+    "date": "2026-03-04",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/Knx.Falcon.Sdk/6.4.8671"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    ".NET 8",
+    ".NET Framework 4.8"
+   ],
+   "maintenance": "n/a",
+   "package": "https://www.nuget.org/packages/Knx.Falcon.Sdk",
+   "notes": "KNX Association's own .NET SDK to reach the KNX bus through KNX interfaces and send and receive telegrams. The package is public on NuGet under KNX Association's licence terms; a manufacturer edition is available to members only.",
+   "sources": [
+    "https://www.nuget.org/packages/Knx.Falcon.Sdk",
+    "https://support.knx.org/hc/en-us/articles/4410819071122-How-to-get-the-Manufacturer-Falcon-6-NET-SDK"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "tapko-kaistack",
+   "name": "TAPKO KAIstack",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "Commercial",
+   "url": "https://knx.org/devices/tp-rf-ip-kaistack-full-knx-stack-twisted-pair-radio-frequency-and-ip",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "device"
+   ],
+   "capabilities": [
+    "TP, RF and IP",
+    "Certified stack"
+   ],
+   "maintenance": "n/a",
+   "notes": "TAPKO Technologies' modular KNX device stack for twisted pair, radio and IP, listed among KNX certified products, with all KNX configuration modes and device models, running standalone, on an RTOS, Linux or a PC. Renesas and ST list it for their microcontrollers.",
+   "sources": [
+    "https://knx.org/devices/tp-rf-ip-kaistack-full-knx-stack-twisted-pair-radio-frequency-and-ip",
+    "https://www.st.com/content/st_com/en/partner/partner-program/partnerpage/TAPKO-Technologies.html"
+   ],
+   "protocol": "knx",
+   "verified": "2026-10-30"
   }
  ]
 }

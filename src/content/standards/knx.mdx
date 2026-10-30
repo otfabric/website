@@ -1,0 +1,117 @@
+---
+kind: protocol
+name: "KNX"
+standard: "KNX Standard v3.0 (ISO/IEC 14543-3, EN 50090); KNXnet/IP: ISO 22510:2019; KNX Association"
+summary: "The home and building control standard of switches, dimmers, blinds, heating valves and presence detectors: devices exchange group telegrams over twisted pair, radio or IP, and KNXnet/IP connects them to IP networks through tunnelling and routing, with KNX IP Secure and Data Secure."
+order: 16
+facts:
+  - { label: 'Transport', value: 'KNXnet/IP over UDP and TCP, port 3671; routing multicast 224.0.23.12' }
+  - { label: 'Media', value: 'Twisted pair (TP1), radio (RF), powerline and IP; OT Fabric covers IP' }
+  - { label: 'Library', value: 'go-knx' }
+  - { label: 'CLI', value: 'knxctl' }
+  - { label: 'Interop', value: 'knx-interop v0.5.0' }
+icon: go-knx
+docs: /docs/protocols/knx/
+layers:
+  - label: 'Application'
+    items:
+      - { name: 'Group objects, datapoint types (DPT 1 to 251), group read, write and response', id: 'knx', note: 'go-knx' }
+      - { name: 'KNX Data Secure for group communication (S-A_Data, S-A_Sync)', note: 'go-knx' }
+      - { name: 'Device management: interface object properties', note: 'go-knx' }
+  - label: 'Frames'
+    items:
+      - { name: 'cEMI, TPCI and APCI', note: 'go-knx' }
+  - label: 'IP transport'
+    items:
+      - { name: 'KNXnet/IP core, discovery, tunnelling (UDP and TCP), routing, busmonitor', note: 'go-knx' }
+      - { name: 'KNX IP Secure: secure sessions and secure routing', note: 'go-knx' }
+  - label: 'Media'
+    items:
+      - { name: 'KNX TP1, KNX RF and powerline, reached through IP interfaces and routers', note: 'not implemented directly' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+KNX is the open standard for home and building control that KNX Association maintains and that more than 500 manufacturers build devices for. A KNX installation is a network of small devices, each with an **individual address** such as `1.1.10`: wall switches, push-buttons, dimmers, blind actuators, heating valves, presence detectors, weather stations and meters. They do not poll each other. A device sends a **group telegram** to a **group address** such as `1/2/3`, and every device whose **group objects** listen to that address acts on it: the push-button writes "on", the light switches on, and the visualization updates. The value is encoded by a **datapoint type** (DPT), for example 1.001 for on and off or 9.001 for a temperature in °C, and ETS, KNX Association's engineering tool, links group objects to group addresses when a project is commissioned.
+
+Most devices sit on **twisted pair** (TP1), a two-wire bus that also powers them, and some on radio. **KNXnet/IP** (ISO 22510) connects the bus to IP networks: IP interfaces give clients a **tunnelling** connection to a line, IP routers **route** telegrams between lines over multicast, and **KNX IP Secure** and **KNX Data Secure** add authentication and encryption. Visualizations, home automation servers, building management systems and gateways all reach KNX through KNXnet/IP.
+
+## Where you meet it
+
+- Homes, offices, hotels, schools and hospitals: lighting, blinds and shading, heating and cooling per room, presence and scenes
+- Building management and smart home platforms such as Home Assistant and openHAB, which talk to KNX through an IP interface
+- Energy in buildings: meters, heat pumps, charging points and load control, next to [BACnet](/protocols/bacnet/) and [Modbus](/protocols/modbus/) in the same plant room
+- Commissioning and service: finding IP interfaces, watching group telegrams, checking values and secure installations on site
+
+## Quickstart
+
+### From the command line
+
+Download `knxctl` from [GitHub Releases](https://github.com/otfabric/knxctl/releases), or `go install github.com/otfabric/knxctl@latest`:
+
+```sh
+# Which KNXnet/IP interfaces and routers are on the network?
+knxctl discover
+knxctl describe 192.168.1.10
+
+# Watch every group telegram, passively, decoding two groups
+knxctl monitor -g 192.168.1.10 --map 1/2/4=9.001 --map 1/2/3=1.001
+
+# Read a temperature, then switch a light
+knxctl group read 1/2/4 --dpt 9.001 -g 192.168.1.10
+knxctl group write 1/2/3 on -g 192.168.1.10
+
+# Encode and decode datapoint types and frames, offline
+knxctl dpt encode 9.001 21.5
+knxctl decode 061004200015040100001100bce0110a0a03010081
+
+# A simulated KNXnet/IP interface to try all of this against
+knxctl serve --object 1/2/3:1.001=off --object 1/2/4:9.001:CRT=21.5
+```
+
+knxctl sends nothing to the KNX network unless the command says so: discovery talks only to the IP interface, monitoring only listens, and only the `group write`, `respond`, `answer` and `read` commands send telegrams, after they validate the address, type and value. Output is text, a table or JSON with stable exit codes.
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-knx
+```
+
+Group communication through a KNXnet/IP interface (abridged from the go-knx README):
+
+```go title="main.go"
+c, err := client.DialTunnel(ctx, "192.168.1.10", nil)
+if err != nil {
+	return err
+}
+defer c.Close()
+
+// Switch on (DPT 1.001), then write a temperature (DPT 9.001).
+err = c.GroupWrite(ctx, knx.MustParseGroupAddress("1/2/3"), true)
+err = c.GroupWrite(ctx, knx.MustParseGroupAddress("1/2/4"), 21.5, client.WithDPT("9.001"))
+
+// Watch group telegrams.
+sub := c.Subscribe(64, knx.MustParseGroupAddress("1/2/3"))
+for t := range sub.C() {
+	fmt.Println(t.Source, t.Group, t.Service, t.Value.Data)
+}
+```
+
+The same library runs the other side: a KNXnet/IP server with virtual devices whose group objects store written values and answer reads, which ETS-style tools, Home Assistant through xknx, Calimero and knxd connect to like to an IP interface.
+
+## What go-knx and knxctl support
+
+| | |
+|---|---|
+| Discovery | Multicast and directed search, extended search with parameters, description |
+| Tunnelling | UDP with sequence handling, retransmission, heartbeats, NAT and reconnection; TCP (tunnelling v2) with address request and feature services; busmonitor |
+| Routing | Routing indications on 224.0.23.12:3671, ROUTING_BUSY flow control, rate limit, echo suppression |
+| Group communication | Write, read (first or all responses), respond, subscriptions; 209 datapoint subtypes from DPT 1 to 251 |
+| Device management | Interface object properties, read and write, as client and server |
+| Server | Discovery, description, tunnelling over UDP and TCP for several clients, busmonitor, device management, routing, virtual devices with group object flags |
+| Security | KNX IP Secure sessions over TCP and UDP and secure routing, in client and server; KNX Data Secure for group communication with S-A_Sync and the surrogate role; ETS keyrings (.knxkeys) |
+| Not covered | TP1, RF and powerline media directly (they are reached through IP interfaces and routers), ETS project import, point to point Data Secure, KNX IoT |
+
+<Callout type="note" title="Early versions, interoperability tested">
+go-knx v0.4.2, knxctl v0.5.1 and knx-interop v0.5.0 are pre-1.0. go-knx is tested in both directions against four independent KNX implementations packaged by [knx-interop](https://github.com/otfabric/knx-interop): Calimero 3.0-M1 (Java) as server and tools, knxd 0.14.73 (C++), xknx 4.0.0 (Python) and KNXUltimate 6.3.1 (TypeScript), with a raw probe for malformed input. The full matrix passes 423 results with none failing, KNX IP Secure and Data Secure included against xknx and Calimero. That is interoperability, not conformance: go-knx is not KNX certified, and KNX Secure is implemented from public sources. KNX is a registered trademark of KNX Association cvba; the projects are independent and not endorsed by it. KNXnet/IP without KNX IP Secure has no authentication and no encryption, so isolate KNX IP networks.
+</Callout>
