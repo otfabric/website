@@ -98,6 +98,7 @@ const schema = [
 			<div class="tabs" id="protocol-tabs" role="tablist" aria-label="Protocol or profile">
 				{maps.map(({ protocol }, i) => (
 					<>
+					{i === 0 && <span class="tabs-kind first" role="presentation">Protocols</span>}
 					{isProfile(protocol) && !isProfile(maps[i - 1].protocol) && <span class="tabs-kind" role="presentation">Application profiles</span>}
 					<button type="button" role="tab" id={`tab-${protocol.id}`} class:list={{ 'is-profile': isProfile(protocol) }} data-protocol={protocol.id} data-kind={kindLabel(protocol)} data-icon={icons[protocol.id] ?? ''} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${protocol.id}`} tabindex={i === 0 ? 0 : -1} title={protocol.name}>
 						{icons[protocol.id] && <img src={`/icons/${icons[protocol.id]}.svg`} alt="" width="22" height="22" />}
@@ -615,6 +616,9 @@ const schema = [
 		text-transform: uppercase;
 		letter-spacing: 0.12em;
 		color: var(--ot-muted);
+	}
+	.tabs-kind.first {
+		margin-top: 0;
 	}
 	.tabs button.is-profile {
 		border-style: dashed;

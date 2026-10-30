@@ -16,10 +16,15 @@ const standards = all.filter((s) => s.data.kind === kind);
 // A project belongs to the row of its primary (first) standard.
 const of = (id: string, category: string) => projects.filter((p) => p.data.category === category && p.data.standards[0] === id);
 const projectCell = (category: string) => (id: string) => ({ projects: of(id, category) });
+// A standard that is a transport for others (CAN bus) has its library among the building blocks.
+const libraryCell = (id: string) => {
+	const libs = of(id, 'protocol');
+	return { projects: libs.length ? libs : of(id, 'transport') };
+};
 const columns: { label: string; cell: (id: string) => { projects?: Project[]; links?: { name: string; href?: string }[] } }[] =
 	kind === 'protocol'
 		? [
-				{ label: 'Library', cell: projectCell('protocol') },
+				{ label: 'Library', cell: libraryCell },
 				{ label: 'CLI', cell: projectCell('cli') },
 				{ label: 'Interop suite', cell: projectCell('interop') },
 			]
