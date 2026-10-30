@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-29",
+ "verified": "2026-10-30",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -121,10 +121,19 @@
    "id": "can-bus",
    "name": "CAN bus",
    "standard": "ISO 11898-1 (CAN, CAN FD, CAN XL), ISO 15765-2 (ISO-TP); Bosch CAN 2.0 and CAN FD 1.0",
-   "focus": "Classical CAN, CAN FD and CAN XL frames, SocketCAN and adapters, ISO-TP, DBC, KCD and ARXML databases",
+   "focus": "The data link and transport underneath CANopen, J1939 and UDS: classical CAN, CAN FD and CAN XL frames, SocketCAN and adapters, ISO-TP, DBC, KCD and ARXML databases",
    "maturity": "Very mature (CAN XL emerging)",
    "commercial": "Very established",
-   "summary": "Ubiquitous in vehicles, machines and energy equipment. The open field centres on Linux SocketCAN with can-utils, python-can and bindings for most languages, and on cantools and canmatrix for databases; the commercial side is adapter vendors' drivers and analysis tools. CAN XL is in Linux since 6.2, with few stacks yet."
+   "summary": "Ubiquitous in vehicles, machines and energy equipment, and the transport that CANopen, SAE J1939 and UDS run on. The open field centres on Linux SocketCAN with can-utils, python-can and bindings for most languages, and on cantools and canmatrix for databases; the commercial side is adapter vendors' drivers and analysis tools. CAN XL is in Linux since 6.2, with few stacks yet. CANopen stacks have their own entry."
+  },
+  {
+   "id": "canopen",
+   "name": "CANopen",
+   "standard": "CiA 301 (EN 50325-4), with CiA 302, 305, 306, 402 and CiA 1301 (CANopen FD)",
+   "focus": "The application protocol on top of CAN: object dictionary, SDO, PDO, NMT, heartbeat, SYNC, EMCY, LSS, EDS files and device profiles such as CiA 402 drives",
+   "maturity": "Mature, few complete open stacks",
+   "commercial": "Very established",
+   "summary": "The higher-layer protocol of industrial machines, drives, lifts, medical and mobile equipment, standardized by CAN in Automation. Three open stacks carry the field, CANopenNode, Lely CANopen and python canopen; most others are young or cover one role, and none of those three implements CANopen FD yet."
   },
   {
    "id": "sparkplug-b",
@@ -7452,6 +7461,769 @@
     "https://kvaser.com/developer/canlib-sdk"
    ],
    "verified": "2026-10-29"
+  },
+  {
+   "id": "otfabric-go-canopen",
+   "name": "go-canopen",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-canopen",
+   "repo": "otfabric/go-canopen",
+   "stars": 0,
+   "historySince": "2026",
+   "lastCommit": "2026-10-30",
+   "release": {
+    "version": "v0.3.1",
+    "date": "2026-10-30",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-canopen/@v/v0.3.1.info"
+   },
+   "roles": [
+    "master",
+    "device",
+    "SDO client",
+    "SDO server"
+   ],
+   "capabilities": [
+    "CiA 302",
+    "LSS",
+    "MPDO",
+    "CANopen FD",
+    "CiA 402",
+    "EDS/DCF"
+   ],
+   "interop": "canopen-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "package": "https://pkg.go.dev/github.com/otfabric/go-canopen",
+   "notes": "CANopen in pure Go on go-canbus: object dictionary, SDO with block transfer, PDOs and MPDOs, NMT, heartbeat and node guarding, SYNC, EMCY and TIME, LSS with Fastscan, a CiA 302 manager with network boot-up, concise DCF and program download, CANopen FD with USDO, EDS/DCF, a code generator, CiA 402 drives and a dissector checked against Wireshark. Tested against CANopenNode, Lely CANopen and python canopen in both directions on virtual CAN; not yet on real hardware, no CiA conformance claim.",
+   "sources": [
+    "https://github.com/otfabric/go-canopen",
+    "https://proxy.golang.org/github.com/otfabric/go-canopen/@latest"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "canopennode",
+   "name": "CANopenNode",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/CANopenNode/CANopenNode",
+   "repo": "CANopenNode/CANopenNode",
+   "stars": 2000,
+   "forks": 802,
+   "historySince": "2015",
+   "lastCommit": "2026-07-10",
+   "release": {
+    "version": "v4.1",
+    "date": "2025-11-22",
+    "source": "git tag",
+    "url": "https://github.com/CANopenNode/CANopenNode/tree/v4.1"
+   },
+   "roles": [
+    "device",
+    "master",
+    "SDO client",
+    "SDO server"
+   ],
+   "capabilities": [
+    "LSS",
+    "SDO block",
+    "Gateway (CiA 309)",
+    "EDS (CANopenEditor)"
+   ],
+   "interop": "canopen-interop",
+   "maintenance": "active",
+   "notes": "The most widely used open CANopen stack, for microcontrollers and Linux: object dictionary generated by CANopenEditor, SDO server and client with block transfer, PDOs, NMT, heartbeat, SYNC, EMCY, TIME, LSS master and slave, and a CiA 309 ASCII gateway. CANopenLinux runs it on SocketCAN as canopend; ports exist for STM32, PIC and others.",
+   "sources": [
+    "https://github.com/CANopenNode/CANopenNode",
+    "https://github.com/CANopenNode/CANopenLinux",
+    "https://github.com/otfabric/canopen-interop/blob/main/versions.yaml"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "lely-canopen",
+   "name": "Lely CANopen",
+   "type": "independent",
+   "languages": [
+    "C",
+    "C++"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://gitlab.com/lely_industries/lely-core",
+   "stars": 46,
+   "forks": 88,
+   "historySince": "2016",
+   "lastCommit": "2025-08-25",
+   "release": {
+    "version": "v2.3.5",
+    "date": "2024-08-01",
+    "source": "git tag",
+    "url": "https://gitlab.com/lely_industries/lely-core/-/tags/v2.3.5"
+   },
+   "roles": [
+    "master",
+    "device",
+    "SDO client",
+    "SDO server"
+   ],
+   "capabilities": [
+    "CiA 302",
+    "LSS",
+    "MPDO",
+    "EDS/DCF tools"
+   ],
+   "interop": "canopen-interop",
+   "maintenance": "active",
+   "notes": "Lely's core libraries: a C stack (liblely-co) and a C++ application layer with asynchronous master and slave drivers, CiA 302 network boot-up, LSS, MPDOs, and Python dcf-tools that check EDS files and generate configurations. ROS 2's ros2_canopen builds on it.",
+   "sources": [
+    "https://gitlab.com/lely_industries/lely-core",
+    "https://opensource.lely.com/canopen/",
+    "https://gitlab.com/api/v4/projects/lely_industries%2Flely-core"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "python-canopen",
+   "name": "python canopen",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/christiansandberg/canopen",
+   "repo": "christiansandberg/canopen",
+   "stars": 569,
+   "forks": 357,
+   "historySince": "2016",
+   "lastCommit": "2026-06-28",
+   "release": {
+    "version": "2.4.1",
+    "date": "2025-08-05",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/canopen/2.4.1/"
+   },
+   "roles": [
+    "master",
+    "device",
+    "SDO client",
+    "SDO server"
+   ],
+   "capabilities": [
+    "LSS",
+    "CiA 402",
+    "EDS import"
+   ],
+   "interop": "canopen-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/canopen/",
+   "notes": "The CANopen library for Python on python-can: remote and local nodes, SDO with block upload, PDO configuration and reception, NMT and heartbeat, SYNC, EMCY, TIME, an LSS master, a CiA 402 node class and an EDS/DCF importer. A common choice for test benches and commissioning scripts.",
+   "sources": [
+    "https://github.com/christiansandberg/canopen",
+    "https://pypi.org/pypi/canopen/json"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "canfestival",
+   "name": "CanFestival",
+   "type": "independent",
+   "languages": [
+    "C",
+    "Python"
+   ],
+   "license": "LGPL-2.1",
+   "url": "https://github.com/Beremiz/CanFestival",
+   "repo": "Beremiz/CanFestival",
+   "stars": 14,
+   "forks": 10,
+   "historySince": "2006",
+   "lastCommit": "2026-08-19",
+   "release": null,
+   "roles": [
+    "master",
+    "device"
+   ],
+   "capabilities": [
+    "LSS",
+    "DCF",
+    "Object dictionary editor"
+   ],
+   "maintenance": "active",
+   "notes": "One of the oldest open CANopen stacks, with a Python object dictionary editor (objdictgen) and drivers for SocketCAN, PEAK and Kvaser. Developed for years in Mercurial; the Beremiz project, the open-source PLC IDE that uses it, keeps it on GitHub with a CMake build and recent fixes, but publishes no releases.",
+   "sources": [
+    "https://github.com/Beremiz/CanFestival"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "embedded-office-canopen",
+   "name": "Embedded Office CANopen",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/embedded-office/canopen-stack",
+   "repo": "embedded-office/canopen-stack",
+   "stars": 470,
+   "forks": 134,
+   "historySince": "2016",
+   "lastCommit": "2022-08-21",
+   "release": {
+    "version": "v4.4.0",
+    "date": "2022-08-21",
+    "source": "git tag",
+    "url": "https://github.com/embedded-office/canopen-stack/tree/v4.4.0"
+   },
+   "roles": [
+    "device"
+   ],
+   "capabilities": [
+    "LSS",
+    "SDO block",
+    "Static or dynamic OD"
+   ],
+   "maintenance": "quiet",
+   "notes": "A C99 device stack for microcontrollers, with or without an RTOS: SDO server with block transfer, an expedited and segmented SDO client, PDOs, EMCY with error history, SYNC, heartbeat, parameter storage and LSS (CiA 305). Formerly commercial, open-sourced by Embedded Office under Apache-2.0.",
+   "sources": [
+    "https://github.com/embedded-office/canopen-stack"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "gocanopen",
+   "name": "gocanopen",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/samsamfire/gocanopen",
+   "repo": "samsamfire/gocanopen",
+   "stars": 16,
+   "forks": 9,
+   "historySince": "2022",
+   "lastCommit": "2026-10-07",
+   "release": {
+    "version": "v2.1.1",
+    "date": "2026-10-07",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/samsamfire/gocanopen/v2/@v/v2.1.1.info"
+   },
+   "roles": [
+    "master",
+    "device",
+    "SDO client",
+    "SDO server"
+   ],
+   "capabilities": [
+    "SDO block",
+    "Gateway (CiA 309)",
+    "EDS"
+   ],
+   "maintenance": "active",
+   "package": "https://pkg.go.dev/github.com/samsamfire/gocanopen/v2",
+   "notes": "A pure Go CANopen stack for masters and slaves: NMT, SDO server and client with segmented and block transfer, PDOs with dynamic mapping, heartbeat, SYNC, TIME and EMCY, EDS loading at run time and an experimental CiA 309 HTTP gateway, on SocketCAN, a virtual CAN and Kvaser. LSS is in progress.",
+   "sources": [
+    "https://github.com/samsamfire/gocanopen",
+    "https://proxy.golang.org/github.com/samsamfire/gocanopen/v2/@latest"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "node-canopen",
+   "name": "node-canopen",
+   "type": "independent",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/DaxBot/node-canopen",
+   "repo": "DaxBot/node-canopen",
+   "stars": 39,
+   "forks": 14,
+   "historySince": "2018",
+   "lastCommit": "2025-04-14",
+   "release": {
+    "version": "6.2.1",
+    "date": "2025-03-25",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/canopen/v/6.2.1"
+   },
+   "roles": [
+    "device",
+    "master"
+   ],
+   "capabilities": [
+    "LSS",
+    "EDS"
+   ],
+   "maintenance": "slowing",
+   "package": "https://www.npmjs.com/package/canopen",
+   "notes": "CANopen for Node.js by Daxbot, published as the canopen package: a Device class with SDO upload and download, PDOs, NMT and heartbeat, SYNC, TIME, EMCY and LSS, and EDS loading and saving. Device configuration files are not supported.",
+   "sources": [
+    "https://github.com/DaxBot/node-canopen",
+    "https://registry.npmjs.org/canopen"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "zencan",
+   "name": "zencan",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MPL-2.0",
+   "url": "https://github.com/mcbridejc/zencan",
+   "repo": "mcbridejc/zencan",
+   "stars": 47,
+   "forks": 15,
+   "historySince": "2024",
+   "lastCommit": "2026-10-22",
+   "release": {
+    "version": "0.0.5",
+    "date": "2026-09-05",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/zencan-node/0.0.5"
+   },
+   "roles": [
+    "device",
+    "client tools"
+   ],
+   "capabilities": [
+    "no_std",
+    "Code generation"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/zencan-node",
+   "notes": "A Rust CANopen stack for no_std microcontrollers that generates static node data from a TOML device configuration, with a client library and command-line tools for Linux. Its README calls it a prototype whose API may change.",
+   "sources": [
+    "https://github.com/mcbridejc/zencan",
+    "https://crates.io/api/v1/crates/zencan-node"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "canopen-rs",
+   "name": "canopen-rs",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/KarpagamKarthikeyan/canopen-rs",
+   "repo": "KarpagamKarthikeyan/canopen-rs",
+   "stars": 2,
+   "forks": 4,
+   "historySince": "2026",
+   "lastCommit": "2026-08-02",
+   "release": {
+    "version": "0.6.1",
+    "date": "2026-08-02",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/canopen-rs/0.6.1"
+   },
+   "roles": [
+    "device",
+    "master",
+    "SDO client",
+    "SDO server"
+   ],
+   "capabilities": [
+    "no_std",
+    "LSS",
+    "SDO block",
+    "EDS"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/canopen-rs",
+   "notes": "A no_std-first CiA 301 stack in Rust, for bare-metal nodes and Linux hosts: object dictionary, SDO with block transfer, PDO, NMT, SYNC, EMCY, TIME, LSS with Fastscan and EDS parsing, with blocking and async SocketCAN transports and a CLI crate. Early development, API not stable.",
+   "sources": [
+    "https://github.com/KarpagamKarthikeyan/canopen-rs",
+    "https://crates.io/api/v1/crates/canopen-rs"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "oze-canopen",
+   "name": "oze-canopen",
+   "type": "independent",
+   "languages": [
+    "Rust",
+    "Python"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/ozontech/oze-canopen",
+   "repo": "ozontech/oze-canopen",
+   "stars": 13,
+   "forks": 5,
+   "historySince": "2025",
+   "lastCommit": "2025-03-20",
+   "release": {
+    "version": "0.1.0",
+    "date": "2025-03-16",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/oze-canopen/0.1.0"
+   },
+   "roles": [
+    "master",
+    "sniffer"
+   ],
+   "capabilities": [
+    "async (tokio)"
+   ],
+   "maintenance": "slowing",
+   "package": "https://crates.io/crates/oze-canopen",
+   "notes": "An async Rust CANopen library from Ozon Technologies, with Python bindings, for masters and sniffers: SDO client, NMT and SYNC, and COB-ID based parsing on tokio and socketcan-rs. It has no object dictionary, so it cannot act as a device.",
+   "sources": [
+    "https://github.com/ozontech/oze-canopen",
+    "https://crates.io/api/v1/crates/oze-canopen"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "canopenterm",
+   "name": "CANopenTerm",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/mupfdev/CANopenTerm",
+   "repo": "mupfdev/CANopenTerm",
+   "stars": 80,
+   "forks": 11,
+   "historySince": "2022",
+   "lastCommit": "2026-10-28",
+   "release": {
+    "version": "v2.04",
+    "date": "2026-09-25",
+    "source": "git tag",
+    "url": "https://github.com/mupfdev/CANopenTerm/tree/v2.04"
+   },
+   "roles": [
+    "analyzer",
+    "master tool"
+   ],
+   "capabilities": [
+    "EDS",
+    "Lua and Python scripting",
+    "J1939"
+   ],
+   "maintenance": "active",
+   "notes": "A tool to analyse, test and configure CANopen devices: SDO read and write, NMT, raw CAN, scripts in Lua and Python, EDS checks, DBC parsing, test reports for CI and a WebSocket link between instances. Also speaks SAE J1939 and OBD-II.",
+   "sources": [
+    "https://github.com/mupfdev/CANopenTerm"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "canopeneditor",
+   "name": "CANopenEditor",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "GPL-3.0",
+   "url": "https://github.com/CANopenNode/CANopenEditor",
+   "repo": "CANopenNode/CANopenEditor",
+   "stars": 264,
+   "forks": 100,
+   "historySince": "2016",
+   "lastCommit": "2026-10-22",
+   "release": {
+    "version": "v4.2.3",
+    "date": "2024-11-29",
+    "source": "GitHub release",
+    "url": "https://github.com/CANopenNode/CANopenEditor/releases/tag/v4.2.3"
+   },
+   "roles": [
+    "EDS tools"
+   ],
+   "capabilities": [
+    "EDS",
+    "XDD",
+    "Code generation"
+   ],
+   "maintenance": "active",
+   "notes": "The object dictionary editor of the CANopenNode project, forked from libEDSsharp: imports and exports EDS and XDD files, writes documentation and CANopenNode source files, with a GUI and a command line for conversions.",
+   "sources": [
+    "https://github.com/CANopenNode/CANopenEditor"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "ros2-canopen",
+   "name": "ros2_canopen",
+   "type": "derived",
+   "languages": [
+    "C++"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/ros-industrial/ros2_canopen",
+   "repo": "ros-industrial/ros2_canopen",
+   "stars": 292,
+   "forks": 138,
+   "historySince": "2022",
+   "lastCommit": "2026-10-25",
+   "release": {
+    "version": "0.3.4",
+    "date": "2026-05-24",
+    "source": "git tag",
+    "url": "https://github.com/ros-industrial/ros2_canopen/tree/0.3.4"
+   },
+   "roles": [
+    "master"
+   ],
+   "capabilities": [
+    "CiA 402",
+    "ros2_control"
+   ],
+   "upstream": [
+    "lely-canopen"
+   ],
+   "relation": "ROS 2 driver framework",
+   "maintenance": "active",
+   "notes": "ROS-Industrial's CANopen framework for ROS 2 on Lely CANopen: a device manager configured in YAML with EDS files, proxy and CiA 402 drivers as ROS 2 nodes or lifecycle nodes, and ros2_control integration. Its README says it is still under development.",
+   "sources": [
+    "https://github.com/ros-industrial/ros2_canopen"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "angelodlfrtr-go-canopen",
+   "name": "angelodlfrtr go-canopen",
+   "type": "derived",
+   "languages": [
+    "Go"
+   ],
+   "license": "None stated",
+   "url": "https://github.com/angelodlfrtr/go-canopen",
+   "repo": "angelodlfrtr/go-canopen",
+   "stars": null,
+   "historySince": "2019",
+   "lastCommit": "2024-03-06",
+   "release": {
+    "version": "v0.0.5",
+    "date": "2022-02-23",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/angelodlfrtr/go-canopen/@v/v0.0.5.info"
+   },
+   "roles": [
+    "master"
+   ],
+   "capabilities": [
+    "EDS"
+   ],
+   "upstream": [
+    "python-canopen"
+   ],
+   "relation": "Go port",
+   "maintenance": "slowing",
+   "notes": "A small Go port of python canopen on the author's go-can: network and nodes, SDO read and write, NMT master, PDO maps and EDS parsing. The repository has no licence file, so all rights are reserved.",
+   "sources": [
+    "https://github.com/angelodlfrtr/go-canopen",
+    "https://proxy.golang.org/github.com/angelodlfrtr/go-canopen/@latest"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "ros-canopen",
+   "name": "ros_canopen",
+   "type": "legacy",
+   "languages": [
+    "C++"
+   ],
+   "license": "LGPL-3.0",
+   "url": "https://github.com/ros-industrial/ros_canopen",
+   "repo": "ros-industrial/ros_canopen",
+   "stars": 378,
+   "forks": 275,
+   "historySince": "2014",
+   "lastCommit": "2025-04-15",
+   "release": {
+    "version": "0.8.5",
+    "date": "2020-09-22",
+    "source": "git tag",
+    "url": "https://github.com/ros-industrial/ros_canopen/tree/0.8.5"
+   },
+   "roles": [
+    "master"
+   ],
+   "capabilities": [
+    "CiA 402"
+   ],
+   "maintenance": "slowing",
+   "notes": "The CANopen stack and drivers of ROS 1, with its own master and a CiA 402 profile, used in many robots and mobile platforms. ROS 1 has reached its end of life; ros2_canopen is its successor for ROS 2.",
+   "sources": [
+    "https://github.com/ros-industrial/ros_canopen"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "emotas-canopen",
+   "name": "emotas CANopen",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "Commercial",
+   "url": "https://www.embedded-world.de/en/exhibitors/emotas-embedded-communication-gmbh-2462051/canopen-stack-2437561",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "device",
+    "master"
+   ],
+   "capabilities": [
+    "CiA 302",
+    "LSS"
+   ],
+   "maintenance": "n/a",
+   "notes": "emotas sells CANopen slave and master stacks in MISRA-conform ANSI C, implementing CiA 301 v4.2 with LSS and the CiA 302-2 master functions; Kvaser, TI and ST list them as partner products. Versions are not published.",
+   "sources": [
+    "https://www.embedded-world.de/en/exhibitors/emotas-embedded-communication-gmbh-2462051/canopen-stack-2437561",
+    "https://kvaser.com/software/canopen-master-slave-protocol-stack/"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "port-canopen",
+   "name": "port CANopen Library",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "Commercial",
+   "url": "https://portgmbh.atlassian.net/wiki/spaces/CAL/pages/1396408321/Product+information",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "device",
+    "master"
+   ],
+   "capabilities": [
+    "Code generation"
+   ],
+   "maintenance": "n/a",
+   "notes": "port GmbH's CANopen Library: an ANSI C stack and drivers, scaled and configured by its Industrial Communication Creator tool, which generates the object dictionary, with a CANopen Device Monitor for testing.",
+   "sources": [
+    "https://portgmbh.atlassian.net/wiki/spaces/CAL/pages/1396408321/Product+information"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "ixxat-canopen-master",
+   "name": "Ixxat CANopen Master",
+   "type": "commercial",
+   "languages": [
+    "C#",
+    "C++",
+    "LabVIEW"
+   ],
+   "license": "Commercial",
+   "url": "https://media.hms-networks.com/image/upload/v1749053586/Documents/Generated_Datasheets/Production/en/hms-1.12.0132.00010-en-CANopen-Master-API.pdf",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "master"
+   ],
+   "capabilities": [
+    "LSS",
+    "EDS/DCF"
+   ],
+   "maintenance": "n/a",
+   "notes": "HMS's CANopen Master API for Windows on Ixxat interfaces: SDO of any length, PDOs, EMCY, SYNC, NMT master and LSS with Fastscan, with EDS, DCF and CDC files and a master firmware on the interface. Sold with ten run-time licences.",
+   "sources": [
+    "https://media.hms-networks.com/image/upload/v1749053586/Documents/Generated_Datasheets/Production/en/hms-1.12.0132.00010-en-CANopen-Master-API.pdf"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "microcanopen-plus",
+   "name": "MicroCANopen Plus",
+   "type": "commercial",
+   "languages": [
+    "C"
+   ],
+   "license": "Commercial",
+   "url": "https://www.esacademystore.eu/en/microcanopenplus",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "device",
+    "manager add-on"
+   ],
+   "capabilities": [
+    "SDO block",
+    "EDS/DCF"
+   ],
+   "maintenance": "n/a",
+   "notes": "Embedded Systems Academy's small ANSI C stack for devices, 7 to 14 KB of ROM, with block SDO, multiple SDO servers, PDOs, SYNC, heartbeat and parameter storage, configured from EDS files; a Manager add-on adds network management. One-time fee, full source code.",
+   "sources": [
+    "https://www.esacademystore.eu/en/microcanopenplus"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
+  },
+  {
+   "id": "codesys-canopen",
+   "name": "CODESYS CANopen",
+   "type": "commercial",
+   "languages": [
+    "IEC 61131-3"
+   ],
+   "license": "Commercial",
+   "url": "https://store.codesys.com/en/codesys-canopen-device-sl.html",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "manager",
+    "device"
+   ],
+   "capabilities": [
+    "EDS/DCF",
+    "CiA 405"
+   ],
+   "maintenance": "n/a",
+   "notes": "CANopen Manager and Device add-ons for CODESYS controllers: a CiA 301 stack compiled with the application, NMT master, SDO client, up to 126 slaves per manager, EDS and DCF import, and the CiA 405 function blocks.",
+   "sources": [
+    "https://store.codesys.com/media/n98_media_assets/files/2303000233-F/4/CODESYS CANopen Manager SL_en.pdf",
+    "https://store.codesys.com/en/codesys-canopen-device-sl.html"
+   ],
+   "protocol": "canopen",
+   "verified": "2026-10-30"
   },
   {
    "id": "tahu-java",

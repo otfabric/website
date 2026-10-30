@@ -2,9 +2,10 @@
 kind: protocol
 name: "CAN bus"
 standard: "ISO 11898-1 (classical CAN, CAN FD, CAN XL in the 2024 edition), ISO 15765-2 (ISO-TP); Bosch CAN 2.0 and CAN FD 1.0"
-summary: "The two-wire fieldbus of vehicles, machines, batteries, chargers and building equipment: every node can send, short frames with an identifier that names the message and sets its priority, CAN FD for longer and faster frames, CAN XL for up to 2048 bytes, and ISO-TP for messages above one frame."
+summary: "The two-wire bus of vehicles, machines, batteries and chargers, and the transport that CANopen, SAE J1939 and UDS run on: short frames with an identifier that names the message and sets its priority, CAN FD for longer and faster frames, CAN XL for up to 2048 bytes, and ISO-TP for messages above one frame."
 order: 14
 facts:
+  - { label: 'Layer', value: 'Physical and data link, plus ISO-TP transport; the protocols on top define the messages' }
   - { label: 'Medium', value: 'Two-wire differential bus, 120 Ω at each end; Linux SocketCAN, USB serial-line (slcan) adapters' }
   - { label: 'Frames', value: 'Classical CAN (8 bytes), CAN FD (64 bytes), CAN XL (2048 bytes); 11- or 29-bit identifiers' }
   - { label: 'Library', value: 'go-canbus' }
@@ -15,7 +16,8 @@ docs: /docs/protocols/can-bus/
 layers:
   - label: 'Application protocols'
     items:
-      - { name: 'CANopen, SAE J1939, UDS (ISO 14229), NMEA 2000, ISOBUS', note: 'not yet: on the roadmap' }
+      - { name: 'CANopen (CiA 301)', id: 'canopen', note: 'go-canopen' }
+      - { name: 'SAE J1939, UDS (ISO 14229), NMEA 2000, ISOBUS', note: 'not yet: on the roadmap' }
   - label: 'Message definitions'
     items:
       - { name: 'DBC, KCD, AUTOSAR ARXML: messages and signals', note: 'go-canbus' }
@@ -32,13 +34,15 @@ layers:
 
 import Callout from '../../components/Callout.astro';
 
-**CAN** (Controller Area Network) is the fieldbus that Bosch designed for cars in the 1980s and that now runs far beyond them: in trucks, tractors and construction machines, in robots, lifts and medical devices, inside battery packs, inverters, EV chargers and heat pumps. All nodes share one twisted pair. Any node can send, and a frame carries no address: its **identifier** names the message, and because the lower identifier wins arbitration bit by bit, it also sets the priority. Classical CAN carries 8 bytes per frame, **CAN FD** up to 64 bytes with a faster data phase, and **CAN XL**, in the 2024 edition of ISO 11898-1, up to 2048 bytes. **ISO-TP** segments longer messages, and a **DBC** file says which bits of which frame hold which signal.
+**CAN** (Controller Area Network) is the bus that Bosch designed for cars in the 1980s and that now runs far beyond them: in trucks, tractors and construction machines, in robots, lifts and medical devices, inside battery packs, inverters, EV chargers and heat pumps. All nodes share one twisted pair. Any node can send, and a frame carries no address: its **identifier** names the message, and because the lower identifier wins arbitration bit by bit, it also sets the priority. Classical CAN carries 8 bytes per frame, **CAN FD** up to 64 bytes with a faster data phase, and **CAN XL**, in the 2024 edition of ISO 11898-1, up to 2048 bytes. **ISO-TP** segments longer messages, and a **DBC** file says which bits of which frame hold which signal.
+
+CAN stops there. It defines how frames get onto the wire and to every node, not what a device is or how a network is managed, so it is a **transport**: the protocols on top give the frames their meaning. In machines and automation that is [CANopen](/protocols/canopen/), with its object dictionary, SDO, PDOs and network management; in trucks and mobile machines SAE J1939; in diagnostics UDS over ISO-TP. OT Fabric builds them in layers too: [go-canbus](/projects/go-canbus/) is the CAN transport, and [go-canopen](/projects/go-canopen/) runs on it.
 
 ## Where you meet it
 
 - Battery management systems, inverters, DC/DC converters and EV chargers, where CAN connects the cells, the power electronics and the controller
-- Vehicles and mobile machines: cars, trucks, buses, tractors, construction and mining equipment, forklifts and AGVs, often with SAE J1939 or CANopen on top
-- Industrial machines, robots, drives and sensors, lifts and medical equipment, many of them with CANopen
+- Vehicles and mobile machines: cars, trucks, buses, tractors, construction and mining equipment, forklifts and AGVs, often with SAE J1939 or [CANopen](/protocols/canopen/) on top
+- Industrial machines, robots, drives and sensors, lifts and medical equipment, most of them with [CANopen](/protocols/canopen/) on top
 - Test benches, data loggers and diagnostics, where engineers record traces, decode them with a DBC file and replay them
 
 ## Quickstart
@@ -101,7 +105,7 @@ for {
 }
 ```
 
-The same `Bus` runs on a serial-line adapter (`slcan.Open`) on Linux, macOS and Windows, or on the in-memory `virtual` bus in tests, and ISO-TP runs on top of it with `isotp.Dial`.
+The same `Bus` runs on a serial-line adapter (`slcan.Open`) on Linux, macOS and Windows, or on the in-memory `virtual` bus in tests. ISO-TP runs on top of it with `isotp.Dial`, and so does [go-canopen](/projects/go-canopen/): every CANopen service takes a `canbus.Bus`.
 
 ## What go-canbus and canbusctl support
 

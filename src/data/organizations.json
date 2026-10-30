@@ -650,7 +650,8 @@
 			"industrial"
 		],
 		"protocols": [
-			"can-bus"
+			"can-bus",
+			"canopen"
 		],
 		"standards": [
 			{

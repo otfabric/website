@@ -1,0 +1,95 @@
+---
+title: 'CANopen on CAN bus: go-canopen, canopenctl and three independent reference stacks'
+description: CANopen is the protocol that turns a CAN bus into a network of drives, I/O modules and machines. go-canopen implements it under MIT on top of go-canbus, with LSS, the CiA 302 network boot-up, EDS files, CiA 402 drives and CANopen FD, canopenctl puts it on the command line read-only by default, and canopen-interop tests it against CANopenNode, Lely CANopen and python canopen.
+date: 2026-10-30
+authors: [OT Fabric]
+tags: [announcement, canopen, can-bus, interop]
+featured: true
+cover:
+  alt: go-canopen in the middle, on top of go-canbus as its CAN transport, connected to the reference stacks CANopenNode, Lely CANopen and python canopen on the left and to what is tested both ways on the right, SDO, NMT and heartbeat, PDO, SYNC and EMCY, LSS and the CiA 302 boot-up, all on Linux virtual CAN. 1,276 scenarios pass, none fail.
+  image: ../../assets/blog/canopen-interop-matrix.svg
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+Yesterday [CAN bus joined OT Fabric](/blog/introducing-can-bus/). CAN moves short frames between controllers on a pair of wires, and that is all it does: it does not say what a device is, how to read its settings, or how to start a network. In industrial machines, drives, lifts, medical equipment and many battery systems, the answer to those questions is **CANopen**.
+
+Today CANopen joins OT Fabric, on top of CAN, with the same three pieces as every protocol: a library, a command-line tool and an interoperability suite.
+
+## CAN carries, CANopen defines
+
+The two now sit where they belong. [CAN bus](/protocols/can-bus/) is the transport: [go-canbus](/projects/go-canbus/) opens a SocketCAN interface, a USB adapter or a virtual bus and moves frames. [CANopen](/protocols/canopen/) is the protocol on top: every device has an **object dictionary** of indexed objects, **SDO** reads and writes it, **PDOs** carry process data in single frames, **NMT** starts and stops nodes, which report their state with **heartbeats**, and **EDS** files describe each device for the tools that configure it. go-canopen runs every CANopen service on a go-canbus `Bus`, so the same code works on Linux SocketCAN, a CANable on a laptop, or a virtual bus in a test.
+
+## Why CANopen
+
+- **It runs the machines.** Servo drives, I/O modules, encoders, valve terminals and lift controllers speak CANopen, and the CiA 402 drive profile is the same model that EtherCAT drives use. Getting their data into a plant network, or commissioning a line, means talking CANopen.
+- **It sits inside energy equipment too.** Battery systems, motor controllers and light electric vehicles often use CANopen on their internal CAN, and a gateway that turns those objects into [Modbus](/protocols/modbus/) or [OPC UA](/protocols/opc-ua/) is everyday work.
+- **The open field is good but small.** CANopenNode, Lely CANopen and python canopen are solid, each with its own focus: devices on microcontrollers, a C++ master, scripting. An MIT-licensed library that does the device, the network manager, LSS, EDS files and CANopen FD in one codebase, with a command-line tool on top, did not exist.
+
+## go-canopen
+
+[go-canopen](/projects/go-canopen/) implements CiA 301 and its companions, with no cgo:
+
+- **The CiA 301 services**: an object dictionary with access rights, limits, node-ID relative defaults, hooks and watchers; SDO client and server with expedited, segmented and block transfer; PDOs with every transmission type and multiplexed PDOs; NMT with both resets; heartbeat, node guarding and life guarding; SYNC with the synchronous window, EMCY and TIME; store and restore of parameters.
+- **A complete device** built from a dictionary or an EDS, which picks its services from its objects, follows its NMT state and raises the standard emergencies itself.
+- **A network manager** with scan, configuration from a DCF, remote PDOs, one ordered event stream, and the **CiA 302 network boot-up**: identity checks, concise DCF configuration, heartbeat supervision and program download.
+- **LSS** (CiA 305) master and slave, with Fastscan and automatic node-IDs for every unconfigured device on a bus.
+- **EDS and DCF** (CiA 306) read, validated and written, and typed Go generated from an EDS.
+- **CiA 402** drives: the state machine and the position, velocity, torque, homing and cyclic synchronous modes, as a simulated drive and as a controller.
+- **CANopen FD** (CiA 1301): the USDO, 64-byte PDOs and 20-byte emergencies.
+- **A dissector** that decodes every service from captured frames, checked against Wireshark's.
+
+The CiA specifications are documents for members, and go-canopen is built from public material: public descriptions of the protocol, the behaviour of the open stacks and Wireshark's dissector. Where the public sources are incomplete, the library says what it inferred: the segmented USDO layouts, and the CANopen FD emergency layout, on which two public sources disagree. What it does not do yet is listed too: no flying master and no SDO manager from CiA 302, one SDO server channel per node, and no device profiles other than CiA 402.
+
+## canopenctl
+
+[canopenctl](/projects/canopenctl/) puts go-canopen on the command line, for commissioning, diagnostics and test benches:
+
+```sh
+# Decode a live bus, passively, and find its nodes
+canopenctl monitor -i can0
+canopenctl scan -i can0
+
+# Read a node's dictionary, every object decoded with its EDS
+canopenctl sdo dump 5 --eds drive.eds -i can0 --format table
+
+# Number the unconfigured devices on a bus, then boot it as a CiA 302 manager
+canopenctl lss assign-all --first 10 --store -i can0 --yes
+canopenctl boot --slave 10=axis1.dcf --slave 11=axis2.dcf -i can0 --yes
+
+# Enable a CiA 402 drive and move it
+canopenctl cia402 enable 10 -i can0 --yes
+canopenctl cia402 move 10 10000 --wait -i can0 --yes
+
+# Simulate a device from its EDS on a virtual bus
+canopenctl simulate -i vcan0 --eds io401.eds --node-id 5 --tick 6000:01 --auto-start
+```
+
+CANopen devices drive motors, valves and power electronics, so canopenctl is read-only by default. Monitoring, decoding and the watch commands never transmit, scanning and dumping send only read requests, and every command that changes a device or the network refuses a real interface without `--yes`, is bounded in count, time and retries, and validates everything before the first frame. Output is text, a table or versioned JSON with stable exit codes; an SDO abort from a device is exit 11 with the abort code and its meaning. The [canopenctl guide](/docs/protocols/canopen/cli/) walks through it.
+
+## Tested against independent stacks
+
+[canopen-interop](/projects/canopen-interop/) packages the three most used open CANopen stacks as multi-architecture containers behind one contract, pinned by version and hash: **CANopenNode** v4.1 (C), **Lely CANopen** 2.3.5 (C and C++) and **python canopen** 2.4.1. Each runs as a device with a shared test dictionary and as a master, and where a stack has them, as an LSS master or slave, an MPDO producer or consumer, a CiA 302 boot master or a concise DCF generator. A self-test runs them against each other first: 389 checks pass, and 15 behaviours where they differ are written down.
+
+go-canopen then runs in both roles against all three on Linux virtual CAN. Its master reads and writes every object of each stack's device, normal and block, with every abort; drives NMT and watches heartbeats; remaps PDOs and drives them with SYNC; numbers their LSS slaves with Fastscan; and boots each device as a CiA 302 manager from a concise DCF. Each stack's master in turn reads, writes, manages and numbers a go-canopen node, Lely's boot master boots one, and python canopen's CiA 402 client enables and fault-resets a go-canopen drive. **1,276 scenarios pass, none fail**, with 57 documented differences and 287 skips where a stack lacks a feature. canopenctl runs its own commands against the same images: 152 pass, none fail.
+
+The suite found defects in go-canopen, all fixed in a release: an empty SDO block transfer that timed out, an LSS `AssignAll` that failed when the last device took node-ID 127, a node that could answer an SDO request sent before an NMT reset, and a SYNC window measured on the wall clock. It also records how the references differ from each other: CANopenNode v4.1's LSS slave does not answer the optional identify services, Lely's applies a new node-ID only at the next reset and answers Fastscan when it already has one, and CANopenNode and python canopen refuse empty DOMAINs in different ways.
+
+<Callout type="note" title="Interoperability, not conformance">
+go-canopen v0.3.1, canopenctl v0.2.1 and canopen-interop v0.2.0 are pre-1.0 and interoperability tested. They make no claim of CiA conformance and have not been certified. None of the reference stacks implements CANopen FD, so the USDO and the FD PDOs and emergencies are tested against go-canopen itself only. Virtual CAN shows message encoding and protocol logic, not timing, and nothing has been tested on real CAN hardware yet. What is and is not covered is listed in [Testing and interop](/docs/protocols/canopen/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the CANopen projects are built by people and AI agents together. With specifications that are not public, the work is careful reading of what is, and then testing against the stacks that thousands of devices already run: every disagreement is traced on the bus, attributed and written down. The fuzz targets, chaos runs and interop matrix are part of every release, and they are public, so you can judge the result yourself.
+
+## Who else implements CANopen
+
+The [ecosystem map](/ecosystem/implementations/?protocol=canopen) now has CANopen as its own entry, next to CAN bus: 21 implementations, from CANopenNode, Lely CANopen, python canopen and CanFestival to Embedded Office's stack, node-canopen, Go and Rust newcomers, ROS 2's ros2_canopen and CANopenEditor, and the commercial stacks of emotas, port, Embedded Systems Academy, HMS Ixxat and CODESYS, with language, licence, roles and latest release.
+
+<MapLink protocol="canopen" title="Explore CANopen on the ecosystem map" />
+
+Who publishes CANopen, tests devices for conformance and what membership costs is in [CAN in Automation's entry](/ecosystem/organizations/cia/) in the standards and alliances directory.
+
+Start with the [CANopen overview](/docs/protocols/canopen/), or `go get github.com/otfabric/go-canopen`.

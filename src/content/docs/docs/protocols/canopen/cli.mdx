@@ -1,0 +1,186 @@
+---
+title: canopenctl
+description: Installing and using canopenctl, the CANopen command-line toolkit to monitor and decode traffic, read and write object dictionaries over SDO and USDO, manage nodes with NMT, assign node-IDs with LSS, boot a network as a CiA 302 manager, configure PDOs and MPDOs, work with EDS, DCF and concise DCF files, download programs, operate CiA 402 drives and simulate devices, read-only by default.
+sidebar:
+  label: canopenctl
+  order: 2
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+[canopenctl](https://github.com/otfabric/canopenctl) is a command-line toolkit for CANopen networks, built on [go-canopen](/docs/protocols/canopen/library/) and [go-canbus](/docs/protocols/can-bus/library/). It decodes live traffic and trace files, reads and writes object dictionaries, manages nodes, gives devices node-IDs, boots a network as a CiA 302 manager, maps and watches PDOs, validates and converts EDS and DCF files, downloads programs, operates CiA 402 drives and simulates complete devices. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.2.1; the full reference is [docs/cli.md](https://github.com/otfabric/canopenctl/blob/main/docs/cli.md).
+
+## Install
+
+<Tabs>
+  <TabItem label="Release binary">
+    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/canopenctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
+  </TabItem>
+  <TabItem label="Go">
+    ```sh
+    go install github.com/otfabric/canopenctl@latest
+    ```
+  </TabItem>
+</Tabs>
+
+To try it without hardware on Linux, create a virtual interface and simulate a device on it:
+
+```sh
+sudo ip link add vcan0 type vcan && sudo ip link set vcan0 up
+canopenctl simulate -i vcan0 --node-id 5 --tick 2000:00 &   # built-in device, TPDO1 = counter 0x2000
+canopenctl scan -i vcan0
+canopenctl nmt start 5 -i vcan0 --wait
+canopenctl pdo watch 5 --tpdo 1 -i vcan0
+```
+
+## Interfaces
+
+`-i` (`--interface`, or `$CANOPENCTL_INTERFACE`) takes:
+
+| Value | What it is | Where |
+|---|---|---|
+| `can0`, `vcan0`, `vxcan0` | A SocketCAN interface | Linux |
+| `slcan:/dev/ttyACM0`, `slcan:COM3` | A serial-line adapter such as a CANable, CANtact, USBtin or LAWICEL, opened at `--slcan-bitrate` (default 500000) | Linux, macOS, Windows |
+| `slcan:tcp://host:port` | slcan over TCP | Everywhere |
+| `virtual` | go-canbus's in-process bus, for tests and demos inside one canopenctl process | Everywhere |
+
+SocketCAN on macOS or Windows exits with code 8. `eds`, `cdcf convert`, `decode` and `dcf apply --dry-run` need no interface at all.
+
+## Safety
+
+CANopen devices drive motors, valves and power electronics, so canopenctl is **read-only by default**:
+
+- `monitor`, `decode`, `heartbeat watch`, `emcy watch`, `mpdo watch`, and `pdo watch` with `--cob-id` or `--map`, never transmit. On an slcan adapter they open it listen-only, so it does not even acknowledge frames.
+- `sdo read`, `sdo dump`, `scan`, `pdo show`, `pdo watch`, `dcf export`, `program status` and `cia402 state` send only SDO read requests.
+- Every command that changes a device or the network (`sdo write`, `nmt`, `pdo map`, `dcf apply`, `cdcf apply`, the `cia402` motion and state commands, `sync`, `time`, every `lss` command, `mpdo configure`, `boot`, `store`, `restore`, `program download` and `program control`, `simulate`) refuses to run on an interface that is not virtual without `--yes`, and exits 9. The interface kind is read from the kernel, and an slcan adapter always needs `--yes`.
+- Transmissions are bounded by `--count`, `--duration`, `--timeout`, `--retries` or `--max-time`, and everything is validated before the first frame: an invocation that exits 2, 3, 8 or 9 has sent nothing.
+- Only `scan`, `lss identify`, `lss fastscan`, `lss assign-all` and `boot` address nodes you did not name.
+
+<Aside type="caution">
+`--yes` is for networks you own or are authorized to change. `boot` resets every node it manages, and `cia402 move` moves an axis.
+</Aside>
+
+## Watching traffic
+
+```sh
+# Live traffic, every service decoded: NMT, SYNC, TIME, EMCY, PDO, SDO with transfer tracking, heartbeat, LSS
+canopenctl monitor -i can0
+canopenctl monitor -i can0 --node 5 --service sdo,emcy --format json
+
+# A recorded trace: candump, pcap and pcapng, BLF, ASC, TRC or JSON Lines
+canopenctl decode trip.log --node 5
+
+# Heartbeats with supervision, and emergencies with their meaning
+canopenctl heartbeat watch -i can0 --supervise 1500ms
+canopenctl emcy watch -i can0
+```
+
+## Object dictionaries
+
+```sh
+canopenctl scan -i can0                                        # nodes 1..127: device type and identity
+canopenctl sdo read 5 0x1018 1 -i can0                         # vendor-ID of node 5
+canopenctl sdo dump 5 --eds device.eds -i can0 --format table  # every readable object, decoded
+canopenctl sdo write 5 0x1017 0 1000 --type u16 -i can0 --yes  # heartbeat every second
+```
+
+Node-IDs are 1 to 127, indices hexadecimal (`1018` or `0x1018`), sub-indices decimal or `0x` hexadecimal, and data types CiA 301 names (`UNSIGNED32`) or short forms (`u32`, `i16`, `f32`, `bool`, `string`, `octets`, `domain`). `--eds` gives names and types wherever a command addresses objects. A device that refuses a transfer ends the command with exit 11 and the abort code with its meaning.
+
+## Network management
+
+```sh
+canopenctl nmt start all -i can0 --yes
+canopenctl nmt reset-comm 5 -i can0 --yes
+canopenctl sync -i can0 --period 10ms --count 100 --yes
+```
+
+### LSS: node-IDs for devices without one
+
+```sh
+canopenctl lss fastscan -i can0 --yes                          # LSS addresses of unconfigured devices
+canopenctl lss assign-all --first 10 --store -i can0 --yes     # a node-ID for each, stored
+```
+
+`lss switch`, `select`, `inquire`, `configure`, `activate` and `identify` give access to each LSS service, addressing devices as `vendor:product:revision:serial` in hexadecimal.
+
+### CiA 302 network boot-up
+
+`boot` runs a network boot-up as a manager: it resets the slaves, checks each one's identity against `--expect`, writes its configuration from a DCF or concise DCF, starts error control and starts the slaves. A slave that fails is reported with its CiA 302 error status letter.
+
+```sh
+canopenctl boot --slave 5=node5.dcf --slave 6=node6.cdcf -i vcan0
+canopenctl boot --lss --slave 5=node5.dcf --expect 5=F7A:C0C7:0:1001 --slave 6 --expect 6=F7A:C0C7:0:1002 -i can0 --yes
+```
+
+With `--lss`, devices without a node-ID are found by Fastscan first and given the node-ID of the slave whose identity they have.
+
+## PDOs and MPDOs
+
+```sh
+canopenctl pdo show 5 -i can0 --eds device.eds
+canopenctl pdo map 5 --tpdo 1 --map 0x6041:00:16,0x6064:00:32 --type 255 --event-timer 100 -i can0 --yes
+canopenctl pdo watch 5 --tpdo 1 --eds device.eds -i can0       # decoded process data
+canopenctl mpdo configure 5 --tpdo 2 --mode sam --cob-id 285 -i can0 --yes
+```
+
+PDO mappings are written as `IIII:SS:BITS`. `mpdo scanner` and `mpdo dispatcher` write the object lists of multiplexed PDOs, and `mpdo watch` decodes MPDO traffic.
+
+## EDS, DCF and concise DCF
+
+```sh
+canopenctl eds validate device.eds
+canopenctl eds convert device.eds --node-id 5 -o node5.dcf
+canopenctl eds generate device.eds --package device -o device/device.go  # typed Go from an EDS
+canopenctl dcf apply 5 node5.dcf -i can0 --yes
+canopenctl dcf export 5 --eds device.eds -i can0 -o node5-now.dcf
+canopenctl cdcf convert node5.dcf -o node5.cdcf                 # DCF to concise DCF (0x1F22)
+```
+
+`store` and `restore` make a node save its parameters (0x1010) or restore its defaults (0x1011), and `program download 5 firmware.bin --crc32` replaces a node's program through the CiA 302-3 objects.
+
+## CiA 402 drives
+
+```sh
+canopenctl cia402 state 3 -i can0
+canopenctl cia402 enable 3 -i can0 --yes
+canopenctl cia402 move 3 10000 --wait -i can0 --yes
+canopenctl cia402 fault-reset 3 -i can0 --yes
+```
+
+A drive in fault, or not in the state an operation needs, ends the command with exit 12 and the state, statusword and fault code.
+
+## Simulation
+
+`simulate` runs a complete CANopen device: from an EDS or a built-in dictionary, with SDO, NMT, heartbeat, SYNC, TIME and every PDO of its dictionary, optionally as a CiA 402 drive, an unconfigured LSS slave, a CANopen FD device or a target for program download.
+
+```sh
+canopenctl simulate -i vcan0 --eds io401.eds --node-id 5 --tick 6000:01 --auto-start
+canopenctl simulate -i vcan0 --node-id 3 --drive
+canopenctl simulate -i vcan0 --lss --serial 0x1001 --store node.cdcf
+```
+
+To talk to a simulated node from another canopenctl process, run both on `vcan0`; `virtual` lives inside one process.
+
+## CANopen FD
+
+`--fd`, with `--brs` for bit rate switching, makes a command speak CANopen FD: it opens the interface for CAN FD (a SocketCAN interface needs `ip link set can0 mtu 72`) and uses the USDO instead of the SDO. `sdo`, `scan`, `nmt`, `heartbeat watch`, `emcy watch`, `sync`, `pdo show` and `map`, `dcf apply`, `cdcf apply`, the `mpdo` commands, `store`, `restore`, `program`, `boot` and `simulate` offer it, and `monitor --fd` decodes USDO and FD emergencies.
+
+## Output and exit codes
+
+`--format text` (the default), `table` or `json`, with versioned JSON documents and [JSON Schemas](https://github.com/otfabric/canopenctl/tree/main/schemas); streams are JSON Lines. Exit codes are stable for scripts ([exitcodes.md](https://github.com/otfabric/canopenctl/blob/main/docs/exitcodes.md)):
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Findings: validation errors, malformed messages, objects that could not be read, a heartbeat timeout, a slave that could not boot |
+| 2, 3 | Usage error, invalid input; nothing was sent |
+| 4 | Interface missing, down or failing |
+| 5 | A device did not answer |
+| 6 | A device violated the protocol |
+| 7, 8 | Permission missing; not available on this platform |
+| 9 | Refused for safety: a change on a real interface without `--yes` |
+| 10 | Output or internal error |
+| 11 | The device refused an SDO transfer (abort code in the error) |
+| 12 | The device is in a state that prevents the operation: drive fault, inactive PDO, LSS refusal, failed boot or program download |
+
+<LinkCard title="Testing and interop" description="What canopenctl has been run against: CANopenNode, Lely CANopen and python canopen." href="/docs/protocols/canopen/testing/" />

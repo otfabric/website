@@ -100,7 +100,7 @@ The documented differences are places where DBC and ARXML have no normative answ
 | CAN XL with more than one reference | Only can-utils has CAN XL among the references; python-can, socketcan-rs and Scapy gain it later |
 | ISO-TP WAIT and OVERFLOW from a reference | Neither reference can be told to send them, so go-canbus's handling is checked against its own receiver only |
 | ISO-TP timing | STmin and block sizes are exercised, not measured |
-| Vendor adapters and higher layers | PEAK, Kvaser and Vector drivers, CANopen, J1939 and UDS are not implemented yet |
+| Vendor adapters and higher layers | PEAK, Kvaser and Vector drivers, J1939 and UDS are not implemented yet; CANopen is tested in its own suite, see [CANopen testing](/docs/protocols/canopen/testing/) |
 
 <CardGrid>
   <LinkCard title="canbus-interop compatibility" description="The self-test matrix of the reference stacks against each other." href="https://github.com/otfabric/canbus-interop/blob/main/docs/COMPATIBILITY.md" />
