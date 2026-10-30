@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-CAN, the Controller Area Network, is a serial bus for controllers that share one pair of wires. Bosch published CAN 2.0 in 1991 and CAN FD 1.0 in 2012; both are standardized in ISO 11898-1, whose 2024 edition adds CAN XL. ISO 15765-2, ISO-TP, carries messages longer than one frame. This page explains how CAN works, as far as it matters for using [go-canbus](/projects/go-canbus/) and [canbusctl](/projects/canbusctl/).
+CAN, the Controller Area Network, is a serial bus for controllers that share one pair of wires, and the transport under higher-layer protocols such as [CANopen](/docs/protocols/canopen/). Bosch published CAN 2.0 in 1991 and CAN FD 1.0 in 2012; both are standardized in ISO 11898-1, whose 2024 edition adds CAN XL. ISO 15765-2, ISO-TP, carries messages longer than one frame. This page explains how CAN works, as far as it matters for using [go-canbus](/projects/go-canbus/) and [canbusctl](/projects/canbusctl/).
 
 ## One bus, no addresses
 
@@ -60,9 +60,9 @@ On Linux, CAN controllers are network interfaces through **SocketCAN**: `can0` f
 
 **Serial-line CAN** (slcan, the LAWICEL ASCII protocol) adapters such as the CANable, CANtact and USBtin show up as a serial port on every OS. go-canbus talks to them directly, without the Linux slcan driver, so they also work on macOS and Windows. Traces are recorded as **candump** logs, **pcap** and **pcapng** for Wireshark, **ASC** and **BLF** from Vector tools, or **TRC** from PEAK.
 
-## Layers on top
+## Protocols on top
 
-CAN itself stops at frames. Applications use a higher layer: **CANopen** (CiA 301) in machines and automation, **SAE J1939** in trucks and mobile machines, **UDS** over ISO-TP for diagnostics, **NMEA 2000** on boats, **ISOBUS** on tractors and implements, **DroneCAN** and Cyphal on drones. OT Fabric does not implement them yet; they are on the [roadmap](https://github.com/otfabric/go-canbus/blob/main/ROADMAP.md) as separate libraries on top of go-canbus.
+CAN itself stops at frames: it is the physical and data link layer, with ISO-TP as a transport for longer messages, and it says nothing about devices, services or network management. Applications use a higher-layer protocol: **CANopen** (CiA 301) in machines and automation, **SAE J1939** in trucks and mobile machines, **UDS** over ISO-TP for diagnostics, **NMEA 2000** on boats, **ISOBUS** on tractors and implements, **DroneCAN** and Cyphal on drones. OT Fabric implements CANopen in [go-canopen](/docs/protocols/canopen/), on top of go-canbus; the others are on the [roadmap](https://github.com/otfabric/go-canbus/blob/main/ROADMAP.md) as separate libraries.
 
 <Aside type="caution" title="Real equipment">
 CAN has no authentication and no encryption: any node can send any identifier, and on vehicles and machines frames move brakes, drives and power electronics. canbusctl is passive by default and needs `--yes` before it transmits on a real interface. Test on a virtual bus or an isolated bench bus you own or are authorized to test.
@@ -79,6 +79,7 @@ ISO 11898-1 (data link), ISO 11898-2 (high-speed transceivers) and ISO 15765-2 (
 | [go-canbus](/projects/go-canbus/) | CAN for Go: classical CAN, CAN FD and CAN XL frames on Linux SocketCAN, slcan adapters on every OS and a virtual bus, interface administration, ISO-TP, capture and replay in seven trace formats, DBC, KCD and ARXML databases with a signal codec and a code generator, and a fault-injecting bridge. No cgo. v0.7.0. |
 | [canbusctl](/projects/canbusctl/) | A command-line toolkit on go-canbus: monitor, record, convert and replay traces, decode and encode with a database, generate Go, run ISO-TP, simulate a database's traffic and test under faults, with safety guards for real buses. v0.6.0. |
 | [canbus-interop](/projects/canbus-interop/) | Docker images of seven independent CAN, ISO-TP and database implementations behind one container contract, for tests on Linux virtual CAN. v0.5.0. |
+| [go-canopen](/projects/go-canopen/) | CANopen on top of go-canbus; see the [CANopen guide](/docs/protocols/canopen/). |
 
 <CardGrid>
   <LinkCard title="Go library" description="Frames, transports, ISO-TP, traces, databases and code generation with go-canbus." href="/docs/protocols/can-bus/library/" />

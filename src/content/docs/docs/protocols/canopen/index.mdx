@@ -1,0 +1,87 @@
+---
+title: CANopen
+description: How CANopen works on top of CAN (the object dictionary, SDO, PDO and MPDO, NMT and heartbeats, SYNC, EMCY and TIME, LSS, the CiA 302 network boot-up, EDS and DCF files, the CiA 402 drive profile and CANopen FD) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+CANopen is the application protocol that most industrial devices on a CAN bus speak. CAN in Automation (CiA) publishes it as CiA 301, standardized as EN 50325-4, with companion specifications for network management (CiA 302), node-ID setting (CiA 305), device description files (CiA 306), device profiles such as CiA 402 for drives, and CANopen FD (CiA 1301). This page explains how CANopen works, as far as it matters for using [go-canopen](/projects/go-canopen/) and [canopenctl](/projects/canopenctl/).
+
+## CAN carries, CANopen defines
+
+[CAN](/docs/protocols/can-bus/) is the transport. It moves frames of up to 8 bytes (64 with CAN FD) with an 11-bit identifier that names the message and sets its priority, and it says nothing about devices. CANopen adds what a network of devices needs: a **node-ID** from 1 to 127 for each device, a model of what each device contains, services to read, write and stream that content, and a master that starts, supervises and configures the network. In OT Fabric the layers are separate libraries: [go-canbus](/docs/protocols/can-bus/library/) opens the bus, and go-canopen runs every CANopen service on a `canbus.Bus`.
+
+## The object dictionary
+
+Every CANopen device has an **object dictionary**: a table of objects addressed by a 16-bit **index** and an 8-bit **sub-index**. An object has a data type (BOOLEAN, UNSIGNED8 to UNSIGNED64, INTEGER, REAL32 and REAL64, strings, DOMAIN for blocks of any size, TIME_OF_DAY), access rights (read-only, write-only, read-write, constant), and may be **mappable** into PDOs.
+
+| Range | Holds |
+|---|---|
+| 0x1000 to 0x1FFF | The communication profile: device type (0x1000), error register (0x1001), device name (0x1008), heartbeat time (0x1017), **identity** (0x1018: vendor-ID, product code, revision, serial number), SDO, PDO, SYNC, EMCY and TIME parameters |
+| 0x2000 to 0x5FFF | Manufacturer-specific objects |
+| 0x6000 to 0x9FFF | Standardized device profiles, such as CiA 402's controlword (0x6040) and statusword (0x6041) |
+
+The dictionary is the device's whole interface: configuring a device means writing its objects, and its process data are objects too.
+
+## SDO: reading and writing the dictionary
+
+A **Service Data Object** transfer is a confirmed client-server exchange on two identifiers, by default 0x600 + node-ID to the device and 0x580 + node-ID back. **Expedited** transfers carry up to 4 bytes in one frame, **segmented** transfers carry any length 7 bytes at a time, and **block** transfers send up to 127 segments per confirmation with a CRC, for firmware and large DOMAINs. A device that refuses a transfer sends an **SDO abort** with a 32-bit code, such as 0x06020000 (object does not exist) or 0x06010002 (attempt to write a read-only object).
+
+## PDO: process data
+
+**Process Data Objects** carry live values without protocol overhead: one CAN frame whose bytes are filled from objects named in a **mapping** (for example the statusword and the actual position of a drive). A device has transmit PDOs (TPDOs) and receive PDOs (RPDOs), each with a COB-ID, a **transmission type** (synchronous every n SYNCs, acyclic, or event-driven), an inhibit time that limits the rate and an event timer that forces a send. **Multiplexed PDOs** (MPDOs) carry an index and a sub-index in the frame, so one PDO can write many objects.
+
+## NMT, heartbeat and the network master
+
+A device boots into **pre-operational**, where SDO works but PDOs do not, and announces itself with a **boot-up** message. The **NMT master** moves nodes between **operational**, **stopped** and pre-operational, or resets their application or communication settings, with one 2-byte frame on identifier 0. Every device reports its state with a **heartbeat** at the period in 0x1017, and the master, or any heartbeat consumer, notices a node that stops. Older devices use **node guarding** instead, where the master polls.
+
+## SYNC, EMCY and TIME
+
+- **SYNC** is a frame from one producer that synchronous PDOs follow: devices sample on SYNC and send their TPDOs, and apply received RPDOs, within the **synchronous window**.
+- **EMCY** is a device's emergency message: a 16-bit error code, the error register and manufacturer data, sent once when an error appears and once when it clears, and kept in the error history (0x1003).
+- **TIME** distributes the time of day as days since 1984 and milliseconds since midnight.
+
+## LSS and the CiA 302 network boot-up
+
+A node-ID must be unique, and setting it with DIP switches does not scale. **Layer Setting Services** (CiA 305) address a device by its LSS address, the four identity values of 0x1018, to give it a node-ID and a bit rate. **Fastscan** finds the address of an unconfigured device bit by bit, so a master can number a whole network on its own.
+
+**CiA 302** turns a master into a network manager: it knows which slaves to expect (0x1F81) and their identities (0x1F84 to 0x1F88), checks each one at boot, downloads its configuration as a **concise DCF** (0x1F22), starts it, supervises its heartbeat, and reports a failing slave with an error status letter. It also defines program download, for firmware updates over the network.
+
+## EDS and DCF files
+
+An **Electronic Data Sheet** (EDS, CiA 306) is an INI-style file that describes a device type's object dictionary: every object with its type, access, default value and PDO mappability. A **Device Configuration File** (DCF) is an EDS with the values of one configured device, and the **concise DCF** is the binary list of index, sub-index and value that a manager writes over SDO. These are device descriptions, not protocols, and tools such as CANopenEditor, Lely's dcf-tools and go-canopen's `eds` package read and write them.
+
+## Device profiles: CiA 402 drives
+
+Device profiles standardize objects in the 0x6000 range for one kind of device. **CiA 402** for drives and motion control is the most used: a state machine (switch on disabled, ready to switch on, switched on, operation enabled, quick stop, fault) driven by the controlword and reported by the statusword, and modes of operation such as profile position, profile velocity, homing and the cyclic synchronous modes. EtherCAT's CoE and IEC 61800-7-201 use the same model.
+
+## CANopen FD
+
+**CANopen FD** (CiA 1301) moves CANopen onto CAN FD: PDOs of up to 64 bytes, a 20-byte emergency, and the **USDO**, a universal SDO that replaces the SDO, can address several servers at once and carries whole objects per frame. Few devices implement it yet, and neither do CANopenNode, Lely CANopen or python canopen in their current releases, so go-canopen's CANopen FD is built from public sources and tested against itself.
+
+<Aside type="caution" title="Real equipment">
+CANopen has no authentication and no encryption: any node can send NMT commands, write objects over SDO or drive a CiA 402 axis, and the devices behind them move motors, valves and power electronics. canopenctl is read-only by default and needs `--yes` before it changes anything on a real interface. Test on a virtual bus or an isolated bench bus you own or are authorized to test.
+</Aside>
+
+## Specifications
+
+The CiA specifications are documents of CAN in Automation: some are public, most are available to members or by subscription; see [CiA in the standards directory](/ecosystem/organizations/cia/). CiA tests CANopen devices for conformance. go-canopen is built from public material (public descriptions of the protocol, the behaviour of CANopenNode, Lely CANopen and python canopen, and Wireshark's CANopen dissector), tested against independent implementations, and makes no claim of CiA conformance.
+
+## OT Fabric for CANopen
+
+| Project | What it is |
+|---|---|
+| [go-canopen](/projects/go-canopen/) | CANopen for Go on go-canbus: object dictionary, SDO and USDO, NMT, heartbeat and node guarding, PDOs and MPDOs, SYNC, EMCY and TIME, LSS, store and restore, a complete device, a CiA 302 network manager, EDS/DCF and concise DCF, Go code generation, CiA 402 and a frame dissector. No cgo. v0.3.1. |
+| [canopenctl](/projects/canopenctl/) | A command-line toolkit on go-canopen: monitor and decode traffic, SDO and USDO, NMT, LSS, network boot-up, heartbeats and emergencies, PDOs and MPDOs, EDS, DCF and concise DCF, program download, CiA 402 and simulated devices, read-only by default. v0.2.1. |
+| [canopen-interop](/projects/canopen-interop/) | Docker images of CANopenNode, Lely CANopen and python canopen as devices and masters behind one container contract, with EDS checkers, LSS, MPDOs and the CiA 302 boot-up, for tests on Linux virtual CAN. v0.2.0. |
+| [go-canbus](/projects/go-canbus/) | The CAN transport underneath: SocketCAN, slcan adapters and a virtual bus. |
+
+<CardGrid>
+  <LinkCard title="Go library" description="Devices, the network manager, SDO, PDOs, LSS, EDS files and CiA 402 with go-canopen." href="/docs/protocols/canopen/library/" />
+  <LinkCard title="canopenctl" description="Monitor, SDO, NMT, LSS, boot-up, PDOs, EDS files, drives and simulation from the command line." href="/docs/protocols/canopen/cli/" />
+  <LinkCard title="Testing and interop" description="Reference stacks, the matrix and what has been validated." href="/docs/protocols/canopen/testing/" />
+  <LinkCard title="Ecosystem map" description="Who else implements CANopen, in which language and licence." href="/ecosystem/implementations/?protocol=canopen" />
+</CardGrid>

@@ -290,13 +290,13 @@
 		"id": "go-canbus",
 		"name": "go-canbus",
 		"repo": "go-canbus",
-		"category": "protocol",
+		"category": "transport",
 		"standards": [
 			"can-bus"
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-canbus",
-		"description": "Classical CAN, CAN FD and CAN XL on Linux SocketCAN, serial-line (slcan) adapters on every OS and a virtual bus, with ISO-TP, capture and replay in seven trace formats, and DBC, KCD and ARXML databases with a signal codec and a Go code generator. No cgo.",
+		"description": "The CAN transport for Go: classical CAN, CAN FD and CAN XL frames on Linux SocketCAN, serial-line (slcan) adapters on every OS and a virtual bus, with ISO-TP, capture and replay in seven trace formats, and DBC, KCD and ARXML databases with a signal codec and a Go code generator. go-canopen runs on it. No cgo.",
 		"icon": "go-canbus",
 		"highlights": [
 			"Frames: classical CAN with 11- and 29-bit identifiers, CAN FD with bit rate switching and error state indicator, remote and error frames, and CAN XL with priority, VCID, SDU type and up to 2048 bytes; filters with the exact semantics of Linux CAN_RAW_FILTER.",
@@ -306,7 +306,33 @@
 			"Traces: candump, lossless JSON Lines, pcap and pcapng (checked against tcpdump and Wireshark), Vector ASC and BLF, PEAK TRC, with streaming replay at original, scaled or maximum speed.",
 			"Databases: DBC and KCD read and write, AUTOSAR 4 ARXML read, with Intel and Motorola byte order, signed, float, scaling, value tables, simple and extended multiplexing and exact 64-bit raw values; typed Go generated from a database.",
 			"Interop tested in CI on Linux virtual CAN against can-utils and the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix: 170 scenarios pass, none fail. Kernels 6.1 to 7.0 in micro-VMs.",
-			"No ISO or CiA conformance claim, and not yet tested on real CAN hardware: virtual CAN shows frame encoding and protocol logic, not bit timing, arbitration or bus-off. No vendor adapters (PEAK, Kvaser, Vector) and no CANopen, J1939 or UDS yet."
+			"No ISO or CiA conformance claim, and not yet tested on real CAN hardware: virtual CAN shows frame encoding and protocol logic, not bit timing, arbitration or bus-off. No vendor adapters (PEAK, Kvaser, Vector) yet. CANopen runs on top in go-canopen; J1939 and UDS are not implemented."
+		]
+	},
+	{
+		"id": "go-canopen",
+		"name": "go-canopen",
+		"repo": "go-canopen",
+		"category": "protocol",
+		"standards": [
+			"canopen"
+		],
+		"related": [
+			"can-bus"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-canopen",
+		"description": "CANopen (CiA 301) and CANopen FD on go-canbus: object dictionary, SDO and USDO, NMT, heartbeat, PDOs and MPDOs, SYNC, EMCY, TIME, LSS, a complete device and a CiA 302 network manager, EDS/DCF files, typed Go from an EDS and the CiA 402 drive profile. No cgo.",
+		"icon": "go-canopen",
+		"highlights": [
+			"The CiA 301 services: an object dictionary with access rights, limits, node-ID relative defaults, hooks and watchers; SDO client and server with expedited, segmented and block transfer; NMT master and slave with both resets; heartbeat, node guarding and life guarding; SYNC with the synchronous window, EMCY and TIME.",
+			"PDOs with every transmission type, inhibit time, event timer, RTR and deadline monitoring, the CiA 301 reconfiguration rules and remote configuration; multiplexed PDOs (DAM and SAM) with scanner and dispatcher lists.",
+			"A complete device built from a dictionary, gated by its NMT state, and a network manager: scan, boot procedure, DCF configuration, the CiA 302 network boot-up with an optional LSS step, concise DCF configuration, program download and one ordered event stream.",
+			"LSS (CiA 305) master and slave with Fastscan and automatic node-ID assignment; store and restore of parameters behind 0x1010 and 0x1011.",
+			"CANopen FD (CiA 1301) from public sources: the USDO, 64-byte PDOs and 20-byte emergencies. No open reference stack implements it, so it is tested against go-canopen itself only.",
+			"EDS and DCF (CiA 306) parsing, validation and writing, typed Go generated from an EDS, the CiA 402 drive profile with a simulated drive and a controller, and a frame dissector checked against Wireshark.",
+			"Runs on go-canbus, so the same code works on Linux SocketCAN, slcan adapters on every OS and an in-process virtual bus.",
+			"Interop tested against CANopenNode, Lely CANopen and python canopen in both directions on Linux virtual CAN: 1,276 scenarios pass and none fail, with 57 documented differences and 287 skips where a stack lacks a feature. No CiA conformance claim, nothing tested on real CAN hardware yet."
 		]
 	},
 	{
@@ -514,6 +540,21 @@
 		"status": "available",
 		"description": "Monitor, record, convert and replay CAN, CAN FD and CAN XL traffic, decode and encode with DBC, KCD or ARXML, run ISO-TP, simulate a database and test under faults. Passive by default; transmitting on a real bus needs --yes.",
 		"icon": "go-canbus"
+	},
+	{
+		"id": "canopenctl",
+		"name": "canopenctl",
+		"repo": "canopenctl",
+		"category": "cli",
+		"standards": [
+			"canopen"
+		],
+		"related": [
+			"can-bus"
+		],
+		"status": "available",
+		"description": "Monitor and decode CANopen traffic, read and write object dictionaries over SDO or USDO, manage nodes with NMT, assign node-IDs with LSS, boot a network as a CiA 302 manager, configure PDOs and MPDOs, work with EDS, DCF and concise DCF files, drive CiA 402 axes and simulate devices. Read-only by default; changes on a real bus need --yes.",
+		"icon": "go-canopen"
 	},
 	{
 		"id": "sparkplugbctl",
@@ -782,6 +823,18 @@
 		"status": "available",
 		"description": "Seven independent CAN references in containers behind one contract: can-utils with the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix, on Linux virtual CAN.",
 		"icon": "go-canbus"
+	},
+	{
+		"id": "canopen-interop",
+		"name": "canopen-interop",
+		"repo": "canopen-interop",
+		"category": "interop",
+		"standards": [
+			"canopen"
+		],
+		"status": "available",
+		"description": "Three independent CANopen stacks in containers behind one contract, as devices and masters: CANopenNode, Lely CANopen and python canopen, with EDS checkers, LSS, MPDOs and the CiA 302 boot-up, on Linux virtual CAN.",
+		"icon": "go-canopen"
 	},
 	{
 		"id": "sparkplugb-interop",

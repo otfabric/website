@@ -6,7 +6,7 @@ import { docsSchema } from '@astrojs/starlight/schema';
 // Every standard with a page of its own (src/content/standards/): communication protocols,
 // information models and application profiles. Projects and organizations refer to them by id.
 const standardIds = [
-	'modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5', 'ethernet-ip', 'profinet', 'can-bus',
+	'modbus', 'opc-ua', 'bacnet', 'iec-104', 'iec-61850', 's7', 'openadr', 'ocpp', 'dnp3', 'ieee-2030-5', 'ethernet-ip', 'profinet', 'can-bus', 'canopen',
 	'sunspec', 'iec-61850-model',
 	'sparkplug-b',
 ] as const;

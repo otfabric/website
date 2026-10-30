@@ -1,0 +1,136 @@
+---
+kind: protocol
+name: "CANopen"
+standard: "CiA 301 (EN 50325-4), CiA 302, 305 and 306; CiA 402 drives; CiA 1301 CANopen FD"
+summary: "The application protocol that runs on CAN in machines, drives, lifts, medical and mobile equipment: an object dictionary per device, SDO to read and write it, PDOs for process data, NMT and heartbeats to manage the network, and EDS files that describe each device."
+order: 15
+facts:
+  - { label: 'Runs on', value: 'CAN bus: classical CAN and CAN FD; Linux SocketCAN, USB serial-line (slcan) adapters' }
+  - { label: 'Network', value: 'Up to 127 nodes, one NMT master; node-IDs set by switches, software or LSS' }
+  - { label: 'Library', value: 'go-canopen' }
+  - { label: 'CLI', value: 'canopenctl' }
+  - { label: 'Interop', value: 'canopen-interop v0.2.0' }
+icon: go-canopen
+docs: /docs/protocols/canopen/
+carriedBy: ['can-bus']
+layers:
+  - label: 'Device profiles'
+    items:
+      - { name: 'CiA 402 drives and motion control', note: 'go-canopen' }
+      - { name: 'CiA 401 I/O, 406 encoders, 4xx others', note: 'not yet' }
+  - label: 'Network management'
+    items:
+      - { name: 'CiA 302 network boot-up, configuration manager, program download', note: 'go-canopen' }
+      - { name: 'LSS node-ID and bit rate setting (CiA 305)', note: 'go-canopen' }
+  - label: 'Application layer'
+    items:
+      - { name: 'CANopen (CiA 301): object dictionary, SDO, PDO, NMT, SYNC, EMCY, TIME', id: 'canopen', note: 'go-canopen' }
+      - { name: 'CANopen FD (CiA 1301): USDO, 64-byte PDOs', note: 'go-canopen' }
+      - { name: 'EDS and DCF device descriptions (CiA 306)', note: 'go-canopen' }
+  - label: 'Transport'
+    items:
+      - { name: 'CAN bus: classical CAN and CAN FD frames (ISO 11898-1)', id: 'can-bus', note: 'go-canbus' }
+  - label: 'Physical'
+    items:
+      - { name: 'Transceivers (ISO 11898-2), cabling and termination' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+**CANopen** is the higher-layer protocol that turns a CAN bus into a network of devices. [CAN](/protocols/can-bus/) itself only moves short frames with an identifier; CANopen, published by CAN in Automation (CiA) as CiA 301 and standardized as EN 50325-4, says what those frames mean. Every device has an **object dictionary**, a table of objects addressed by a 16-bit index and an 8-bit sub-index that holds its identity, its communication settings and its application data. **SDO** reads and writes that dictionary one object at a time, **PDOs** carry process data in single frames without protocol overhead, and **NMT** starts, stops and resets nodes, which report their state with **heartbeats**. **EDS** files describe a device's dictionary so that tools can configure it without its manual.
+
+## Where you meet it
+
+- Industrial machines, packaging and printing lines, where drives, I/O modules, encoders and valves sit on one CANopen network
+- Servo and stepper drives that follow the **CiA 402** profile, the same drive model that EtherCAT's CoE uses
+- Lifts and escalators (CiA 417), medical devices, laboratory automation and rail vehicles
+- Mobile machines, forklifts, AGVs and light electric vehicles, with battery packs, chargers and motor controllers
+- Embedded products that need a well-defined device model on a CAN bus they already have
+
+## Quickstart
+
+### From the command line
+
+Download `canopenctl` from [GitHub Releases](https://github.com/otfabric/canopenctl/releases), or `go install github.com/otfabric/canopenctl@latest`. A Linux virtual CAN interface and a simulated device are enough to try it without hardware:
+
+```sh
+# A virtual CAN interface (Linux) and a simulated CANopen device, node 5
+sudo ip link add vcan0 type vcan && sudo ip link set vcan0 up
+canopenctl simulate -i vcan0 --node-id 5 &
+
+# Decode live traffic, passively
+canopenctl monitor -i vcan0
+
+# Find nodes 1 to 127 with their device type and identity
+canopenctl scan -i vcan0
+
+# Read the vendor-ID of node 5, or every readable object decoded with its EDS
+canopenctl sdo read 5 0x1018 1 -i vcan0
+canopenctl sdo dump 5 --eds device.eds -i vcan0 --format table
+
+# Start every node, then watch heartbeats and emergencies (a real bus needs --yes)
+canopenctl nmt start all -i vcan0
+canopenctl heartbeat watch -i vcan0 --supervise 1500ms
+
+# Give unconfigured devices node-IDs with LSS, then boot the network as a CiA 302 manager
+canopenctl lss assign-all --first 10 --store -i can0 --yes
+canopenctl boot --slave 5=node5.dcf --slave 6 -i can0 --yes
+```
+
+canopenctl is read-only by default: `monitor`, `decode` and the `watch` commands never transmit, `scan`, `sdo read` and `sdo dump` send only read requests, and every command that changes a device or the network needs `--yes` on an interface that is not virtual.
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-canopen
+```
+
+A device and a network manager on two ports of a virtual bus, from the go-canopen README. On a real network, open the bus with go-canbus (`socketcan.Open("can0")`, or an slcan adapter) and the CANopen code does not change:
+
+```go title="main.go"
+vb := virtual.New(virtual.Config{Name: "quickstart"})
+p1, _ := vb.Open()
+p2, _ := vb.Open()
+deviceBus, _ := canbus.NewBus(p1)
+masterBus, _ := canbus.NewBus(p2)
+
+// The device: the CiA 301 communication objects and a node-ID.
+d, _ := od.Standard(od.Config{NodeID: 5, DeviceType: 0x000F0191, VendorID: 0xF7A, DeviceName: "quickstart", HeartbeatMs: 100})
+dev, _ := node.New(deviceBus, d)
+
+// The network manager.
+m, _ := master.New(masterBus)
+_ = m.Start()
+defer m.Close()
+
+since := time.Now()
+_ = dev.Start() // boot-up message, pre-operational
+defer dev.Close()
+_ = m.WaitBootUp(ctx, 5, since)
+
+c, _ := m.SDO(5)
+devType, _ := c.ReadUint(ctx, od.IndexDeviceType, 0)
+name, _ := c.ReadString(ctx, od.IndexDeviceName, 0)
+fmt.Printf("node 5: device type 0x%08X, %q\n", devType, name)
+
+_ = m.StartNode(ctx, 5)
+_ = m.WaitState(ctx, 5, canopen.StateOperational)
+```
+
+## What go-canopen and canopenctl support
+
+| | |
+|---|---|
+| CiA 301 | Object dictionary with access rights, limits and hooks; SDO client and server with expedited, segmented and block transfer; PDOs with every transmission type, inhibit time, event timer, RTR and deadline monitoring; MPDOs (DAM and SAM); NMT master and slave; heartbeat, node guarding and life guarding; SYNC with the synchronous window; EMCY; TIME; store and restore |
+| Devices and managers | A complete device built from a dictionary and gated by its NMT state; a network manager with scan, boot procedure, DCF configuration, remote PDOs and one ordered event stream |
+| CiA 302 | Network boot-up with error status letters and an optional LSS step, the configuration manager with concise DCFs, program download; no flying master and no SDO manager |
+| LSS (CiA 305) | Master and slave: switch, configure node-ID and bit timing, store, inquire, identify, Fastscan and automatic assignment of every unconfigured device |
+| CANopen FD (CiA 1301) | USDO, PDOs up to 64 bytes, the 20-byte emergency; built from public sources and not interop tested, because no open stack implements it yet |
+| Files | EDS and DCF (CiA 306) read, validate and write; concise DCF; typed Go generated from an EDS |
+| CiA 402 | The drive state machine and modes PP, PV, PT, HM, CSP, CSV and CST, as a simulated drive and as a controller |
+| Traffic | A dissector for every service, checked against Wireshark's; canopenctl decodes candump, pcap and pcapng, BLF, ASC, TRC and JSON Lines traces |
+| Platforms | Linux (amd64, arm64, armv7) for SocketCAN; slcan adapters and the virtual bus also on macOS and Windows. No cgo |
+
+<Callout type="note" title="Early versions, interoperability tested">
+go-canopen v0.3.1, canopenctl v0.2.1 and canopen-interop v0.2.0 are pre-1.0. go-canopen is tested on Linux virtual CAN against the three most used open stacks, packaged by [canopen-interop](https://github.com/otfabric/canopen-interop): **CANopenNode** (C), **Lely CANopen** (C and C++) and **python canopen**, each as master and as device, in both directions. 1,276 scenarios pass and none fail, with 57 documented differences and 287 skips where a stack lacks a feature such as block transfer, MPDOs or a boot master. That is interoperability, not CiA conformance: the CiA specifications are member documents, go-canopen is built from public material, and it has not been certified. Virtual CAN shows message encoding and protocol logic, not timing, and nothing has been tested on real CAN hardware yet. CANopen devices drive motors, valves and power electronics, so test on a virtual or isolated bench bus.
+</Callout>

@@ -2,6 +2,7 @@
 title: 'CAN bus joins OT Fabric: go-canbus, canbusctl and independent reference stacks'
 description: CAN connects the controllers inside battery packs, inverters, chargers, vehicles and machines. go-canbus implements classical CAN, CAN FD and CAN XL under MIT, with ISO-TP, seven trace formats and DBC, KCD and ARXML databases, canbusctl puts it on the command line with safety guards for real buses, and canbus-interop tests it against seven independent implementations.
 date: 2026-10-29
+updated: 2026-10-30
 authors: [OT Fabric]
 tags: [announcement, can-bus, energy, interop]
 featured: true
@@ -15,7 +16,7 @@ import MapLink from '../../components/ecosystem/MapLink.astro';
 
 Open a battery storage container, an EV charger or a heat pump, and somewhere inside two twisted wires run from board to board. They carry CAN: the cell voltages from the battery management system, the setpoints for the power electronics, the status of the charger's power modules. The same bus runs every car and truck on the road, tractors and excavators, robots, lifts and medical devices. Every controller on it can send, frames are short, and the identifier of a frame names the message and sets its priority.
 
-Today CAN bus becomes the thirteenth communication protocol in OT Fabric, with the same three pieces as every other: a library, a command-line tool and an interoperability suite.
+Today CAN bus joins OT Fabric, with the same three pieces as every protocol: a library, a command-line tool and an interoperability suite. CAN is the transport here: it moves frames, and the protocols on top of it, such as CANopen, J1939 and UDS, say what the frames mean.
 
 ## Why CAN, and why now
 
@@ -37,7 +38,7 @@ The other protocols in OT Fabric connect devices to each other and to the contro
 - **Databases**: DBC and KCD read and written, the CAN part of AUTOSAR 4 ARXML read, a signal codec with exact 64-bit raw values, and typed Go generated from a database.
 - **Fault injection**: a seeded bridge between two interfaces that drops, duplicates, delays, reorders and corrupts frames.
 
-ISO 11898 and ISO 15765-2 are sold by ISO, and DBC has no public specification at all. go-canbus is built from public material, the Linux SocketCAN documentation and headers, Bosch's CAN specifications and the behaviour of independent implementations. What it does not do yet is said plainly: no PEAK, Kvaser or Vector drivers, no ARXML writer, and no CANopen, J1939 or UDS, which are planned as separate libraries on top.
+ISO 11898 and ISO 15765-2 are sold by ISO, and DBC has no public specification at all. go-canbus is built from public material, the Linux SocketCAN documentation and headers, Bosch's CAN specifications and the behaviour of independent implementations. What it does not do yet is said plainly: no PEAK, Kvaser or Vector drivers, no ARXML writer, and no J1939 or UDS, which are planned as separate libraries on top. CANopen is the first of them: [go-canopen](/protocols/canopen/) runs on go-canbus since 30 October 2026.
 
 ## canbusctl
 
@@ -87,6 +88,6 @@ The [ecosystem map](/ecosystem/implementations/?protocol=can-bus) now covers CAN
 
 <MapLink protocol="can-bus" title="Explore CAN bus on the ecosystem map" />
 
-Who maintains CANopen and the CAN FD and CAN XL recommendations, and what membership and certification cost, is in [CAN in Automation's entry](/ecosystem/organizations/cia/) in the standards and alliances directory.
+CANopen stacks have their own [map](/ecosystem/implementations/?protocol=canopen) since [go-canopen launched](/blog/introducing-canopen/). Who maintains CANopen and the CAN FD and CAN XL recommendations, and what membership and certification cost, is in [CAN in Automation's entry](/ecosystem/organizations/cia/) in the standards and alliances directory.
 
 Start with the [CAN bus overview](/docs/protocols/can-bus/), or `go get github.com/otfabric/go-canbus`.

@@ -1,0 +1,139 @@
+---
+title: Go library
+description: Use go-canopen to build CANopen devices and network managers in Go on go-canbus, with the object dictionary, SDO and block transfer, PDOs and MPDOs, NMT and heartbeats, SYNC, EMCY and TIME, LSS, the CiA 302 network boot-up, EDS and DCF files, code generation, CiA 402 drives, CANopen FD, errors and observability.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+[go-canopen](/projects/go-canopen/) is a pure Go implementation of CANopen: the CiA 301 application layer and communication profile, with LSS (CiA 305), the CiA 302 network manager, EDS and DCF files (CiA 306), the CiA 402 drive profile and CANopen FD (CiA 1301). It runs on [go-canbus](/docs/protocols/can-bus/library/), its one dependency, and has no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-canopen); [API.md](https://github.com/otfabric/go-canopen/blob/main/API.md) in the repository is the map. This page follows v0.3.1.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-canopen
+```
+
+Go 1.23 or later. The packages:
+
+| Package | Contents |
+|---|---|
+| `canopen` | Node-IDs, COB-IDs and the predefined connection set, data types and their encoding, SDO abort codes, NMT states and commands, the `Bus` interface, sentinel errors |
+| `od` | The object dictionary: objects, access rights, limits, node-ID relative defaults, hooks and watchers; `od.Standard` builds the CiA 301 communication objects |
+| `sdo`, `usdo` | SDO client and server with expedited, segmented and block transfer; the CANopen FD USDO client and server |
+| `nmt` | NMT master and slave, heartbeat producer and consumer, node guarding and life guarding |
+| `pdo`, `mpdo` | PDO mapping, TPDO and RPDO services, remote configuration; multiplexed PDOs with scanner and dispatcher lists |
+| `sync` (package `syncobj`), `emcy`, `timestamp` | SYNC producer and consumer with the synchronous window, emergencies with error history, TIME |
+| `lss` | LSS master and slave: switch, configure, inquire, identify, Fastscan, AssignAll |
+| `node` | A complete device that picks its services from its dictionary and follows its NMT state |
+| `master` | A network manager: NMT, supervision, SDO to every node, scan, configuration, the CiA 302 boot-up, LSS, remote PDOs, CiA 402 control and one event stream |
+| `store`, `cdcf`, `program` | Parameter persistence behind 0x1010 and 0x1011, the concise DCF, program download on the device side |
+| `eds`, `codegen` | EDS and DCF parse, validate and write; typed Go from an EDS |
+| `cia402` | The drive state machine and modes, a simulated drive and a controller |
+| `dissect` | CAN frames decoded as CANopen messages, with SDO transfer tracking |
+
+Every service follows the same pattern: `NewX(bus, ..., opts...)`, then `Start()` and `Close()`, with `Stats()` for counters. Calls that use the bus take a `context.Context`, and a service given a dictionary reads its parameters from the standard objects and follows their changes.
+
+## Opening the bus
+
+go-canopen takes a `canopen.Bus`, which a `*canbus.Bus` implements, so the transport is go-canbus's choice:
+
+```go
+conn, err := socketcan.Open("can0")      // Linux SocketCAN
+// conn, err := slcan.Open("/dev/ttyACM0", 115200, slcan.Config{Bitrate: 500000}) // a CANable on any OS
+bus, err := canbus.NewBus(conn)
+defer bus.Close()
+```
+
+Tests and examples use go-canbus's in-process `virtual` bus, with one port per participant. Replace the virtual ports with SocketCAN or an slcan adapter and the CANopen code does not change.
+
+## A device
+
+`node.New` builds a complete device from a dictionary. It creates the SDO server, the NMT slave and heartbeat producer, the PDOs, SYNC, EMCY and TIME services the dictionary configures, enables and disables them with the NMT state, and raises the CiA 301 emergencies itself:
+
+```go
+d, _ := od.Standard(od.Config{NodeID: 5, DeviceType: 0x000F0191, VendorID: 0xF7A, DeviceName: "pump", HeartbeatMs: 100})
+counter := od.NewVar(0x2000, "Counter", canopen.Unsigned16, od.AccessRO, uint16(0))
+counter.Subs[0].PDOMappable = true
+_ = d.Add(counter)
+
+dev, _ := node.New(bus, d, node.WithStore(store.NewFile("pump.params")))
+_ = dev.Start() // boot-up message, pre-operational
+defer dev.Close()
+
+_ = d.SetUint(0x2000, 0, 42) // the application writes its objects locally
+```
+
+A device can also come from an EDS (`eds.ParseFile` and `File.Dictionary`), start unconfigured with `node.WithLSS` and wait for an LSS master to give it a node-ID, serve program download with `node.WithProgram`, act as a CiA 402 drive with `node.WithDrive`, or run CANopen FD with `node.WithFD`.
+
+<Aside type="note" title="Abridged">
+The snippets on this page leave out error handling. The [examples](https://github.com/otfabric/go-canopen/tree/main/examples) are complete programs that run on every build.
+</Aside>
+
+## A network manager
+
+`master.New` is the other end: NMT commands, a heartbeat consumer for every node, an SDO client per node, scan, configuration and one ordered event stream:
+
+```go
+m, _ := master.New(bus, master.WithEventHandler(func(e master.Event) { log.Println(e) }))
+_ = m.Start()
+defer m.Close()
+
+nodes, _ := m.Scan(ctx, nil)                  // nodes 1..127 that answer, with identity
+c, _ := m.SDO(5)
+vendor, _ := c.ReadUint(ctx, 0x1018, 1)
+fmt.Printf("%d nodes, node 5 vendor-ID 0x%X\n", len(nodes), vendor)
+_ = c.WriteUint16(ctx, 0x1017, 0, 1000)        // heartbeat every second
+
+dcf, _ := eds.ParseFile("node5.dcf")
+_ = m.ConfigureFromDCF(ctx, 5, dcf)            // write a configuration
+_ = m.StartNode(ctx, 5)
+_ = m.WaitState(ctx, 5, canopen.StateOperational)
+```
+
+`ConfigurePDO` and `ReadPDO` map a node's PDOs over SDO, following the CiA 301 rules (disable, clear the mapping, write the entries, enable), and `ListenTPDO` and `RPDOSender` decode and produce them.
+
+## The CiA 302 network boot-up
+
+With `master.WithDictionary`, the master becomes a CiA 302 manager. Its own dictionary holds the network list (0x1F81), the expected identities (0x1F84 to 0x1F88) and a concise DCF per slave (0x1F22); `BootNetwork` resets the network, runs the boot slave process for every slave in parallel (identity check, configuration, heartbeat supervision) and starts it. A slave that fails ends with an error status letter, such as M for a product code that does not match. `master.WithLSSBoot` adds an LSS step that finds unconfigured devices by Fastscan and gives each the node-ID its expected identity belongs to. `DownloadProgram` updates firmware through the CiA 302-3 program download objects.
+
+## SDO in detail
+
+`sdo.Client` does expedited, segmented and block transfers; `WithBlockMode(BlockAuto)` switches to block transfer above a threshold, with the CRC and a protocol switch for small uploads. Typed helpers (`ReadUint`, `ReadString`, `WriteUint32`, `WriteValue`) check lengths and types. A refusal is a `canopen.AbortCode`:
+
+```go
+var abort *canopen.AbortError
+if errors.As(err, &abort) {
+	fmt.Printf("0x%08X %s\n", uint32(abort.Code), abort.Code.Text()) // 0x06020000 object does not exist in the object dictionary
+}
+```
+
+The server side follows the dictionary's access rights and limits, and a write hook can veto a value with an abort code.
+
+## LSS
+
+`lss.Master` addresses devices by their LSS address (vendor-ID, product code, revision, serial number): switch one selectively, configure its node-ID and bit timing, store them, inquire its identity. `Fastscan` finds an unconfigured device's address, and `AssignAll` repeats it until every unconfigured device has a node-ID, avoiding the ones in use.
+
+## EDS, DCF and code generation
+
+`eds.ParseFile` reads an EDS or DCF, `File.Validate` reports errors and warnings, and `eds.Write` writes a canonical file back. `File.Dictionary(node)` builds a dictionary from it, and `eds.FromDictionary` exports a running device as an EDS or DCF. `codegen.Generate` turns an EDS into a Go package with index constants, a dictionary constructor and typed local and remote accessors, so that application code uses named, typed accessors instead of raw indices.
+
+## CiA 402 drives
+
+`cia402.NewController` drives a remote axis over SDO: `Enable` walks the state machine to operation enabled, `SetMode` selects profile position, profile velocity, profile torque, homing or the cyclic synchronous modes, `MoveTo` and `WaitTargetReached` run a move, and `FaultReset` clears a fault. `cia402.NewDrive` is a simulated drive on a dictionary, for tests and for `canopenctl simulate --drive`.
+
+## CANopen FD
+
+`node.WithFD` and `master.WithFD` switch a network to CANopen FD: the USDO replaces the SDO for every procedure, PDOs carry up to 64 bytes, and emergencies are 20 bytes. The bus must be opened for CAN FD (on SocketCAN, `ip link set can0 mtu 72`). The public sources do not describe every USDO layout and disagree on the FD emergency, so go-canopen documents what it inferred ([LIMITATIONS.md](https://github.com/otfabric/go-canopen/blob/main/LIMITATIONS.md)) and `emcy.WithFDLayout` selects the emergency layout.
+
+## Errors and observability
+
+Sentinels such as `canopen.ErrTimeout`, `canopen.ErrClosed` and `canopen.ErrProtocol` are wrapped with detail; test with `errors.Is` and extract `*canopen.AbortError`, `*master.BootError` or `*cia402.Error` with `errors.As`. [ERRORS.md](https://github.com/otfabric/go-canopen/blob/main/ERRORS.md) lists them all. Every service takes `WithLogger(*slog.Logger)` and logs nothing by default, every service has `Stats()` with JSON tags, and the master emits one ordered stream of boot-ups, state changes, heartbeat losses, emergencies and boot results ([OBSERVABILITY.md](https://github.com/otfabric/go-canopen/blob/main/OBSERVABILITY.md)).
+
+## Examples
+
+The [examples](https://github.com/otfabric/go-canopen/tree/main/examples) run on the virtual bus with `go run ./examples/<name>`: a node and a master exchanging PDOs, SDO block transfer of 64 KiB, a CiA 402 drive, a device built from an EDS and configured from a DCF, LSS node-ID assignment, a CANopen FD network, the CiA 302 network boot-up, and a node on SocketCAN.
+
+<LinkCard title="Testing and interop" description="How go-canopen is tested against CANopenNode, Lely CANopen and python canopen." href="/docs/protocols/canopen/testing/" />

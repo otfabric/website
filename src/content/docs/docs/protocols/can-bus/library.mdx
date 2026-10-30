@@ -159,7 +159,7 @@ A `chaos.Bridge` sits between two transports, for example a device on one interf
 Errors are sentinel values for `errors.Is`: `canbus.ErrClosed`, `ErrInterfaceDown`, `ErrUnsupported` and `ErrBufferOverflow`, ISO-TP's `isotp.ErrTimeout`, `ErrOverflow` and `ErrSequence`, and `*ParseError` with diagnostics for databases; [ERRORS.md](https://github.com/otfabric/go-canbus/blob/main/ERRORS.md) lists them. A `Bus` logs through `slog` and reports to a `canbus.Metrics` implementation: frames, drops by reason, error frames and the controller's state.
 
 <Aside type="note" title="What the library does not do yet">
-No vendor adapters other than SocketCAN and slcan (PEAK PCAN-Basic, Kvaser CANlib and Vector XL can be added as a `canbus.Transport`); no CANopen, J1939 or UDS; CAN XL only on SocketCAN (Linux 6.2 or later, VCIDs from 6.9), the virtual bus and four trace formats; no ARXML writer. [LIMITATIONS.md](https://github.com/otfabric/go-canbus/blob/main/LIMITATIONS.md) has the full list.
+No vendor adapters other than SocketCAN and slcan (PEAK PCAN-Basic, Kvaser CANlib and Vector XL can be added as a `canbus.Transport`); no J1939 or UDS (CANopen is [go-canopen](/docs/protocols/canopen/library/), on top of go-canbus); CAN XL only on SocketCAN (Linux 6.2 or later, VCIDs from 6.9), the virtual bus and four trace formats; no ARXML writer. [LIMITATIONS.md](https://github.com/otfabric/go-canbus/blob/main/LIMITATIONS.md) has the full list.
 </Aside>
 
 <LinkCard title="Testing and interop" description="The reference stacks go-canbus is tested against, and what has not been validated." href="/docs/protocols/can-bus/testing/" />
