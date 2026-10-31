@@ -1,0 +1,127 @@
+---
+title: 'Reading industrial data: polling, subscriptions, events and cyclic I/O'
+description: Who decides when your application receives a measurement? In Modbus and S7 the client does; in OPC UA and BACnet a subscription hands that decision to the server; in DNP3 and IEC 104 the device reports and keeps events; in PROFINET, EtherNet/IP and CANopen a configured cycle does. Each choice has a cost in freshness, device load and correctness.
+date: 2026-10-31
+authors: [OT Fabric]
+tags: [software-architecture, protocols, scada, automation]
+cover:
+  alt: Five sequence diagrams. Request/response in Modbus, S7 and CANopen SDO, where the client decides by asking. A subscription in OPC UA and BACnet COV, where the server decides when to send changes. Event reporting in DNP3, where the outstation reports changes on its own initiative and buffers events until the master confirms them; IEC 104 also reports spontaneously, with acknowledgements per connection. Cyclic I/O in PROFINET and EtherNet/IP, where a configured cycle carries data both ways. Group traffic in KNX, CANopen PDOs and GOOSE, where one producer sends to every consumer.
+  image: ../../assets/blog/protocol-series/cover-read.png
+---
+
+import SeriesNav from '../../components/blog/SeriesNav.astro';
+import SeriesLink from '../../components/blog/SeriesLink.astro';
+import Callout from '../../components/Callout.astro';
+
+An application needs the active power, the energy counter and the operating state of an inverter. In a web service, you would call an endpoint. In operational technology, the first question is a different one: **who decides when the application receives a measurement?**
+
+Depending on the protocol, the answer is the client, the server, the device, or a configuration that was written when the plant was commissioned. That decision shapes everything else: how fresh the value is, how much load the device carries, what happens to changes between two observations, and what your acquisition code has to look like.
+
+This article compares the read paths of nine protocols. It is part of the series that starts with [14 industrial protocols, 5 communication patterns](/blog/industrial-protocols-software-architecture/).
+
+<SeriesNav current="industrial-protocol-read-patterns" />
+
+## Client-driven polling and its cost
+
+[Modbus](/protocols/modbus/) is the simplest case and the most common one. The client sends Read Holding Registers for a block of addresses; the server answers with their values. Nothing arrives that was not asked for. For our inverter, a Modbus integration is a loop: every second, read the power registers; every minute, read the energy counter; every ten seconds, read the state.
+
+[Siemens S7comm](/protocols/s7/), as used by third-party clients through PUT/GET, works the same way: read a range of a data block, inputs, outputs or markers, and wait for the answer. The connection setup negotiates a PDU size and the number of jobs that may be outstanding at once, which caps how much one request can carry and how much parallelism the PLC will accept.
+
+Polling has real advantages. It is predictable, easy to reason about and easy to test. The client controls the load and knows exactly when it last saw a value. But polling has costs that grow quietly:
+
+- **Every read costs the same**, whether the value changed or not. A building with 5,000 points polled every five seconds acquires 1,000 point values a second, most of which tell you what you already knew. How many Modbus transactions that takes depends on batching, register layout and device limits: contiguous reads can cut the request count dramatically, scattered registers can need many separate transactions.
+- **The poll rate is a sampling rate**. Anything that changes and changes back between two reads is invisible.
+- **Devices have limits**. Many Modbus devices handle one request at a time, serial lines carry one transaction at a time, and an S7 PLC caps parallel jobs. Polling faster eventually means queueing, timeouts and retries.
+- **Batching is device-specific**. Reading 100 contiguous registers in one request is cheap; reading 100 scattered ones may take 100 requests, and some devices reject reads that span gaps in their register map.
+
+Polling is the right model when the device offers nothing else, when values change continuously and you only need a sample, or when you need a simple, bounded load. It is the wrong model for rare events, for fast processes and for anything where the history of changes matters.
+
+## Explicit reads versus cached state
+
+An explicit read does not always return a measurement taken at that moment. Many devices update an internal image on their own schedule and answer reads from it. A Modbus meter may refresh its registers every 200 milliseconds; a PLC answers S7 reads from memory that its program updates once per scan; a gateway in front of serial devices may answer from a cache it filled minutes ago.
+
+This matters because the response carries no time stamp. The application knows when the answer arrived, not when the value was measured. <SeriesLink to="industrial-data-time-freshness-ordering">Time, freshness and ordering</SeriesLink> goes deeper into what a value knows about its own age.
+
+## Change-of-value notifications and monitored items
+
+A subscription moves part of the decision to the server. The client says *what* it wants once, and the server decides *when* to send it.
+
+In [BACnet](/protocols/bacnet/), a client sends SubscribeCOV for an object such as an analog input. The device then sends a COV notification when the monitored value changes in a way that object type defines: for an analog input, a change larger than its COV increment; for binary and multi-state objects, any change of state; and in both cases a change of the status flags. Which objects support COV, and with which criteria, depends on the object type and the device. The subscription has a finite lifetime in seconds or, where the device supports it, an indefinite one (lifetime absent or zero). A finite subscription must be renewed before it expires. Even an indefinite one is worth renewing periodically, as the BACnet Testing Laboratories guidelines recommend, because a device may lose its subscriptions when it restarts; careful clients renew on a timer and re-read values after renewing. Notifications can be confirmed, so the client acknowledges each one, or unconfirmed, which is cheaper but has no delivery check.
+
+In [OPC UA](/protocols/opc-ua/), a client creates a subscription and adds monitored items to it. Each monitored item has a **sampling interval**, how often the server checks the value, a **queue size**, how many changes it keeps between notifications, and a filter, such as a deadband. The subscription has a **publishing interval**, how often the server sends what changed. The two intervals are independent: a value can be sampled every 100 milliseconds and published once a second. Whether all ten samples arrive, with meaningful source timestamps, depends on a queue size of at least ten, the filter, the server's sampling and scheduling, interruptions, and a source that supplies valid timestamps; even then the server's sampling is best effort. A change that happens and reverts between two samples is not seen at all.
+
+There is a detail that surprises engineers who expect push: OPC UA notifications are responses to Publish requests. The client keeps several Publish requests queued at the server; when a publishing interval has something to report, the server answers one of them. The behaviour is event-driven, but on the wire every notification answers a request. A subscription is not necessarily an unsolicited packet in the literal transport sense.
+
+For the inverter, an OPC UA subscription replaces three poll loops with three monitored items. Active power, with a deadband, arrives when it moves; the state arrives only when it changes; and if nothing changes, the server sends keep-alives so the client can tell a quiet value from a dead connection.
+
+## Spontaneous reporting and event retrieval
+
+Utility protocols go one step further: the device reports on its own initiative and, in DNP3's case, keeps what it reported until someone confirms it.
+
+In [IEC 60870-5-104](/protocols/iec-104/), a controlled station sends ASDUs with cause of transmission *spontaneous* when a point changes. Types with time tags, such as a single-point information with CP56Time2a, carry the time the change happened at the source. After a connection starts, the controlling station sends a **general interrogation** and the station answers with its configured interrogatable information, marked with cause *interrogated*. That need not be every point, it is not an atomic snapshot, and integrated totals have a separate counter interrogation. Interrogation gives you the state; spontaneous transmission gives you the changes.
+
+In [DNP3](/protocols/dnp3/), an outstation keeps **static data**, the current value of each point, and **events**, records of changes, often with absolute time. Events are assigned to class 1, 2 or 3. The master can read them with an event poll, read everything with an integrity poll (classes 1, 2, 3 and 0), or let the outstation send them in **unsolicited responses**. Either way, the outstation deletes an event only after the master confirms the response that carried it, and it reports through internal indication (IIN) bits that events are waiting, that it restarted, or that its event buffer overflowed.
+
+For our inverter behind a DNP3 RTU, the application does not poll for state changes at all. It receives them, with the time they happened, and it can still ask for the full picture when it needs to.
+
+## Cyclic exchange of process data
+
+Factory protocols take the decision away from both client and server: a configured relationship decides.
+
+In [PROFINET](/protocols/profinet/), an IO-controller establishes an application relationship with each IO-device during startup, using DCE/RPC over UDP. From then on, both sides send their process data in Ethernet frames every cycle, typically every 1 to a few milliseconds for RT. Nobody requests the inputs; they arrive because the relationship exists. Each item of data carries a provider status saying whether it is valid.
+
+In [EtherNet/IP](/protocols/ethernet-ip/), an originator opens a Class 1 connection with Forward_Open and a **requested packet interval** (RPI). The target then produces its input data over UDP at that interval, unicast or multicast, while the originator produces outputs the other way. Explicit messaging over TCP remains available for reading tags and configuration, but process data flows through the cyclic connection.
+
+Cyclic data looks like very fast polling, but the contract is different. There is no request to time out, no response to correlate and no per-value acknowledgement. What you get is a stream with a deadline: if frames stop arriving for a watchdog interval, the relationship is declared failed. <SeriesLink to="industrial-real-time-ethernet-fieldbus">Why industrial real-time communication is not just faster TCP</SeriesLink> explains the timing behind that.
+
+## Change-triggered versus periodically produced data
+
+[CANopen](/protocols/canopen/) shows that the line between cyclic and event-driven data is a configuration choice. A transmit PDO is a CAN frame that carries mapped process values from one producer to any node that wants them. Its **transmission type** decides when it is sent:
+
+- **Acyclic synchronous**, type 0, sends it after a SYNC message, but only when an event occurred, so an event-driven value is still aligned with the network's rhythm.
+- **Cyclic synchronous**, types 1 to 240, send it after every *n*th SYNC message, so many nodes sample and send in step.
+- **Event-driven**, types 254 and 255, send it when the event defined by the manufacturer or device profile occurs, usually a change of the mapped data, subject to an **inhibit time** that limits how often, and an **event timer** that forces a send when nothing changed for too long.
+
+The same motor speed can therefore be a cyclic value, a change-triggered one, or a change-triggered value released on the SYNC beat, and the event timer turns "nothing changed" into a heartbeat that receivers can monitor. SDOs, the request/response side of CANopen, remain for configuration and occasional reads.
+
+[KNX](/protocols/knx/) and IEC 61850 GOOSE share the producer/consumer idea: a value is sent once to everyone who listens, rather than read by each consumer separately. <SeriesLink to="industrial-client-server-pubsub-roles">Who is the client?</SeriesLink> looks at what that means for roles and addressing.
+
+## Freshness, device load and bandwidth
+
+Consider two measurements on the same site: a room temperature that changes about every 30 seconds, and a motor speed that a drive updates every 5 milliseconds. Both are "a value"; a universal polling loop at one second treats them alike, and gets both wrong.
+
+![Two measurements under the same one-second poll. A room temperature that changes four times in two minutes: only 4 of 120 reads bring a new value. A motor speed updated every 5 milliseconds: a one-second poll samples it once, so 199 of 200 updates never reach the application.](../../assets/blog/protocol-series/read-cadence.svg)
+
+The temperature wastes 116 of 120 reads and still learns about each change up to a second late. A COV subscription or an event would send four messages and nothing else. The motor speed is undersampled by a factor of 200; the value the application sees is a random point on a curve. If the speed matters, it belongs in the cyclic I/O of a controller, and what reaches a supervisory application should be an aggregate the controller computes, not a sample the poller happens to catch.
+
+A practical rule of thumb:
+
+| Data | Best acquisition | Why |
+|---|---|---|
+| Slow, continuous values | Polling at a chosen rate, or a subscription with a deadband | Simple, bounded load |
+| Rare state changes and alarms | Events or subscriptions | Fewer missed changes than polling, and nothing is sent when nothing happens |
+| Changes whose history matters | Buffered events with source time stamps | The order and time of each change survive delays and disconnects |
+| Fast control values | Cyclic I/O in the controller | Deadlines and watchdogs, not best-effort reads |
+| Values many consumers need | Producer/consumer or group communication | Sent once, not read by each consumer |
+
+One caution about the second row. Events and subscriptions reduce the risk of missing changes between polls, but they do not make it zero. How complete they are depends on how the source detects changes, its sampling interval, its queue size and its recovery mechanisms. An OPC UA monitored item that samples every second misses a change that reverts within the second, and a full queue discards notifications. A BACnet COV subscription is not a durable event queue. When an application needs the complete history of a value, it should use a buffered event or historical-data mechanism, and it should detect gaps rather than assume there are none.
+
+## Five patterns side by side
+
+The cover of this article shows the five read paths as sequence diagrams. The differences that matter for software are these:
+
+- **Request/response**: the client owns timing, concurrency and retries. Design concern: a scheduler with per-device limits.
+- **Subscription**: the server owns timing within limits the client set. Design concern: subscription lifecycle, renewal and keep-alive supervision.
+- **Event reporting**: the device owns timing. Buffering, confirmation and replay depend on the protocol: DNP3 buffers events until the master confirms them, while IEC 104 spontaneous data has connection-local acknowledgements and device-dependent offline buffering. Design concern: confirmation, ordering, deduplication and buffer overflow.
+- **Cyclic I/O**: the configured cycle owns timing. Design concern: an isolated loop with deadlines and freshness checks.
+- **Group communication**: the producer owns timing and does not know its consumers. Design concern: filtering, addressing and validity of what was last heard.
+
+## Practical lesson
+
+Design distinct acquisition mechanisms rather than forcing every data source through a polling loop. A poller, a subscription manager, an event consumer and a cyclic I/O loop are four different components with different failure modes, and each should report its own health. A common data model can sit behind them, as long as every value records how it was acquired and when.
+
+<SeriesLink to="industrial-events-alarms-reliability">Industrial events and alarms</SeriesLink> continues with what happens to those events when the connection fails, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> shows how the four acquisition paths fit into one application.
+
+<Callout title="Try the read paths yourself">
+Each pattern here has an open-source implementation you can run against a simulator: polled reads with [go-modbus](/projects/go-modbus/) and [go-s7comm](/projects/go-s7comm/), subscriptions with [go-opcua](/projects/go-opcua/) and [go-bacnet](/projects/go-bacnet/), events with [go-dnp3](/projects/go-dnp3/) and [go-iec104](/projects/go-iec104/), and cyclic and producer/consumer data with [go-profinet](/projects/go-profinet/), [go-ethernetip](/projects/go-ethernetip/) and [go-canopen](/projects/go-canopen/). Their [documentation](/docs/protocols/) explains how to use each one.
+</Callout>
