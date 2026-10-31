@@ -5,7 +5,7 @@ date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, scada, alarms]
 cover:
-  alt: A gateway is offline for two minutes, during which an alarm is raised and cleared. What comes back afterwards. Modbus polling sees only the current value. BACnet COV, OPC UA subscriptions, IEC 104 and GOOSE recover partially. DNP3 event classes, IEC 61850 buffered reports and OCPP transaction messages replay what happened. KNX telegrams are lost and the gateway must read status objects.
+  alt: A gateway is offline for two minutes, during which an alarm is raised and cleared. What comes back afterwards. Modbus polling sees only the current value. BACnet COV, OPC UA subscriptions, IEC 104 and GOOSE recover partially. DNP3 event classes, IEC 61850 buffered reports and OCPP transaction messages can replay what happened, within their buffers. KNX telegrams are lost and the gateway must read status objects.
   image: ../../assets/blog/protocol-series/cover-events.png
 ---
 
@@ -56,7 +56,7 @@ The distinction matters for recovery. A data change can be replaced by a fresh r
    None of these mechanisms on its own guarantees that the consuming application stored the event durably.
 3. **Operator acknowledgement**: BACnet AcknowledgeAlarm, the Acknowledge method on an OPC UA condition. A person or a rule has seen the alarm, and the device records that it was acknowledged.
 
-Once the protocol confirmation is sent, the device is free to forget the event, so in practice the gateway has taken over responsibility for it. If the gateway then crashes before writing the event somewhere durable, the device will not send it again. Where the protocol and the library let the application decide when to confirm, confirming only after the event is safely stored is one of the simplest and most valuable rules in event handling. Where they do not, for example because a library confirms automatically or the acknowledgement is part of the transport window, the gateway needs another way to close that gap, such as a durable queue directly behind the adapter, and should document the window in which an event can still be lost.
+Once the protocol confirmation is sent, the sender may release the relevant transmission or retransmission record. The alarm condition itself may still be active or retained in the device, but the notification will not be sent again, so in practice the gateway has taken over responsibility for it. If the gateway then crashes before writing the event somewhere durable, the device will not send it again. Where the protocol and the library let the application decide when to confirm, confirming only after the event is safely stored is one of the simplest and most valuable rules in event handling. Where they do not, for example because a library confirms automatically or the acknowledgement is part of the transport window, the gateway needs another way to close that gap, such as a durable queue directly behind the adapter, and should document the window in which an event can still be lost.
 
 ## Buffered events and time stamps
 
@@ -64,9 +64,9 @@ Once the protocol confirmation is sent, the device is free to forget the event, 
 
 [IEC 60870-5-104](/protocols/iec-104/) has spontaneous transmission and time-tagged information types, and many controlled stations buffer spontaneous data while no connection is in data transfer. How much they buffer, and what they do when the buffer is full, is a property of the device rather than something the standard makes uniform; at the protocol level, IEC 104's acknowledgements cover the I-frames of the current connection, whose sequence numbers start again on every new connection.
 
-[IEC 61850](/protocols/iec-61850/) offers two kinds of reports. An **unbuffered report control block** sends reports while a client is connected and enabled; what happens while nobody listens is lost. A **buffered report control block** keeps reports in the server while the client is away, up to a configured buffer, and each report carries an **EntryID**. A client that reconnects can set the EntryID of the last report it processed and receive everything after it, provided the client can reserve the same report control block again, the server still holds that entry, and the EntryID is included in the reports it receives (it is an optional field the client enables). If the buffer overflowed, the next report says so with the BufOvfl flag.
+[IEC 61850](/protocols/iec-61850/) offers two kinds of reports. An **unbuffered report control block** sends reports while a client is connected and enabled; what happens while nobody listens is lost. A **buffered report control block** keeps report entries in the server while the client is away, up to a configured buffer, and the server identifies each entry by an **EntryID**. Whether that EntryID appears in the transmitted reports is controlled by the optional fields of the report control block. When it does, a client that saves the EntryID of the last report it processed can resume after a reconnect and receive everything after it, provided it can reserve the same report control block again and the server still holds that entry. If the buffer overflowed, the next report says so with the BufOvfl flag.
 
-[OCPP](/protocols/ocpp/) applies the same idea to billing-relevant messages: a charging station that loses its connection keeps transaction-related messages, such as the start, the meter values and the end of a transaction, and delivers them in order when it reconnects. OCPP 2.0.1 marks such messages as sent while offline and gives every TransactionEvent a sequence number per transaction, so the CSMS can detect a gap. Status notifications, by contrast, describe the current state and are sent again after reconnecting rather than replayed.
+[OCPP](/protocols/ocpp/) applies the same idea to billing-relevant messages: a charging station that loses its connection keeps transaction-related messages, such as the start, the meter values and the end of a transaction, and delivers them in order when it reconnects. OCPP 2.0.1 gives every TransactionEvent a sequence number per transaction, so the CSMS can detect a gap. Its optional `offline` field says that the event occurred while the station was disconnected; it describes when the event happened, not how the message was sent, and a CSMS must not assume it is present on every delayed event. Status notifications, by contrast, describe the current state and are sent again after reconnecting rather than replayed.
 
 ## Queue overflow and missed changes
 
@@ -123,9 +123,9 @@ Back to the two-minute disconnect on the cover. A practical recovery strategy, p
 | Polling (Modbus, S7) | Poll again | Current values; nothing in between |
 | BACnet COV and events | Renew subscriptions, read values, GetEventInformation | Current values and active events; history only from an Event Log object |
 | OPC UA subscriptions | Reactivate or transfer, Republish, ConditionRefresh | The gap, if the subscription survived; otherwise current alarm states |
-| IEC 104 | STARTDT, collect buffered data, general interrogation | Whatever the station chose to buffer, then the full current state |
+| IEC 104 | STARTDT, collect buffered data, general interrogation | Whatever the station chose to buffer, then its configured interrogatable points |
 | DNP3 | Event poll or integrity poll, then enable unsolicited | Buffered events with times, if they fit in the buffer, or a flagged overflow |
-| IEC 61850 buffered reports | Reserve the report control block, resume from the last EntryID, general interrogation | Every report still buffered, or a BufOvfl flag |
+| IEC 61850 buffered reports | Reserve the report control block, resume from the last EntryID if reports carry it, general interrogation if the block supports the GI trigger | Every report still buffered, or a BufOvfl flag |
 | GOOSE | Wait for the next repetition | Current state; a stNum jump suggests a gap |
 | CANopen | Check heartbeats, read the error field by SDO | Current NMT state and recent errors |
 | KNX | Read status objects | Current state of readable objects |

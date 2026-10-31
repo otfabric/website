@@ -31,7 +31,7 @@ Three terms do most of the work:
 
 A motion controller that closes a loop every millisecond cares little whether the average latency is 50 or 200 microseconds. It cares that no update arrives later than its cycle allows. Average latency is a throughput metric; real-time systems are judged by the worst case.
 
-"Real time" is therefore not one universal guarantee. PROFINET RT, PROFINET IRT, EtherNet/IP Class 1, CANopen with SYNC and IEC 61850 Sampled Values each offer different bounds under different configurations, Protocol mechanisms define the timing contract; they do not by themselves make a general-purpose host meet every deadline. Every one of them can be undermined by the end systems: an operating system that schedules the sending thread late, a network card that coalesces interrupts, a switch that queues behind a burst of other traffic.
+"Real time" is therefore not one universal guarantee. PROFINET RT, PROFINET IRT, EtherNet/IP Class 1, CANopen with SYNC and IEC 61850 Sampled Values each offer different bounds under different configurations. Protocol mechanisms define the timing contract; they do not by themselves make a general-purpose host meet every deadline. Every one of them can be undermined by the end systems: an operating system that schedules the sending thread late, a network card that coalesces interrupts, a switch that queues behind a burst of other traffic.
 
 ## Polling at fixed intervals versus cyclic relationships
 
@@ -74,7 +74,7 @@ Arbitration is non-destructive: the winning frame continues as if nothing happen
 
 - A **SYNC producer** sends a high-priority SYNC message at a fixed period. A transmit PDO's **transmission type** decides how it relates to SYNC: type 0 is *acyclic synchronous*, sent after a SYNC only when an event occurred; types 1 to 240 are *cyclic synchronous*, sent after every *n*th SYNC. Receivers apply synchronous receive PDOs at the next SYNC. The network moves in step.
 - **Event-driven PDOs**, types 254 and 255, are sent when the manufacturer-specific or device-profile event occurs, typically a change of data, limited by an **inhibit time** and backed by an **event timer**.
-- **Heartbeats** let every node supervise every other within a consumer timeout.
+- **Heartbeats** let configured consumers supervise selected producers. A node produces heartbeats at the interval in object 0x1017 and monitors only the producers and timeouts listed in its consumer entries, object 0x1016; supervision is not automatically all-to-all and can be switched off.
 
 Because PDO identifiers carry priority, the designer decides which process data wins under load, which is something no TCP-based protocol lets you express.
 

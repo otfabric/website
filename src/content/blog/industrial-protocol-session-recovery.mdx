@@ -5,7 +5,7 @@ date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, networking, scada]
 cover:
-  alt: A reconnect state machine with five states, disconnected, transport ready, protocol ready, synchronized and operational, where any failure leads back to disconnected with backoff and jitter. What each state means for OPC UA, IEC 104, DNP3, PROFINET and OCPP, from TCP and Hello/Ack, STARTDT, the first DNP3 response, a PROFINET application relationship and an OCPP BootNotification, through interrogations, integrity polls, recovered subscriptions and flushed queues, to live data.
+  alt: A reconnect state machine with five states, disconnected, transport ready, protocol ready, synchronized and operational, where any failure leads back to disconnected with backoff and jitter. What each state means for OPC UA, IEC 104, DNP3, PROFINET and OCPP, from TCP and Hello/Ack, STARTDT, the first DNP3 response, a PROFINET application relationship and an OCPP BootNotification after a reboot, through interrogations, integrity polls, recovered subscriptions and flushed queues, to live data.
   image: ../../assets/blog/protocol-series/cover-session.png
 ---
 
@@ -31,7 +31,7 @@ The cover of this article shows a reconnect state machine that the rest of the a
 3. **Synchronized**: the application knows the current state again: an interrogation is complete, subscriptions are restored, buffered events are collected.
 4. **Operational**: data can be trusted and commands can be sent.
 
-Any failure goes back to 0, but not everything is thrown away: an OPC UA subscription id, a DNP3 event position, an IEC 61850 EntryID and an OCPP message queue are exactly the things that make recovery cheaper than a cold start. Treating "socket connected" as "operational" is the most common bug in industrial integrations; it produces stale values marked as good and commands sent into sessions that are not ready.
+Any failure goes back to 0, but not everything is thrown away: an OPC UA subscription id, an IEC 61850 EntryID, the events a DNP3 outstation still holds because they were not confirmed, the gateway's own ingestion and confirmation state, and an OCPP message queue are exactly the things that make recovery cheaper than a cold start. Treating "socket connected" as "operational" is the most common bug in industrial integrations; it produces stale values marked as good and commands sent into sessions that are not ready.
 
 ## Session establishment and authentication
 
@@ -51,7 +51,7 @@ A subscription that existed before the failure may or may not exist after it:
 
 - **OPC UA**: if the session survived, its subscriptions did too, as long as their lifetime has not expired, and the client can collect missed notifications with Republish. If the session is gone, TransferSubscriptions can move surviving subscriptions to a new session. If they are gone too, the client recreates them and has a gap.
 - **BACnet**: COV subscriptions have a lifetime and may not survive a device restart. A client renews them on a timer anyway, and after a communication failure renews them immediately and re-reads the values.
-- **IEC 61850**: report control blocks are reserved by a client. After reconnecting, the client must reserve and enable them again; a buffered report control block can resume from the last EntryID the client processed.
+- **IEC 61850**: report control blocks are reserved by a client. After reconnecting, the client must reserve and enable them again; a buffered report control block can resume from the last EntryID the client processed, if its reports carry the EntryID and the server still holds the entry.
 
 ## Re-establishing cyclic I/O connections
 
@@ -67,9 +67,9 @@ Recreating the relationship is also the moment to check that it is still the rig
 
 Being connected is not the same as knowing the state of the process.
 
-- **IEC 104**: after STARTDT, a **general interrogation** returns every point's current value with cause *interrogated*, and clock synchronization corrects the station's time. Interrogation responses and spontaneous data may be interleaved while the interrogation runs, and the client must not overwrite newer process information with an older snapshot. The cause of transmission and the order of arrival alone do not always tell which value is newer: a station may collect interrogation values over time, and implementations differ. The adapter needs a documented merge policy that uses time tags where the information type has them, the sequence of the exchange and what is known about the station's behaviour.
-- **DNP3**: the classic startup is to disable unsolicited responses, run an **integrity poll** (classes 1, 2, 3 and 0), synchronize time if asked, then enable unsolicited reporting. Events first, then static data, gives the master a consistent baseline.
-- **IEC 61850**: a general interrogation of the report control block refreshes the whole dataset.
+- **IEC 104**: after STARTDT, a **general interrogation** requests the station's configured interrogatable information, returned with cause *interrogated*. It is not an atomic snapshot and need not include every point; integrated totals have their own counter interrogation. Clock synchronization corrects the station's time. Interrogation responses and spontaneous data may be interleaved while the interrogation runs, and the client must not overwrite newer process information with an older snapshot. The cause of transmission and the order of arrival alone do not always tell which value is newer: a station may collect interrogation values over time, and implementations differ. The adapter needs a documented merge policy that uses time tags where the information type has them, the sequence of the exchange and what is known about the station's behaviour.
+- **DNP3**: the classic startup is to disable unsolicited responses, run an **integrity poll** (classes 1, 2, 3 and 0), synchronize time if asked, then enable unsolicited reporting. Events first, then static data, gives the master a resynchronized view of pending events and current static state, though not necessarily an atomic snapshot of the process.
+- **IEC 61850**: where the report control block supports the general-interrogation trigger option, a general interrogation refreshes its whole dataset.
 - **OPC UA**: a ConditionRefresh restores the state of alarms; initial values of recreated monitored items restore data.
 - **IEEE 2030.5** and **OpenADR**: read the programs, events and controls from the server again; the server is the authority.
 
@@ -80,9 +80,9 @@ Until synchronization finishes, cached values should be marked as uncertain, not
 Replay is where recovery protects history:
 
 - **DNP3** events stay in the outstation until confirmed, so the first event poll after a reconnect collects what happened. EVENT_BUFFER_OVERFLOW says when some were dropped.
-- **IEC 61850** buffered reports resume after the last EntryID, if the client can reserve the same report control block again and the server still holds that entry; BufOvfl reports an overflow.
+- **IEC 61850** buffered reports resume after the last EntryID, if the reports carry it, the client can reserve the same report control block again and the server still holds that entry; BufOvfl reports an overflow.
 - **OPC UA** notification sequence numbers let the client detect a gap and call Republish while the server still has the message in its retransmission queue.
-- **OCPP** chargers queue transaction-related messages while offline; OCPP 2.0.1 adds a sequence number per transaction and an offline flag.
+- **OCPP** chargers queue transaction-related messages while offline; OCPP 2.0.1 adds a sequence number per transaction and an optional `offline` field that marks events which occurred while the station was disconnected.
 
 Replay means duplicates, which the next section deals with.
 
@@ -127,7 +127,7 @@ When the mobile link returns, the station works through the states:
 
 1. **Transport ready**: it waits a randomized back-off, opens the WebSocket over TLS and authenticates according to its security profile.
 2. **Protocol ready**: if it rebooted, it sends BootNotification and waits for Accepted. If it only lost the connection, it does not need another BootNotification; this distinction between a reboot and a reconnect is easy to get wrong on the CSMS side, which should not expect a boot after every reconnect.
-3. **Synchronized**: it reports the current state of each connector with StatusNotification and delivers the queued TransactionEvents (OCPP 2.0.1) or StartTransaction, MeterValues and StopTransaction (OCPP 1.6) in their original order. The CSMS checks the sequence numbers per transaction, notes that the messages were sent offline, and closes the session for billing.
+3. **Synchronized**: it delivers the queued TransactionEvents (OCPP 2.0.1) or StartTransaction, MeterValues and StopTransaction (OCPP 1.6) in their original order. The CSMS checks the sequence numbers per transaction, notes the events that the station marked as having occurred offline (the field is optional, so it cannot rely on it), and closes the session for billing. As a reconciliation strategy, the station or the CSMS can also bring connector status up to date, with StatusNotification messages or a status request from the CSMS, rather than assuming that the status it last saw still holds.
 4. **Operational**: remote commands can be delivered again.
 
 On the CSMS side, the same forty minutes produced different problems. A smart-charging profile that an operator changed during the outage was never delivered, so the CSMS must send it again. A RequestStopTransaction that an operator issued during the outage could not be delivered at all. Now that the station is back, the CSMS sees that the transaction already ended and must close the request with a clear outcome rather than send it late. And if 5,000 stations behind the same mobile operator come back at the same time, the back-off and admission limits from the previous section decide whether the CSMS stays up.

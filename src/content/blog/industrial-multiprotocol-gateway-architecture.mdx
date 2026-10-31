@@ -73,16 +73,19 @@ type Subscriber interface {
 // EventSource: device-originated events (DNP3, IEC 104, IEC 61850 reports, OCPP).
 // No promise of durable replay, total order or exactly-once delivery.
 type EventSource interface {
-	Events() <-chan Event // in delivery order, may contain replays
+	Events() <-chan Event // in delivery order, may contain replays;
+	                      // carries its DeliveryToken where the protocol has one
 }
 
 // EventCheckpointer: optional, only where the protocol and the library let
-// the application decide when events are released (for example a DNP3 master
-// with application-controlled confirmation). Adapters that cannot offer it,
-// such as IEC 104, whose acknowledgements are part of the transport window,
-// simply do not implement it.
+// the application decide when a delivery is confirmed (for example a DNP3
+// master with application-controlled confirmation). A DeliveryToken stands
+// for one protocol-specific confirmable delivery, such as a DNP3 response
+// fragment: not an individual event and not an ordered offset. Adapters that
+// cannot offer it, such as IEC 104, whose acknowledgements are part of the
+// transport window, simply do not implement it.
 type EventCheckpointer interface {
-	Release(ctx context.Context, upTo EventMark) error // call after durable storage
+	ConfirmDelivery(ctx context.Context, token DeliveryToken) error // after durable storage
 }
 
 // ResumableEvents: optional, where a source can resume from a position
