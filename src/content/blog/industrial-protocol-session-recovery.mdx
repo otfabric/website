@@ -50,7 +50,7 @@ Each protocol has its own step 2:
 A subscription that existed before the failure may or may not exist after it:
 
 - **OPC UA**: if the session survived, its subscriptions did too, as long as their lifetime has not expired, and the client can collect missed notifications with Republish. If the session is gone, TransferSubscriptions can move surviving subscriptions to a new session. If they are gone too, the client recreates them and has a gap.
-- **BACnet**: COV subscriptions have a lifetime and may not survive a device restart. A client renews them on a timer anyway, and after a communication failure renews them immediately and re-reads the values.
+- **BACnet**: COV subscriptions, finite or indefinite, may not survive a device restart. A client renews them on a timer anyway, and after a communication failure renews them immediately and re-reads the values.
 - **IEC 61850**: report control blocks are reserved by a client. After reconnecting, the client must reserve and enable them again; a buffered report control block can resume from the last EntryID the client processed, if its reports carry the EntryID and the server still holds the entry.
 
 ## Re-establishing cyclic I/O connections

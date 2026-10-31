@@ -129,7 +129,7 @@ So a software design needs at least three separate concepts: who owns the networ
 Polling, subscriptions, spontaneous reporting, event queues and cyclic exchange answer the same question in different ways: who decides when the application gets a value?
 
 - With **polling**, the application decides. Modbus and S7 clients read on a schedule. The cost is paid every cycle whether or not the value changed, and anything that happens between two reads is invisible.
-- With a **subscription**, the application decides *what* it wants and the server decides *when* to send it. A BACnet COV subscription has a lifetime and must be renewed. An OPC UA subscription samples values at one interval and publishes notifications at another.
+- With a **subscription**, the application decides *what* it wants and the server decides *when* to send it. A BACnet COV subscription has a finite lifetime that must be renewed or, where supported, an indefinite one that is still best renewed periodically, because a device restart can erase it. An OPC UA subscription samples values at one interval and publishes notifications at another.
 - With **spontaneous reporting and event queues**, the device decides. An IEC 104 station sends a spontaneous ASDU when a point changes; a DNP3 outstation stores events in classes and sends them unsolicited or when polled, and keeps each one until the master confirms it, as long as its buffer does not overflow.
 - With **cyclic exchange**, the configuration decides. A PROFINET IO-device sends its inputs every cycle once the relationship exists; nobody asks for them.
 
