@@ -1,0 +1,14 @@
+---
+// A link to another post of the series that only becomes a link once that post is published.
+// Until then the text renders as plain text, so no page links to a draft.
+import { publishedSeriesIds, type SeriesPartId } from '../../data/series';
+
+interface Props {
+	to: SeriesPartId;
+	hash?: string;
+}
+const { to, hash } = Astro.props;
+const live = (await publishedSeriesIds()).has(to);
+---
+
+{live ? <a href={`/blog/${to}/${hash ? `#${hash}` : ''}`}><slot /></a> : <slot />}

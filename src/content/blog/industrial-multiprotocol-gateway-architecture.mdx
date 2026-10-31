@@ -1,0 +1,212 @@
+---
+title: 'Designing a multi-protocol OT gateway without hiding the differences'
+description: How should a software engineer design an application that talks to Modbus, OPC UA, DNP3, IEC 104, PROFINET and OCPP at once? Not with one universal device client. Capability-driven adapters, separate polling, event, cyclic and command paths, explicit lifecycle state machines, and values that carry time, quality and provenance keep the protocol contracts intact.
+date: 2026-11-14
+authors: [OT Fabric]
+tags: [software-architecture, protocols, interop, engineering]
+draft: true
+cover:
+  alt: A multi-protocol gateway. Protocol adapters on the left, each with its own state machine, a Modbus poller, an OPC UA client, a DNP3 master, an IEC 104 station, a PROFINET controller and an OCPP CSMS, feed separate execution paths in the middle, an acquisition scheduler, an event pipeline, an isolated cyclic I/O loop and a command service that sends commands back. On the right, one data model where every value carries source time, receive time, quality, freshness, provenance and command stage, feeding a historian, MQTT, APIs and agents. Underneath, observability.
+  image: ../../assets/blog/protocol-series/cover-gateway.png
+---
+
+import SeriesNav from '../../components/blog/SeriesNav.astro';
+import SeriesLink from '../../components/blog/SeriesLink.astro';
+import Callout from '../../components/Callout.astro';
+
+Sooner or later, every OT software team builds a gateway: something that talks to the equipment on one side and to historians, message brokers, APIs and increasingly AI agents on the other. The first version usually talks one protocol. The second talks three, and that is when the design decisions of the first version start to hurt.
+
+The central question of this article: **how should a software engineer design an application that talks to all these protocols?**
+
+It is the last part of the series that starts with [14 industrial protocols, 5 communication patterns](/blog/industrial-protocols-software-architecture/), and it draws on all the earlier ones.
+
+<SeriesNav current="industrial-multiprotocol-gateway-architecture" />
+
+## Why a universal device client becomes a problem
+
+The tempting design is one interface for every device:
+
+```go
+// The interface that looks simple and hides everything that matters.
+type Device interface {
+	Read(ctx context.Context, point string) (float64, error)
+	Write(ctx context.Context, point string, v float64) error
+	Subscribe(ctx context.Context, point string, fn func(float64)) error
+}
+```
+
+Every method on it is wrong for some protocol:
+
+- `Read` on a DNP3 or IEC 104 point either polls a protocol that was designed to report, or returns a cached value with no time and no quality. Either way, the event history and its time stamps are gone.
+- `Subscribe` on Modbus becomes a hidden poll loop at a rate nobody chose, competing with every other hidden poll loop for the device's single request slot.
+- `Write` returns `nil` for a PROFINET output that has merely been placed in the next cycle, for a breaker command that was accepted but not executed, and for an OCPP remote start that may never happen.
+- Nothing in it can express a cyclic relationship, a watchdog, a session that is connected but not synchronized, or a command that is scheduled for tomorrow.
+- `float64` loses the quality flags, the source time and the difference between "no value" and "stale value".
+
+The problem is not abstraction as such. It is an abstraction that pretends all protocols have the same contract.
+
+## Capability-driven protocol adapters
+
+A better starting point is a small set of **capabilities**, each with an honest contract, and adapters that implement only the ones their protocol actually has. In Go, the conceptual shapes might look like this:
+
+```go
+// Value is what every acquisition path produces.
+type Value struct {
+	Point      PointRef       // provenance: adapter, device, protocol address
+	Data       any            // typed value; nil when there is none
+	SourceTime time.Time      // zero when the protocol has no source time
+	AcqTime    time.Time      // when this process obtained it
+	Quality    Quality        // mapped from the protocol, raw flags kept
+	Path       AcquisitionPath // Polled, Subscribed, Event, Cyclic, Group
+}
+
+// Reader: explicit request/response reads (Modbus, S7, OPC UA Read, SDO).
+type Reader interface {
+	ReadBatch(ctx context.Context, points []PointRef) ([]Value, error)
+}
+
+// Subscriber: the server decides when, the client decides what (OPC UA, BACnet COV).
+type Subscriber interface {
+	Subscribe(ctx context.Context, req SubscriptionRequest) (Subscription, error)
+}
+
+// EventSource: device-originated events with replay and confirmation (DNP3, IEC 104, IEC 61850 BRCB).
+type EventSource interface {
+	Events() <-chan Event               // ordered per source, may contain replays
+	Confirm(ctx context.Context, upTo EventMark) error // only after durable storage
+}
+
+// CyclicIO: a configured relationship with a deadline (PROFINET, EtherNet/IP Class 1, CANopen PDOs).
+type CyclicIO interface {
+	Inputs() InputImage     // latest image with validity and cycle counter
+	SetOutputs(OutputImage) // carried by the next cycle; no acknowledgement
+	State() RelationshipState
+}
+
+// Session: lifecycle that the rest of the gateway can observe.
+type Session interface {
+	State() SessionState // Disconnected, TransportReady, ProtocolReady, Synchronized, Operational
+	Changes() <-chan SessionState
+}
+
+// Controller: commands with stages, not writes with an error.
+type Controller interface {
+	Submit(ctx context.Context, cmd Command) (CommandHandle, error)
+}
+```
+
+These are conceptual capabilities, not a mandate to define one interface per operation or to wrap every protocol library behind them. A Modbus adapter is a `Reader` and a `Controller`; a DNP3 adapter is an `EventSource`, a `Reader` for integrity polls and a `Controller`; a PROFINET adapter is a `CyclicIO` with a `Reader` for records. Code that needs a capability asks for it; code that receives an adapter without it knows, at compile time or at configuration time, that the protocol does not offer it.
+
+Protocol-specific APIs remain available underneath. The gateway uses capabilities for the common paths and reaches into the adapter for anything protocol-specific, such as IEC 61850 setting groups or OCPP smart-charging profiles, rather than inventing lowest-common-denominator versions of them.
+
+## Separate polling, subscription, event and cyclic execution
+
+The cover of this article shows the central idea: four execution paths with different scheduling and failure models.
+
+- **Acquisition scheduler** for `Reader`s. It groups points into poll groups with rates and deadlines, merges contiguous addresses into batch reads, respects per-device concurrency limits (one outstanding request for many Modbus devices and every DNP3 association, the negotiated job count for S7), and spreads polls over time instead of firing them all on the second.
+- **Subscription manager** for `Subscriber`s. It creates, renews and supervises subscriptions, watches keep-alives, and recreates subscriptions after a session change.
+- **Event pipeline** for `EventSource`s. It stores events durably, confirms them only afterwards, deduplicates replays, orders by source time within a source, applies backpressure when consumers fall behind, and turns overflow indications into explicit gap records.
+- **Cyclic I/O loop** for `CyclicIO`. It runs isolated from the rest: its own goroutine or process, no allocation-heavy work on its path, outputs computed by fast local logic or set by the command service and applied at the next cycle, and inputs published to the rest of the gateway as snapshots with validity.
+
+Separating them means a slow Modbus device cannot delay DNP3 events, an event storm cannot starve the cyclic loop, and each path can report its own health.
+
+## Explicit lifecycle and recovery state machines
+
+Each adapter owns one state machine per session, with the states from <SeriesLink to="industrial-protocol-session-recovery">Reconnecting is not recovering</SeriesLink>: disconnected, transport ready, protocol ready, synchronized, operational. The surrounding components react to state changes:
+
+- while a session is not synchronized, its values are marked uncertain and its commands are held or refused;
+- on synchronization, the event pipeline expects replays and the subscription manager restores subscriptions;
+- on disconnection, the scheduler stops polling that device and the freshness monitor starts counting.
+
+An actor per session is a natural fit: one goroutine owns the connection and its state, receives requests on a channel, and publishes state changes. It makes the protocol's own concurrency rules, such as one DNP3 request at a time or one OCPP call per direction, easy to enforce.
+
+## Acquisition timestamps, quality and provenance
+
+Every value that leaves the gateway carries:
+
+- **source time** when the protocol provides it, and **acquisition time** always;
+- **quality**, mapped to a common good, uncertain, bad scale, with the protocol's raw flags kept for anyone who needs them;
+- **freshness** against a deadline derived from how the value is acquired;
+- **provenance**: adapter, device, protocol address and acquisition path.
+
+This is what makes the data usable downstream, from historians to analytics to agents that act on it. <SeriesLink to="industrial-data-time-freshness-ordering">Time, freshness and ordering</SeriesLink> explains each field.
+
+## Event deduplication and backpressure
+
+The event pipeline is where reliability is won or lost:
+
+- **Store, then confirm.** Confirm DNP3 events, acknowledge IEC 61850 reports by recording their EntryID, and accept OCPP transaction messages only after they are written durably.
+- **Deduplicate by protocol identity**: EntryID, sequence numbers, transaction ids, or point plus source time plus value where nothing better exists.
+- **Bound every queue.** When downstream consumers are slow, slow down confirmation, so that devices keep events in their own buffers, rather than growing memory without limit. Surface the backlog as a metric.
+- **Record gaps** from overflow flags and counter jumps as first-class data.
+
+## Command acceptance, execution and verification
+
+The command service implements the stages from <SeriesLink to="industrial-protocol-write-control-semantics">Writing to industrial equipment</SeriesLink>:
+
+```go
+type CommandStage int
+
+const (
+	Submitted CommandStage = iota
+	Delivered  // the transport or protocol confirmed receipt
+	Accepted   // the device agreed: echo, ACTCON, SUCCESS, Accepted
+	Executed   // the device reported completion: ACTTERM, CommandTermination, TransactionEvent
+	Verified   // independent process feedback matched within tolerance and time
+	Failed     // with the stage at which it failed and why
+	Unknown    // timeout: outcome not known, needs reconciliation
+)
+```
+
+Each command has an id, a target, an idempotency policy, a timeout per stage and a verification rule: which point to watch, what value, what tolerance, by when. A timeout moves the command to `Unknown`, not `Failed`, and triggers a read of the target state before any retry. Only idempotent commands are retried automatically.
+
+## Cancellation, timeouts and bounded concurrency
+
+Go's `context.Context` maps well onto industrial request lifecycles, with two cautions. First, cancelling a context does not cancel an operation that the device already received: a cancelled breaker command may still execute. Second, a cancelled request must not leave the protocol in a broken state; a library should finish or cleanly abandon the exchange without tearing down the association. Budget concurrency per device and per protocol, not per gateway: the limits are set by the equipment.
+
+## Observability and protocol-specific metrics
+
+Generic request counters are not enough. Useful metrics are specific to the contract:
+
+- session state and time in each state, reconnects and their causes;
+- poll cycle duration versus target, late polls, timeouts and exception codes per device;
+- subscription keep-alives, notification gaps, republish and transfer results;
+- event backlog, confirmation lag, duplicates dropped, overflow and gap records;
+- cyclic watchdog expiries, lost frames, cycle jitter;
+- commands per stage, time to each stage, unknown outcomes;
+- values past their freshness deadline.
+
+Traces that follow a command from API call to verification are worth their cost the first time someone asks why a breaker did not open.
+
+## Testing: simulators, interoperability, faults and races
+
+A gateway is only as good as the failures it has seen:
+
+- **Simulators** for each protocol make development possible without hardware and allow writes without risk.
+- **Interoperability tests** against independent implementations catch the misreadings that a library shares with its own test server.
+- **Fault injection**: drop and delay packets, kill connections mid-command, restart devices, overflow event buffers, skew clocks, and check that the state machines, deduplication and gap records behave.
+- **Race testing**: run with the race detector, hammer adapters with concurrent requests, reconnect during subscription setup.
+- **Captures**: record real traffic, then replay and analyse it to find poll patterns, latencies and anomalies before they become incidents.
+
+## What a protocol library does, and what the gateway does
+
+The line between the two is worth drawing explicitly.
+
+| A protocol library | The gateway |
+|---|---|
+| Encodes and decodes the protocol correctly, with strict, fuzzed codecs | Decides which points to acquire, how and how often |
+| Implements the protocol's roles, services and state machines | Composes sessions into acquisition, event, cyclic and command paths |
+| Enforces the protocol's own rules: sequence numbers, one outstanding request, select timeouts | Enforces site rules: device limits, permissions, command policies |
+| Reports protocol facts: IIN bits, quality descriptors, EntryIDs, status codes | Maps those facts into a common data model without discarding them |
+| Retries only what the protocol makes safe to retry | Decides what to retry, reconcile or escalate |
+| Reconnects and restores what the protocol allows | Decides when data is trustworthy again |
+
+Keeping the protocol library honest and protocol-shaped, and putting policy in the gateway, makes both easier to test and to trust.
+
+## Practical lesson
+
+Share engineering infrastructure where possible, and preserve protocol semantics wherever correctness depends on them. Share the value model, the storage, the observability, the configuration and the testing harness. Keep separate the things that differ: how data is acquired, how events are confirmed, how cycles are timed and how commands complete. A gateway built that way can grow to fourteen protocols without hiding the differences that matter.
+
+<Callout title="Building blocks">
+OT Fabric's libraries are written to be the protocol layer under such a gateway: [go-modbus](/projects/go-modbus/), [go-opcua](/projects/go-opcua/), [go-bacnet](/projects/go-bacnet/), [go-iec104](/projects/go-iec104/), [go-iec61850](/projects/go-iec61850/), [go-s7comm](/projects/go-s7comm/), [go-dnp3](/projects/go-dnp3/), [go-ethernetip](/projects/go-ethernetip/), [go-profinet](/projects/go-profinet/), [go-canopen](/projects/go-canopen/), [go-knx](/projects/go-knx/), [go-ocpp](/projects/go-ocpp/), [go-openadr](/projects/go-openadr/) and [go-ieee20305](/projects/go-ieee20305/), each with an [interoperability suite](/blog/why-every-protocol-gets-an-interop-suite/) and, for Modbus, [simulators](/projects/modbus-simulator/) and [capture tools](/projects/go-modbus-capture/). IT-to-OT gateways and data connectors are on the [roadmap](/about/#where-were-heading).
+</Callout>

@@ -1,0 +1,130 @@
+---
+title: 'Writing to industrial equipment: why an acknowledgement is not the same as execution'
+description: What does a successful command actually guarantee? A Modbus write, a DNP3 select-before-operate, an IEC 104 command, an IEC 61850 control, a PROFINET output, an OCPP remote start and an IEEE 2030.5 DER control each confirm something different. Separating delivered, accepted, executed and verified makes retries safe and results honest.
+date: 2026-10-31
+authors: [OT Fabric]
+tags: [software-architecture, protocols, scada, energy]
+cover:
+  alt: Four completion stages of a command, delivered, accepted, executed and verified, for seven protocols. Modbus reports delivery and acceptance in its reply but not execution. DNP3 select-before-operate reports selection and acceptance. IEC 104 reports acceptance with ACTCON and execution with ACTTERM if the station sends it. IEC 61850 with enhanced security reports execution with CommandTermination. PROFINET and EtherNet/IP outputs are carried by the next cycle without an execution report. OCPP reports acceptance and later a TransactionEvent. IEEE 2030.5 uses optional Responses. In every case, verification is the application's job.
+  image: ../../assets/blog/protocol-series/cover-write.png
+---
+
+import SeriesNav from '../../components/blog/SeriesNav.astro';
+import SeriesLink from '../../components/blog/SeriesLink.astro';
+import Callout from '../../components/Callout.astro';
+
+In most software, a successful write is the end of the story. The API returned 200, the row changed, the cache was invalidated. Industrial commands are different because the thing being changed is often physical: a power limit, a breaker, a valve, a charging session. A command can be received and rejected, accepted and not yet executed, executed and not yet visible, or visible and then undone by something else.
+
+So the question for this article is: **what does a successful command actually guarantee?**
+
+It is part of the series that starts with [14 industrial protocols, 5 communication patterns](/blog/industrial-protocols-software-architecture/).
+
+<SeriesNav current="industrial-protocol-write-control-semantics" />
+
+<Callout type="caution" title="Writes are consequential">
+Every example here uses simulators, test equipment or read-only traces. Try control sequences against a simulator or a controlled test bench first, and never against equipment in operation without the owner's procedures.
+</Callout>
+
+## Four stages of a command
+
+A command passes through four stages. Protocols report some of them and stay silent about others.
+
+1. **Delivered**: the request reached the device. The transport or protocol confirms that bytes arrived and were understood.
+2. **Accepted**: the device checked the request and agreed to act on it. It may still refuse later, or be overridden.
+3. **Executed**: the device has carried out the action, as far as the device knows.
+4. **Verified**: an independent observation of the process confirms the intended effect: the measured power fell, the breaker position changed, energy is flowing.
+
+The cover of this article shows which stages each protocol reports. The pattern is consistent: protocols are good at the first two, some report the third, and none of them can do the fourth for you.
+
+## Simple write operations
+
+A [Modbus](/protocols/modbus/) Write Single Register or Write Multiple Registers is answered with an echo of the address and quantity, or with an exception code: illegal address, illegal value, device busy, server failure. A normal response means the device accepted the value into its register. It does not say what the device did with it.
+
+Take the first running example, setting an inverter's active power limit to 50 percent. The write returns immediately. The inverter then ramps its output at a configured rate, perhaps over several seconds, and may not reach the limit at all if a grid code function, a local setting or a higher-priority control takes precedence. Some devices only apply a limit after a separate enable register is written, or revert to a default when a timeout register expires. Reading the register back proves only that the value was stored. The proof of execution is the measured power.
+
+[BACnet](/protocols/bacnet/) adds a twist that every building integrator learns early. WriteProperty to a commandable object, such as a binary output, carries a **priority** from 1 to 16. The device keeps a priority array and the present value follows the highest-priority non-empty slot. A successful write at priority 8 is a correct, accepted write that may have no effect at all, because a life-safety command at priority 1 or a manual override at priority 8 from someone else already holds the output. Releasing your command means writing a null at the same priority, not writing the old value.
+
+## Request acknowledgement versus operational confirmation
+
+Utility protocols were designed for controls where a wrong action costs money or safety, and they split acknowledgement into steps.
+
+In [IEC 60870-5-104](/protocols/iec-104/), a single command (C_SC_NA_1) travels from the controlling station to the controlled station. The station answers with an **activation confirmation** (ACTCON), positive or negative: the command was accepted or refused. When the operation completes, a station may send an **activation termination** (ACTTERM). The new state of the controlled point then arrives as monitoring information, typically with cause of transmission *return information caused by a remote command*. Three messages, three different facts.
+
+In [IEC 61850](/protocols/iec-61850/), a control object declares its **control model**: direct with normal security, select-before-operate with normal security, direct with enhanced security, or select-before-operate with enhanced security. With enhanced security the server checks the operation and sends a **CommandTermination** when it has finished, positive or negative with an additional cause. With normal security, the positive response to the Oper write means accepted, and the result is only visible in the status that follows.
+
+In [DNP3](/protocols/dnp3/), a control relay output block or analog output is sent with Select and Operate, Direct Operate, or Direct Operate No Ack. The response echoes the request with a status code per object: SUCCESS, or a reason such as TIMEOUT, NO_SELECT or NOT_SUPPORTED. SUCCESS means the outstation accepted the operation. DNP3 has no execution message; the outcome appears as a change of the related binary or analog input, often reported as an event.
+
+## Select-before-operate and other multi-step controls
+
+Select-before-operate exists because an output is too important to drive from a single message. The control is split into two requests with the same parameters:
+
+![A select-before-operate control of a breaker. The control application sends SELECT and the device confirms the selection, which shows the command was delivered. The application sends OPERATE with the same parameters and the device accepts it. The device energizes the trip coil and the contacts move. The auxiliary contact reports the new position. IEC 104 and IEC 61850 with enhanced security send a termination message that reports execution. A position report shows the breaker open, which is the independent verification. DNP3 has no termination message.](../../assets/blog/protocol-series/write-sbo.svg)
+
+1. **Select** reserves the output. The device checks that the point exists, that the command is allowed in the current state and mode (local or remote, interlocks, other selections) and starts a select timeout.
+2. **Operate** must repeat the same parameters before the timeout expires. In DNP3 it must also follow the select with the next sequence number. Anything else is refused.
+
+This is the second running example: operating a breaker. The breaker's mechanism takes tens of milliseconds to move; its auxiliary contacts then change the position indication that the IED or RTU reports. A control application that considers the command finished at the Operate response has completed two of four stages.
+
+Select-before-operate guards against the wrong output being driven by a corrupted or misdirected message. It is not a transaction in the database sense: it does not roll back, and it says nothing about the physical result.
+
+## Setting an output through cyclic process data
+
+In [PROFINET](/protocols/profinet/) and [EtherNet/IP](/protocols/ethernet-ip/) Class 1 connections there is no write request. The controller changes bits in its output image and the next cycle carries them to the device, and every cycle after that carries them again.
+
+That has interesting consequences:
+
+- There is no per-value acknowledgement. PROFINET carries a consumer status per item of data, which says that the receiving side consumed valid data in general, not that it acted on a particular change.
+- A value that is set and reset again within one cycle never leaves the controller.
+- If the connection is lost, the device does not keep the last command forever: on watchdog expiry it moves its outputs to a configured safe state. The output is a continuous assertion, not a one-off event.
+
+The verification path is the same as for any command: the inputs that come back. The difference is that cyclic I/O makes the loop explicit. A PLC program writes an output and reads a feedback input in the next scan; a supervisory application should do the same at its own pace.
+
+## Remote commands with delayed physical effects
+
+The third running example: a charging station behind a customer router is managed over [OCPP](/protocols/ocpp/). The CSMS sends RequestStartTransaction (OCPP 2.0.1, or RemoteStartTransaction in OCPP 1.6). The charger answers with a status of Accepted or Rejected.
+
+Accepted means the charger will try. The transaction starts later, after a vehicle is connected and the authorization succeeds, and the charger reports it with a TransactionEvent of type Started (in 1.6, a StartTransaction request). Energy flows later still, and the meter values that prove it arrive on the charger's schedule. A driver who never plugs in leaves an accepted command that never executes, and the CSMS learns that only from the absence of a transaction within a timeout it chose.
+
+## Commands that are scheduled for a future time
+
+[IEEE 2030.5](/protocols/ieee-2030-5/) and [OpenADR](/protocols/openadr/) add time. A DERControl in IEEE 2030.5 is an event with a start time and a duration. The device's client fetches it from the server, typically by polling at the server's pollRate, and acts on it when it starts. If the server asks for responses, the client posts Response resources as the event moves through its life: received, started, completed, or superseded, cancelled, opted out. In OpenADR 3, a VTN publishes events with intervals and payloads such as prices or import capacity limits, and the VEN decides how its resources respond.
+
+So "accepted" can be hours away from "executed", and between the two the device may be offline. The command must be correct at execution time, not just at delivery time: superseded events, overlapping schedules and clock errors all matter. The posted responses are statements from the device, not measurements; verification still comes from metering and status.
+
+## Timeout ambiguity
+
+The most dangerous moment in industrial control is a timeout.
+
+![Two failures that look identical to the client. In the first, the request is lost on the way, the device does nothing and the client times out. In the second, the request arrives, the device sets the limit, and the response is lost; the client also times out. The same observation corresponds to two different world states.](../../assets/blog/protocol-series/write-timeout.svg)
+
+When a command times out, the application does not know whether the request was lost, the device refused, the device executed and the response was lost, or the device is still executing. Retrying blindly can turn one operation into two: a breaker toggled twice, a counter incremented twice, a second charging session.
+
+## Idempotency, correlation and safe retries
+
+Three techniques make retries safe:
+
+- **Idempotent commands**: "set the power limit to 50 percent" can be repeated safely; "reduce the limit by 10 percent" cannot. Prefer absolute set points to relative ones, and states ("open") to toggles.
+- **Correlation**: give each command an identifier and check the outcome before retrying. OCPP calls carry a unique message id; DNP3 and IEC 104 controls can be matched to the status changes they cause; IEEE 2030.5 events have an mRID that responses refer to.
+- **Read before retry**: after a timeout, read the state the command was meant to change. If it already changed, the command executed.
+
+Some libraries make this policy explicit. [go-dnp3](/projects/go-dnp3/), for example, retries only requests that are safe to repeat, such as reads and time synchronization, and never repeats controls, freezes, restarts or writes automatically; deciding whether to send a control again is left to the application.
+
+## Verification through independent process feedback
+
+Verification is always the application's job, and it should use information that does not come from the command path itself:
+
+- the inverter's measured active power, not the limit register;
+- the breaker's position indication, ideally a double point with both auxiliary contacts, not the control response;
+- the charger's meter values and connector status, not the RequestStartTransaction answer.
+
+Verification needs a deadline and a tolerance: the power should be below the limit, within a margin, within a ramp time. Without them, "verified" becomes "eventually, maybe".
+
+## Practical lesson
+
+An application-level command result should preserve the difference between communication success and process success. A useful command record holds the stages separately, each with a time: delivered, accepted, executed, verified, or failed at a named stage with a reason. Retries should be driven by that record, not by a generic retry wrapper around a write call.
+
+<SeriesLink to="industrial-protocol-session-recovery">Reconnecting is not recovering</SeriesLink> covers what happens to commands in flight when a session is lost, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> turns the command stages into a command service.
+
+<Callout title="Implementations to study">
+The control procedures in this article are implemented in [go-dnp3](/projects/go-dnp3/) (select-before-operate, direct operate), [go-iec104](/projects/go-iec104/) (commands with ACTCON and ACTTERM), [go-iec61850](/projects/go-iec61850/) (direct, SBO and SBOw controls with CommandTermination), [go-ocpp](/projects/go-ocpp/) and [go-ieee20305](/projects/go-ieee20305/), whose device agent posts the Responses each event asks for. The [protocol documentation](/docs/protocols/) shows how to drive each one against a simulator.
+</Callout>

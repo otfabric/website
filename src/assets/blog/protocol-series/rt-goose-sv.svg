@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 340" width="720" height="340" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="Top: GOOSE. Before an event the publisher repeats its message at the maximum interval, for example once a second. When the state changes, stNum increases and the message is sent at once and repeated at growing intervals from the minimum time, 2, 4, 8 milliseconds and so on, back to the heartbeat; sqNum counts the repeats. Bottom: Sampled Values. A merging unit sends a frame every 250 microseconds, 4000 per second at 50 hertz with one sample per frame, with a sample counter, whether or not anything changed."><rect width="720" height="340" fill="#F4F6F8"/><text x="28" y="32" font-size="15" font-weight="600" fill="#17212B" text-anchor="start" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif">GOOSE repeats state; Sampled Values stream samples</text>
+<text x="28" y="62" font-size="12.5" font-weight="600" fill="#17212B" text-anchor="start" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif">GOOSE · event-driven, then retransmitted</text>
+<line x1="40" y1="130" x2="690" y2="130" stroke="#5A6875" stroke-width="1" stroke-linecap="butt"/>
+<line x1="68.26086956521739" y1="104" x2="68.26086956521739" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<text x="68.26086956521739" y="98" font-size="9.5" font-weight="400" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">heartbeat</text>
+<line x1="350.8695652173913" y1="70" x2="350.8695652173913" y2="138" stroke="#9A7200" stroke-width="1.5" stroke-linecap="butt" stroke-dasharray="3 3"/>
+<text x="344.8695652173913" y="80" font-size="10" font-weight="400" fill="#9A7200" text-anchor="end" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">state change</text>
+<line x1="350.8695652173913" y1="104" x2="350.8695652173913" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="351.4347826086956" y1="104" x2="351.4347826086956" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="352.0" y1="104" x2="352.0" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="353.1304347826087" y1="104" x2="353.1304347826087" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="355.39130434782606" y1="104" x2="355.39130434782606" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="359.9130434782609" y1="104" x2="359.9130434782609" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="368.9565217391305" y1="104" x2="368.9565217391305" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="387.04347826086956" y1="104" x2="387.04347826086956" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="423.2173913043478" y1="104" x2="423.2173913043478" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="495.5652173913044" y1="104" x2="495.5652173913044" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<line x1="633.4782608695651" y1="104" x2="633.4782608695651" y2="130" stroke="#0A7C80" stroke-width="2" stroke-linecap="butt"/>
+<text x="356.8695652173913" y="80" font-size="10" font-weight="400" fill="#0A7C80" text-anchor="start" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">stNum 7 → 8, sqNum 0, 1, 2, …</text>
+<text x="633.4782608695651" y="98" font-size="9.5" font-weight="400" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">back to 1 s</text>
+<text x="68.26086956521739" y="146" font-size="10" font-weight="400" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">−1 s</text>
+<text x="350.8695652173913" y="146" font-size="10" font-weight="400" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">0</text>
+<text x="633.4782608695651" y="146" font-size="10" font-weight="400" fill="#5A6875" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">+1 s</text>
+<text x="690" y="62" font-size="10.5" font-weight="400" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">MinTime 2 ms → MaxTime 1 s (configured)</text>
+<text x="40" y="170" font-size="10.5" font-weight="400" fill="#5A6875" text-anchor="start" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif">A subscriber that misses repeats for longer than timeAllowedToLive declares the message invalid.</text>
+<text x="28" y="214" font-size="12.5" font-weight="600" fill="#17212B" text-anchor="start" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif">Sampled Values · a fixed stream</text>
+<line x1="40" y1="282" x2="690" y2="282" stroke="#5A6875" stroke-width="1" stroke-linecap="butt"/>
+<line x1="60.0" y1="256" x2="60.0" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="60.0" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">3996</text>
+<line x1="136.25" y1="256" x2="136.25" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="136.25" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">3997</text>
+<line x1="212.5" y1="256" x2="212.5" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="212.5" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">3998</text>
+<line x1="288.75" y1="256" x2="288.75" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="288.75" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">3999</text>
+<line x1="365.0" y1="256" x2="365.0" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="365.0" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">0</text>
+<line x1="441.25" y1="256" x2="441.25" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="441.25" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">1</text>
+<line x1="517.5" y1="256" x2="517.5" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="517.5" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">2</text>
+<line x1="593.75" y1="256" x2="593.75" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="593.75" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">3</text>
+<line x1="670.0" y1="256" x2="670.0" y2="282" stroke="#2F5D9E" stroke-width="2.4" stroke-linecap="butt"/>
+<text x="670.0" y="250" font-size="9.5" font-weight="400" fill="#2F5D9E" text-anchor="middle" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">4</text>
+<text x="40" y="298" font-size="10" font-weight="400" fill="#5A6875" text-anchor="start" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">0 µs</text>
+<text x="690" y="298" font-size="10" font-weight="400" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">2 ms</text>
+<text x="690" y="214" font-size="10.5" font-weight="400" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, SFMono-Regular, Consolas, monospace">every 250 µs at 50 Hz · smpCnt wraps each second</text>
+<text x="40" y="322" font-size="10.5" font-weight="400" fill="#5A6875" text-anchor="start" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif">A gap in smpCnt is a lost sample: there is no retransmission, the next one is already due.</text></svg>
