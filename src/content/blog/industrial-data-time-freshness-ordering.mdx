@@ -1,10 +1,9 @@
 ---
 title: 'Time, freshness and ordering in industrial communication'
 description: When an industrial measurement arrives, what do you actually know about its age? Source time, acquisition time and receive time differ; sampling and publishing intervals differ; arrival order is not occurrence order; and a value can look perfectly plausible long after it went stale. How Modbus, OPC UA, DNP3, IEC 104, IEC 61850, EtherNet/IP, PROFINET and CANopen help, and where they do not.
-date: 2026-11-14
+date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, scada, data]
-draft: true
 cover:
   alt: Two events at a substation device on three time axes. By source time, a protection trip happens at .120 and the breaker opens at .168. The breaker position is reported at once and reaches the gateway at .205; the trip is collected by the next event poll and arrives at .410. The application processes them at .231 and .460. By arrival, the breaker opened before the trip; by source time, the trip came first.
   image: ../../assets/blog/protocol-series/cover-time.png
@@ -113,6 +112,27 @@ The dangerous stale value is not 0 or −32768. It is 47.3 kW, a perfectly reaso
 - "frozen value" detection for measurements that should never be perfectly constant;
 - heartbeat or counter points that the device increments, read alongside the data;
 - comparing redundant measurements where they exist.
+
+## Time zones, daylight saving and clock steps
+
+Time stamps carry more than a number, and the conventions differ:
+
+- **IEC 104** CP56Time2a holds a calendar date and time, with a summer-time bit, but no time zone. Many control centres use UTC, and many older stations use local time. The convention is site configuration, and it has to be recorded somewhere.
+- **DNP3** time is a 48-bit count of milliseconds since 1970. Current editions define it as UTC, although older installations sometimes set outstations to local time.
+- **OPC UA** DateTime values are UTC by definition.
+- **Modbus** devices that expose a clock do so in device-specific registers, often in local time without a zone.
+
+Two failures are common. The first is a local-time source in a UTC pipeline, which puts every event off by one or two hours and by a different amount in winter and summer. The second is a clock that is stepped by synchronization: after a correction, a device can report an event that appears to have happened before an earlier one. Normalize to UTC at the adapter, keep the original value and the convention that was applied, and treat a large step after synchronization as an event worth logging.
+
+## Worked example: the inverter's timeline
+
+The first running example shows why all of this matters. An inverter trips on a grid fault at 14:02:11.480 and reconnects after its waiting time. The same inverter is read in three ways:
+
+- A **Modbus** poll every 10 seconds returns the operating state and the power. The poll at 14:02:15 shows the state "fault" and zero power, and the poll at 14:03:25 shows "running". The timeline records a fault from about 14:02:15 to about 14:03:25, with up to 10 seconds of uncertainty at each end.
+- An **IEC 104** or **DNP3** RTU in front of the inverter reports the change of the fault point as a time-tagged event. If the RTU's clock is synchronized, the timeline records the fault from 14:02:11.480 to the reconnection to the millisecond, even when the events reach the control centre seconds later.
+- An **OPC UA** server with the state as a monitored item, sampled every 100 ms, publishes the change within its publishing interval with a source timestamp accurate to the sampling interval.
+
+All three are correct within their contracts. Only the data model decides whether a grid operator who asks "when did the inverter trip?" gets the answer with its uncertainty, or a single time that looks exact and is not.
 
 ## Expressing uncertain freshness downstream
 

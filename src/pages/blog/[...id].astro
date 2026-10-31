@@ -6,6 +6,8 @@ import { getImage } from 'astro:assets';
 import { formatDate, getPosts, readingTime, type Post } from '../../data/blog';
 import { getStandards, standardPath } from '../../data/standards';
 import { absolute, breadcrumbs, ogImage, orgRef } from '../../data/seo';
+import SeriesPager from '../../components/blog/SeriesPager.astro';
+import { protocolSeries } from '../../data/series';
 
 export async function getStaticPaths() {
 	const posts = await getPosts();
@@ -91,6 +93,8 @@ const schema = [
 				</nav>
 			)}
 		</div>
+
+		{protocolSeries.parts.some((p) => p.id === post.id) && <SeriesPager current={post.id} />}
 
 		<nav class="pager" aria-label="More posts">
 			{older ? <a href={`/blog/${older.id}/`}><span class="ot-label">Older</span>{older.data.title}</a> : <span />}

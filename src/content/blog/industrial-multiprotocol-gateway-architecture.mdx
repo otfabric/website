@@ -1,10 +1,9 @@
 ---
 title: 'Designing a multi-protocol OT gateway without hiding the differences'
 description: How should a software engineer design an application that talks to Modbus, OPC UA, DNP3, IEC 104, PROFINET and OCPP at once? Not with one universal device client. Capability-driven adapters, separate polling, event, cyclic and command paths, explicit lifecycle state machines, and values that carry time, quality and provenance keep the protocol contracts intact.
-date: 2026-11-14
+date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, interop, engineering]
-draft: true
 cover:
   alt: A multi-protocol gateway. Protocol adapters on the left, each with its own state machine, a Modbus poller, an OPC UA client, a DNP3 master, an IEC 104 station, a PROFINET controller and an OCPP CSMS, feed separate execution paths in the middle, an acquisition scheduler, an event pipeline, an isolated cyclic I/O loop and a command service that sends commands back. On the right, one data model where every value carries source time, receive time, quality, freshness, provenance and command stage, feeding a historian, MQTT, APIs and agents. Underneath, observability.
   image: ../../assets/blog/protocol-series/cover-gateway.png
@@ -187,6 +186,49 @@ A gateway is only as good as the failures it has seen:
 - **Fault injection**: drop and delay packets, kill connections mid-command, restart devices, overflow event buffers, skew clocks, and check that the state machines, deduplication and gap records behave.
 - **Race testing**: run with the race detector, hammer adapters with concurrent requests, reconnect during subscription setup.
 - **Captures**: record real traffic, then replay and analyse it to find poll patterns, latencies and anomalies before they become incidents.
+
+## Configuration: point models per protocol
+
+A gateway is mostly configuration: which devices, which points, how each one is acquired. A single flat point list with an address string and a poll rate forces every protocol into the polling model again. A point model that follows the capabilities keeps the differences visible:
+
+```yaml
+devices:
+  - id: inverter-7
+    protocol: modbus
+    endpoint: tcp://10.0.4.17:502
+    unit: 1
+    limits: { outstanding: 1, minGap: 20ms }
+    poll:
+      - group: fast
+        every: 1s
+        points: [active_power, reactive_power]
+      - group: slow
+        every: 60s
+        points: [energy_total]
+  - id: rtu-north
+    protocol: dnp3
+    endpoint: tcp://10.0.9.2:20000
+    startup: { integrity: true, unsolicited: [1, 2, 3], timeSync: lan }
+    events: { confirmAfter: stored }
+  - id: press-line
+    protocol: profinet
+    station: press-io-1
+    cycle: 4ms
+    watchdog: 3
+    onLoss: substitute
+```
+
+The Modbus device has poll groups and concurrency limits. The DNP3 outstation has a startup sequence and an event policy. The PROFINET device has a cycle, a watchdog and a loss behaviour. None of them pretends to be the others, and a reviewer can see each contract in the configuration.
+
+## The three running examples, end to end
+
+The series used three running examples. Here is where each one lands in the gateway:
+
+- **Reading an inverter.** The Modbus adapter is a `Reader` scheduled by the acquisition scheduler; its values carry acquisition time and a freshness deadline of a few poll intervals. If the same inverter sits behind a DNP3 RTU, the adapter is an `EventSource`, and the event pipeline stores the fault events with their source time before it confirms them.
+- **Operating a breaker.** The command service submits a select-before-operate through the DNP3 or IEC 61850 adapter, records delivered and accepted from the responses, executed from the IEC 61850 CommandTermination where one exists, and verified from the position report that arrives through the event pipeline. A timeout moves the command to `Unknown` and triggers a read of the position before anything is retried.
+- **Managing an EV charger.** The OCPP adapter is a server for thousands of WebSocket sessions, each with its own state machine. Remote commands wait in the command service until their station is operational, or expire. The queued transaction messages that arrive after a reconnect go through the event pipeline and are deduplicated by transaction and sequence number. Scheduled limits from OpenADR or IEEE 2030.5 enter as commands with a start time, and the command service turns them into charging profiles for the affected stations.
+
+The protocols differ, and so do the components that handle them. The value model, storage, observability and testing are shared.
 
 ## What a protocol library does, and what the gateway does
 

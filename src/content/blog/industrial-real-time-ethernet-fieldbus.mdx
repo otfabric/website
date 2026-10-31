@@ -1,10 +1,9 @@
 ---
 title: 'Why industrial real-time communication is not just faster TCP'
 description: PROFINET, EtherNet/IP, CANopen, IEC 61850 GOOSE and Sampled Values bypass ordinary request/response networking for a reason. Real time is about bounded latency, jitter, deadlines, watchdogs and freshness, not raw speed, and it changes what your software, your containers and your test networks must provide.
-date: 2026-11-07
+date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, networking, automation]
-draft: true
 cover:
   alt: Top, explicit messaging over TCP as in Modbus/TCP, S7, EtherNet/IP Class 3 and MMS. Requests go out at a regular rate but response times vary with load, retries and the TCP stack. Bottom, a cyclic I/O relationship as in PROFINET RT and EtherNet/IP Class 1. After one connection setup, controller and device exchange frames every cycle without requests. One lost frame is tolerated; when frames stop for longer than the watchdog, a multiple of the cycle, the relationship fails and outputs go to their safe state.
   image: ../../assets/blog/protocol-series/cover-realtime.png

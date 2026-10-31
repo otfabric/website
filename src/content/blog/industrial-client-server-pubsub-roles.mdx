@@ -1,10 +1,9 @@
 ---
 title: 'Who is the client? Industrial roles, bidirectional RPC and publish/subscribe'
 description: Does the participant that opens the connection always control the conversation? Not in OCPP, where chargers dial out and then answer remote commands; not in KNX, where there is no client at all; and not in OPC UA, where reverse connect and PubSub change the picture. Connection ownership, application roles and message direction are separate design concerns.
-date: 2026-11-07
+date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, networking]
-draft: true
 cover:
   alt: Four communication topologies. Modbus/TCP, where the client opens the connection and sends every request. OCPP, where the charger behind NAT opens a WebSocket to the CSMS and then both sides send calls. KNX, where a switch writes a group address on the bus and an actuator and a display both act on it, with the status on a second group address. OPC UA PubSub, where a publisher sends through an MQTT broker or a UDP multicast group to any number of subscribers.
   image: ../../assets/blog/protocol-series/cover-roles.png

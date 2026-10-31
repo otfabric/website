@@ -1,10 +1,9 @@
 ---
 title: 'Reconnecting is not recovering: industrial connection and session lifecycles'
 description: What state must be rebuilt after an industrial connection fails? A new socket is only the first of several steps. OPC UA, IEC 104, DNP3, PROFINET, EtherNet/IP, CANopen, OCPP, OpenADR and IEEE 2030.5 each need their own sequence of session setup, resynchronization and replay before data can be trusted again.
-date: 2026-11-07
+date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, networking, scada]
-draft: true
 cover:
   alt: A reconnect state machine with five states, disconnected, transport ready, protocol ready, synchronized and operational, where any failure leads back to disconnected with backoff and jitter. What each state means for OPC UA, IEC 104, DNP3, PROFINET and OCPP, from TCP and Hello/Ack, STARTDT, the first DNP3 response, a PROFINET application relationship and an OCPP BootNotification, through interrogations, integrity polls, recovered subscriptions and flushed queues, to live data.
   image: ../../assets/blog/protocol-series/cover-session.png
@@ -117,6 +116,23 @@ Long disconnects need reconciliation with the authoritative state, which can liv
 - In **OCPP**, the charger is authoritative for what happened during a transaction; the CSMS should accept the queued messages and update billing, even when they arrive hours late.
 - In **IEEE 2030.5** and **OpenADR**, the server is authoritative for schedules; a device that comes back must fetch the current programs and events and drop any that were superseded or cancelled.
 - For **commands** sent before the failure, the application must decide what each one became: executed, unknown or not sent. Libraries generally do not decide this for you. [go-ocpp](/projects/go-ocpp/), for example, fails pending calls with a connection-lost error and resends nothing on its own; which messages to send again is the application's decision.
+
+## Worked example: the charger comes back
+
+Put the pieces together for the third running example. A charging station behind a customer router loses its mobile connection for forty minutes during a charging session. While it is offline, the vehicle finishes charging and is unplugged.
+
+On the charger's side, nothing stops. The transaction continues under local control, the station records meter values, and when the cable is removed it ends the transaction. Because the CSMS cannot be reached, the transaction messages go into the station's offline queue in order.
+
+When the mobile link returns, the station works through the states:
+
+1. **Transport ready**: it waits a randomized back-off, opens the WebSocket over TLS and authenticates according to its security profile.
+2. **Protocol ready**: if it rebooted, it sends BootNotification and waits for Accepted; if it only lost the connection, it can continue without one.
+3. **Synchronized**: it reports the current state of each connector with StatusNotification and delivers the queued TransactionEvents (OCPP 2.0.1) or StartTransaction, MeterValues and StopTransaction (OCPP 1.6) in their original order. The CSMS checks the sequence numbers per transaction, notes that the messages were sent offline, and closes the session for billing.
+4. **Operational**: remote commands can be delivered again.
+
+On the CSMS side, the same forty minutes produced different problems. A smart-charging profile that an operator changed during the outage was never delivered, so the CSMS must send it again. A RequestStopTransaction that an operator issued during the outage could not be delivered at all. Now that the station is back, the CSMS sees that the transaction already ended and must close the request with a clear outcome rather than send it late. And if 5,000 stations behind the same mobile operator come back at the same time, the back-off and admission limits from the previous section decide whether the CSMS stays up.
+
+None of this is visible to code that treats the WebSocket as "the connection". It all becomes manageable when every station has an explicit state and every command has an explicit outcome.
 
 ## Practical lesson
 
