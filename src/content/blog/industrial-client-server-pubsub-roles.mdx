@@ -13,7 +13,7 @@ import SeriesNav from '../../components/blog/SeriesNav.astro';
 import SeriesLink from '../../components/blog/SeriesLink.astro';
 import Callout from '../../components/Callout.astro';
 
-In HTTP, the client opens a connection, sends requests, and the server answers. Most backend engineers carry that model into industrial work, and it holds for exactly one protocol in this series. Everywhere else, at least one of its assumptions breaks.
+In HTTP, the client opens a connection, sends requests, and the server answers. Most backend engineers carry that model into industrial work. It fits some industrial protocols well, such as Modbus, S7comm, OPC UA client/server and many BACnet services. It becomes incomplete as soon as unsolicited reporting, bidirectional RPC, producer/consumer relationships or group communication enter the picture, and in most of the protocols in this series at least one of them does.
 
 The central question of this article: **does the participant that opens the connection always control the conversation?**
 
@@ -59,7 +59,7 @@ Once connected, OCPP is a symmetric RPC framework. A message is a CALL with a un
 - the station sends BootNotification, Heartbeat, StatusNotification, TransactionEvent and MeterValues;
 - the CSMS sends RequestStartTransaction, SetChargingProfile, Reset, GetVariables and many more.
 
-Each side may have only one CALL of its own outstanding at a time, so the two directions behave like two independent request queues sharing one socket. OCPP 2.1 adds a SEND message type for messages that are never answered.
+The OCPP-J specifications ask each side not to send a new CALL until its previous one has been answered or has timed out. In OCPP 1.6-J that is a SHOULD NOT, a recommendation rather than a transport limit, and calls started by the two peers may cross on the same WebSocket. In practice the two directions behave like two independent, serialized request queues sharing one socket, and an implementation should still correlate every response by its message id rather than rely on the serialization. OCPP 2.1 adds a SEND message type for messages that are never answered.
 
 For the running example, the CSMS can never "connect to a charger". It can only wait until the charger connects, and while it is connected, use that connection to call it. When a charger is offline, remote commands cannot be delivered at all; the application has to decide whether to queue, expire or reject them. <SeriesLink to="industrial-protocol-session-recovery">Reconnecting is not recovering</SeriesLink> covers what happens when it comes back.
 
@@ -73,7 +73,7 @@ An OPC UA subscription belongs to a session, and a session to one client. Ten cl
 
 OPC UA PubSub, defined in Part 14 of the specification, is not "subscriptions over a broker". It is a different communication model that shares the information model with client/server and little else.
 
-A publisher groups values into **DataSets** and sends them as **NetworkMessages** at a publishing interval, without knowing who receives them. Messages travel in the binary UADP encoding over UDP, unicast or multicast, or directly over Ethernet; or in UADP or JSON over a broker with MQTT or AMQP. Subscribers filter on the publisher id, writer group and dataset writer they care about, and detect duplicates and gaps with sequence numbers. There is no session, no request and no acknowledgement. Security is applied to the messages themselves with keys distributed by a security key service, or delegated to the broker's TLS for JSON.
+A publisher groups values into **DataSets** and sends them as **NetworkMessages** at a publishing interval, without knowing who receives them. Messages travel in the binary UADP encoding over UDP, unicast or multicast, or directly over Ethernet; or in UADP or JSON over a broker with MQTT or AMQP. Subscribers filter on the publisher id, writer group and dataset writer they care about, and detect duplicates and gaps with sequence numbers. There is no session, no request and no end-to-end acknowledgement. Over MQTT the broker can acknowledge delivery at its quality-of-service level, but that confirms the hop to the broker, not that a subscriber applied the data. Security is applied to the messages themselves with signing and encryption in UADP, using keys distributed by a security key service, or delegated to the broker's TLS for JSON.
 
 PubSub is typically used to fan values out to many receivers, to feed IT and cloud systems through a broker, and, over UDP or Ethernet, for deterministic controller-to-controller exchange. Client/server remains the way to browse, write, call methods and configure. Note which version you are dealing with: PubSub arrived in OPC UA 1.04 and has grown since, and devices differ widely in what they support.
 
@@ -102,7 +102,7 @@ The **NMT master** adds a third role: it commands nodes into pre-operational, op
 Publish/subscribe comes in two families that behave very differently on the network:
 
 - **Brokered** (MQTT, AMQP): publishers and subscribers connect outbound to a broker, which routes by topic. It crosses NAT and firewalls easily and decouples lifecycles; the broker becomes a component with its own availability, security and retained-message semantics. Application profiles such as [Sparkplug B](/profiles/sparkplugb/) add state on top: birth and death certificates and sequence numbers that tell a consumer whether its view of an edge node is complete.
-- **Brokerless** (OPC UA PubSub over UDP, GOOSE, KNX routing, CAN): the network itself does the fan-out through multicast, Layer 2 broadcast or a shared bus. There is nothing in the middle to fail, and nothing in the middle to buffer, authenticate or route across subnets.
+- **Brokerless** (OPC UA PubSub over UDP, GOOSE, KNX routing, CAN): the network itself does the fan-out through multicast, Layer 2 broadcast or a shared bus. There is nothing in the middle to fail, and nothing in the middle to buffer or route across subnets. Having no broker does not mean having no security: OPC UA PubSub UADP messages can be signed and encrypted, and GOOSE and Sampled Values can be authenticated with IEC 62351-6 where devices support it. The security simply has to live in the messages instead of the connection.
 
 Choosing between them is a network and lifecycle decision first, and a messaging decision second.
 
@@ -125,5 +125,5 @@ Connection ownership, authorization, application roles and communication directi
 <SeriesLink to="industrial-events-alarms-reliability">Industrial events and alarms</SeriesLink> looks at what publish/subscribe and group communication can and cannot guarantee about delivery, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> shows how these roles map onto components.
 
 <Callout title="Implementations to study">
-[go-ocpp](/projects/go-ocpp/) implements both the charging station and the CSMS, with one outstanding call per direction. [go-opcua](/projects/go-opcua/) supports reverse connect and [PubSub over UDP, Ethernet, MQTT and AMQP](/docs/protocols/opc-ua/pubsub/). [go-knx](/projects/go-knx/) covers tunnelling, routing and group communication, and [go-canopen](/projects/go-canopen/) SDO, PDO and NMT roles.
+[go-ocpp](/projects/go-ocpp/) implements both the charging station and the CSMS, and serializes its own calls to one outstanding call per direction. [go-opcua](/projects/go-opcua/) supports reverse connect and [PubSub over UDP, Ethernet, MQTT and AMQP](/docs/protocols/opc-ua/pubsub/). [go-knx](/projects/go-knx/) covers tunnelling, routing and group communication, and [go-canopen](/projects/go-canopen/) SDO, PDO and NMT roles.
 </Callout>

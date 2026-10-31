@@ -5,7 +5,7 @@ date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, networking, automation]
 cover:
-  alt: Top, explicit messaging over TCP as in Modbus/TCP, S7, EtherNet/IP Class 3 and MMS. Requests go out at a regular rate but response times vary with load, retries and the TCP stack. Bottom, a cyclic I/O relationship as in PROFINET RT and EtherNet/IP Class 1. After one connection setup, controller and device exchange frames every cycle without requests. One lost frame is tolerated; when frames stop for longer than the watchdog, a multiple of the cycle, the relationship fails and outputs go to their safe state.
+  alt: Top, explicit messaging over TCP as in Modbus/TCP, S7, EtherNet/IP Class 3 and MMS. Requests go out at a regular rate but response times vary with load, retries and the TCP stack. Bottom, a cyclic I/O relationship as in PROFINET RT and EtherNet/IP Class 1. After one connection setup, controller and device exchange frames every cycle without requests. One lost frame is tolerated; when frames stop for longer than the watchdog, a multiple of the cycle, the relationship fails and the outputs follow the fault reaction configured in the device.
   image: ../../assets/blog/protocol-series/cover-realtime.png
 ---
 
@@ -31,7 +31,7 @@ Three terms do most of the work:
 
 A motion controller that closes a loop every millisecond cares little whether the average latency is 50 or 200 microseconds. It cares that no update arrives later than its cycle allows. Average latency is a throughput metric; real-time systems are judged by the worst case.
 
-"Real time" is therefore not one universal guarantee. PROFINET RT, PROFINET IRT, EtherNet/IP Class 1, CANopen with SYNC and IEC 61850 Sampled Values each offer different bounds under different configurations, and every one of them can be undermined by the end systems: an operating system that schedules the sending thread late, a network card that coalesces interrupts, a switch that queues behind a burst of other traffic.
+"Real time" is therefore not one universal guarantee. PROFINET RT, PROFINET IRT, EtherNet/IP Class 1, CANopen with SYNC and IEC 61850 Sampled Values each offer different bounds under different configurations, Protocol mechanisms define the timing contract; they do not by themselves make a general-purpose host meet every deadline. Every one of them can be undermined by the end systems: an operating system that schedules the sending thread late, a network card that coalesces interrupts, a switch that queues behind a burst of other traffic.
 
 ## Polling at fixed intervals versus cyclic relationships
 
@@ -56,7 +56,7 @@ Bypassing IP shortens the path through the stack and lets switches prioritize fr
 [EtherNet/IP](/protocols/ethernet-ip/) follows the same split with IP all the way:
 
 - **Explicit messaging** over TCP port 44818 carries CIP services: reading attributes and tags, configuration, diagnostics, and the Forward_Open that sets up I/O connections. Class 3 connected messaging is still request/response.
-- **Implicit messaging**, Class 1, carries I/O data over UDP port 2222. The originator requests a packet interval (RPI) for each direction; the target produces at that rate, unicast or multicast, with a sequence count. A connection timeout, the RPI multiplied by a timeout multiplier, closes the connection when packets stop.
+- **Implicit messaging**, Class 1, carries I/O data over UDP port 2222. The originator requests a packet interval (RPI) for each direction; the target produces at that rate, unicast or multicast, with a sequence count. A connection timeout closes the connection when packets stop. It is the RPI multiplied by a timeout multiplier that the originator chooses in the Forward_Open and the target accepts, so it differs per connection rather than being a fixed constant.
 
 Because implicit I/O runs on UDP and IP, it can cross a routed network in principle, and multicast lets several consumers share one producer. In practice, timing still depends on the network being engineered for it: segmented, prioritized and quiet.
 
@@ -66,14 +66,14 @@ Because implicit I/O runs on UDP and IP, it can cross a routed network in princi
 
 ![CAN arbitration between three nodes that start at the same moment. Node A with identifier 0x123 sends a 1 at the third bit while the others send 0, and stops. Node C, 0x0F4, loses the same way at bit ID2. Node B, 0x0F0, wins and its frame continues undamaged; A and C retry when the bus is idle.](../../assets/blog/protocol-series/rt-can-arbitration.svg)
 
-Arbitration is non-destructive: the winning frame continues as if nothing happened, and no bandwidth is lost to collisions. Combined with a known bit rate, up to 1 Mbit/s for classical CAN, this lets a designer calculate the worst-case latency of each message from its priority and the load of everything with a higher priority. The ACK slot at the end of a frame tells the sender that at least one node received it correctly; it says nothing about whether the intended consumer did.
+Arbitration is non-destructive: the winning frame continues as if nothing happened, and no bandwidth is lost to collisions. Combined with a known bit rate, up to 1 Mbit/s for classical CAN, this lets a designer calculate the worst-case response time of each message. The calculation rests on assumptions: the periods and frame lengths of all higher-priority messages, the bus load, and an error model, since error frames and retransmissions add delay. With those written down, the bound is a real engineering number; without them it is a guess. The ACK slot at the end of a frame tells the sender that at least one node received it correctly; it says nothing about whether the intended consumer did.
 
 ## CANopen: SYNC and periodic or event-driven PDOs
 
 [CANopen](/protocols/canopen/) uses CAN's properties to build both cyclic and event-driven exchange:
 
-- A **SYNC producer** sends a high-priority SYNC message at a fixed period. Nodes with synchronous transmit PDOs sample their inputs and send them after each SYNC, or every *n*th one; receivers apply synchronous receive PDOs at the next SYNC. The network moves in step.
-- **Event-driven PDOs** are sent when their data changes, limited by an **inhibit time** and backed by an **event timer**.
+- A **SYNC producer** sends a high-priority SYNC message at a fixed period. A transmit PDO's **transmission type** decides how it relates to SYNC: type 0 is *acyclic synchronous*, sent after a SYNC only when an event occurred; types 1 to 240 are *cyclic synchronous*, sent after every *n*th SYNC. Receivers apply synchronous receive PDOs at the next SYNC. The network moves in step.
+- **Event-driven PDOs**, types 254 and 255, are sent when the manufacturer-specific or device-profile event occurs, typically a change of data, limited by an **inhibit time** and backed by an **event timer**.
 - **Heartbeats** let every node supervise every other within a consumer timeout.
 
 Because PDO identifiers carry priority, the designer decides which process data wins under load, which is something no TCP-based protocol lets you express.
@@ -82,21 +82,21 @@ Because PDO identifiers carry priority, the designer decides which process data 
 
 [IEC 61850](/protocols/iec-61850/) defines two Layer 2 mechanisms for substations that look alike and behave very differently.
 
-![GOOSE and Sampled Values. GOOSE repeats its message at a slow heartbeat; on a state change stNum increases and the message is sent at once, then repeated at growing intervals from a minimum time of a few milliseconds back to the heartbeat, with sqNum counting the repeats. Sampled Values are sent at a fixed rate, every 250 microseconds at 50 hertz with one sample per frame, with a sample counter, whether or not anything changed.](../../assets/blog/protocol-series/rt-goose-sv.svg)
+![GOOSE and Sampled Values. GOOSE repeats its message at a slow heartbeat; on a state change stNum increases and the message is sent at once, then repeated at growing intervals from a minimum time of a few milliseconds back to the heartbeat, with sqNum counting the repeats. Sampled Values are sent at a fixed rate, whether or not anything changed. The example uses the 9-2LE profile with 80 samples per cycle and one ASDU per frame: a frame every 250 microseconds at 50 hertz, each with a sample counter.](../../assets/blog/protocol-series/rt-goose-sv.svg)
 
-- **GOOSE** carries state, such as a trip signal or a breaker position. It is sent immediately on a change and then repeated, quickly at first and then at a heartbeat interval, so that a lost frame is replaced within milliseconds. A subscriber invalidates the data if nothing arrives within the time-allowed-to-live in the last frame. Reliability comes from repetition, not acknowledgement.
-- **Sampled Values** carry measurements, the instantaneous currents and voltages of a merging unit. The common 9-2LE profile sends 80 samples per power cycle, 4,000 per second at 50 Hz and 4,800 at 60 Hz. A lost sample is never retransmitted; a gap in the sample counter is visible to the subscriber, and the protection function decides what a gap means. Samples from different merging units are aligned by a shared time reference, typically PTP or a pulse-per-second signal, which the stream flags as synchronized or not.
+- **GOOSE** carries state, such as a trip signal or a breaker position. It is sent immediately on a change and then repeated, quickly at first and then at a heartbeat interval, so that a lost frame is replaced within milliseconds. A subscriber invalidates the data if nothing arrives within the time-allowed-to-live in the last frame. Reliability comes from repetition, not acknowledgement. Repetition makes it very likely that subscribers receive the current state; it does not preserve intermediate states that changed again before a subscriber saw them.
+- **Sampled Values** carry measurements, the instantaneous currents and voltages of a merging unit. The common 9-2LE profile for protection sends 80 samples per power cycle, 4,000 per second at 50 Hz and 4,800 at 60 Hz, one ASDU per frame; other profiles and configurations use other rates and group several ASDUs in one frame. A lost sample is never retransmitted; a gap in the sample counter is visible to the subscriber, and the protection function decides what a gap means. Samples from different merging units are aligned by a shared time reference, typically PTP or a pulse-per-second signal, which the stream flags as synchronized or not.
 
 ## Watchdogs, missed cycles and stale outputs
 
 Every cyclic mechanism ends in the same question: what happens when data stops?
 
-- In PROFINET, the IO-device detects missing frames after a watchdog interval, a configured multiple of the cycle, and puts its outputs into a configured substitute state. The controller marks the device's inputs as invalid.
-- In EtherNet/IP, the connection times out after the RPI times the multiplier, and the target applies its configured behaviour for outputs, often clearing them.
+- In PROFINET, the IO-device detects missing frames after a watchdog interval, a configured multiple of the cycle, and applies its configured substitute behaviour to the outputs. The controller marks the device's inputs as invalid. The provider and consumer status bytes (IOPS and IOCS) say whether data is valid and was consumed; they are not evidence that an actuator physically moved.
+- In EtherNet/IP, the connection times out after the RPI times the multiplier, and the target applies its configured behaviour for outputs: clearing them, going to fault values, or holding the last state, which some devices allow indefinitely.
 - In CANopen, a missing heartbeat triggers the consumer's configured reaction, and receive PDO deadline monitoring can flag data that did not arrive in time.
 - In GOOSE, data whose time-allowed-to-live has passed is invalid.
 
-The design rule is to **tolerate occasional loss and act decisively on sustained loss**. A single lost frame should not trip a machine; a stale output must never stay active indefinitely. Software that sits next to cyclic I/O needs the same discipline: every value it takes from the I/O image should carry its validity, and every output it writes needs a defined behaviour when the relationship goes away. <SeriesLink to="industrial-data-time-freshness-ordering">Time, freshness and ordering</SeriesLink> picks this up for supervisory data.
+The design rule is to **tolerate occasional loss and act decisively on sustained loss**. A single lost frame should not trip a machine, and the fault reaction for sustained loss is an engineering requirement: decide what each output must do when the relationship fails, configure it in the device, and verify it, rather than assuming the protocol makes it safe. Software that sits next to cyclic I/O needs the same discipline: every value it takes from the I/O image should carry its validity, and every output it writes needs a defined behaviour when the relationship goes away. <SeriesLink to="industrial-data-time-freshness-ordering">Time, freshness and ordering</SeriesLink> picks this up for supervisory data.
 
 ## Docker networks, routers and the cloud
 

@@ -25,7 +25,7 @@ It is part of the series that starts with [14 industrial protocols, 5 communicat
 
 At least three different times belong to a value:
 
-- **Source time**: when the value was measured or the event happened at the device, by the device's clock.
+- **Source time**: when the value was measured or the event happened, by the clock of whatever assigned the time stamp. That is often the device, but it can be an upstream device or an intermediate server.
 - **Acquisition time**: when your software obtained it, for example when a poll response arrived. For polled data without time stamps, this is the best time you have.
 - **Receive or processing time**: when a later stage, a gateway, a broker or a database, received or handled it.
 
@@ -37,9 +37,9 @@ Protocols fall into two groups.
 
 **Snapshots without source time.** [Modbus](/protocols/modbus/) registers carry no time. An S7 read returns memory contents. EtherNet/IP and PROFINET cyclic data carries values, a sequence or cycle counter and status, but no measurement time. The application knows when the answer arrived; the device may have refreshed that register 200 milliseconds earlier or may be serving a frozen value from a failed sensor input.
 
-**Events and values with source time.** [DNP3](/protocols/dnp3/) event variations with time carry the absolute time of the change. [IEC 104](/protocols/iec-104/) information types with CP56Time2a carry a seven-byte time with millisecond resolution and an invalid flag for the time itself. [IEC 61850](/protocols/iec-61850/) data carries a timestamp with each status and measured value, with flags for clock failure and accuracy. [OPC UA](/protocols/opc-ua/) DataValues carry a SourceTimestamp, set by the data source, and a ServerTimestamp, set by the server.
+**Events and values with source time.** [DNP3](/protocols/dnp3/) event variations with time carry the absolute time of the change. [IEC 104](/protocols/iec-104/) information types with CP56Time2a carry a seven-byte time with millisecond resolution and an invalid flag for the time itself. [IEC 61850](/protocols/iec-61850/) status and measured values are usually modelled with a time stamp attribute, with flags for clock failure and accuracy, but whether a time stamp reaches you depends on the data model, the service and the contents of the dataset. [OPC UA](/protocols/opc-ua/) DataValues carry a SourceTimestamp, set by the source of the value, which may be an upstream device or server rather than the server you talk to, and a ServerTimestamp, set by that server. A SourceTimestamp can also be absent.
 
-For the inverter from the first article, a Modbus integration has to construct time from the poll: the value was at the device "no later than" the response time. An IEC 104 or DNP3 integration gets the time of each change from the device and can order changes correctly even if they arrive late.
+For the inverter from the first article, a Modbus integration has to construct time from the poll: the value was at the device "no later than" the response time. An IEC 104 or DNP3 integration that uses time-tagged information gets the time of each change from the device, and can reconstruct the order of changes from one well-synchronized device even if they arrive late.
 
 ## Sampling interval versus publishing interval
 
@@ -47,14 +47,14 @@ OPC UA makes a distinction that applies more widely: the rate at which a value i
 
 ![Top: an OPC UA monitored item samples every 100 milliseconds into a queue and the subscription publishes once a second; each notification carries the changed samples with their source timestamps, so the client knows when each change happened even though it hears about it up to a second later. Bottom: a Modbus poll once a second returns a bare snapshot; the only time the client has is when the response arrived.](../../assets/blog/protocol-series/time-sampling.svg)
 
-A monitored item sampled every 100 ms with a queue publishes every second the changes it saw, each with its source time. The delivery is late by up to a second, but the timeline is accurate to the sampling interval. A Modbus poll once a second is both late and coarse. Neither is wrong, but downstream code must know which one it has, because "the value at 10:00:00.300" means something different in each.
+A monitored item sampled every 100 ms with a large enough queue publishes every second the changes it saw, each with its source time if the source provides one. The delivery is late by up to a second, but the timeline is accurate to the sampling interval. A Modbus poll once a second is both late and coarse. Neither is wrong, but downstream code must know which one it has, because "the value at 10:00:00.300" means something different in each.
 
 ## Cyclic traffic and freshness deadlines
 
 Cyclic protocols reverse the problem. A PROFINET or EtherNet/IP frame arrives every few milliseconds, so arrival is never the issue; validity is. Each provides status that says whether the data can be used:
 
 - PROFINET's **provider status** (IOPS) per submodule says whether the producer considers its data good, and the frame's data status says whether the provider is running.
-- EtherNet/IP's run/idle header in originator-to-target data says whether the outputs should be applied.
+- EtherNet/IP's run/idle header in originator-to-target data says whether the originator is in run or idle mode, and so whether the target should apply the outputs. It is a mode indication, not a quality flag for each input value.
 - CANopen receive PDO **deadline monitoring** and heartbeats flag data that stopped arriving.
 - IEC 61850 GOOSE carries a **time-allowed-to-live**; Sampled Values flag whether samples are synchronized to a common time source.
 
@@ -64,7 +64,7 @@ For supervisory data, the equivalent is an explicit **freshness deadline** per v
 
 Arrival order and occurrence order diverge more often than intuition suggests. The cover of this article shows a common case: a protection trip assigned to a lower-priority event class is collected by the next event poll, while the breaker position, in a higher class, is reported immediately. The application receives "breaker open" first and "trip" 200 milliseconds later. An incident timeline sorted by arrival tells the story backwards.
 
-Other causes: two devices with separate connections, a gateway that interleaves interrogation responses with spontaneous data, retries and replays after a reconnect, parallel workers in your own pipeline. The fix is always the same: order by source time when you have it, and keep sequence numbers to order events from the same source when time stamps are equal or coarse.
+Other causes: two devices with separate connections, a gateway that interleaves interrogation responses with spontaneous data, retries and replays after a reconnect, parallel workers in your own pipeline. There is no single fix. Prefer source time for reconstructing when events happened, when the source clocks and the meaning of their time stamps are trustworthy. Keep the original arrival order and any sequence information the protocol provides, because two events from one source can share a time stamp, and a device that corrects its clock backwards makes later events look earlier. Track whether each clock was synchronized and how uncertain it is. And do not claim a total chronological order across sources whose clocks are not demonstrably comparable: two devices synchronized to within 10 milliseconds cannot tell you which of two events 3 milliseconds apart came first.
 
 ## Clocks and synchronization
 
@@ -72,7 +72,7 @@ Source time is only as good as the source clock.
 
 - **DNP3** masters can synchronize outstation clocks, and the NEED_TIME indication tells the master when an outstation needs it.
 - **IEC 104** has a clock synchronization command, usually sent after connecting.
-- **IEC 61850** substations use SNTP for events and the Precision Time Protocol, often in the IEC 61850-9-3 power profile, for Sampled Values.
+- **IEC 61850** substations commonly use SNTP for events and the Precision Time Protocol, often in the IEC 61850-9-3 power profile, for Sampled Values, though deployments vary and some use other sources such as IRIG-B or a pulse per second. A time stamp alone does not prove the quality of synchronization; keep the clock flags and the site's time configuration with the data.
 - **CANopen** distributes time with the TIME object.
 - **OPC UA** servers rely on the host's time, typically NTP.
 - **Modbus** has no time service at all; device clocks, if they exist, are set through device-specific registers.
@@ -89,7 +89,7 @@ Counters are often more reliable than clocks for ordering and completeness withi
 - EtherNet/IP sequence counts and PROFINET cycle counters;
 - OCPP 2.0.1 sequence numbers per transaction.
 
-A counter that skips reveals a loss; a counter that repeats reveals a duplicate; a counter that resets reveals a restart. Use them, and log what they reveal.
+Within its scope, a counter that skips suggests a loss, one that repeats suggests a duplicate, and one that resets suggests a restart. The scope matters: counters wrap, IEC 104 sequence numbers belong to one TCP connection and start again on the next, a GOOSE stNum resets when the publisher restarts, and an OPC UA sequence number belongs to one subscription. Interpret each counter within its own scope, treat wraps and recreated streams explicitly, and log what you conclude.
 
 ## Quality and validity at the communication level
 
@@ -148,7 +148,7 @@ With that, a dashboard can grey out stale values, an optimizer can refuse to act
 
 ## Practical lesson
 
-A fresh network packet does not necessarily contain fresh process information. Keep source, acquisition and receive time separate, order by source time, use counters to detect loss and duplicates, carry quality flags end to end, and give every value an explicit freshness deadline. <SeriesLink to="industrial-protocol-read-patterns">Reading industrial data</SeriesLink> explains where values come from, <SeriesLink to="industrial-real-time-ethernet-fieldbus">Why industrial real-time communication is not just faster TCP</SeriesLink> covers freshness at the cyclic level, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> puts the value record into an architecture.
+A fresh network packet does not necessarily contain fresh process information. Keep source, acquisition and receive time separate, prefer source time where the clocks can be trusted while keeping arrival order and sequence information, use counters to detect loss and duplicates, carry quality flags end to end, and give every value an explicit freshness deadline. <SeriesLink to="industrial-protocol-read-patterns">Reading industrial data</SeriesLink> explains where values come from, <SeriesLink to="industrial-real-time-ethernet-fieldbus">Why industrial real-time communication is not just faster TCP</SeriesLink> covers freshness at the cyclic level, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> puts the value record into an architecture.
 
 <Callout title="Implementations to study">
 [go-opcua](/projects/go-opcua/) exposes source and server timestamps and StatusCodes; [go-iec104](/projects/go-iec104/) and [go-dnp3](/projects/go-dnp3/) decode time-tagged information, quality descriptors and flags, and handle clock synchronization; [go-iec61850](/projects/go-iec61850/) counts lost, duplicated and reordered Sampled Values frames. For Modbus, [go-modbus-trace](/projects/go-modbus-trace/) reconstructs poll patterns and latencies from captures, which is a quick way to learn how old a site's polled values really are.

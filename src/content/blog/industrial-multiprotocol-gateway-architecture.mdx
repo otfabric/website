@@ -5,7 +5,7 @@ date: 2026-10-31
 authors: [OT Fabric]
 tags: [software-architecture, protocols, interop, engineering]
 cover:
-  alt: A multi-protocol gateway. Protocol adapters on the left, each with its own state machine, a Modbus poller, an OPC UA client, a DNP3 master, an IEC 104 station, a PROFINET controller and an OCPP CSMS, feed separate execution paths in the middle, an acquisition scheduler, an event pipeline, an isolated cyclic I/O loop and a command service that sends commands back. On the right, one data model where every value carries source time, receive time, quality, freshness, provenance and command stage, feeding a historian, MQTT, APIs and agents. Underneath, observability.
+  alt: A multi-protocol gateway. Protocol adapters on the left, each with its own state machine, a Modbus poller, an OPC UA client, a DNP3 master, an IEC 104 station, a PROFINET controller and an OCPP CSMS, feed separate execution paths in the middle, an acquisition scheduler, an event pipeline, an isolated cyclic I/O loop and a command service that sends commands back. On the right, one data model where every value carries source time when available, receive time, quality, communication status, freshness, provenance and command stage, feeding a historian, MQTT, APIs and agents. Underneath, observability.
   image: ../../assets/blog/protocol-series/cover-gateway.png
 ---
 
@@ -53,9 +53,10 @@ A better starting point is a small set of **capabilities**, each with an honest 
 type Value struct {
 	Point      PointRef       // provenance: adapter, device, protocol address
 	Data       any            // typed value; nil when there is none
-	SourceTime time.Time      // zero when the protocol has no source time
+	SourceTime time.Time      // zero when no source time is available
 	AcqTime    time.Time      // when this process obtained it
-	Quality    Quality        // mapped from the protocol, raw flags kept
+	Comm       CommStatus     // communication: fresh, stale, not synchronized, link down
+	Quality    Quality        // process quality from the device, raw flags kept
 	Path       AcquisitionPath // Polled, Subscribed, Event, Cyclic, Group
 }
 
@@ -69,16 +70,31 @@ type Subscriber interface {
 	Subscribe(ctx context.Context, req SubscriptionRequest) (Subscription, error)
 }
 
-// EventSource: device-originated events with replay and confirmation (DNP3, IEC 104, IEC 61850 BRCB).
+// EventSource: device-originated events (DNP3, IEC 104, IEC 61850 reports, OCPP).
+// No promise of durable replay, total order or exactly-once delivery.
 type EventSource interface {
-	Events() <-chan Event               // ordered per source, may contain replays
-	Confirm(ctx context.Context, upTo EventMark) error // only after durable storage
+	Events() <-chan Event // in delivery order, may contain replays
+}
+
+// EventCheckpointer: optional, only where the protocol and the library let
+// the application decide when events are released (for example a DNP3 master
+// with application-controlled confirmation). Adapters that cannot offer it,
+// such as IEC 104, whose acknowledgements are part of the transport window,
+// simply do not implement it.
+type EventCheckpointer interface {
+	Release(ctx context.Context, upTo EventMark) error // call after durable storage
+}
+
+// ResumableEvents: optional, where a source can resume from a position
+// (an IEC 61850 buffered report EntryID, an OPC UA sequence number).
+type ResumableEvents interface {
+	ResumeFrom(ctx context.Context, pos EventPosition) error
 }
 
 // CyclicIO: a configured relationship with a deadline (PROFINET, EtherNet/IP Class 1, CANopen PDOs).
 type CyclicIO interface {
 	Inputs() InputImage     // latest image with validity and cycle counter
-	SetOutputs(OutputImage) // carried by the next cycle; no acknowledgement
+	SetOutputs(OutputImage) // accepted into the local output image; says nothing about the device
 	State() RelationshipState
 }
 
@@ -94,7 +110,7 @@ type Controller interface {
 }
 ```
 
-These are conceptual capabilities, not a mandate to define one interface per operation or to wrap every protocol library behind them. A Modbus adapter is a `Reader` and a `Controller`; a DNP3 adapter is an `EventSource`, a `Reader` for integrity polls and a `Controller`; a PROFINET adapter is a `CyclicIO` with a `Reader` for records. Code that needs a capability asks for it; code that receives an adapter without it knows, at compile time or at configuration time, that the protocol does not offer it.
+These are conceptual capabilities, not a mandate to define one interface per operation or to wrap every protocol library behind them. A Modbus adapter is a `Reader` and a `Controller`; a DNP3 adapter is an `EventSource`, an `EventCheckpointer` if its library lets the application confirm, a `Reader` for integrity polls and a `Controller`; an IEC 61850 client adds `ResumableEvents` for buffered reports; a PROFINET adapter is a `CyclicIO` with a `Reader` for records. Code that needs a capability asks for it; code that receives an adapter without it knows, at compile time or at configuration time, that the protocol does not offer it.
 
 Protocol-specific APIs remain available underneath. The gateway uses capabilities for the common paths and reaches into the adapter for anything protocol-specific, such as IEC 61850 setting groups or OCPP smart-charging profiles, rather than inventing lowest-common-denominator versions of them.
 
@@ -104,7 +120,7 @@ The cover of this article shows the central idea: four execution paths with diff
 
 - **Acquisition scheduler** for `Reader`s. It groups points into poll groups with rates and deadlines, merges contiguous addresses into batch reads, respects per-device concurrency limits (one outstanding request for many Modbus devices and every DNP3 association, the negotiated job count for S7), and spreads polls over time instead of firing them all on the second.
 - **Subscription manager** for `Subscriber`s. It creates, renews and supervises subscriptions, watches keep-alives, and recreates subscriptions after a session change.
-- **Event pipeline** for `EventSource`s. It stores events durably, confirms them only afterwards, deduplicates replays, orders by source time within a source, applies backpressure when consumers fall behind, and turns overflow indications into explicit gap records.
+- **Event pipeline** for `EventSource`s. It stores events durably and, where the adapter is an `EventCheckpointer`, releases them only afterwards. It deduplicates replays where a protocol identity allows it, keeps arrival order and sequence information next to source time instead of re-sorting blindly, applies backpressure when consumers fall behind, and turns overflow indications into explicit gap records.
 - **Cyclic I/O loop** for `CyclicIO`. It runs isolated from the rest: its own goroutine or process, no allocation-heavy work on its path, outputs computed by fast local logic or set by the command service and applied at the next cycle, and inputs published to the rest of the gateway as snapshots with validity.
 
 Separating them means a slow Modbus device cannot delay DNP3 events, an event storm cannot starve the cyclic loop, and each path can report its own health.
@@ -124,6 +140,7 @@ An actor per session is a natural fit: one goroutine owns the connection and its
 Every value that leaves the gateway carries:
 
 - **source time** when the protocol provides it, and **acquisition time** always;
+- **communication status**, kept apart from process quality: a value can be good at the device and stale because the link is down;
 - **quality**, mapped to a common good, uncertain, bad scale, with the protocol's raw flags kept for anyone who needs them;
 - **freshness** against a deadline derived from how the value is acquired;
 - **provenance**: adapter, device, protocol address and acquisition path.
@@ -134,9 +151,9 @@ This is what makes the data usable downstream, from historians to analytics to a
 
 The event pipeline is where reliability is won or lost:
 
-- **Store, then confirm.** Confirm DNP3 events, acknowledge IEC 61850 reports by recording their EntryID, and accept OCPP transaction messages only after they are written durably.
-- **Deduplicate by protocol identity**: EntryID, sequence numbers, transaction ids, or point plus source time plus value where nothing better exists.
-- **Bound every queue.** When downstream consumers are slow, slow down confirmation, so that devices keep events in their own buffers, rather than growing memory without limit. Surface the backlog as a metric.
+- **Store, then release, where you can.** Where the protocol and the library leave the confirmation to the application, confirm DNP3 events and answer OCPP transaction messages only after they are written durably. An IEC 61850 EntryID is not a per-report acknowledgement: record the last EntryID you stored, so you can resume from it after a reconnect if the report control block and the server's buffer allow. Where confirmation happens below the application, as with IEC 104, put a durable queue directly behind the adapter and document the window in which an event can still be lost.
+- **Deduplicate by protocol identity** where one exists: EntryID, OPC UA sequence numbers, OCPP transaction ids and sequence numbers. Where none exists, as for DNP3 events, use a gateway-side identity from the delivery context and a persistent ingestion sequence, and treat point plus source time plus value as a heuristic, not a guarantee.
+- **Bound every queue.** When downstream consumers are slow, slow down confirmation where the protocol lets you, so that devices keep events in their own buffers, rather than growing memory without limit. Surface the backlog as a metric.
 - **Record gaps** from overflow flags and counter jumps as first-class data.
 
 ## Command acceptance, execution and verification
@@ -150,14 +167,15 @@ const (
 	Submitted CommandStage = iota
 	Delivered  // the transport or protocol confirmed receipt
 	Accepted   // the device agreed: echo, ACTCON, SUCCESS, Accepted
-	Executed   // the device reported completion: ACTTERM, CommandTermination, TransactionEvent
+	Executed   // only from a message whose semantics mean completion, such as
+	           // IEC 61850 CommandTermination; never from acceptance alone
 	Verified   // independent process feedback matched within tolerance and time
 	Failed     // with the stage at which it failed and why
 	Unknown    // timeout: outcome not known, needs reconciliation
 )
 ```
 
-Each command has an id, a target, an idempotency policy, a timeout per stage and a verification rule: which point to watch, what value, what tolerance, by when. A timeout moves the command to `Unknown`, not `Failed`, and triggers a read of the target state before any retry. Only idempotent commands are retried automatically.
+Not every protocol reaches every stage: a Modbus write jumps from accepted to verified, and an OCPP remote start is followed by a TransactionEvent whose timing depends on the station's configured start point, which tells you a transaction exists, not that energy flows. Each command has an id, a target, an idempotency policy, a timeout per stage and a verification rule: which point to watch, what value, what tolerance, by when. A timeout moves the command to `Unknown`, not `Failed`, and triggers a read of the target state before any retry. Finding the target already in the requested state means there is nothing to retry; it does not prove that this command caused it. Only idempotent commands are retried automatically.
 
 ## Cancellation, timeouts and bounded concurrency
 
@@ -224,7 +242,7 @@ The Modbus device has poll groups and concurrency limits. The DNP3 outstation ha
 
 The series used three running examples. Here is where each one lands in the gateway:
 
-- **Reading an inverter.** The Modbus adapter is a `Reader` scheduled by the acquisition scheduler; its values carry acquisition time and a freshness deadline of a few poll intervals. If the same inverter sits behind a DNP3 RTU, the adapter is an `EventSource`, and the event pipeline stores the fault events with their source time before it confirms them.
+- **Reading an inverter.** The Modbus adapter is a `Reader` scheduled by the acquisition scheduler; its values carry acquisition time and a freshness deadline of a few poll intervals. If the same inverter sits behind a DNP3 RTU, the adapter is an `EventSource`, and the event pipeline stores the fault events with their source time before the adapter confirms them, if the DNP3 library lets the application control confirmation.
 - **Operating a breaker.** The command service submits a select-before-operate through the DNP3 or IEC 61850 adapter, records delivered and accepted from the responses, executed from the IEC 61850 CommandTermination where one exists, and verified from the position report that arrives through the event pipeline. A timeout moves the command to `Unknown` and triggers a read of the position before anything is retried.
 - **Managing an EV charger.** The OCPP adapter is a server for thousands of WebSocket sessions, each with its own state machine. Remote commands wait in the command service until their station is operational, or expire. The queued transaction messages that arrive after a reconnect go through the event pipeline and are deduplicated by transaction and sequence number. Scheduled limits from OpenADR or IEEE 2030.5 enter as commands with a start time, and the command service turns them into charging profiles for the affected stations.
 

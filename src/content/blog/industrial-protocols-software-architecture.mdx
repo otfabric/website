@@ -32,7 +32,7 @@ This guide is the entry point of a series for software engineers and architects 
 Industrial protocols were not designed by one committee for one problem. Each grew out of an industry, with its own equipment, its own failure modes and its own idea of what "real time" means.
 
 - **Factory automation**: [Siemens S7comm](/protocols/s7/), [EtherNet/IP](/protocols/ethernet-ip/), [PROFINET](/protocols/profinet/) and [CANopen](/protocols/canopen/). A controller scans its I/O every few milliseconds and a missed deadline stops a machine. These protocols separate configuration, which may be slow, from process data, which must arrive on time.
-- **Utilities and power automation**: [IEC 60870-5-104](/protocols/iec-104/), [DNP3](/protocols/dnp3/) and [IEC 61850](/protocols/iec-61850/). A control centre watches thousands of points over links that used to be slow, shared or expensive. The design answer was to report changes as time-stamped events, to keep them until someone confirms them, and to control switchgear in deliberate, checked steps.
+- **Utilities and power automation**: [IEC 60870-5-104](/protocols/iec-104/), [DNP3](/protocols/dnp3/) and [IEC 61850](/protocols/iec-61850/). A control centre watches thousands of points over links that used to be slow, shared or expensive. The design answer was to report changes as time-stamped events, to buffer them in the device where the protocol and the device support it (DNP3 keeps events until the master confirms them; IEC 104 buffering is up to the station), and to control switchgear in deliberate, checked steps.
 - **Buildings**: [BACnet/IP](/protocols/bacnet/) and [KNX](/protocols/knx/). Many small devices from many vendors, installed by integrators, running for decades. BACnet models devices as objects with properties and change notifications; KNX lets a switch talk to a light through a group address without any central controller.
 - **Industrial integration**: [Modbus](/protocols/modbus/) and [OPC UA](/protocols/opc-ua/). Modbus is the lowest common denominator: registers, a request and an answer. OPC UA is the opposite end: a typed address space, sessions, subscriptions, events and security.
 - **Distributed energy and EV charging**: [OCPP](/protocols/ocpp/), [OpenADR](/protocols/openadr/) and [IEEE 2030.5](/protocols/ieee-2030-5/). The equipment sits behind customer routers, on mobile networks and on the public internet. These protocols use HTTP, WebSockets and TLS, and they assume the device will be offline at times.
@@ -59,7 +59,7 @@ Five patterns cover the communication behaviour of all fourteen protocols. They 
 
 Before comparing protocols, separate four questions that are often merged into one:
 
-- **Synchronous or asynchronous** describes whether the caller waits. It is a property of the API, not of the wire.
+- **Synchronous or asynchronous** is used in two senses. In this series it describes whether the calling code waits for the result, which is a property of the API, not of the wire. The same words also describe communication behaviour, such as whether messages follow a shared clock; where that meaning is intended, the text says so.
 - **Request/response or one-way** describes whether a message expects an answer.
 - **Polling or publishing** describes who decides when data moves.
 - **TCP or UDP** describes the transport, and says little about the application contract.
@@ -86,20 +86,20 @@ The two tables compress each protocol to its characteristic behaviour. The excep
 | [CANopen](/docs/protocols/canopen/) | CAN | SDO client/server; PDO producer/consumer; NMT master |
 | [KNX](/docs/protocols/knx/) | TP1 bus; KNXnet/IP tunnelling and routing, UDP 3671 | Group senders and receivers |
 | [OCPP](/docs/protocols/ocpp/) | WebSocket, JSON, over TLS | Charger is the WebSocket client; both sides send calls |
-| [OpenADR 3](/docs/protocols/openadr/) | HTTPS REST; webhook and MQTT notifications | VTN server; VEN and business-logic clients |
+| [OpenADR 3](/docs/protocols/openadr/) | HTTPS REST; webhook notifications, plus optional MQTT notifications since 3.1 | VTN server; VEN and business-logic clients |
 | [IEEE 2030.5](/docs/protocols/ieee-2030-5/) | HTTPS with client certificates, XML or EXI | Server; clients poll, optional subscriptions |
 
 **How data, control and recovery work:**
 
 | Protocol | Read path | Write path | Events and alarms | After a failure |
 |---|---|---|---|---|
-| Modbus | Explicit reads, polled | Write registers or coils; the reply echoes the request | None | Poll again |
+| Modbus | Explicit reads, polled | Write registers or coils; the reply echoes the address and the value or quantity | None | Poll again |
 | OPC UA | Read; subscriptions with monitored items | Write; method calls | Events, Alarms and Conditions | Reactivate session, transfer or recreate subscriptions, Republish, ConditionRefresh |
 | BACnet/IP | ReadProperty(Multiple); SubscribeCOV | WriteProperty, with a 16-level priority array | Event notifications to recipient lists; AcknowledgeAlarm | Renew COV subscriptions; GetEventInformation for active events |
-| IEC 104 | General interrogation, then spontaneous data | Commands with select/execute; ACTCON and ACTTERM | Spontaneous, time-tagged ASDUs; station-side buffering | STARTDT, general interrogation, clock synchronization |
-| IEC 61850 | Reads; buffered and unbuffered reports; Sampled Values | Control models: direct or select-before-operate, normal or enhanced security | Reports, GOOSE state changes, logs | Resume buffered reports by EntryID; general interrogation; next GOOSE repeat |
+| IEC 104 | General interrogation, then spontaneous data | Commands with select/execute; ACTCON, and ACTTERM where the station sends it | Spontaneous, time-tagged ASDUs; acknowledgements per connection; buffering depends on the station | STARTDT, general interrogation, clock synchronization |
+| IEC 61850 | Reads; buffered and unbuffered reports; Sampled Values | Control models: direct or select-before-operate, normal or enhanced security | Reports, GOOSE state changes, logs | Resume buffered reports by EntryID if the buffer still holds it; general interrogation; next GOOSE repeat |
 | Siemens S7comm | Explicit reads of DBs, inputs, outputs, markers | Explicit writes | Not used by typical third-party clients | Poll again |
-| DNP3 | Integrity and event polls; unsolicited responses | Control relay output blocks and analog outputs, select-before-operate or direct | Class 1 to 3 events, buffered until confirmed | Event poll, integrity poll, IIN flags |
+| DNP3 | Integrity and event polls; unsolicited responses | Control relay output blocks and analog outputs, select-before-operate or direct | Class 1 to 3 events, buffered until confirmed, within the buffer size | Event poll, integrity poll, IIN flags |
 | EtherNet/IP | Explicit reads; input data every RPI | Explicit writes; output data in every packet | No event history; change-of-state connections | Forward_Open again |
 | PROFINET | Input data every cycle | Output data every cycle; record writes | Diagnosis and process alarms, acknowledged | Re-establish the application relationship |
 | CANopen | SDO uploads; PDOs on SYNC or on change | SDO downloads; receive PDOs | Emergency messages; heartbeat | NMT commands, re-read by SDO |
@@ -130,7 +130,7 @@ Polling, subscriptions, spontaneous reporting, event queues and cyclic exchange 
 
 - With **polling**, the application decides. Modbus and S7 clients read on a schedule. The cost is paid every cycle whether or not the value changed, and anything that happens between two reads is invisible.
 - With a **subscription**, the application decides *what* it wants and the server decides *when* to send it. A BACnet COV subscription has a lifetime and must be renewed. An OPC UA subscription samples values at one interval and publishes notifications at another.
-- With **spontaneous reporting and event queues**, the device decides. An IEC 104 station sends a spontaneous ASDU when a point changes; a DNP3 outstation stores events in classes and sends them unsolicited or when polled, and keeps each one until the master confirms it.
+- With **spontaneous reporting and event queues**, the device decides. An IEC 104 station sends a spontaneous ASDU when a point changes; a DNP3 outstation stores events in classes and sends them unsolicited or when polled, and keeps each one until the master confirms it, as long as its buffer does not overflow.
 - With **cyclic exchange**, the configuration decides. A PROFINET IO-device sends its inputs every cycle once the relationship exists; nobody asks for them.
 
 A subscription is not necessarily an unsolicited packet in the literal sense. OPC UA notifications travel as responses to Publish requests that the client keeps queued at the server; the server decides when to answer, but the client still sent the request first. The behaviour is event-driven while the wire is request/response, which is exactly why the four dimensions above need to stay separate.
@@ -141,10 +141,10 @@ A subscription is not necessarily an unsolicited packet in the literal sense. OP
 
 A write in a typical web API returns 200 and the database row has changed. Industrial writes are not that simple, because the thing being written is often a physical process.
 
-- **Writing a Modbus holding register** returns an echo of the request. It means the device accepted the value. Whether an inverter has actually ramped down to the new power limit is a separate question that only a later reading can answer.
-- **Select-before-operate**, in DNP3, IEC 104 and IEC 61850, splits a control into a selection, which reserves the output and checks the command, and an operation, which must repeat the same parameters within a timeout. IEC 104 and IEC 61850 with enhanced security then send a termination message when the operation has finished.
-- **Cyclic outputs**, in PROFINET and EtherNet/IP, have no write request at all. The controller changes a byte in the output image and the next cycle carries it. There is no per-value acknowledgement; the inputs coming back are the feedback.
-- **Remote EV charging commands** are accepted long before they take effect. An OCPP RequestStartTransaction answered with Accepted means the charger will try; the transaction starts when the cable is connected and the session is authorized, and the charger reports it in a later message.
+- **Writing a Modbus holding register** returns an echo: the address and value for a single register, the starting address and quantity for several. It means the device accepted the value. Whether an inverter has actually ramped down to the new power limit is a separate question that only a later reading can answer.
+- **Select-before-operate**, in DNP3, IEC 104 and IEC 61850, splits a control into a selection, which arms the output and checks the command, and an operation, which must repeat the same parameters within a timeout. IEC 61850 with enhanced security then sends a termination message when the operation has finished, and an IEC 104 station may send one, depending on the command and the station.
+- **Cyclic outputs**, in PROFINET and EtherNet/IP, have no write request at all. The controller changes a byte in the output image and the next cycle carries it. There is no per-value acknowledgement; the inputs coming back are the feedback. If the connection fails, what the outputs do is a device configuration, which can include holding the last value.
+- **Remote EV charging commands** are accepted long before they take effect. An OCPP RequestStartTransaction answered with Accepted means the station accepted the request, not that energy flows. In OCPP 2.0.1 the point at which a transaction starts is configurable, for example plugging in, authorization or energy transfer, so the TransactionEvent that reports it may come later or may already have been sent.
 
 The common thread is that the response to a command tells you less than an API usually does. <SeriesLink to="industrial-protocol-write-control-semantics">Writing to industrial equipment</SeriesLink> separates delivered, accepted, executed and verified, and looks at what a timeout really means.
 
@@ -154,10 +154,10 @@ Take a deliberately simple situation: a gateway is offline for two minutes. Whil
 
 - A **Modbus** poller comes back and reads the current value. The alarm never happened as far as it knows.
 - A **BACnet** client resubscribes and reads the current state. The transient is gone unless the device kept it in an event log that the client then reads.
-- A **DNP3** master runs an event poll and receives both events with their time stamps, because the outstation kept them until they were confirmed, and flags an overflow if it could not.
-- An **IEC 61850** client with a buffered report resumes from the last entry it received.
-- A **GOOSE** subscriber sees only the current state, but the jump in the state number proves that it missed something.
-- A **KNX** gateway has lost the telegrams for good and must read every status object that allows it.
+- A **DNP3** master runs an event poll and receives both events with their time stamps, provided the points are assigned to an event class and the buffer did not overflow. The outstation kept them until they were confirmed, and sets an overflow flag if it could not.
+- An **IEC 61850** client with a buffered report resumes from the last entry it received, if it can reserve the report control block again and the server still holds the entries.
+- A **GOOSE** subscriber sees only the current state; a jump in the state number suggests that it missed something, unless the publisher restarted.
+- A **KNX** gateway has lost the telegrams for good, because KNX has no standard replay of group telegrams, and must read every status object that allows it.
 
 The same two minutes produce four different answers: a fresh read, recovered history, a known gap and silent loss. None of them is wrong; they are different contracts. <SeriesLink to="industrial-events-alarms-reliability">Industrial events and alarms</SeriesLink> compares eight protocols on delivery, persistence and recovery. <SeriesLink to="industrial-protocol-session-recovery">Reconnecting is not recovering</SeriesLink> covers the session state that has to be rebuilt, and <SeriesLink to="industrial-data-time-freshness-ordering">Time, freshness and ordering</SeriesLink> covers what the recovered data can and cannot tell you.
 

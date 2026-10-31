@@ -46,9 +46,9 @@ This matters because the response carries no time stamp. The application knows w
 
 A subscription moves part of the decision to the server. The client says *what* it wants once, and the server decides *when* to send it.
 
-In [BACnet](/protocols/bacnet/), a client sends SubscribeCOV for an object such as an analog input. The device then sends a COV notification whenever the present value changes by more than its COV increment, or when its status flags change. The subscription has a lifetime in seconds and must be renewed before it expires; a device may also lose its subscriptions when it restarts, which is why careful clients renew them on a timer and re-read values after renewing. Notifications can be confirmed, so the client acknowledges each one, or unconfirmed, which is cheaper but has no delivery check.
+In [BACnet](/protocols/bacnet/), a client sends SubscribeCOV for an object such as an analog input. The device then sends a COV notification when the monitored value changes in a way that object type defines: for an analog input, a change larger than its COV increment; for binary and multi-state objects, any change of state; and in both cases a change of the status flags. Which objects support COV, and with which criteria, depends on the object type and the device. The subscription has a lifetime in seconds and must be renewed before it expires; a device may also lose its subscriptions when it restarts, which is why careful clients renew them on a timer and re-read values after renewing. Notifications can be confirmed, so the client acknowledges each one, or unconfirmed, which is cheaper but has no delivery check.
 
-In [OPC UA](/protocols/opc-ua/), a client creates a subscription and adds monitored items to it. Each monitored item has a **sampling interval**, how often the server checks the value, a **queue size**, how many changes it keeps between notifications, and a filter, such as a deadband. The subscription has a **publishing interval**, how often the server sends what changed. The two intervals are independent: a value can be sampled every 100 milliseconds and published once a second, with its source timestamps intact.
+In [OPC UA](/protocols/opc-ua/), a client creates a subscription and adds monitored items to it. Each monitored item has a **sampling interval**, how often the server checks the value, a **queue size**, how many changes it keeps between notifications, and a filter, such as a deadband. The subscription has a **publishing interval**, how often the server sends what changed. The two intervals are independent: a value can be sampled every 100 milliseconds and published once a second. Whether all ten samples arrive, with meaningful source timestamps, depends on a queue size of at least ten, the filter, and a source that supplies valid timestamps. A change that happens and reverts between two samples is not seen at all.
 
 There is a detail that surprises engineers who expect push: OPC UA notifications are responses to Publish requests. The client keeps several Publish requests queued at the server; when a publishing interval has something to report, the server answers one of them. The behaviour is event-driven, but on the wire every notification answers a request. A subscription is not necessarily an unsolicited packet in the literal transport sense.
 
@@ -78,10 +78,11 @@ Cyclic data looks like very fast polling, but the contract is different. There i
 
 [CANopen](/protocols/canopen/) shows that the line between cyclic and event-driven data is a configuration choice. A transmit PDO is a CAN frame that carries mapped process values from one producer to any node that wants them. Its **transmission type** decides when it is sent:
 
-- **Synchronous** types send it after every SYNC message, or every *n*th one, so many nodes sample and send in step.
-- **Event-driven** types send it when the mapped data changes, subject to an **inhibit time** that limits how often, and an **event timer** that forces a send when nothing changed for too long.
+- **Acyclic synchronous**, type 0, sends it after a SYNC message, but only when an event occurred, so an event-driven value is still aligned with the network's rhythm.
+- **Cyclic synchronous**, types 1 to 240, send it after every *n*th SYNC message, so many nodes sample and send in step.
+- **Event-driven**, types 254 and 255, send it when the event defined by the manufacturer or device profile occurs, usually a change of the mapped data, subject to an **inhibit time** that limits how often, and an **event timer** that forces a send when nothing changed for too long.
 
-The same motor speed can therefore be a cyclic value or a change-triggered one, and the event timer turns "nothing changed" into a heartbeat that receivers can monitor. SDOs, the request/response side of CANopen, remain for configuration and occasional reads.
+The same motor speed can therefore be a cyclic value, a change-triggered one, or a change-triggered value released on the SYNC beat, and the event timer turns "nothing changed" into a heartbeat that receivers can monitor. SDOs, the request/response side of CANopen, remain for configuration and occasional reads.
 
 [KNX](/protocols/knx/) and IEC 61850 GOOSE share the producer/consumer idea: a value is sent once to everyone who listens, rather than read by each consumer separately. <SeriesLink to="industrial-client-server-pubsub-roles">Who is the client?</SeriesLink> looks at what that means for roles and addressing.
 
@@ -98,10 +99,12 @@ A practical rule of thumb:
 | Data | Best acquisition | Why |
 |---|---|---|
 | Slow, continuous values | Polling at a chosen rate, or a subscription with a deadband | Simple, bounded load |
-| Rare state changes and alarms | Events or subscriptions | Changes between polls are not lost, and nothing is sent when nothing happens |
+| Rare state changes and alarms | Events or subscriptions | Fewer missed changes than polling, and nothing is sent when nothing happens |
 | Changes whose history matters | Buffered events with source time stamps | The order and time of each change survive delays and disconnects |
 | Fast control values | Cyclic I/O in the controller | Deadlines and watchdogs, not best-effort reads |
 | Values many consumers need | Producer/consumer or group communication | Sent once, not read by each consumer |
+
+One caution about the second row. Events and subscriptions reduce the risk of missing changes between polls, but they do not make it zero. How complete they are depends on how the source detects changes, its sampling interval, its queue size and its recovery mechanisms. An OPC UA monitored item that samples every second misses a change that reverts within the second, and a full queue discards notifications. A BACnet COV subscription is not a durable event queue. When an application needs the complete history of a value, it should use a buffered event or historical-data mechanism, and it should detect gaps rather than assume there are none.
 
 ## Five patterns side by side
 
