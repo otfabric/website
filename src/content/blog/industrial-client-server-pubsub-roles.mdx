@@ -1,0 +1,129 @@
+---
+title: 'Who is the client? Industrial roles, bidirectional RPC and publish/subscribe'
+description: Does the participant that opens the connection always control the conversation? Not in OCPP, where chargers dial out and then answer remote commands; not in KNX, where there is no client at all; and not in OPC UA, where reverse connect and PubSub change the picture. Connection ownership, application roles and message direction are separate design concerns.
+date: 2026-10-31
+authors: [OT Fabric]
+tags: [software-architecture, protocols, networking]
+cover:
+  alt: Four communication topologies. Modbus/TCP, where the client opens the connection and sends every request. OCPP, where the charger behind NAT opens a WebSocket to the CSMS and then both sides send calls. KNX, where a switch writes a group address on the bus and an actuator and a display both act on it, with the status on a second group address. OPC UA PubSub, where a publisher sends through an MQTT broker or a UDP multicast group to any number of subscribers.
+  image: ../../assets/blog/protocol-series/cover-roles.png
+---
+
+import SeriesNav from '../../components/blog/SeriesNav.astro';
+import SeriesLink from '../../components/blog/SeriesLink.astro';
+import Callout from '../../components/Callout.astro';
+
+In HTTP, the client opens a connection, sends requests, and the server answers. Most backend engineers carry that model into industrial work. It fits some industrial protocols well, such as Modbus, S7comm, OPC UA client/server and many BACnet services. It becomes incomplete as soon as unsolicited reporting, bidirectional RPC, producer/consumer relationships or group communication enter the picture, and in most of the protocols in this series at least one of them does.
+
+The central question of this article: **does the participant that opens the connection always control the conversation?**
+
+It is part of the series that starts with [14 industrial protocols, 5 communication patterns](/blog/industrial-protocols-software-architecture/).
+
+<SeriesNav current="industrial-client-server-pubsub-roles" />
+
+## Three things that "client" can mean
+
+The word "client" hides three separate facts:
+
+1. **Connection initiator**: the side that opens the TCP connection, the WebSocket or the session.
+2. **Application role**: the side that, according to the protocol, issues requests for a given service: the Modbus client, the DNP3 master, the OCPP CSMS.
+3. **Message direction**: who sends each individual message type, including unsolicited ones.
+
+In Modbus/TCP the three coincide. In every other protocol here, they come apart somewhere.
+
+| Protocol | Opens the transport | Sends requests | Sends unsolicited data |
+|---|---|---|---|
+| Modbus/TCP | Client | Client | Nobody |
+| IEC 104 | Controlling station | Controlling station (commands, interrogation) | Controlled station (spontaneous data) |
+| DNP3 over TCP | Usually the master; the outstation can be configured to dial out | Master | Outstation (unsolicited responses) |
+| OPC UA client/server | Client, or the server with reverse connect | Client | Server, as answers to queued Publish requests |
+| BACnet/IP | Nobody: UDP, no connection | Any device, per service | Any device (COV, events, I-Am) |
+| OCPP | Charging station | Both | Both |
+| CANopen | Nobody: shared bus | SDO clients; the NMT master | Every PDO, EMCY and heartbeat producer |
+| KNX | Tunnelling client to an IP interface; nobody on the bus | Any device | Any device |
+
+## Connection establishment versus message direction
+
+[IEC 104](/protocols/iec-104/) is a good first example of the split. The controlling station, the SCADA side, opens the TCP connection to port 2404 and starts data transfer with STARTDT. It sends commands and interrogations. But most traffic flows the other way: the controlled station sends spontaneous data whenever a point changes, and the controlling station mostly acknowledges. The application client is the receiver for most of the session.
+
+[DNP3](/protocols/dnp3/) is similar, and over TCP either side can be configured to open the connection. Many deployments over cellular networks let the outstation dial out, because the master cannot reach a device behind carrier NAT. After that, the master is still the master: it polls, confirms and controls.
+
+[OPC UA](/protocols/opc-ua/) makes the split explicit with **reverse connect**. A server inside a protected network opens the TCP connection to a client outside it and sends a ReverseHello. The client then creates a secure channel and a session over that socket and sends requests as usual. The firewall sees an outbound connection from the plant; the application sees an ordinary client.
+
+## OCPP: chargers as WebSocket clients that accept remote RPC
+
+[OCPP](/protocols/ocpp/) turns the HTTP model inside out. A charging station sits behind a customer router, a site firewall or a mobile network, so it is the station that opens a WebSocket to the CSMS, over TLS in any serious deployment, with the OCPP version as the WebSocket subprotocol (ocpp1.6, ocpp2.0.1, ocpp2.1).
+
+Once connected, OCPP is a symmetric RPC framework. A message is a CALL with a unique id, an action and a payload; the other side answers with a CALLRESULT or a CALLERROR carrying the same id. Either side can send a CALL:
+
+- the station sends BootNotification, Heartbeat, StatusNotification, TransactionEvent and MeterValues;
+- the CSMS sends RequestStartTransaction, SetChargingProfile, Reset, GetVariables and many more.
+
+The OCPP-J specifications ask each side not to send a new CALL until its previous one has been answered or has timed out. In OCPP 1.6-J that is a SHOULD NOT, a recommendation rather than a transport limit, and calls started by the two peers may cross on the same WebSocket. In practice the two directions behave like two independent, serialized request queues sharing one socket, and an implementation should still correlate every response by its message id rather than rely on the serialization. OCPP 2.1 adds a SEND message type for messages that are never answered.
+
+For the running example, the CSMS can never "connect to a charger". It can only wait until the charger connects, and while it is connected, use that connection to call it. When a charger is offline, remote commands cannot be delivered at all; the application has to decide whether to queue, expire or reject them. <SeriesLink to="industrial-protocol-session-recovery">Reconnecting is not recovering</SeriesLink> covers what happens when it comes back.
+
+Compare that with the same charger integrated over [Modbus](/protocols/modbus/) on a local network: the management software is the client, opens the connection, and sends every read and write. Same device, opposite connection model, and therefore a different network design, different credentials and a different failure model.
+
+## Client-specific OPC UA subscriptions
+
+An OPC UA subscription belongs to a session, and a session to one client. Ten clients that want the same value create ten subscriptions, and the server samples and queues for each. That is the right model for an HMI or an engineering tool that needs its own view and the ability to write and call methods. It is the wrong model when a value must reach many consumers at once, cheaply and without each consumer holding a session.
+
+## OPC UA PubSub as a separate architecture
+
+OPC UA PubSub, defined in Part 14 of the specification, is not "subscriptions over a broker". It is a different communication model that shares the information model with client/server and little else.
+
+A publisher groups values into **DataSets** and sends them as **NetworkMessages** at a publishing interval, without knowing who receives them. Messages travel in the binary UADP encoding over UDP, unicast or multicast, or directly over Ethernet; or in UADP or JSON over a broker with MQTT or AMQP. Subscribers filter on the publisher id, writer group and dataset writer they care about, and detect duplicates and gaps with sequence numbers. There is no session, no request and no end-to-end acknowledgement. Over MQTT the broker can acknowledge delivery at its quality-of-service level, but that confirms the hop to the broker, not that a subscriber applied the data. Security is applied to the messages themselves with signing and encryption in UADP, using keys distributed by a security key service, or delegated to the broker's TLS for JSON.
+
+PubSub is typically used to fan values out to many receivers, to feed IT and cloud systems through a broker, and, over UDP or Ethernet, for deterministic controller-to-controller exchange. Client/server remains the way to browse, write, call methods and configure. Note which version you are dealing with: PubSub arrived in OPC UA 1.04 and has grown since, and devices differ widely in what they support.
+
+## KNX group-based messages
+
+[KNX](/protocols/knx/) has no client and no server on the bus. Devices have **individual addresses** for configuration and **communication objects** linked to **group addresses** for operation. A wall switch's object is linked to group address 1/2/3; so are the light actuator's switching object and a display's status object. Pressing the switch sends a GroupValue_Write to 1/2/3. Every device with an object on 1/2/3 receives it; those with the write flag set act on it. The actuator then reports its actual state on a different group address, say 1/2/4, which the display shows.
+
+Two consequences matter for software:
+
+- The sender does not know who listened and gets no application-level answer. On a twisted-pair line the data-link layer acknowledges the frame, but that says nothing about what any receiver did.
+- Reading is also a group operation: a GroupValue_Read on 1/2/4 is answered by whichever device has the read flag set on that object.
+
+A gateway that connects to KNX over **KNXnet/IP tunnelling** has a classic client role towards the IP interface: a connection, sequence counters, acknowledgements and heartbeats. Through that tunnel, it participates in group communication like any other device. With **KNXnet/IP routing**, it joins a multicast group instead and has no connection at all.
+
+## CANopen: SDO roles versus PDO producers and consumers
+
+[CANopen](/protocols/canopen/) runs on [CAN](/protocols/can-bus/), where every frame is broadcast and identified by its CAN identifier, not by a destination address. CANopen builds two different relationships on top:
+
+- **SDO** is client/server: a client writes or reads one object dictionary entry of one server node, with confirmed, segmented or block transfers and abort codes. Configuration tools and masters are SDO clients.
+- **PDO** is producer/consumer: a node produces a frame with mapped process data under a configured identifier, and any node configured to consume that identifier uses it. There is no request, no answer and no acknowledgement.
+
+The **NMT master** adds a third role: it commands nodes into pre-operational, operational or stopped states. PDOs only flow in the operational state, SDOs in pre-operational and operational. A device can be an SDO server, a PDO producer, a PDO consumer and a heartbeat producer at the same time.
+
+## Brokered MQTT versus multicast and group communication
+
+Publish/subscribe comes in two families that behave very differently on the network:
+
+- **Brokered** (MQTT, AMQP): publishers and subscribers connect outbound to a broker, which routes by topic. It crosses NAT and firewalls easily and decouples lifecycles; the broker becomes a component with its own availability, security and retained-message semantics. Application profiles such as [Sparkplug B](/profiles/sparkplugb/) add state on top: birth and death certificates and sequence numbers that tell a consumer whether its view of an edge node is complete.
+- **Brokerless** (OPC UA PubSub over UDP, GOOSE, KNX routing, CAN): the network itself does the fan-out through multicast, Layer 2 broadcast or a shared bus. There is nothing in the middle to fail, and nothing in the middle to buffer or route across subnets. Having no broker does not mean having no security: OPC UA PubSub UADP messages can be signed and encrypted, and GOOSE and Sampled Values can be authenticated with IEC 62351-6 where devices support it. The security simply has to live in the messages instead of the connection.
+
+Choosing between them is a network and lifecycle decision first, and a messaging decision second.
+
+## Discovery, addressing and fan-out
+
+Roles also decide how participants find each other:
+
+- **BACnet** discovers devices with a broadcast Who-Is and I-Am answers, which do not cross IP routers without BBMDs or foreign-device registration.
+- **PROFINET** finds devices by station name with DCP, a Layer 2 protocol.
+- **KNX** discovery on IP uses multicast search requests; on the bus, addresses come from the ETS project.
+- **OPC UA** has discovery servers and, for PubSub, publisher ids configured on both sides.
+- **OCPP** needs no discovery at all: the charger is configured with the CSMS URL.
+
+Fan-out follows from the same choices: a Modbus value read by five consumers costs five reads; a KNX, GOOSE or PubSub value costs one message regardless of the number of receivers.
+
+## Practical lesson
+
+Connection ownership, authorization, application roles and communication direction must be modelled independently. In code, that means separating the component that owns the socket and its reconnect policy from the component that implements the protocol role, and treating inbound requests on an outbound connection as a first-class path with its own handlers, concurrency limits and authorization. In network design, it means asking for every protocol which side must be reachable, and from where.
+
+<SeriesLink to="industrial-events-alarms-reliability">Industrial events and alarms</SeriesLink> looks at what publish/subscribe and group communication can and cannot guarantee about delivery, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> shows how these roles map onto components.
+
+<Callout title="Implementations to study">
+[go-ocpp](/projects/go-ocpp/) implements both the charging station and the CSMS, and serializes its own calls to one outstanding call per direction. [go-opcua](/projects/go-opcua/) supports reverse connect and [PubSub over UDP, Ethernet, MQTT and AMQP](/docs/protocols/opc-ua/pubsub/). [go-knx](/projects/go-knx/) covers tunnelling, routing and group communication, and [go-canopen](/projects/go-canopen/) SDO, PDO and NMT roles.
+</Callout>

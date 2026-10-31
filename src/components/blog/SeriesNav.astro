@@ -1,0 +1,74 @@
+---
+// The table of contents of the "Software architecture for OT" series. Published parts are links;
+// parts that are still drafts are listed as coming next.
+import { protocolSeries, publishedSeriesIds } from '../../data/series';
+
+interface Props {
+	current: string;
+}
+const { current } = Astro.props;
+const live = await publishedSeriesIds();
+---
+
+<nav class="ot-series" aria-label="Series: software architecture for OT">
+	<p class="ot-label">Series · Software architecture for OT</p>
+	<ol>
+		{protocolSeries.parts.map((part, i) => (
+			<li aria-current={part.id === current ? 'page' : undefined} class:list={{ soon: !live.has(part.id) }}>
+				<span class="n">{i === 0 ? 'Guide' : i}</span>
+				{part.id === current ? (
+					<strong>{part.short}</strong>
+				) : live.has(part.id) ? (
+					<a href={`/blog/${part.id}/`}>{part.short}</a>
+				) : (
+					<span>{part.short} <em>coming next</em></span>
+				)}
+			</li>
+		))}
+	</ol>
+</nav>
+
+<style>
+	.ot-series {
+		margin-block: 1.75rem;
+		padding: 1rem 1.2rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.375rem;
+	}
+	.ot-series p {
+		margin: 0 0 0.6rem;
+	}
+	ol {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.92rem;
+	}
+	li {
+		display: grid;
+		grid-template-columns: 3.2rem 1fr;
+		gap: 0.5rem;
+		padding-block: 0.2rem;
+	}
+	.n {
+		font: 500 0.78rem/1.6 var(--ot-font-mono);
+		color: var(--ot-muted);
+	}
+	li a {
+		text-decoration: none;
+	}
+	li.soon span {
+		color: var(--ot-muted);
+	}
+	em {
+		font-style: normal;
+		font: 500 0.72rem/1 var(--ot-font-mono);
+		margin-inline-start: 0.4rem;
+		padding: 0.15rem 0.4rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 999px;
+	}
+	strong {
+		color: var(--ot-fg-strong);
+	}
+</style>

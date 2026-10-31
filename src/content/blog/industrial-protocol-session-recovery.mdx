@@ -1,0 +1,143 @@
+---
+title: 'Reconnecting is not recovering: industrial connection and session lifecycles'
+description: What state must be rebuilt after an industrial connection fails? A new socket is only the first of several steps. OPC UA, IEC 104, DNP3, PROFINET, EtherNet/IP, CANopen, OCPP, OpenADR and IEEE 2030.5 each need their own sequence of session setup, resynchronization and replay before data can be trusted again.
+date: 2026-10-31
+authors: [OT Fabric]
+tags: [software-architecture, protocols, networking, scada]
+cover:
+  alt: A reconnect state machine with five states, disconnected, transport ready, protocol ready, synchronized and operational, where any failure leads back to disconnected with backoff and jitter. What each state means for OPC UA, IEC 104, DNP3, PROFINET and OCPP, from TCP and Hello/Ack, STARTDT, the first DNP3 response, a PROFINET application relationship and an OCPP BootNotification, through interrogations, integrity polls, recovered subscriptions and flushed queues, to live data.
+  image: ../../assets/blog/protocol-series/cover-session.png
+---
+
+import SeriesNav from '../../components/blog/SeriesNav.astro';
+import SeriesLink from '../../components/blog/SeriesLink.astro';
+import Callout from '../../components/Callout.astro';
+
+Most reconnect code is written as a loop around `dial`: if the socket closes, wait, connect again, carry on. For industrial protocols, that loop is the easy part. A new socket says nothing about whether the session exists, whether subscriptions are still active, whether events were lost, whether the device restarted, or whether the values in your cache are still true.
+
+The central question of this article: **what state must be reconstructed after a connection fails?**
+
+It is part of the series that starts with [14 industrial protocols, 5 communication patterns](/blog/industrial-protocols-software-architecture/).
+
+<SeriesNav current="industrial-protocol-session-recovery" />
+
+## Transport reconnection versus application recovery
+
+The cover of this article shows a reconnect state machine that the rest of the article fills in. It is an application design for a gateway, not a set of states that the protocols themselves define:
+
+0. **Disconnected**: nothing usable. Wait according to a backoff policy.
+1. **Transport ready**: bytes can flow: a TCP connection, a TLS session, a WebSocket, a link that is up.
+2. **Protocol ready**: the peer accepts requests in this protocol: a session is active, data transfer is started, an application relationship exists.
+3. **Synchronized**: the application knows the current state again: an interrogation is complete, subscriptions are restored, buffered events are collected.
+4. **Operational**: data can be trusted and commands can be sent.
+
+Any failure goes back to 0, but not everything is thrown away: an OPC UA subscription id, a DNP3 event position, an IEC 61850 EntryID and an OCPP message queue are exactly the things that make recovery cheaper than a cold start. Treating "socket connected" as "operational" is the most common bug in industrial integrations; it produces stale values marked as good and commands sent into sessions that are not ready.
+
+## Session establishment and authentication
+
+Each protocol has its own step 2:
+
+- **OPC UA**: Hello and Acknowledge, OpenSecureChannel with the negotiated security policy, then CreateSession and ActivateSession with the user identity. A session can survive a broken channel: the client can reactivate it on a new secure channel within the session timeout.
+- **IEC 104**: after the TCP connection, the controlling station sends STARTDT act and waits for STARTDT con. Before that, the station sends no data. With redundancy groups, only one connection of a group is started at a time.
+- **DNP3**: there is no session handshake on the application layer. The first response tells the master a lot through its IIN bits: DEVICE_RESTART if the outstation restarted, NEED_TIME if it wants time synchronization, and which event classes have data.
+- **PROFINET**: Connect, parameter writes, the end of parameterization and ApplicationReady establish the application relationship. Until then there is no cyclic data.
+- **EtherNet/IP**: RegisterSession for explicit messaging, then Forward_Open for each I/O connection.
+- **OCPP**: the WebSocket upgrade, authenticated by basic auth over TLS or a client certificate depending on the security profile, then a BootNotification that the CSMS must accept before the charger may send most other messages. A charger in Pending or Rejected state retries at the interval the CSMS returned.
+- **OpenADR 3** and **IEEE 2030.5**: TLS with client credentials (an OAuth token for OpenADR 3, a device certificate for IEEE 2030.5), then ordinary HTTP requests. There is no session to restore, but there is server state to read again.
+
+## Restoring subscriptions and monitored relationships
+
+A subscription that existed before the failure may or may not exist after it:
+
+- **OPC UA**: if the session survived, its subscriptions did too, as long as their lifetime has not expired, and the client can collect missed notifications with Republish. If the session is gone, TransferSubscriptions can move surviving subscriptions to a new session. If they are gone too, the client recreates them and has a gap.
+- **BACnet**: COV subscriptions have a lifetime and may not survive a device restart. A client renews them on a timer anyway, and after a communication failure renews them immediately and re-reads the values.
+- **IEC 61850**: report control blocks are reserved by a client. After reconnecting, the client must reserve and enable them again; a buffered report control block can resume from the last EntryID the client processed.
+
+## Re-establishing cyclic I/O connections
+
+Cyclic relationships do not resume; they are recreated.
+
+- In **PROFINET**, a failed AR is released on both sides. The controller goes through the full startup again: find the device by name, connect, parameterize, wait for ApplicationReady. Outputs stay in their substitute state until the first valid cycle.
+- In **EtherNet/IP**, a timed-out Class 1 connection is gone; the originator sends a new Forward_Open, and the target accepts it like any other.
+- In **CANopen**, the NMT master brings nodes back to operational. A node that rebooted announces itself with a boot-up message, starts in pre-operational and may need to be configured again by SDO before its PDOs are enabled.
+
+Recreating the relationship is also the moment to check that it is still the right device: PROFINET names, CIP identity objects and CANopen identity objects make it possible to detect that a replacement device has a different firmware or configuration.
+
+## Startup interrogation and resynchronizing process state
+
+Being connected is not the same as knowing the state of the process.
+
+- **IEC 104**: after STARTDT, a **general interrogation** returns every point's current value with cause *interrogated*, and clock synchronization corrects the station's time. Interrogation responses and spontaneous data may be interleaved while the interrogation runs, and the client must not overwrite newer process information with an older snapshot. The cause of transmission and the order of arrival alone do not always tell which value is newer: a station may collect interrogation values over time, and implementations differ. The adapter needs a documented merge policy that uses time tags where the information type has them, the sequence of the exchange and what is known about the station's behaviour.
+- **DNP3**: the classic startup is to disable unsolicited responses, run an **integrity poll** (classes 1, 2, 3 and 0), synchronize time if asked, then enable unsolicited reporting. Events first, then static data, gives the master a consistent baseline.
+- **IEC 61850**: a general interrogation of the report control block refreshes the whole dataset.
+- **OPC UA**: a ConditionRefresh restores the state of alarms; initial values of recreated monitored items restore data.
+- **IEEE 2030.5** and **OpenADR**: read the programs, events and controls from the server again; the server is the authority.
+
+Until synchronization finishes, cached values should be marked as uncertain, not good.
+
+## Event sequence numbers and replay
+
+Replay is where recovery protects history:
+
+- **DNP3** events stay in the outstation until confirmed, so the first event poll after a reconnect collects what happened. EVENT_BUFFER_OVERFLOW says when some were dropped.
+- **IEC 61850** buffered reports resume after the last EntryID, if the client can reserve the same report control block again and the server still holds that entry; BufOvfl reports an overflow.
+- **OPC UA** notification sequence numbers let the client detect a gap and call Republish while the server still has the message in its retransmission queue.
+- **OCPP** chargers queue transaction-related messages while offline; OCPP 2.0.1 adds a sequence number per transaction and an offline flag.
+
+Replay means duplicates, which the next section deals with.
+
+## Heartbeats, keepalives and application watchdogs
+
+A TCP connection can look open for minutes after the peer has gone, so every protocol adds its own liveness check:
+
+- **IEC 104** sends TESTFR frames when the line is idle (t3, typically 20 s) and closes the connection if a frame is not acknowledged in time (t1, typically 15 s).
+- **OPC UA** subscriptions send keep-alive messages when nothing changed, and the session times out if the client is silent too long.
+- **OCPP** chargers send Heartbeat or rely on WebSocket ping frames at a configured interval.
+- **CANopen** heartbeats and **PROFINET** watchdogs supervise at the cycle level.
+
+Choose these intervals from the failure you need to detect, not from defaults: a 30-second WebSocket ping is fine for billing data and far too slow for a control loop.
+
+## Backoff, reconnect storms and resource limits
+
+When a central system restarts, every device that was connected to it tries to reconnect, and if they all use the same fixed delay, they all try at the same moment.
+
+![A thousand devices reconnect after a server restart that can accept about 200 connections a second. With a fixed five-second retry, they come back in synchronized waves far above capacity. With exponential backoff and full jitter, the same attempts spread out under the capacity line.](../../assets/blog/protocol-series/session-backoff.svg)
+
+Exponential backoff with random jitter spreads the load and lets the server recover. OCPP 2.x defines this behaviour for charging stations with retry back-off variables, a base wait plus a random range, doubled on each attempt. The server side needs limits too: a maximum rate of new sessions, a bounded number of subscriptions per client, and admission control that refuses work early instead of collapsing.
+
+## Duplicate messages after recovery
+
+Recovery mechanisms deliver some messages twice: an event that was sent but whose confirmation was lost, a report that is replayed from the EntryID before the one the client processed, an OCPP transaction message retried after a response was lost. Deduplicate with the identity the protocol provides where there is one: the IEC 61850 EntryID, the OPC UA sequence number within a subscription, the OCPP transaction id and sequence number. DNP3 has no event identifier on the wire. Point and time stamp are a heuristic, not an identity: some event variations carry no absolute time, the resolution may be too coarse, and two genuine events can share time and value. For such sources, give each event a gateway-side identity built from the delivery context (which response, after which confirmation) and a persistent ingestion sequence, make processing idempotent where you can, and do not promise exact deduplication.
+
+## Offline queues and reconciliation
+
+Long disconnects need reconciliation with the authoritative state, which can live on either side:
+
+- In **OCPP**, the charger is authoritative for what happened during a transaction; the CSMS should accept the queued messages and update billing, even when they arrive hours late. Distinguish the transaction messages that the version you run requires the station to queue from messages an implementation may choose to persist, and both from CSMS-initiated requests, which nobody queues on the station's behalf.
+- In **IEEE 2030.5** and **OpenADR**, the server is authoritative for schedules; a device that comes back must fetch the current programs and events and drop any that were superseded or cancelled.
+- For **commands** sent before the failure, the application must decide what each one became: executed, unknown or not sent. Libraries generally do not decide this for you. [go-ocpp](/projects/go-ocpp/), for example, fails pending calls with a connection-lost error and resends nothing on its own; which messages to send again is the application's decision.
+
+## Worked example: the charger comes back
+
+Put the pieces together for the third running example. A charging station behind a customer router loses its mobile connection for forty minutes during a charging session. While it is offline, the vehicle finishes charging and is unplugged.
+
+On the charger's side, nothing stops. The transaction continues under local control, the station records meter values, and when the cable is removed it ends the transaction. Because the CSMS cannot be reached, the transaction messages go into the station's offline queue in order.
+
+When the mobile link returns, the station works through the states:
+
+1. **Transport ready**: it waits a randomized back-off, opens the WebSocket over TLS and authenticates according to its security profile.
+2. **Protocol ready**: if it rebooted, it sends BootNotification and waits for Accepted. If it only lost the connection, it does not need another BootNotification; this distinction between a reboot and a reconnect is easy to get wrong on the CSMS side, which should not expect a boot after every reconnect.
+3. **Synchronized**: it reports the current state of each connector with StatusNotification and delivers the queued TransactionEvents (OCPP 2.0.1) or StartTransaction, MeterValues and StopTransaction (OCPP 1.6) in their original order. The CSMS checks the sequence numbers per transaction, notes that the messages were sent offline, and closes the session for billing.
+4. **Operational**: remote commands can be delivered again.
+
+On the CSMS side, the same forty minutes produced different problems. A smart-charging profile that an operator changed during the outage was never delivered, so the CSMS must send it again. A RequestStopTransaction that an operator issued during the outage could not be delivered at all. Now that the station is back, the CSMS sees that the transaction already ended and must close the request with a clear outcome rather than send it late. And if 5,000 stations behind the same mobile operator come back at the same time, the back-off and admission limits from the previous section decide whether the CSMS stays up.
+
+None of this is visible to code that treats the WebSocket as "the connection". It all becomes manageable when every station has an explicit state and every command has an explicit outcome.
+
+## Practical lesson
+
+Treat reconnect as a protocol-specific state machine, not merely a socket retry. Make the states visible in metrics and logs, mark data as uncertain until synchronization completes, keep what allows resumption across disconnects, deduplicate what replay delivers, and back off with jitter. <SeriesLink to="industrial-events-alarms-reliability">Industrial events and alarms</SeriesLink> covers the event side of this in depth, and <SeriesLink to="industrial-multiprotocol-gateway-architecture">Designing a multi-protocol gateway</SeriesLink> shows the state machine as a component.
+
+<Callout title="Implementations to study">
+[go-opcua](/projects/go-opcua/) reconnects automatically and reports per subscription whether it was transferred, republished, recreated or lost. [go-iec104](/projects/go-iec104/) reconnects with exponential backoff and runs a start handler after every STARTDT, the place for a general interrogation. [go-dnp3](/projects/go-dnp3/) runs a configurable startup sequence and an automatic integrity poll after a restart or overflow. [go-profinet](/projects/go-profinet/) reconnects each device through its own lifecycle, and [go-ethernetip](/projects/go-ethernetip/) re-sends Forward_Open with backoff.
+</Callout>
