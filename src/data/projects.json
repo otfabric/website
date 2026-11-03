@@ -808,7 +808,7 @@
 			"dnp3"
 		],
 		"status": "available",
-		"description": "DNP3 reference stacks: Step Function I/O dnp3, opendnp3, DSC go-dnp3 and dnp3py as masters and outstations, over TCP, TLS, UDP and serial.",
+		"description": "DNP3 reference stacks: opendnp3, DSC go-dnp3 and dnp3py as masters and outstations, over TCP, TLS, UDP and serial.",
 		"icon": "go-dnp3"
 	},
 	{

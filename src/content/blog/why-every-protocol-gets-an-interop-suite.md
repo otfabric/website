@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Sixteen interop suites package 77 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Sixteen interop suites package 76 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
 updated: 2026-10-30
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Sixteen OT Fabric interop suites and their 77 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
+  alt: Sixteen OT Fabric interop suites and their 76 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Sixteen suites, 77 reference stacks
+## Sixteen suites, 76 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -24,7 +24,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [Siemens S7](/protocols/s7/) | [snap7-interop](/projects/snap7-interop/) | Snap7 (C++), python-snap7 (Python) |
 | [IEC 60870-5-104](/protocols/iec-104/) | [iec104-interop](/projects/iec104-interop/) | lib60870 (C), OpenMUC j60870 (Java), wendy512/iec104 (Go), cB-Sigma iec60870 (Go) |
 | [IEC 61850](/protocols/iec-61850/) (MMS, GOOSE, Sampled Values) | [iec61850-interop](/projects/iec61850-interop/) | libiec61850 (C), IEC61850bean (Java), dscsystems/go-iec61850 (Go), iec61850-rust (Rust) |
-| [DNP3](/protocols/dnp3/) | [dnp3-interop](/projects/dnp3-interop/) | Step Function I/O dnp3 (Rust), opendnp3 (C++), DSC go-dnp3 (Go), dnp3py (Python) |
+| [DNP3](/protocols/dnp3/) | [dnp3-interop](/projects/dnp3-interop/) | opendnp3 (C++), DSC go-dnp3 (Go), dnp3py (Python) |
 | [OCPP](/protocols/ocpp/) | [ocpp-interop](/projects/ocpp-interop/) | The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), ocpp-go (Go), EVerest libocpp (C++), CitrineOS (TypeScript) |
 | [OpenADR](/protocols/openadr/) | [openadr-interop](/projects/openadr-interop/) | OpenLEADR (Rust), ElaadNL openadr3-client (Python), plus a specification-driven conformance suite |
 | [IEEE 2030.5](/protocols/ieee-2030-5/) | [ieee20305-interop](/projects/ieee20305-interop/) | ANU Envoy (Python), GridAPPS-D (Go), DER Security py20305 (Python), EPRI client (C) |

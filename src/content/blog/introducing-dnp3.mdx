@@ -1,12 +1,12 @@
 ---
-title: 'DNP3 joins OT Fabric: go-dnp3, dnp3ctl and four reference stacks'
-description: DNP3 is the SCADA protocol of electric, water and oil and gas utilities, and the open-source field around it has thinned out. go-dnp3 implements master and outstation under MIT, dnp3ctl puts it on the command line, and dnp3-interop tests both against four independent implementations.
+title: 'DNP3 joins OT Fabric: go-dnp3, dnp3ctl and three reference stacks'
+description: DNP3 is the SCADA protocol of electric, water and oil and gas utilities, and the open-source field around it has thinned out. go-dnp3 implements master and outstation under MIT, dnp3ctl puts it on the command line, and dnp3-interop tests both against three independent implementations.
 date: 2026-10-20
 authors: [OT Fabric]
 tags: [announcement, dnp3, scada, energy, interop]
 featured: true
 cover:
-  alt: go-dnp3 in the middle, connected to the reference masters of Step Function I/O, opendnp3, DSC go-dnp3 and dnp3py on the left and their reference outstations on the right, over TCP, TLS, UDP and serial.
+  alt: go-dnp3 in the middle, connected to the reference masters of opendnp3, DSC go-dnp3 and dnp3py on the left and their reference outstations on the right, over TCP, TLS, UDP and serial.
   image: ../../assets/blog/dnp3-interop-matrix.svg
 ---
 
@@ -25,7 +25,7 @@ OT Fabric is about connecting the devices that run energy and infrastructure, an
 - **Distributed energy.** IEEE 1547-2018 names DNP3 as one of the communication interfaces of a grid-connected inverter, and IEEE 1815.2 maps DER functions onto it. A battery, solar or EV charging startup that wants a utility interconnection may well have to speak it, next to [SunSpec Modbus](/models/sunspec/) on the device and [OpenADR](/protocols/openadr/) or [OCPP](/protocols/ocpp/) for flexibility.
 - **Gateways.** Data from substations and field devices is still converted between protocols in gateways, often DNP3 on one side and IEC 104, IEC 61850 or Modbus on the other. That is the IT-to-OT gateway work on our roadmap, and it needs every one of them.
 
-The open-source field is also thinner than its importance suggests. For a decade opendnp3 was the obvious choice; it was archived in 2022. Its best-known successor, Step Function I/O's Rust library, is excellent and actively maintained, but its licence allows non-commercial, non-production use only. The other open implementations we found in our [research for the ecosystem map](#who-else-implements-dnp3) are bindings to opendnp3, copyleft, master-only, or a few weeks old. go-dnp3 adds a permissively licensed (MIT) stack with both roles and Secure Authentication, tested against the established ones.
+The open-source field is also thinner than its importance suggests. For a decade opendnp3 was the obvious choice; it was archived in 2022. Its best-known successor, Step Function I/O's Rust library, is actively maintained, but it is a commercial product: its licence allows non-commercial, non-production use only, and production needs a commercial licence. The other open implementations we found in our [research for the ecosystem map](#who-else-implements-dnp3) are bindings to opendnp3, copyleft, master-only, or a few weeks old. go-dnp3 adds a permissively licensed (MIT) stack with both roles and Secure Authentication, tested against the established ones.
 
 ## go-dnp3
 
@@ -60,11 +60,11 @@ dnp3ctl server start --config outstation.yaml
 
 It also synchronizes clocks, restarts, freezes counters, reads device attributes and fetches disturbance records, over TCP, TLS, UDP and serial, with Secure Authentication. Output is text, a table or JSON with stable exit codes, so a site acceptance test can run as a script. The [dnp3ctl guide](/docs/protocols/dnp3/cli/) walks through it.
 
-## Tested against four independent stacks
+## Tested against three independent stacks
 
-[dnp3-interop](/projects/dnp3-interop/) packages four independent DNP3 implementations as containers behind one contract: Step Function I/O dnp3 (Rust), opendnp3 (C++), DSC Systems go-dnp3 (Go) and dnp3py (Python). Each runs as master and as outstation, with deterministic fixtures, and the four are first tested against each other.
+[dnp3-interop](/projects/dnp3-interop/) packages three independent DNP3 implementations as containers behind one contract: opendnp3 (C++), DSC Systems go-dnp3 (Go) and dnp3py (Python). Each runs as master and as outstation, with deterministic fixtures, and the three are first tested against each other.
 
-go-dnp3 is tested in both roles against all four: polls, reads, every control case of the fixture, events, unsolicited responses, time synchronization, restarts and freezes; then TLS with mutual authentication, UDP and serial lines, file transfer, Secure Authentication, device attributes, broadcast, the dual end point and several outstations on one port, wherever a reference has the feature. The [coverage matrix](/docs/protocols/dnp3/testing/) shows each one per reference and direction. Running the stacks against each other also turned up behaviour of the references worth knowing, from a first SELECT that fails on a freshly started outstation to freezes that raise events for unchanged values. Each is recorded with its reproduction.
+go-dnp3 is tested in both roles against all three: polls, reads, every control case of the fixture, events, unsolicited responses, time synchronization, restarts and freezes; then TLS with mutual authentication, UDP and serial lines, file transfer, Secure Authentication, device attributes, broadcast, the dual end point and several outstations on one port, wherever a reference has the feature. The [coverage matrix](/docs/protocols/dnp3/testing/) shows each one per reference and direction. Running the stacks against each other also turned up behaviour of the references worth knowing, from a master that synchronizes time only when the outstation asks for it to freezes that raise events for unchanged values. Each is recorded with its reproduction.
 
 <Callout type="note" title="Interoperability, not certification">
 go-dnp3 v1.3.1 and dnp3ctl v0.6.2 are interoperability tested, not DNP Users Group certified, and go-dnp3 declares no subset level. Aggressive mode is verified between go-dnp3's own ends only, because no reference implements it, and no real RTU or IED is in the suite yet. What is and is not covered is listed openly in [Testing and interop](/docs/protocols/dnp3/testing/).

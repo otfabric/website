@@ -251,7 +251,7 @@ The first seven start an outstation and a master in one process: `go run ./examp
 
 - **Secure Authentication**: update keys are configured out of band; no remote update key change, user management or AES-GMAC. Aggressive mode is verified between go-dnp3's own ends only, as no reference stack in the interop suite has it.
 - **Data sets, private registration objects and the virtual terminal** (groups 83, 85 to 88, 90, 91, 112, 113) have no procedures: exchange them with the generic request methods.
-- **Conformance**: the outstation is tested with a scripted master and against four other stacks, but not with the DNP Users Group's IED conformance procedures, and go-dnp3 declares no subset level.
+- **Conformance**: the outstation is tested with a scripted master and against three other stacks, but not with the DNP Users Group's IED conformance procedures, and go-dnp3 declares no subset level.
 - **UDP outstation**: one socket serves one master at a time.
 - **Multi-fragment requests** are neither sent nor reassembled: a request is one fragment.
 
