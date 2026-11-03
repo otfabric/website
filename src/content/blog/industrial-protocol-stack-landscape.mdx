@@ -122,7 +122,7 @@ The open-source side is broad, with libraries in Python, Java, Go, C++, Rust, Ja
 
 <LandscapeTable protocol="dnp3" />
 
-opendnp3, for a decade the default open-source stack, was archived in September 2022 at 3.1.2, and still sits under the Python bindings pydnp3, VOLTTRON's dnp3-python and the new yadnp3 fork. Step Function I/O's Rust library, with C, C++, .NET and Java bindings, is actively maintained, but its licence allows non-commercial, non-production use only, with a commercial licence for production: the map files it under its own licence family, source-available. The rest is young: DSC Systems' go-dnp3 (GPL-3.0) and cB-Sigma's dnp3 (Apache-2.0) are pure Go stacks from 2026, both with Secure Authentication, and dnp3py brings a pure Python master and outstation with a MESA DER profile. Four of them run in [dnp3-interop](https://github.com/otfabric/dnp3-interop): Step Function I/O, opendnp3, DSC go-dnp3 and dnp3py. The Triangle MicroWorks adapter is on hold until its licensed source has an agreed way into the builds.
+opendnp3, for a decade the default open-source stack, was archived in September 2022 at 3.1.2, and still sits under the Python bindings pydnp3, VOLTTRON's dnp3-python and the new yadnp3 fork. Step Function I/O's Rust library, with C, C++, .NET and Java bindings, is actively maintained, but its licence allows non-commercial, non-production use only, and production needs a commercial licence, so the map files it with the commercial stacks. The rest is young: DSC Systems' go-dnp3 (GPL-3.0) and cB-Sigma's dnp3 (Apache-2.0) are pure Go stacks from 2026, both with Secure Authentication, and dnp3py brings a pure Python master and outstation with a MESA DER profile. Three of them run in [dnp3-interop](https://github.com/otfabric/dnp3-interop): opendnp3, DSC go-dnp3 and dnp3py. The Triangle MicroWorks adapter is on hold until its licensed source has an agreed way into the builds.
 
 ## IEEE 2030.5
 
@@ -194,7 +194,7 @@ The commercial side looks different from the other protocols: few SDKs, and most
 | Siemens S7 | Mature for classic S7 | Established | Snap7, S7NetPlus, python-snap7, Apache PLC4X |
 | OpenADR | Smaller, evolving | Not transparent | OpenLEADR (Python and Rust), ElaadNL |
 | OCPP | Mature for 1.6J, maturing for 2.x | Established | The Mobility House ocpp, Java-OCA-OCPP, ocpp-go, EVerest libocpp, CitrineOS, SteVe |
-| DNP3 | Mature, few active open stacks | Very established | opendnp3 (archived), Step Function I/O dnp3 (source-available), DSC go-dnp3, dnp3py |
+| DNP3 | Mature, few active open stacks | Very established | opendnp3 (archived), Step Function I/O dnp3 (commercial), DSC go-dnp3, dnp3py |
 | IEEE 2030.5 | Young, growing, profile-driven | Certification-driven | Envoy, GridAPPS-D, py20305, EPRI client (unmaintained) |
 | EtherNet/IP | Mature for tag access, thin for I/O | Very established | OpENer, libplctag, pylogix, pycomm3, EIPScanner |
 | PROFINET | Mature market, thin open field | Very established | p-net, profinet-py, pnio-rs, pnio-dcp |

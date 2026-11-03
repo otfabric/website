@@ -88,7 +88,7 @@
    "focus": "SCADA master to outstation over TCP, UDP, TLS and serial lines",
    "maturity": "Mature, with few active open stacks",
    "commercial": "Very established",
-   "summary": "The long-standing open-source reference, opendnp3, is archived and its best-known successor is source-available, so the actively maintained, permissively licensed field is small and young."
+   "summary": "The long-standing open-source reference, opendnp3, is archived and its best-known successor, Step Function I/O's dnp3, needs a commercial licence for production use, so the actively maintained, permissively licensed field is small and young."
   },
   {
    "id": "ieee-2030-5",
@@ -3974,7 +3974,7 @@
    "id": "stepfunc-dnp3",
    "name": "dnp3 (Step Function I/O)",
    "protocol": "dnp3",
-   "type": "independent",
+   "type": "commercial",
    "languages": [
     "Rust",
     "C",
@@ -3982,8 +3982,7 @@
     "C#",
     "Java"
    ],
-   "license": "Non-commercial (Step Function I/O)",
-   "commercialLicense": true,
+   "license": "Commercial",
    "url": "https://github.com/stepfunc/dnp3",
    "repo": "stepfunc/dnp3",
    "stars": 159,
@@ -4012,10 +4011,9 @@
     "Serial",
     "File transfer"
    ],
-   "interop": "dnp3-interop",
    "maintenance": "active",
    "package": "https://crates.io/crates/dnp3",
-   "notes": "Rust core with C, C++, .NET and Java bindings, also published to NuGet and Maven Central. The licence allows non-commercial, non-production use; production use needs a commercial licence from Step Function I/O. No Secure Authentication.",
+   "notes": "Rust core with C, C++, .NET and Java bindings, also published to NuGet and Maven Central. Step Function I/O publishes the source, but its licence allows only non-commercial, non-production use; production use needs a commercial licence from Step Function I/O. No Secure Authentication.",
    "sources": [
     "https://github.com/stepfunc/dnp3",
     "https://crates.io/api/v1/crates/dnp3",
@@ -4388,7 +4386,7 @@
    "maintenance": "active",
    "emerging": true,
    "package": "https://pub.dev/packages/dnp3",
-   "notes": "Own code MIT; it links the Step Function I/O library, so its non-commercial licence applies to apps built with it.",
+   "notes": "Own code MIT; it links the Step Function I/O library, so that library's licence terms apply to apps built with it, and production use needs a commercial licence from Step Function I/O.",
    "sources": [
     "https://github.com/gencto/dnp3_plugin",
     "https://pub.dev/api/packages/dnp3"
