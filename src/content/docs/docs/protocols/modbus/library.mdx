@@ -16,7 +16,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-modbus
 ```
 
-go-modbus requires **Go 1.23** or later. Its only dependency is [go-serial](/projects/go-serial/), used for RTU and ASCII. This page follows go-modbus v1.7.1.
+go-modbus requires **Go 1.26** or later; CI tests Go 1.26 and 1.27. Its only dependency is [go-serial](/projects/go-serial/), used for RTU and ASCII. The bundled command-line tool is a module of its own since v1.10.0, so the library no longer pulls in a CLI framework. This page follows go-modbus v1.11.1.
 
 The library is organized in tiers. Use the lowest one that does the job:
 
@@ -24,6 +24,7 @@ The library is organized in tiers. Use the lowest one that does the job:
 |---|---|
 | `modbus` | Raw function-code methods, client configuration, server, errors, retry, metrics |
 | `modbus/codec` | Typed values over several registers (`uint32`, `float32`, strings, BCD, timestamps, IP addresses) with explicit byte and word layout |
+| `modbus/batch` | Plans a set of named reads into the fewest requests and executes them, with a state for every request and item |
 | `modbus/sunspec` | SunSpec marker detection and model-chain enumeration (headers only, no point decoding) |
 
 ## Connect
@@ -149,7 +150,7 @@ go-serial is also usable on its own for non-Modbus serial work. It runs on Linux
 
 ## Core operations
 
-Every client method takes a `context.Context` first and the unit ID second. A context deadline overrides `Timeout`.
+Every client method takes a `context.Context` first and the unit ID second. A request ends at `Config.Timeout` or at the context's deadline, whichever comes first: an earlier context deadline ends it early, a later one does not extend it (since v1.9.0). To give a slow device more time, raise `Timeout`.
 
 ```go
 coils, err := client.ReadCoils(ctx, 1, 0, 8)                         // FC01
@@ -171,6 +172,34 @@ The client also covers FC07, FC08 diagnostics, FC11, FC12, FC17, FC20, FC21, FC2
 <Aside type="caution" title="Writes reach real equipment">
 `WriteCoil`, `WriteRegister(s)`, `MaskWriteRegister` and some FC08 sub-functions change device state. Test against a [simulator](/docs/protocols/modbus/testing/) first. `WriteCoilRaw` sends a non-standard FC05 payload and is meant only for vendor-specific semantics.
 </Aside>
+
+### Batch reads
+
+The `batch` package (since v1.8.0) plans a set of named reads once and executes them on a client. `Compile` validates the items and groups them by unit ID and function code (FC01 to FC04) into windows: contiguous, overlapping and duplicate items share one request, and `MaxGap` opts in to reading unrequested addresses between items. `MaxRegisters`, `MaxBits` and `Boundaries` respect what the device accepts. Invalid input is a `*batch.ValidationError`, before any I/O.
+
+```go
+plan, err := batch.Compile([]batch.Item{
+	{Name: "voltage", UnitID: 1, FC: modbus.FCReadHoldingRegisters, Addr: 100,
+		Codec: codec.MustNewFloat32Codec(codec.Layout32_4321)},
+	{Name: "current", UnitID: 1, FC: modbus.FCReadHoldingRegisters, Addr: 102,
+		Codec: codec.MustNewFloat32Codec(codec.Layout32_4321)},
+	{Name: "alarms", UnitID: 1, FC: modbus.FCReadCoils, Addr: 0, Count: 16},
+}, batch.Options{MaxGap: 2})
+if err != nil {
+	log.Fatal(err)
+}
+
+res, err := plan.Execute(ctx, client) // *modbus.Client satisfies batch.Reader
+for _, it := range res.Items {
+	fmt.Println(it.Name, it.State, it.Value, it.Bits)
+}
+```
+
+- A `Plan` is immutable and safe for concurrent use. `Stats` counts requests and PDU bytes, and `FunctionCodes` lists the codes the plan needs, for `Config.AllowedFunctionCodes`.
+- `Execute` reads the windows one after another through the client's own read methods, so its timeout, retry policy and metrics apply. It adds no goroutines, timers, caches or retries of its own.
+- A Modbus exception fails only its window. A timeout or transport error ends the batch unless `Options.ContinueOnTransportError` is set. A cancelled context always ends it.
+- Every window and item has a `State`: `OK`, `Failed`, `DecodeFailed` or `NotAttempted`. A batch that fails part-way returns what it read, with an `*batch.ExecError` that matches `batch.ErrIncomplete`.
+- `Plan.Decode` builds the same result from captured window data, without a client.
 
 ### SunSpec tier
 
@@ -238,7 +267,7 @@ defer server.Shutdown(context.Background())
 - Vendor, user-defined and unknown function codes are not supported: they always get Illegal Function, and the connection stays usable. So does FC43 with an MEI type other than 14.
 - Returning `modbus.ErrNoResponse` sends no answer at all and keeps the connection, as a serial device does for Diagnostics Force Listen Only Mode.
 - The server does not filter unit IDs. That is the handler's job (`req.UnitID`).
-- `ServerConfig.Timeout` is the idle session timeout (default 120 s). `MaxClients` defaults to 10.
+- `ServerConfig.Timeout` is the idle session timeout (default 120 s). A response that cannot be written in full within it closes the connection, so a client that sends requests but never reads loses its slot. `MaxClients` defaults to 10.
 - On TLS, `req.ClientRole` carries the role from the client certificate. Check it before serving writes.
 
 ## Restrict and record a client
@@ -320,6 +349,7 @@ Metrics are callbacks. Implement `ClientMetrics` (`OnRequest`, `OnResponse`, `On
 - FC43 MEI type 13 (CANopen) is not supported.
 - UDP transports are not in the Modbus specification and assume one request and one response per datagram with no loss or reordering. Validate them against your device before relying on them.
 - The `sunspec` subpackage does not decode points or scale factors.
+- The serial framings carry no transaction ID. After a failed exchange the client drains the link for a short window (3 × t3.5 for RTU, 20 ms for ASCII); an answer later than that can still be read as the answer to the next request.
 - The interop suite covers Modbus TCP only. Other transports are covered by the repository's own tests. The library has not been run against certified test equipment.
 
 <LinkCard title="go-modbus on GitHub" href="https://github.com/otfabric/go-modbus" description="Source, API.md, ERRORS.md, OBSERVABILITY.md and CODECS.md." />

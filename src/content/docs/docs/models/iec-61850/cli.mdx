@@ -10,11 +10,14 @@ sidebar:
 
 ## Install
 
-Download a binary for Linux, macOS or Windows from the [go-iec61850-model releases](https://github.com/otfabric/go-iec61850-model/releases); each release carries a SHA-256 checksum file. With a Go toolchain:
+Download a binary for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) or Windows (x86-64, ARM64) from the [go-iec61850-model releases](https://github.com/otfabric/go-iec61850-model/releases); each release carries a SHA-256 checksum file, and the [README](https://github.com/otfabric/go-iec61850-model#install-nsdctl) has the commands that fetch, verify and install the latest one. No Go toolchain is needed.
+
+Since v0.2.0, nsdctl is a nested module, so `go install …/cmd/nsdctl@latest` no longer works. To build it from source, with Go 1.24 or later:
 
 ```sh
-go install github.com/otfabric/go-iec61850-model/cmd/nsdctl@latest
-nsdctl version
+git clone https://github.com/otfabric/go-iec61850-model
+cd go-iec61850-model && make build    # writes bin/nsdctl
+bin/nsdctl version
 ```
 
 `nsdctl completion bash|zsh|fish|powershell` prints a shell completion script.

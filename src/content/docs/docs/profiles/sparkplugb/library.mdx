@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-sparkplugb](/projects/go-sparkplugb/) implements Sparkplug B 3.0.0 over MQTT 3.1.1 in Go, in all three roles: edge node, primary host application and application. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-sparkplugb), and runnable programs are in [examples/](https://github.com/otfabric/go-sparkplugb/tree/main/examples). This page follows v0.1.3.
+[go-sparkplugb](/projects/go-sparkplugb/) implements Sparkplug B 3.0.0 over MQTT 3.1.1 in Go, in all three roles: edge node, primary host application and application. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-sparkplugb), and runnable programs are in [examples/](https://github.com/otfabric/go-sparkplugb/tree/main/examples). This page follows v0.3.3.
 
 ```sh
 go get github.com/otfabric/go-sparkplugb
@@ -64,11 +64,12 @@ update, _ := payload.NewAliasMetric(1, pb.DataType_Double, 23.1)
 node.PublishNodeData(ctx, []*pb.Payload_Metric{update})
 ```
 
-The node moves through the states `connecting`, `subscribing`, `waiting_for_primary_host` and `online`. `Rebirth` publishes the births again with current values; a host's `Node Control/Rebirth` command does the same. Every publish before a birth fails with `ErrNoBirth`.
+The node moves through the states `connecting`, `subscribing`, `waiting_for_primary_host` and `online`. `Rebirth` publishes the births again with current values; a host's `Node Control/Rebirth` command does the same. Every publish before a birth fails with `ErrNoBirth`, and an alias used twice across the node is refused with `ErrDuplicateID`. `Close` ends the session before the NDEATH, so no NBIRTH can follow it; a publish after that returns `ErrNotConnected`.
 
 | Config field | What it does |
 |---|---|
 | `GroupID`, `EdgeNodeID` | The node's identity in the topic namespace |
+| `Username`, `Password` | A broker login, without a custom transport; never logged (also on `host` and `app`) |
 | `BrokerURL` or `ServerURLs` | One broker, or the list the node walks through: `tcp://`, `ssl://` or `ws://` |
 | `PrimaryHostID` | Births wait for this host's STATE online; its STATE offline makes the node walk to the next server |
 | `BdSeqStore` | Where `bdSeq` survives restarts; in memory by default |
@@ -111,7 +112,7 @@ h.RequestRebirth(ctx, "plant", "gw1")
 
 `GetNode` and `Nodes` return copies of the registry: each node's `Online` and `Stale` flags, `bdSeq`, last `seq`, metrics, devices and aliases. In data callbacks, a metric that arrived as an alias carries the name and datatype of its birth.
 
-`ReorderTimeout` decides how long a `seq` gap may stay open. With `0` the host asks for a rebirth at once; with a timeout it first waits for the missing message, which matters on brokers that reorder messages across topics.
+`ReorderTimeout` decides how long a `seq` gap may stay open. With `0` the host asks for a rebirth at once; with a timeout it first waits for the missing message, which matters on brokers that reorder messages across topics. MQTT orders messages per topic only, so since v0.3.1 the host and the application keep the sessions of an edge node apart: a held or late message older than the current NBIRTH is dropped, a message behind the expected `seq` requests a rebirth when no NBIRTH follows within 2 seconds, and an NBIRTH that arrives within 250 ms after the NDEATH of its `bdSeq` is dropped and followed by a rebirth request.
 
 ## An application
 
@@ -136,11 +137,13 @@ p, _ := payload.Decode(b)
 v, _ := payload.GetValue(p.GetMetrics()[0])
 ```
 
-`NewMetric` checks that the Go value fits the datatype and returns `ErrTypeMismatch` otherwise. `GetValue` returns the Go value of any scalar or array metric; `GetDataSetValues` and `GetTemplateParameterValue` unpack the structured types, and `GetQuality` reads a quality property.
+`NewMetric` checks that the Go value fits the datatype and returns `ErrTypeMismatch` otherwise. `GetValue` returns the Go value of any scalar or array metric; `GetDataSetValues` and `GetTemplateParameterValue` unpack the structured types in the Go type of each datatype (an `int8` for Int8, a `time.Time` for DateTime, since v0.3.0), `NewPropertyValue` and `GetPropertyValue` do the same for a PropertySet, and `GetQuality` reads a quality property.
+
+Every integer outside its datatype's range is refused with `ErrTypeMismatch` when decoded, in metrics, DataSet cells, template parameters and properties alike, instead of being truncated. Int8 and Int16 are accepted in both wire forms (width-sized and sign-extended to 32 bits) and sent sign-extended, as Eclipse Tahu does. Strings above `MaxStringBytes` fail with `ErrStringTooLarge`, arrays above `MaxArrayElements` with `ErrArrayTooLarge`.
 
 ## Transport, TLS and other MQTT clients
 
-`mqtt.NewPahoTransport()` speaks MQTT 3.1.1 through Eclipse Paho, over TCP, TLS or WebSocket by the scheme of the broker URL. For TLS, set its `TLSConfig` field to a `*tls.Config`; `ConnectTimeout` and `PublishTimeout` bound the waits. Another MQTT client plugs in by implementing `mqtt.Transport` and reporting a dropped connection through `ConnectOpts.OnConnectionLost`. MQTT 5 is not supported.
+`mqtt.NewPahoTransport()` speaks MQTT 3.1.1 through Eclipse Paho, over TCP, TLS or WebSocket by the scheme of the broker URL. For TLS, set its `TLSConfig` field to a `*tls.Config`; `ConnectTimeout` and `PublishTimeout` bound the waits, and `Publish` and `Subscribe` honour their context and fail at once when the connection ends. Another MQTT client plugs in by implementing `mqtt.Transport` and reporting a dropped connection through `ConnectOpts.OnConnectionLost`. MQTT 5 is not supported.
 
 When the connection drops, every role moves to `Disconnected` and fires `OnState`. Call `Connect` again to resume: an edge node then starts a new session with the next `bdSeq` and new births.
 
@@ -151,6 +154,8 @@ When the connection drops, every role moves to `Disconnected` and fires `OnState
 | `ErrNotConnected`, `ErrClosed` | A call on a role that is not connected, or closed |
 | `ErrNoBirth` | Data before the node's birth |
 | `ErrTypeMismatch`, `ErrUnknownType`, `ErrInvalidArray` | A value that does not fit its datatype |
+| `ErrStringTooLarge`, `ErrArrayTooLarge`, `ErrColumnMismatch` | A string, array or DataSet row beyond its limit |
+| `edge.ErrDuplicateID` | A device or alias ID used twice |
 | `ErrInvalidTopic`, `ErrInvalidID` | A topic or ID that breaks the namespace rules |
 | `mqtt.ErrConnectionLost` | The broker connection ended |
 

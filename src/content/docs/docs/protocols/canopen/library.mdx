@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-canopen](/projects/go-canopen/) is a pure Go implementation of CANopen: the CiA 301 application layer and communication profile, with LSS (CiA 305), the CiA 302 network manager, EDS and DCF files (CiA 306), the CiA 402 drive profile and CANopen FD (CiA 1301). It runs on [go-canbus](/docs/protocols/can-bus/library/), its one dependency, and has no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-canopen); [API.md](https://github.com/otfabric/go-canopen/blob/main/API.md) in the repository is the map. This page follows v0.3.1.
+[go-canopen](/projects/go-canopen/) is a pure Go implementation of CANopen: the CiA 301 application layer and communication profile, with LSS (CiA 305), the CiA 302 network manager, EDS and DCF files (CiA 306), the CiA 402 drive profile and CANopen FD (CiA 1301). It runs on [go-canbus](/docs/protocols/can-bus/library/), its one dependency, and has no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-canopen); [API.md](https://github.com/otfabric/go-canopen/blob/main/API.md) in the repository is the map. This page follows v0.4.1.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-canopen
 ```
 
-Go 1.23 or later. The packages:
+Go 1.26 or later (CI runs Go 1.26 and 1.27). The packages:
 
 | Package | Contents |
 |---|---|
@@ -130,7 +130,7 @@ The server side follows the dictionary's access rights and limits, and a write h
 
 ## Errors and observability
 
-Sentinels such as `canopen.ErrTimeout`, `canopen.ErrClosed` and `canopen.ErrProtocol` are wrapped with detail; test with `errors.Is` and extract `*canopen.AbortError`, `*master.BootError` or `*cia402.Error` with `errors.As`. [ERRORS.md](https://github.com/otfabric/go-canopen/blob/main/ERRORS.md) lists them all. Every service takes `WithLogger(*slog.Logger)` and logs nothing by default, every service has `Stats()` with JSON tags, and the master emits one ordered stream of boot-ups, state changes, heartbeat losses, emergencies and boot results ([OBSERVABILITY.md](https://github.com/otfabric/go-canopen/blob/main/OBSERVABILITY.md)).
+Sentinels such as `canopen.ErrTimeout`, `canopen.ErrClosed` and `canopen.ErrProtocol` are wrapped with detail; test with `errors.Is` and extract `*canopen.AbortError`, `*master.BootError` or `*cia402.Error` with `errors.As`. [ERRORS.md](https://github.com/otfabric/go-canopen/blob/main/ERRORS.md) lists them all. Since v0.4.0, values wider than their field (a PDO mapping count, an EDS parameter stored with a wider type, a `$NODEID` sum that overflows) are refused instead of truncated; USDO uploads, like SDO uploads, are limited by `WithMaxSize` (1 MiB by default, 0 for no limit); and the master queues at most `DefaultEventQueue` (4096, `WithEventQueue`) frame-driven events, dropping the oldest and counting them in `Stats.EventsDropped`. A segmented SDO upload retried with `WithRetries` on a bus that delays or reorders frames ends with a toggle abort, which the retry repeats, rather than with wrong data. Every service takes `WithLogger(*slog.Logger)` and logs nothing by default, every service has `Stats()` with JSON tags, and the master emits one ordered stream of boot-ups, state changes, heartbeat losses, emergencies and boot results ([OBSERVABILITY.md](https://github.com/otfabric/go-canopen/blob/main/OBSERVABILITY.md)).
 
 ## Examples
 

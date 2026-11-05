@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[canbusctl](https://github.com/otfabric/canbusctl) is a command-line toolkit for CAN, CAN FD, CAN XL, ISO-TP and CAN databases, built on [go-canbus](/docs/protocols/can-bus/library/). It watches and records traffic, converts and replays traces, decodes and encodes frames with a DBC, KCD or ARXML database and generates Go from it, sends and receives ISO-TP messages, simulates a database's traffic and puts a fault-injecting bridge between two interfaces. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.6.0; the full reference is [docs/cli.md](https://github.com/otfabric/canbusctl/blob/main/docs/cli.md).
+[canbusctl](https://github.com/otfabric/canbusctl) is a command-line toolkit for CAN, CAN FD, CAN XL, ISO-TP and CAN databases, built on [go-canbus](/docs/protocols/can-bus/library/). It watches and records traffic, converts and replays traces, decodes and encodes frames with a DBC, KCD or ARXML database and generates Go from it, sends and receives ISO-TP messages, simulates a database's traffic and puts a fault-injecting bridge between two interfaces. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.8.0, built on go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canbusctl/blob/main/docs/cli.md).
 
 ## Install
 
@@ -20,6 +20,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
     ```sh
     go install github.com/otfabric/canbusctl@latest
     ```
+    Go 1.26 or later.
   </TabItem>
 </Tabs>
 
@@ -166,21 +167,23 @@ The faults are emulated in userspace: frames are dropped, duplicated, delayed, r
 
 ## Output and exit codes
 
-`--format text` (the default), `table` or `json`, or `CANBUSCTL_FORMAT`. JSON documents carry a `schemaVersion` and follow published [JSON Schemas](https://github.com/otfabric/canbusctl/tree/main/schemas); streams such as `monitor` write one JSON record per line.
+`--format text` (the default), `table` or `json`, or `CANBUSCTL_FORMAT` (`CANBUSCTL_OUTPUT_FORMAT` is also accepted). JSON documents carry a `schemaVersion` and follow published [JSON Schemas](https://github.com/otfabric/canbusctl/tree/main/schemas); streams such as `monitor` write one JSON record per line.
 
 | Code | Meaning |
 |---|---|
 | 0 | Success |
 | 1 | Findings: `dbc validate` found errors, `dbc decode` met frames that do not decode |
 | 2 | Usage error |
-| 3 | Invalid input: a frame, file, database or trace that does not make sense |
+| 3 | Invalid input: a frame, file, database, trace or flag value that does not make sense (a negative or infinite `--rate`, a DLC out of range, an output path that is a symbolic link); nothing was transmitted |
 | 4 | Transport: the interface does not exist, is down or failed |
 | 5 | Timeout: an ISO-TP peer did not answer |
 | 6 | ISO-TP protocol failure |
-| 7 | Permission: `CAP_NET_ADMIN` missing |
 | 8 | Unsupported here, such as SocketCAN on macOS or Windows |
-| 9 | Refused for safety: transmission or a change without `--yes` |
+| 9 | Refused for safety (transmission or a change without `--yes`), or permission (`CAP_NET_ADMIN` missing) |
 | 10 | Output or internal error |
+| 130 | Interrupted before a result; a stream stopped with Ctrl-C ends with 0 |
+
+Files canbusctl creates (`record -o`, `monitor -o`, `trace convert`, `dbc generate` and `convert`) have mode 0600, and an output path that is a symbolic link is refused. `replay` reads a whole trace file before the first frame, so a malformed record anywhere exits 3 with nothing sent. [docs/exitcodes.md](https://github.com/otfabric/canbusctl/blob/main/docs/exitcodes.md) lists every code.
 
 <Aside type="note" title="Limitations">
 Linux SocketCAN and slcan adapters only: no PEAK, Kvaser or Vector drivers yet. slcan has no error state indicator, echo or hardware filters. `simulate` generates values from patterns and does not model ECU behaviour. A CAN identifier names a message, not a device, so canbusctl does no device discovery. [LIMITATIONS.md](https://github.com/otfabric/canbusctl/blob/main/LIMITATIONS.md) has the details.

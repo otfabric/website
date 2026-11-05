@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[openadrctl](https://github.com/otfabric/openadrctl) is a command-line tool for OpenADR 3 in every role, built on [go-openadr](/docs/protocols/openadr/library/). As a **VEN** it reads the programs and events meant for a site, lays out an event's intervals in time, sends reports and manages its VEN object and resources. As **Business Logic** it creates programs and events, such as price signals and load limits, reads what VENs report, and manages VENs, resources and resource groups. `listen` prints notifications as they arrive by webhook, MQTT or WebSocket, and `vtn start` serves a **test VTN** from a YAML seed. It speaks OpenADR 3.1.0, and as a VEN and as Business Logic also 3.0.1 with `--spec 3.0.1`. Output is text, a table or JSON, with stable exit codes. This page follows v0.3.0.
+[openadrctl](https://github.com/otfabric/openadrctl) is a command-line tool for OpenADR 3 in every role, built on [go-openadr](/docs/protocols/openadr/library/). As a **VEN** it reads the programs and events meant for a site, lays out an event's intervals in time, sends reports and manages its VEN object and resources. As **Business Logic** it creates programs and events, such as price signals and load limits, reads what VENs report, and manages VENs, resources and resource groups. `listen` prints notifications as they arrive by webhook, MQTT or WebSocket, and `vtn start` serves a **test VTN** from a YAML seed. It speaks OpenADR 3.1.0, and as a VEN and as Business Logic also 3.0.1 with `--spec 3.0.1`. Output is text, a table or JSON, with stable exit codes. This page follows v0.5.1, built on go-openadr v0.6.0.
 
 <Aside type="caution" title="Responsible use">
 An event reaches real sites: whatever Business Logic publishes, the VENs of a program act on. Creating, changing and deleting events, and every delete, need `--yes`, and `--dry-run` shows an object without sending it. Use a test program or a test VTN, and point openadrctl at VTNs you run or are authorized to use.
@@ -231,8 +231,18 @@ Results go to stdout as text, `--format table` or `--format json`, whose fields 
 | 5 | Timeout; `outcome_unknown` when a request that changes the VTN got no answer, which is never sent again by itself |
 | 6 | The VTN refused (an HTTP error, a token refused) or broke the protocol |
 | 10 | Output or internal error |
+| 130 | Interrupted by Ctrl-C or SIGTERM before a result |
 
-With `--format json`, a failure is an object with `error.kind`, a stable `error.code`, and the VTN's problem object when it sent one. [exitcodes.md](https://github.com/otfabric/openadrctl/blob/main/docs/exitcodes.md) lists every code.
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool. `OPENADRCTL_FORMAT` sets the default of `--format` (`OPENADRCTL_OUTPUT_FORMAT` is still accepted). With `--format json`, a failure is an object with `error.kind`, a stable `error.code`, and the VTN's problem object when it sent one. [exitcodes.md](https://github.com/otfabric/openadrctl/blob/main/docs/exitcodes.md) lists every code.
+
+openadrctl does not trust what a VTN, a token endpoint, a broker, a webhook sender or an input file sends it (since v0.5.0):
+
+- A token request does not follow a redirect to another origin, so the client secret is not sent there, and passwords in URLs print as `xxxxx`. `listen --via mqtt` does not send the token over plain MQTT for an https VTN unless `--broker` says so.
+- A bearer token with control characters or spaces is refused (exit 6). Token answers are read up to 1 MiB and response heads are bounded by `--timeout` and 1 MiB.
+- Text and table output, and `error:` lines, escape control characters, bidi overrides and invalid UTF-8 from a VTN, a file or a notification; JSON output keeps the original text.
+- Every file you name, and stdin, is read up to 16 MiB (exit 3 beyond). `vtn generate-config --output` writes a new file of mode 0600 and never through a symbolic link, because the seed holds client secrets.
+- The `listen --via webhook` server has read, write and idle timeouts and a 64 KiB header limit.
+- `--value` and `--attribute` take a number only when it is written in decimal, as JSON writes numbers; `0x1p3`, `Inf` and `NaN` are sent as text, and a decimal too large for a number is refused (exit 3).
 
 ## Tested against
 

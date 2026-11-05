@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-[go-iec104](https://github.com/otfabric/go-iec104) is a pure Go implementation of IEC 60870-5-104 with both roles: a **client** (controlling station) and a **server** (controlled station). It has no cgo and no dependencies outside the standard library. With v0.0.4 it adds the application-layer security of IEC 62351-5. The current release is v0.0.5. The license is MIT.
+[go-iec104](https://github.com/otfabric/go-iec104) is a pure Go implementation of IEC 60870-5-104 with both roles: a **client** (controlling station) and a **server** (controlled station). It has no cgo and no dependencies outside the standard library. Since v0.0.4 it has the application-layer security of IEC 62351-5. This page follows v0.2.0. The license is MIT.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { Aside } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-iec104
 ```
 
-Requires **Go 1.23** or later.
+Requires **Go 1.26** or later (since v0.2.0); CI tests Go 1.26 and 1.27.
 
 | Package | Import path | Contents |
 |---|---|---|
@@ -119,7 +119,7 @@ For anything the request methods leave out (parameters, private types, file dele
 
 ## The ASDU model
 
-Information objects are plain structs named for what they mean. `asdu.New` picks the type identification from the first object: no time tag when `Time` is zero, CP56Time2a otherwise.
+Information objects are plain structs named for what they mean. `asdu.New` picks the type identification from the first object: no time tag when `Time` is zero, CP56Time2a otherwise. CP56Time2a carries a two-digit year, read as 1970 to 2069: a time outside that window goes out flagged invalid (IV) instead of silently landing in another century.
 
 ```go
 a := asdu.New(asdu.CauseSpontaneous, 1,
@@ -181,7 +181,7 @@ func main() {
 }
 ```
 
-`Mux` answers a type without a handler with "unknown type identification" and an invalid cause with "unknown cause of transmission". `WithCommonAddrs` answers a foreign station address with "unknown common address". The reply helpers on `Session` are `Confirm`, `Negative`, `Terminate`, `Reject` (causes 44..47) and `Reply`.
+`Mux` answers a type without a handler, and since v0.2.0 an ASDU without information objects, with "unknown type identification" and an invalid cause with "unknown cause of transmission". `WithCommonAddrs` answers a foreign station address with "unknown common address". The reply helpers on `Session` are `Confirm`, `Negative`, `Terminate`, `Reject` (causes 44..47) and `Reply`.
 
 The library checks the encoding, not the meaning. Select-before-operate state, value ranges and interlocks are the handler's job: keep the selection in your handler and refuse an execute that does not match it.
 
@@ -261,7 +261,7 @@ srv, err := server.New(mux, server.WithCommonAddrs(1),
 |---|---|
 | Procedures | Station Association, Session Key Change, Secure Data, Session Initiation Request; segmentation of long security messages |
 | Trust | Pinned self-signed certificates or public keys, or Central Authorities with an optional list of subjects |
-| MAC algorithms | HMAC-SHA-256 with 16 (default) or 8 octets, HMAC-SHA3-256 (built with Go 1.24 or later) |
+| MAC algorithms | HMAC-SHA-256 with 16 (default) or 8 octets, HMAC-SHA3-256 (always built since v0.2.0) |
 | Data protection | The MAC algorithms, or AES-256-GCM, which also encrypts |
 | Access control | The seven roles of IEC TS 60870-5-7; a request no role permits is answered with cause 17 and never reaches the handler. The client reports it as `*iec104.NegativeError` |
 | Several controlling stations | One association per AIM; the connections of a client redundancy group share theirs |

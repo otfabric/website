@@ -16,7 +16,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-sunspec
 ```
 
-go-sunspec requires **Go 1.23** or later and go-modbus **v1.5.0** or later, and depends on nothing else. The packages are `sunspec` (discovery, reading, decoding, encoding and serving), `sunspec/registry` (model metadata) and `sunspec/devicefile` (SunSpec devices as JSON files). This page follows go-sunspec v0.6.0.
+go-sunspec requires **Go 1.26** or later (CI runs Go 1.26 and 1.27) and go-modbus **v1.11.1** or later, and depends on nothing else. The packages are `sunspec` (discovery, reading, decoding, encoding and serving), `sunspec/registry` (model metadata) and `sunspec/devicefile` (SunSpec devices as JSON files). This page follows go-sunspec v0.9.0.
 
 ## Connect and read
 
@@ -153,7 +153,13 @@ inverter, err := device.ReadModelByID(ctx, 103)
 inst := device.ModelByID(101)
 point, err := device.ReadPoint(ctx, *inst, "W")
 fmt.Printf("Power: %g W\n", *point.ScaledValue)
+
+// Several models with fewer requests: adjacent models share a read.
+results, err := device.ReadModels(ctx, device.Discovery.Models)
+trackers := device.ModelsByID(160) // every instance of a model, in chain order
 ```
+
+`ReadModels` (since v0.7.0) plans the reads with go-modbus's `batch` package: adjacent models share a request of up to 125 registers, and no register outside them is read. Each instance gets its own `ModelResult` (`Instance`, `Model`, `Err`) in input order; a model of up to 123 data registers is never split, so its values and scale factors come from one response. When a Modbus exception fails a shared request, each model in it is read again on its own; a timeout, transport error or ended context stops the batch, and the instances not read carry an error wrapping `batch.ErrNotAttempted`.
 
 Every read of a model includes its two header registers (ID and length) and compares them with the discovery result. A device whose model chain changed since `Discover` (a firmware update, a reconfiguration, another device behind the same address) fails the read with `ErrModelChanged` instead of having its registers decoded with a stale layout; call `Discover` again. A model that needs more than one request is read from its header address in chunks of 125 registers, so a model of 124 or 125 data registers takes two requests.
 
@@ -169,7 +175,7 @@ Each decoded point is a `DecodedPoint`:
 | `Symbols` | Names of the active enum value or bitfield bits |
 | `RegisterOffset`, `RegisterCount` | Position in the model, counted from its ID register |
 
-Always check `Implemented` before using a value, and check `ScaledValue` for `nil` before dereferencing it. `DecodedPoint` implements `json.Marshaler`; NaN and infinite floats are encoded as `null`.
+Always check `Implemented` before using a value, and check `ScaledValue` for `nil` before dereferencing it. A scale factor outside -10..10, the `sunssf` range of the SunSpec information model, is not applied (since v0.9.0): the point comes back unscaled with a nil `ScaledValue` and `SFRawValue`, and the model gets a warning. `DecodedPoint` implements `json.Marshaler`; NaN and infinite floats are encoded as `null`.
 
 ### Groups
 
@@ -308,6 +314,7 @@ err = captured.WriteFile("device.json")
 - **Capture** writes models that decode cleanly as point values, and a model without a schema, or one that would not read back the same, as `registers`. `Capture(ctx, device, true)` writes every model as registers.
 - **Template**: `devicefile.Template(registry.ByID(103))` is a model with every point present and `null`, to fill in.
 - **Strict**: unknown members, a point given twice and names the model does not have are errors (`devicefile.ErrInvalid`, with the model, group instance and point), and malformed JSON reports its line and column (`devicefile.ErrSyntax`).
+- **Files**: `Load` refuses a path that is not a regular file (`devicefile.ErrNotRegular`) and a file above `devicefile.MaxFileSize` (16 MiB, `devicefile.ErrTooLarge`). `WriteFile` writes a 0600 temporary file next to the destination and renames it into place, and refuses a destination that is a symbolic link.
 - **JSON Schema**: `devicefile/devicefile.schema.json` (draft 2020-12), also returned by `devicefile.Schema()`, for editors and other tools.
 
 ### Encoding without I/O
@@ -340,7 +347,7 @@ Use `errors.Is` and `errors.As`:
 | Nil client, or a register range past 65535 | error wrapping `modbus.ErrUnexpectedParameters`; nothing is sent |
 | Unsupported point type | not an error: a warning on `DecodedModel`, raw registers kept |
 | A value that cannot be encoded: unknown point, wrong Go type, unknown symbol | `*EncodeError` matching `ErrEncode` (and `ErrPointNotFound` for an unknown point) |
-| A value that does not fit its point after scaling | `*EncodeError` matching `ErrEncode` and `ErrValueOutOfRange` |
+| A value that does not fit its point after scaling, or a `sunssf` value outside -10..10 | `*EncodeError` matching `ErrEncode` and `ErrValueOutOfRange` |
 | Models that do not fit the address space, or an update that would change a model's length | `ErrModelLayout` |
 | `Server` model index out of range | `ErrUnknownModel` |
 | Transport, timeout, Modbus exception | the go-modbus error, often wrapped |
@@ -362,7 +369,7 @@ if errors.As(err, &dec) {
 
 Reads can be partial. `ReadAll` returns the models decoded so far together with the first error, and `ReadModel` can return a partial `DecodedModel` with a non-nil error after a transport failure. A model that fails with `ErrModelChanged` comes back with the data registers that were read and no decoded group. Inspect both return values.
 
-A context deadline overrides the client's `Timeout` in go-modbus. `ReadAll` makes several requests under one context, so when one response is lost, that request uses up the rest of the context's time and the models after it fail with the context's error. Give long multi-model reads a deadline that suits a single request, or none and rely on `Timeout`.
+Since go-modbus v1.9.0, each request ends at the client's `Timeout` or the context's deadline, whichever comes first, so one device that never answers no longer holds a multi-model read for the caller's whole deadline. A caller that relied on a long context deadline to let a slow device answer must raise `Timeout` instead.
 
 ## Timeouts, retries, concurrency and observability
 

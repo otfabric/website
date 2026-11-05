@@ -107,7 +107,7 @@ func main() {
 | Function codes | The function codes of the specification as client and server, except CANopen (FC43/13): coils, discrete inputs, input and holding registers, mask write, read/write multiple, FIFO, file records, diagnostics, report server ID, device identification (FC43/14) |
 | Typed values | `uint16`–`uint64`, `float32/64`, strings, BCD, IP addresses, timestamps, with explicit byte and word order |
 | SunSpec | Marker detection and model-chain discovery; full point decoding in [go-sunspec](https://github.com/otfabric/go-sunspec) |
-| Go version | 1.23 or later |
+| Go version | 1.26 or later |
 
 <Callout type="caution">
 UDP framing is not part of the official Modbus specification. It is provided because vendors use it, but validate it against your device before relying on it in production. `modbusctl client write` changes real values: test against `modbus-simulator` or `modbusctl server` first.

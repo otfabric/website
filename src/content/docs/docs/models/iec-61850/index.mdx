@@ -130,7 +130,7 @@ The module imports neither go-iec61850 nor go-mms, nor any other transport.
 
 ## Status and scope
 
-go-iec61850-model is pre-release (v0.1.1 at the time of writing). Its README and PROGRESS.md track the state of each part.
+go-iec61850-model is pre-release (v0.2.2 at the time of writing). Its README and PROGRESS.md track the state of each part.
 
 - **Supported:** the NSD importer, catalog and profiles, references, type resolution, semantic mapping for metering classes, ontology helpers, the embedded catalog, generated names and the nsdctl CLI. The importer is tested against the 14 tracked official packages, and 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages.
 - **Not supported:** MMS, GOOSE, Sampled Values or any other communication; an SCL runtime; the IEC 61850-8-1 service namespace. An NSD update monitor is planned.

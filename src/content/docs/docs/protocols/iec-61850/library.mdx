@@ -13,8 +13,8 @@ OT Fabric splits IEC 61850 over two Go libraries. Both are pure Go with no CGO, 
 | | [go-iec61850](https://github.com/otfabric/go-iec61850) | [go-mms](https://github.com/otfabric/go-mms) |
 |---|---|---|
 | Speaks | IEC 61850 over MMS, GOOSE and Sampled Values (LD, LN, DO, DA, FC, datasets, RCBs, GoCBs, MSVCBs, controls, SCL) | Generic MMS, ISO 9506 (domains, item IDs, named variable lists) |
-| Version described here | v1.2.1 | v1.2.1 |
-| Go version | 1.24 or later | 1.23 or later |
+| Version described here | v1.6.0 | v1.4.0 |
+| Go version | 1.26 or later | 1.26 or later |
 | Client | Yes | Yes |
 | Server | SCL-driven, with reports, controls, setting groups, journals, GOOSE and SV | Yes, you register domains and variables |
 | Use it when | You talk to IEDs, listen to or publish on the station bus, or simulate an IED. This is the right choice almost always. | You need raw MMS: a non-IEC 61850 MMS device, alternate access, wire-level tests, or a custom transport. |
@@ -29,13 +29,13 @@ go-iec61850 is one module with these packages:
 | `l2` | Raw Ethernet shared by `goose` and `sv`: `AF_PACKET`, BPF, EtherType demultiplexing and an in-memory hub |
 | `scl`, `scl/index`, `scl/validate` | SCL parsing, cross-reference index and semantic validation |
 
-The MMS side is built on go-mms, and go-mms uses [go-cotp](https://github.com/otfabric/go-cotp) (v1.1.0, with separate read and write deadlines) and [go-tpkt](https://github.com/otfabric/go-tpkt) for the transport. You can always reach the lower layer: `Client.MMS()` returns the underlying `*mms.Client`.
+The MMS side is built on go-mms, and go-mms uses [go-cotp](https://github.com/otfabric/go-cotp) (v1.3.0; separate read and write deadlines since v1.1.0) and [go-tpkt](https://github.com/otfabric/go-tpkt) for the transport. You can always reach the lower layer: `Client.MMS()` returns the underlying `*mms.Client`.
 
 ## Install
 
 ```sh
-go get github.com/otfabric/go-iec61850   # Go 1.24+
-go get github.com/otfabric/go-mms        # Go 1.23+, pulled in automatically by go-iec61850
+go get github.com/otfabric/go-iec61850   # Go 1.26+
+go get github.com/otfabric/go-mms        # Go 1.26+, pulled in automatically by go-iec61850
 ```
 
 ## Connecting
@@ -88,12 +88,15 @@ func main() {
 | Field | Purpose |
 |---|---|
 | `MMS` | `mms.DialOptions`: ISO selectors and AP titles, ACSE password, MMS `MaxPDUSize` (default 65000), raw wire hook. |
+| `MaxTPDULength` | The COTP TPDU size proposed in the connection request (default 1024; 65531 omits it). |
 | `Logger` | `*slog.Logger`. Also passed to the MMS layer when `MMS.Logger` is nil. |
 | `IEDName` | Prepended to outgoing domain names and stripped from returned names, so your code uses bare LD names on servers that prefix domains with the IED name. |
 | `Cache` | `CacheNone` (default), `CacheExplicit` (filled by `RefreshCache`) or `CacheLazy` (filled on first access per LD). In memory only. |
 | `Strictness` | `RejectUnknownFC`, `VerifyReportCandidates`. |
 | `Retry` | `mms.RetryPolicy` for TCP connect, COTP and association, with exponential backoff and jitter. The zero value tries once; `mms.DefaultRetryPolicy()` is a sensible reconnect policy. Errors a retry cannot fix return at once. |
 | `Metrics` | An `mms.Metrics` that observes every request and connection event. |
+
+**ISO addressing.** Since go-iec61850 v1.6.0 (go-mms v1.4.0) a client sends the addressing libiec61850 sends, which IEDs that require transport selectors expect: T-selector `0001` and TPDU size 1024 in the COTP CR, S-selector `0001`, P-selector `00000001`, AP-titles `1.1.1.999` and `1.1.1.999.1`, AE-qualifier 12. Before, every selector was left out and such an IED refused the connection ("cotp: connection refused (reason 3)"). For an IED configured otherwise, take the values from its SCL ConnectedAP with `ApplySCLAddress(&opts.MMS, ap)`, or parse them with `ParseSelector` and `ParseAPTitle`. A non-nil empty value omits a parameter again, and a T-selector longer than 4 octets is refused before dialing.
 
 Per-request timeouts are set with `MMS.RequestTimeout`. `Client.MMS().Done()` and `Err()` tell you when and why the association ended.
 
@@ -377,7 +380,7 @@ func main() {
 }
 ```
 
-Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s). After an enhanced-security operate the server sends a positive CommandTermination. Interlocking and synchrocheck are your handler's job. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. `EnableSettingGroups` and `EnableJournals` start the other engines, `ServerOptions.Authenticate` checks the association, and `Server.Shutdown(ctx)` stops accepting associations and drains the active ones.
+Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s). After an enhanced-security operate the server sends a positive CommandTermination. Interlocking and synchrocheck are your handler's job. Since v1.5.0 the server refuses client writes to the read-only functional constraints ST, MX, SG, SR, OR and EX with object-access-denied, so no MMS client can overwrite a breaker's `Pos.stVal`; the application changes them with `SetValue`. A simulator whose peers drive status over MMS sets `ServerOptions.AllowReadOnlyFCWrites`. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. `EnableSettingGroups` and `EnableJournals` start the other engines, `ServerOptions.Authenticate` checks the association, and `Server.Shutdown(ctx)` stops accepting associations and drains the active ones.
 
 One `SetValue` call updates the model and drives everything that depends on it: reports, journals, GOOSE states and the next Sampled Values. Known gaps: no dynamic datasets, no per-group SE/SG value banks, in-memory BRCB buffers and journals only, no segmented report generation, and the model is immutable after construction.
 
@@ -571,7 +574,7 @@ fmt.Println(id.Vendor, id.Model, id.Revision)
 res, err := client.Read(ctx, mms.ReadRequest{DomainID: "MyDomain", ItemID: "MyVariable"})
 ```
 
-go-mms does not implement semaphore, event management, program invocation or client-side MMS Cancel services, and supports COTP class 0 over TCP only. Since v1.1.0 every exported method is exercised between its own client and server in an end-to-end suite. That release fixed sixteen wire and behaviour bugs found this way and by the wider interop suite, among them FileDirectory against conforming servers and FileDelete; v1.2.0 fixed codec bugs found by its 57 fuzz targets, such as the Cancel PDU tags and BinaryTime.
+go-mms does not implement semaphore, event management, program invocation or client-side MMS Cancel services, and supports COTP class 0 over TCP only. Since v1.1.0 every exported method is exercised between its own client and server in an end-to-end suite. That release fixed sixteen wire and behaviour bugs found this way and by the wider interop suite, among them FileDirectory against conforming servers and FileDelete; v1.2.0 fixed codec bugs found by its 57 fuzz targets, such as the Cancel PDU tags and BinaryTime. v1.3.0 added the extended length form of session SPDUs (an AARQ with a long ACSE password was unparseable before) and refuses out-of-range values instead of wrapping them: a UtcTime outside 1970 to 2106, negative or oversized invoke IDs, file sizes beyond Unsigned32. It has 60 fuzz targets.
 
 ## Errors
 

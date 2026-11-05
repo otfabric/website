@@ -113,7 +113,7 @@ for {
 }
 ```
 
-The packages are `capture` (the model, the `Reader` and `Writer` interfaces and the rules), `mbcap`, `jsonl` and `mbcsv` (one per encoding) and `edit` (filter, trim, split and merge, each writing a new capture with provenance). The library uses the standard library only, needs Go 1.23 or later, and every reader is fuzzed against hostile input. A recorder built on go-modbus gets the exact PDUs from the client's `PDUTap` (see the [Go library](/docs/protocols/modbus/library/#record-what-a-device-answered)).
+The packages are `capture` (the model, the `Reader` and `Writer` interfaces and the rules), `mbcap`, `jsonl` and `mbcsv` (one per encoding) and `edit` (filter, trim, split and merge, each writing a new capture with provenance). The library uses the standard library only, needs Go 1.26 or later (since v0.1.0), and every reader is fuzzed against hostile input. A recorder built on go-modbus gets the exact PDUs from the client's `PDUTap` (see the [Go library](/docs/protocols/modbus/library/#record-what-a-device-answered)).
 
 ## Packet traces
 
@@ -138,10 +138,12 @@ Modbus/TCP Security (TLS, usually port 802) is encrypted and cannot be decoded; 
 
 ### mbtracectl
 
-Download a static binary for Linux (amd64, arm64, armv7), macOS or Windows from the [releases page](https://github.com/otfabric/go-modbus-trace/releases), or:
+Download a static binary for Linux (amd64, arm64, armv7), macOS or Windows from the [releases page](https://github.com/otfabric/go-modbus-trace/releases), or build it from a checkout with Go 1.26 or later. The CLI is a nested module, so the library does not depend on a CLI framework:
 
 ```sh
-go install github.com/otfabric/go-modbus-trace/cmd/mbtracectl@latest
+git clone https://github.com/otfabric/go-modbus-trace.git
+cd go-modbus-trace
+make build   # writes bin/mbtracectl
 ```
 
 | Command | What it tells you |

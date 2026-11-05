@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-profinet](/projects/go-profinet/) implements PROFINET IO in Go, in both roles: an IO-Controller (package `controller`) and an IO-Device (package `device`), on its own DCP, LLDP, connectionless DCE/RPC, PNIO block codecs, RT cyclic layer and alarm transport. It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-profinet); [API.md](https://github.com/otfabric/go-profinet/blob/main/API.md) in the repository is the map. This page follows v0.6.0.
+[go-profinet](/projects/go-profinet/) implements PROFINET IO in Go, in both roles: an IO-Controller (package `controller`) and an IO-Device (package `device`), on its own DCP, LLDP, connectionless DCE/RPC, PNIO block codecs, RT cyclic layer and alarm transport. It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-profinet); [API.md](https://github.com/otfabric/go-profinet/blob/main/API.md) in the repository is the map. This page follows v0.7.0.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-profinet
 ```
 
-Go 1.23 or later. The main packages:
+Go 1.26 or later (CI runs Go 1.26 and 1.27, and the tests also on linux/386). The main packages:
 
 | Package | Contents |
 |---|---|
@@ -181,7 +181,7 @@ name := gsdml.FileName(m, "", time.Now()) // GSDML-V2.35-<vendor>-<family>-<date
 
 ## Errors
 
-Every error matches one of the sentinels of the root package with `errors.Is`: `ErrTimeout`, `ErrRejected`, `ErrNotFound`, `ErrUnsupported`, `ErrInvalidState`, `ErrAborted`, `ErrMalformed`, `ErrResourceExhausted`, `ErrLinkDown`, `ErrInvalidConfig` and `ErrClosed`. Typed errors keep the protocol's codes: `*pnio.StatusError` carries the PNIO status, `*dcp.SetError` the refused block, `*rpc.Fault` the RPC status.
+Every error matches one of the sentinels of the root package with `errors.Is`: `ErrTimeout`, `ErrRejected`, `ErrNotFound`, `ErrUnsupported`, `ErrInvalidState`, `ErrAborted`, `ErrMalformed`, `ErrResourceExhausted`, `ErrLinkDown`, `ErrInvalidConfig` and `ErrClosed`. Typed errors keep the protocol's codes: `*pnio.StatusError` carries the PNIO status, `*dcp.SetError` the refused block, `*rpc.Fault` the RPC status. Since v0.7.0, a configuration value that does not fit its field on the wire (an RPC port, MRP ring ports and intervals, a station or MRP domain name above 240 octets) is refused with `ErrInvalidConfig` instead of being truncated, and `controller.RecordClient.Read` refuses a record longer than its `maxLen`; [ERRORS.md](https://github.com/otfabric/go-profinet/blob/main/ERRORS.md) lists every case.
 
 ```go
 _, err := d.ReadRecord(ctx, controller.Record{Slot: 1, Subslot: 1, Index: 0x10}, 0)

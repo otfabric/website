@@ -26,7 +26,7 @@ It is a client only. There is no S7 server in the library. For a server to test 
 go get github.com/otfabric/go-s7comm
 ```
 
-go-s7comm requires Go 1.23 or later. The module has three packages you import:
+go-s7comm requires Go 1.26 or later; CI tests Go 1.26 and 1.27. This page follows v0.9.0. The module has three packages you import:
 
 | Package | Purpose |
 |---|---|
@@ -259,7 +259,8 @@ result, err := client.CompareRead(ctx, client.CompareReadRequest{
 
 | Situation | How it is reported |
 |---|---|
-| Invalid input (address, options, CIDR, block number) | `*client.ValidationError`; use `errors.As` |
+| Invalid input (address, options, CIDR, block number) | `*client.ValidationError`; use `errors.As`. Since v0.9.0 this includes addresses the S7ANY format cannot carry: a DB number outside 0..65535, a byte offset past 2097151 (`wire.MaxS7AnyByteOffset`), a read or write that runs past it, a max PDU or port above 65535. Before, they wrapped to another address |
+| A `wire` encoder given a value that does not fit its field | `wire.ErrOutOfRange`; the request encoders return `([]byte, error)` since v0.9.0 |
 | Byte read outcome | `ReadResult.Status` and `result.Err()` |
 | Bit reads and writes, byte writes, `Connect`, `UploadBlock`, `GetCPUState` | Plain `error` |
 | No active session | `client.ErrNotConnected` (for reads, in `ReadResult.Cause`) |
@@ -307,7 +308,7 @@ There is no metrics interface.
 
 You only need these when building another ISO-on-TCP protocol or inspecting raw traffic.
 
-- **[go-cotp](https://github.com/otfabric/go-cotp)** is a COTP Class 0 (TP0) transport service over RFC 1006: `Connect`, `Accept`, `ReadTSDU`, `WriteTSDU` and `Close` over a `net.Conn`, with connection request and confirm negotiation, TSAP selectors and segmentation. It also has an encoder and decoder for all ten connection-oriented TPDU types. It does not implement Class 2, expedited data or the full RFC 2126 profile. go-mms uses it for IEC 61850 as well.
+- **[go-cotp](https://github.com/otfabric/go-cotp)** is a COTP Class 0 (TP0) transport service over RFC 1006: `Connect`, `Accept`, `ReadTSDU`, `WriteTSDU` and `Close` over a `net.Conn`, with connection request and confirm negotiation, TSAP selectors and segmentation. It also has an encoder and decoder for all ten connection-oriented TPDU types. It does not implement Class 2, expedited data or the full RFC 2126 profile. go-mms uses it for IEC 61850 as well; v1.3.0 added `ServerConfig.EchoSelectors` and accepts a responding T-selector that differs from the called one, as IEDs do. A TPKT framing violation by the peer matches `ErrHandshake` since v1.2.0. Both modules need Go 1.26 or later (go-cotp v1.2.0, go-tpkt v1.1.0).
 - **[go-tpkt](https://github.com/otfabric/go-tpkt)** does TPKT framing only: `EncodePacket` and `DecodePacket` for whole buffers, and a streaming `Reader` and `Writer`. It validates the version and the length (7 to 65535 octets) and does not interpret TPDUs.
 
 To look inside a captured frame, strip the TPKT header and pass the TPDU to `wire.InspectTPDU`, which returns the COTP type and, for S7 data, the ROSCTR, function, parameter and data lengths and any error class and code.

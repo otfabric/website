@@ -11,7 +11,7 @@ import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/compon
 [go-openadr](/projects/go-openadr/) implements both sides of the OpenADR 3.1.0 REST API in Go: a VEN client and a Business Logic client for any OpenADR 3.1 VTN, which also speak OpenADR 3.0.1, and a VTN as an embeddable `http.Handler`. For the same from a shell, see [openadrctl](/docs/protocols/openadr/cli/). The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-openadr); [API.md](https://github.com/otfabric/go-openadr/blob/main/API.md) in the repository is the map.
 
 <Aside type="caution" title="Pre-release">
-go-openadr is pre-release. It implements OpenADR 3.1.0, and 3.0.1 for its clients, and the API may still change. Pin a version. This page follows v0.5.0.
+go-openadr is pre-release. It implements OpenADR 3.1.0, and 3.0.1 for its clients, and the API may still change. Pin a version. This page follows v0.6.0.
 </Aside>
 
 ## Install
@@ -20,7 +20,7 @@ go-openadr is pre-release. It implements OpenADR 3.1.0, and 3.0.1 for its client
 go get github.com/otfabric/go-openadr
 ```
 
-go-openadr requires **Go 1.23** or later and has **no dependencies outside the standard library**. It carries its own MQTT 3.1.1 client, WebSocket framing and DNS codec for that reason.
+go-openadr requires **Go 1.26** or later (since v0.6.0; CI tests Go 1.26 and 1.27) and has **no dependencies outside the standard library**. It carries its own MQTT 3.1.1 client, WebSocket framing and DNS codec for that reason.
 
 | Package | Purpose |
 |---|---|
@@ -201,7 +201,8 @@ http.Handle("/openadr3/", http.StripPrefix("/openadr3", vtn))
 | `Limiter` | `server.Limiter`, asked for every request of an identified client; a refusal is answered 429 with `Retry-After` |
 | `NotifyReads` | Notify subscribers of `READ` when an object of their type is read, by ID or in a search |
 | `DisableCompression` | No gzip or deflate |
-| `MaxBodyBytes` | Default 1 MiB |
+| `MaxBodyBytes` | Default 1 MiB; a body that is not valid UTF-8 is answered 400 |
+| `Limits` | `server.Limits` per client: `Subscriptions` (100 when zero), `CallbackURLs` per subscription (16 when zero), and `VENs`, `Resources`, `Reports` (no limit when zero). A negative value removes a limit. A create past a limit is answered 409, too many callback URLs 400 |
 | `Logger`, `Metrics` | See [Logging and metrics](#logging-and-metrics) |
 | `Now` | Clock |
 
@@ -235,6 +236,7 @@ go run ./examples/quickstart
 - The client ID and secret are sent in the form body.
 - A token is reused until 10 seconds before it expires. Concurrent calls wait for one token request.
 - A 401 from the VTN discards the token and the request is sent once more with a fresh one.
+- Unless the `http.Client` you give it has a `CheckRedirect` of its own, a client follows a redirect only to the scheme, host and port of the request (since v0.6.0). Any other redirect comes back as its 3xx status, so the client secret and the bearer token never follow a redirect off-origin.
 
 A VTN can name any HTTPS token endpoint. Configure `TokenURL` yourself when the VTN is not trusted to choose it.
 
@@ -242,7 +244,7 @@ A VTN can name any HTTPS token endpoint. Configure `TokenURL` yourself when the 
 
 <Tabs>
 <TabItem label="auth.Issuer">
-An in-memory token service for the client credentials grant, for tests and small deployments. Give it as both `Config.Validator` and `Config.TokenHandler`. It accepts credentials in the form body or as HTTP Basic authentication, issues opaque tokens (one hour by default, `IssuerConfig.TokenTTL`) and narrows scopes to those requested. Tokens do not survive a restart, secrets are held in memory in the clear, and there is no rate limiting of failed attempts.
+An in-memory token service for the client credentials grant, for tests and small deployments. Give it as both `Config.Validator` and `Config.TokenHandler`. It accepts credentials in the form body or as HTTP Basic authentication (form-decoded as RFC 6749 asks), keeps at most 1024 valid tokens per client, issues opaque tokens (one hour by default, `IssuerConfig.TokenTTL`) and narrows scopes to those requested. Tokens do not survive a restart, secrets are held in memory in the clear, and there is no rate limiting of failed attempts.
 
 `auth.BusinessLogicScopes()` and `auth.VENScopes()` return the scopes of each role.
 </TabItem>
@@ -262,7 +264,7 @@ type JWTConfig struct {
 }
 ```
 
-Algorithms: RS256/384/512, ES256/384/512, EdDSA (Ed25519), HS256/384/512. The signature and `exp` are always checked, `nbf` when present, `iss` and `aud` when configured. Set `Audiences` whenever the provider also issues tokens for other services. A token without a client ID is invalid.
+Algorithms: RS256/384/512, ES256/384/512, EdDSA (Ed25519), HS256/384/512. The signature and `exp` are always checked, `nbf` when present (and refused when it is not a number), a `crit` header is refused, a configured key it cannot verify with is refused at setup, `iss` and `aud` when configured. Set `Audiences` whenever the provider also issues tokens for other services. A token without a client ID is invalid.
 </TabItem>
 </Tabs>
 
@@ -529,7 +531,7 @@ default:
   })
   ```
 
-  The client asks the policy only about failures another attempt can cure (no answer, 429, 502, 503, 504) and only for requests safe to send twice. A create that may have reached the VTN is not retried unless `RetryCreates` is set; events, reports and subscriptions have no unique name to guard against a duplicate. `Retry-After` is honoured. `NewExponentialBackoff` adds options such as `RetryOnTimeout` and `NoJitter`.
+  A retry whose wait would outlast the context's deadline fails at once. The client asks the policy only about failures another attempt can cure (no answer, 429, 502, 503, 504) and only for requests safe to send twice. A create that may have reached the VTN is not retried unless `RetryCreates` is set; events, reports and subscriptions have no unique name to guard against a duplicate. `Retry-After` is honoured. `NewExponentialBackoff` adds options such as `RetryOnTimeout` and `NoJitter`.
 - **Concurrency.** `client.VEN`, `client.BL`, `server.Server`, the stores, validators, senders and subscribers are safe for concurrent use. Two updates of one object at the same time both succeed and the later one wins.
 - **Paging.** A VTN returns at most 50 objects per search. Each query struct embeds `Page{Skip, Limit}`. `client.Each` iterates over a whole result, 50 at a time:
 
@@ -539,7 +541,7 @@ default:
   }) { ... }
   ```
 
-  It is not a snapshot: objects created or deleted while it runs may be skipped or seen twice.
+  It is not a snapshot: objects created or deleted while it runs may be skipped or seen twice. Against a VTN that returns the same full page again, because it does not honour `skip`, it ends with an error that matches `openadr.ErrProtocol`.
 - **Values.** Payload numbers are `float64`, exact for integers up to 2^53.
 
 ## Logging and metrics
@@ -616,6 +618,7 @@ Other self-contained examples: `quickstart`, `notifications`, `websocket`, `pric
 - **One 3.0.1 peer.** Only OpenLEADR v0.1.4 has been met as a 3.0.1 VTN. It serves no subscriptions, so the 3.0.1 subscription and webhook path is tested against the specification's schema and a test double, not another implementation.
 - **Not implemented:** keeping properties the schema does not define (they are ignored).
 - **Durable means webhooks**, at least once and with one VTN per outbox. MQTT and WebSocket notifications are not kept.
+- **Not bounded without a configured limit:** VENs, resources and reports per client, and `client.Each` against a VTN that keeps returning full pages of new objects.
 - **No TLS configuration or audit log** in the library, and the rate limiter sees only identified clients. Put TLS and limits for unauthenticated traffic in the embedding program or a proxy.
 - **Not received by another implementation:** this VTN's webhooks and WebSocket notifications. Neither reference has a webhook receiver or a WebSocket client, so they are tested between go-openadr's own two sides. See [Testing and interop](/docs/protocols/openadr/testing/).
 - MQTT with a login or over TLS has met no other implementation's client, and the MQTT client has met only Mosquitto with a login.

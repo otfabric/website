@@ -8,13 +8,13 @@ sidebar:
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-[s7commctl](https://github.com/otfabric/s7commctl) is a command-line S7comm client for ISO-on-TCP (TCP port 102), built on [go-s7comm](/docs/protocols/s7/library/). It is meant for commissioning, troubleshooting and engineering work on PLCs you are responsible for.
+[s7commctl](https://github.com/otfabric/s7commctl) is a command-line S7comm client for ISO-on-TCP (TCP port 102), built on [go-s7comm](/docs/protocols/s7/library/). It is meant for commissioning, troubleshooting and engineering work on PLCs you are responsible for. This page follows s7commctl v0.4.0, built on go-s7comm v0.9.0.
 
 ## Install
 
 Prebuilt binaries are attached to each [GitHub release](https://github.com/otfabric/s7commctl/releases): `.tar.gz` archives for Linux and macOS and `.zip` archives for Windows, for amd64 and arm64.
 
-To build from source you need Go 1.25:
+To build from source you need Go 1.26:
 
 ```sh
 git clone https://github.com/otfabric/s7commctl
@@ -135,6 +135,8 @@ s7commctl record --ip 192.168.1.10 --area DB --db 1 --offset 0 --size 8 \
   --every-ms 1000 --count 60 --output samples.jsonl
 ```
 
+The output file is created with mode 0600, because a recording holds process values.
+
 ## Writing
 
 <Aside type="caution">
@@ -194,9 +196,17 @@ On failure, an `error` object with `code` and `message` replaces `result`. `disc
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 1 | The target answered but the operation did not succeed (no valid rack/slot found, a read that was not `success` with `--strict-read`, a list or diagnostic that failed) |
-| 2 | Usage or validation error |
-| 3 | Connection or runtime failure (TCP connect failed, timeout, protocol error) |
+| 1 | Findings: the operation completed and reports a non-success (`probe` found no valid rack/slot, a short read with `--strict-read`) |
+| 2 | Usage: invalid flags or input, an address go-s7comm refuses before sending (a negative offset, a DB above 65535, a range past the S7ANY address limit), a write without `--dangerous` or aborted at the prompt |
+| 3 | A request larger than the negotiated PDU |
+| 4 | Transport: connecting failed, the connection was lost, a listener cannot start |
+| 5 | Timeout |
+| 6 | Protocol: the PLC refused the request, or a malformed response |
+| 9 | Permission: the operating system refused, for example binding port 102 |
+| 10 | An output file could not be opened or written |
+| 130 | Interrupted by SIGINT or SIGTERM before a result; a `record` stopped this way ends with 0 |
+
+The codes follow the OT Fabric CLI exit-code table since v0.3.0. `S7COMMCTL_FORMAT` (or `S7COMMCTL_OUTPUT_FORMAT`) sets the default of `--format`. Since v0.4.0 an address the S7ANY format cannot carry is refused before anything is sent: before, `write --db 65537` wrote to DB 1.
 
 ## Shell completion
 

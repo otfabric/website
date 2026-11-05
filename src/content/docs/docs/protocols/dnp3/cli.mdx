@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[dnp3ctl](https://github.com/otfabric/dnp3ctl) is a command-line tool for DNP3 (IEEE 1815) in both roles, built on [go-dnp3](/docs/protocols/dnp3/library/). As a **master** it polls an RTU, IED or gateway, reads any object and range, watches unsolicited responses, operates controls, synchronizes the clock, restarts, freezes, reads device attributes and transfers files. As an **outstation** it simulates an RTU from a model of points, controls and files, so that a SCADA master or a protocol gateway has something to talk to. Output is text, a table or JSON, with stable exit codes. This page follows v0.6.2.
+[dnp3ctl](https://github.com/otfabric/dnp3ctl) is a command-line tool for DNP3 (IEEE 1815) in both roles, built on [go-dnp3](/docs/protocols/dnp3/library/). As a **master** it polls an RTU, IED or gateway, reads any object and range, watches unsolicited responses, operates controls, synchronizes the clock, restarts, freezes, reads device attributes and transfers files. As an **outstation** it simulates an RTU from a model of points, controls and files, so that a SCADA master or a protocol gateway has something to talk to. Output is text, a table or JSON, with stable exit codes. This page follows v0.9.0, built on go-dnp3 v1.9.0.
 
 <Aside type="caution" title="Responsible use">
 dnp3ctl sends real SCADA requests. `client operate` operates breakers and changes set-points; `restart`, `time-sync`, `freeze`, `assign-class`, `manage`, `write-attribute`, `write-deadband`, `clear-restart` and `unsolicited` change the outstation, and `file put` and `rm` change its files. An outstation discards the events a master has read, so polling an outstation in service with its master's link address takes those events away from it. Use dnp3ctl on outstations and networks you own or are authorized to test.
@@ -46,13 +46,14 @@ sudo install -m 0755 "dnp3ctl-dl/dnp3ctl-${VERSION}-darwin-${ARCH}" /usr/local/b
 ```
   </TabItem>
   <TabItem label="Go">
+Requires Go 1.26 or later.
 ```sh
 go install github.com/otfabric/dnp3ctl@latest
 ```
   </TabItem>
 </Tabs>
 
-The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/dnp3ctl#windows-powershell). Check the install with `dnp3ctl version`. A binary built with `go install` reports version `dev`. To use a serial port without root on Linux, add yourself to the group that owns it (`dialout` on Debian and Ubuntu).
+The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/dnp3ctl#windows-powershell). Check the install with `dnp3ctl version`. A binary built with `go install` reports the module version the Go toolchain records. To use a serial port without root on Linux, add yourself to the group that owns it (`dialout` on Debian and Ubuntu).
 
 ## Command tree
 
@@ -202,7 +203,7 @@ dnp3ctl client file put --ip 192.168.1.20 --input today.csv --path /logs/events.
 DNP3CTL_FILE_PASSWORD=… dnp3ctl client file ls --ip 192.168.1.20 --file-user engineer
 ```
 
-`file get` does not overwrite an existing file without `--force`. The file password is read from the environment or `--file-password-file`, never from a flag.
+`file get` does not overwrite an existing file without `--force`, and creates a new file readable by its owner only (mode 0600), as `server generate-config` does. The file password is read from the environment or `--file-password-file`, never from a flag.
 
 ## Finding outstations
 
@@ -271,7 +272,7 @@ The simulated outstation answers polls and reads of every point type in any vari
 
 ## Output formats and exit codes
 
-`--format text|json|table` (or `DNP3CTL_OUTPUT_FORMAT`) controls the result on stdout; progress and the `--debug` trace go to stderr. Streams (`client monitor`, `client ping`, `server start`) write one record as it happens, as JSON Lines with `--format json`. With JSON, a failure is a single error object `{"error": {"kind", "code", "message"}}`; the shapes are a stable contract ([docs/json-output.md](https://github.com/otfabric/dnp3ctl/blob/main/docs/json-output.md)).
+`--format text|json|table` (or `DNP3CTL_FORMAT`; `DNP3CTL_OUTPUT_FORMAT` is still accepted) controls the result on stdout; progress and the `--debug` trace go to stderr. Streams (`client monitor`, `client ping`, `server start`) write one record as it happens, as JSON Lines with `--format json`. With JSON, a failure is a single error object `{"error": {"kind", "code", "message"}}`; the shapes are a stable contract ([docs/json-output.md](https://github.com/otfabric/dnp3ctl/blob/main/docs/json-output.md)).
 
 | Code | Meaning |
 |---|---|
@@ -283,10 +284,13 @@ The simulated outstation answers polls and reads of every point type in any vari
 | 6 | The outstation refused the request (IIN error, control status, file status, authentication), or a protocol error |
 | 7 | Partial success: a valid result that holds failures |
 | 10 | Output or internal error |
+| 130 | Interrupted by Ctrl-C or SIGTERM before a result |
+
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool. A usage error honours `--format json` too.
 
 ## Environment variables
 
-Every flag except `--debug` has a `DNP3CTL_*` variable, and a flag on the command line wins: `DNP3CTL_URL`, `DNP3CTL_OUTSTATION` and `DNP3CTL_OUTPUT_FORMAT` save repeating them. Three secrets are read only from the environment or a file, never from a flag: `DNP3CTL_SA_UPDATE_KEY`, `DNP3CTL_SA_KEY` and `DNP3CTL_FILE_PASSWORD`.
+Every flag except `--debug` has a `DNP3CTL_*` variable, and a flag on the command line wins: `DNP3CTL_URL`, `DNP3CTL_OUTSTATION` and `DNP3CTL_FORMAT` save repeating them. Three secrets are read only from the environment or a file, never from a flag: `DNP3CTL_SA_UPDATE_KEY`, `DNP3CTL_SA_KEY` and `DNP3CTL_FILE_PASSWORD`.
 
 ## Tested against
 

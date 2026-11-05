@@ -11,7 +11,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 [go-ocpp](/projects/go-ocpp/) implements both ends of OCPP-J in Go: a Charging Station (package `client`) and a CSMS (package `server`), on one RPC engine, for OCPP 1.6J, 2.0.1 and 2.1. Every action is a typed request and response generated from the OCA JSON schemas, and every message is validated in both directions. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ocpp); [API.md](https://github.com/otfabric/go-ocpp/blob/main/API.md) in the repository is the map.
 
 <Aside type="caution" title="Pre-release">
-go-ocpp is pre-release, and a minor release may still change the API (every change is listed in its RELEASE.md). Pin a version. This page follows v0.1.3.
+go-ocpp is pre-release, and a minor release may still change the API (every change is listed in its RELEASE.md). Pin a version. This page follows v0.2.0.
 </Aside>
 
 go-ocpp is a protocol library. It transports, validates and dispatches messages. Charging behaviour, authorization policy, persistence and billing belong to the application's handlers.
@@ -22,7 +22,7 @@ go-ocpp is a protocol library. It transports, validates and dispatches messages.
 go get github.com/otfabric/go-ocpp
 ```
 
-Go 1.26 or later. The only dependency is [coder/websocket](https://github.com/coder/websocket).
+Go 1.26 or later; CI tests Go 1.26 and 1.27. The only dependency is [coder/websocket](https://github.com/coder/websocket).
 
 | Package | What it is |
 |---|---|
@@ -79,13 +79,13 @@ boot, err := ocpp201.BootNotification(ctx, c, &ocpp201.BootNotificationRequest{
 })
 ```
 
-The URL is the CSMS's endpoint followed by the station identity, percent-encoded. `wss://` is required; `ws://` needs `WithInsecureTransport()`. Credentials in the URL are refused, and the Basic user name must be the identity.
+The URL is the CSMS's endpoint followed by the station identity, percent-encoded. `wss://` is required; `ws://` needs `WithInsecureTransport()`. Credentials in the URL are refused, the Basic user name must be the identity, and a user name with `:` is refused (RFC 7617). Since v0.2.0 the client refuses an HTTP redirect from `wss://` to `ws://` during the handshake (`Connect` fails with a `*HandshakeError` carrying the 3xx), so Basic credentials never go out in clear text.
 
 The handler embeds `ocpp201.UnimplementedChargingStationHandler` and implements the actions it supports; the others are answered `NotSupported`. With handlers for several versions, the client offers all of them and the CSMS picks one (`c.Version()` after `Connect`).
 
 | Method | Behaviour |
 |---|---|
-| `Connect` | Dials once. It does not retry; `WithReconnect` redials only after an open connection is lost |
+| `Connect` | Dials once. It does not retry; `WithReconnect` redials only after an open connection is lost. A `Connect` while another attempt or a redial is in progress waits for it and returns its outcome. `Close` ends a `Connect` stalled in the handshake |
 | `Call` | Sends a CALL and waits. Calls from many goroutines go out one at a time (one outstanding CALL per direction); up to 64 wait, more get `ErrBusy`. Fails at once with `ErrNotConnected` while disconnected: nothing is queued |
 | `Send` | OCPP 2.1 SEND: queued and returned at once, never answered |
 | `Shutdown` | Graceful close: finishes what is in flight, then closes |
@@ -266,7 +266,7 @@ Test errors with `errors.Is` and `errors.As`, never by comparing strings.
 | `WithIncomingRateLimit` | off | Dispatch at most this many CALLs a second; the rest wait |
 | `server.WithMaxStations` | 10 000 | Simultaneous sessions |
 
-The caller's context bounds each call as well.
+The caller's context bounds each call as well. A handshake the server refuses (unknown station, wrong credentials, bad path, limits) closes its HTTP connection, and `Serve` sets `IdleTimeout` to the handshake timeout, so refused requests cannot hold file descriptors past `WithMaxStations`. Reconnect jitter comes from `crypto/rand`, so stations do not reconnect in lockstep.
 
 ## Logging, metrics and tracing
 
@@ -298,6 +298,7 @@ Each example starts a CSMS and one or more stations in one process and prints a 
 - **Planned:** switching URL and security profile after SetNetworkProfile, a Local Controller role (2.x), typed constants for configuration keys and device model variables, and OpenTelemetry and Prometheus adapters as a separate module.
 - **Out of scope:** OCPP 1.6 SOAP, 1.5 and older.
 - Station identities are matched exactly, including case.
+- **Bounds left to the application:** metric and span labels the peer chooses (incoming actions, identities of refused connections), closing connections that `WithMaxStations` does not count, and the length of a 1.6 identity.
 
 [FEATURES.md](https://github.com/otfabric/go-ocpp/blob/main/FEATURES.md) compares go-ocpp feature by feature with eight other open-source implementations.
 

@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[go-opcua](https://github.com/otfabric/go-opcua) is a pure Go OPC UA client and server over UA-TCP, WebSockets and HTTPS, with the OPC UA Binary encoding and the UA JSON mappings of WebSockets and HTTPS, with PubSub publishers and subscribers in the same module. It has no cgo. Cryptography is the Go standard library, plus ChaCha20-Poly1305 from `golang.org/x/crypto`, Ed448 and X448 from `cloudflare/circl`, and the Brainpool curves from `ProtonMail/go-crypto`. This page describes v1.27.0.
+[go-opcua](https://github.com/otfabric/go-opcua) is a pure Go OPC UA client and server over UA-TCP, WebSockets and HTTPS, with the OPC UA Binary encoding and the UA JSON mappings of WebSockets and HTTPS, with PubSub publishers and subscribers in the same module. It has no cgo. Cryptography is the Go standard library, plus ChaCha20-Poly1305 from `golang.org/x/crypto`, Ed448 and X448 from `cloudflare/circl`, and the Brainpool curves from `ProtonMail/go-crypto`. This page describes v1.31.0.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-opcua
 ```
 
-Go 1.26 or later is required. The packages you will use most:
+Go 1.26 or later is required; CI tests Go 1.26 and 1.27. The packages you will use most:
 
 | Package | Purpose |
 |---|---|
@@ -35,12 +35,17 @@ Go 1.26 or later is required. The packages you will use most:
 
 `opcua.NewClient(endpoint, opts...)` builds a client; `Connect` opens the SecureChannel and creates and activates a session. `Dial` opens only the SecureChannel (enough for discovery services). `Close` tears everything down; do not reuse a client after `Close`.
 
+<Aside type="caution" title="Secure by default since v1.29.0">
+`NewClient` refuses a client without message security over `opc.tcp` (`errors.ErrInsecureNotAllowed`), however policy None is reached: no options, `SecurityPolicy("None")`, or a None endpoint given to `SecurityFromEndpoint`. Add `opcua.InsecureNoSecurity()` to opt in. Server certificates are checked against `TrustedCertificates` only, never the system CA pool, so a secured client needs `TrustedCertificates` (or `InsecureSkipVerify()` for development), and a server that presents no certificate under Sign or SignAndEncrypt is refused (`errors.ErrNoCertificate`). Discovery (`GetEndpoints`, `FindServers`, `FindServersOnNetwork`) and `opc.wss` and `opc.https`, which TLS secures, need no opt-in.
+</Aside>
+
 <Tabs>
   <TabItem label="No security (lab)">
     ```go
     c, err := opcua.NewClient("opc.tcp://localhost:4840",
         opcua.SecurityPolicy("None"),
         opcua.SecurityMode(ua.MessageSecurityModeNone),
+        opcua.InsecureNoSecurity(), // required for policy None over opc.tcp
         opcua.AuthAnonymous(),
     )
     if err != nil {
@@ -132,6 +137,11 @@ Go 1.26 or later is required. The packages you will use most:
         opcua.ReverseConnect("0.0.0.0:4841",
             opcua.ReverseServerURI("urn:acme:plc-17")),
         opcua.DialTimeout(60*time.Second), // how long to wait for the server
+        opcua.SecurityPolicy("Basic256Sha256"),
+        opcua.SecurityMode(ua.MessageSecurityModeSignAndEncrypt),
+        opcua.CertificateFile("client.crt"),
+        opcua.PrivateKeyFile("client.key"),
+        opcua.TrustedCertificates(plcCert), // the ReverseHello is not authenticated
     )
     if err := c.Connect(ctx); err != nil { // returns once the server has connected
         log.Fatal(err)
@@ -161,6 +171,7 @@ func main() {
     ctx := context.Background()
 
     c, err := opcua.NewClient("opc.tcp://localhost:4840",
+        opcua.InsecureNoSecurity(), // a local test server without message security
         opcua.AutoReconnect(true),
         opcua.ReconnectInterval(5*time.Second),
         opcua.WithConnStateHandler(func(s opcua.ConnState) {
@@ -398,7 +409,7 @@ Requests work for every key type (RSA, NIST and Brainpool ECDSA, Ed25519, Ed448)
 
     Use `-newkey ed25519` for `ECC_curve25519`, `-newkey ed448` for `ECC_curve448`, and `ec_paramgen_curve:brainpoolP384r1` for both Brainpool policies. RSA keys need 2048 bits or more for every RSA policy; 4096 bits also works. Key files may be PKCS #1, PKCS #8 or SEC 1, PEM or DER. In production use certificates from your own CA and keep private keys at mode `0600`.
 
-2. **Trust the server.** Pass the server's CA (or self-signed certificate) with `TrustedCertificates`. It is merged with the system pool; the client checks the chain, validity period, key usage and, with `SecurityFromEndpoint`, the ApplicationUri. `InsecureSkipVerify()` disables all of this and is for development only.
+2. **Trust the server.** Pass the server's CA (or self-signed certificate) with `TrustedCertificates`. It is the only trust list: the system CA pool is not used (Part 4 §6.1.3). The client checks the chain, validity period, key usage and, with `SecurityFromEndpoint`, the ApplicationUri. `InsecureSkipVerify()` disables all of this and is for development only.
 
 3. **Get your certificate trusted by the server.** Most servers reject unknown client certificates until an administrator trusts them.
 
@@ -430,6 +441,7 @@ func main() {
     srv, err := server.New(
         server.EndPoint("localhost", 4840),
         server.EnableSecurity("None", ua.MessageSecurityModeNone),
+        server.InsecureNoSecurity(), // Start refuses policy None without it
         server.EnableAuthMode(ua.UserTokenTypeAnonymous),
     )
     if err != nil {
@@ -466,7 +478,11 @@ After changing a value, call `srv.ChangeNotification(nodeID)` so subscribers are
 - **Certificates:** `WithPushManagement` serves the ServerConfiguration push model, and `gds/gdsserver` is a complete Global Discovery Server with a memory or file store.
 - **PubSub:** `server.WithPubSub(cfg)` publishes variables and events of the address space and writes received fields to variables; clients can reconfigure it through `Server/PublishSubscribe`. See [PubSub](/docs/protocols/opc-ua/pubsub/).
 
-For a secured server, add `server.Certificate` and `server.PrivateKey` (RSA), `server.ApplicationIdentity(cert, key)` once per ECC key type, and `EnableSecurity` per policy and mode. `WithClientCertificateTrustList(caDER...)` rejects untrusted client certificates at OpenSecureChannel with `BadCertificateUntrusted`. `WithUsernameValidator` and `WithX509UserValidator` check user tokens during ActivateSession, and `WithAccessController` decides each read, write, browse and call, and can be implemented outside the package (it receives a read-only `*server.Session` with the identity and roles). The `DefaultAccessController` allows everything; `RBACAccessController` checks roles. `AllowUsernameOnNone()` exists for test deployments only.
+For a secured server, add `server.Certificate` and `server.PrivateKey` (RSA), `server.ApplicationIdentity(cert, key)` once per ECC key type, and `EnableSecurity` per policy and mode. `WithClientCertificateTrustList(caDER...)` rejects untrusted client certificates at OpenSecureChannel with `BadCertificateUntrusted`. `WithUsernameValidator` and `WithX509UserValidator` check user tokens during ActivateSession, and `WithAccessController` decides each read, write, browse and call, and can be implemented outside the package (it receives a read-only `*server.Session` with the identity and roles). The `DefaultAccessController` allows everything; `RBACAccessController` checks roles. `AllowUsernameOnNone()` exists for test deployments only. ActivateSession accepts only the user token types an endpoint of the client's channel offers (else `Bad_IdentityTokenRejected`), and a rejected ActivateSession leaves the session's identity as it was.
+
+**Limits and write access (v1.31.0).** `WithMaxSessions` (default 100), `WithMaxSubscriptions` (default 1024 for all sessions) and `WithMaxSubscriptionsPerSession` (default 64) bound what clients can create, with the defaults of open62541; past them CreateSession and CreateSubscription answer `Bad_TooManySessions` and `Bad_TooManySubscriptions`. The Write service enforces a node's WriteMask for every attribute other than Value: nodes built with the Go API have none, so clients can write only their Value until you set `ua.AttributeIDWriteMask` on the node. NodeSet2 imports keep their WriteMask. Both sides keep to the message size and chunk count the peer announced.
+
+**Observing clients (v1.30.0).** `server.WithSessionObserver` reports connections, activated and closed sessions, and refused requests (an untrusted certificate, a wrong password, a token type no endpoint offers) with the client's address, security and identity; embed `server.BaseSessionObserver` for no-op defaults. With `WithAuditing(true)` the server raises the Part 4 security audit events for secure channels, sessions and refused certificates; the identity token in them carries no password. `Session.Identity()` no longer holds the password of a user name token.
 
 ## Errors
 
