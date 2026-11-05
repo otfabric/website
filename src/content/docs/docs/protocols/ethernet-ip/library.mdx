@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-ethernetip](/projects/go-ethernetip/) implements EtherNet/IP and CIP in Go, in both roles: a client and a scanner (the originator) and a server (the target, or adapter). It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ethernetip); [API.md](https://github.com/otfabric/go-ethernetip/blob/main/API.md) in the repository is the map. This page follows v0.3.1.
+[go-ethernetip](/projects/go-ethernetip/) implements EtherNet/IP and CIP in Go, in both roles: a client and a scanner (the originator) and a server (the target, or adapter). It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ethernetip); [API.md](https://github.com/otfabric/go-ethernetip/blob/main/API.md) in the repository is the map. This page follows v0.5.0.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-ethernetip
 ```
 
-Go 1.23 or later. The API is v0: it may change in minor versions until v1.0.0, with every change in [RELEASE.md](https://github.com/otfabric/go-ethernetip/blob/main/RELEASE.md).
+Go 1.26 or later (CI runs Go 1.26 and 1.27). The API is v0: it may change in minor versions until v1.0.0, with every change in [RELEASE.md](https://github.com/otfabric/go-ethernetip/blob/main/RELEASE.md).
 
 | Package | What it is |
 |---|---|
@@ -128,7 +128,7 @@ _ = in.SetData(inputs) // produced to every connection from the next RPI
 log.Fatal(srv.ListenAndServe(":44818")) // TCP and UDP 44818, I/O on UDP 2222
 ```
 
-The server enforces the ownership rules of the Connection Manager and answers every refusal with its extended status. Multicast productions are shared by every connection to the same inputs, and `SetData` triggers change-of-state connections. Objects of your own implement `server.Object`, or are built from `server.NewObject(class, revision)` with attributes and services. Options bound what a peer can make the server hold: `WithMaxSessions` (64), `WithMaxConnections` (128), `WithMaxPacket` (4096 octets) and the inactivity timeout (120 s). `WithSlot` answers routed requests for one backplane slot, and `WithDiscoveryDelay` spreads broadcast ListIdentity replies.
+The server enforces the ownership rules of the Connection Manager and answers every refusal with its extended status. Multicast productions are shared by every connection to the same inputs, and `SetData` triggers change-of-state connections. Objects of your own implement `server.Object`, or are built from `server.NewObject(class, revision)` with attributes and services. Options bound what a peer can make the server hold: `WithMaxSessions` (64), `WithMaxConnections` (128, at most 65535), `WithMaxPacket` (4096 octets) and the inactivity timeout (120 s). `WithMaxConnectionsPerOriginator` (off by default) limits the connections of one originator address. TCP connections that never register a session are capped at 2 × `WithMaxSessions` + 16 and closed by `Close`, and a class or attribute above 0xFFFF is refused rather than truncated. `WithSlot` answers routed requests for one backplane slot, and `WithDiscoveryDelay` spreads broadcast ListIdentity replies.
 
 ## Logix tags
 
@@ -141,13 +141,13 @@ lc := logix.NewClient(c)
 
 v, err := lc.Read(ctx, "Program:Main.Speeds[3]", 1)
 f, _ := v.Float(0)
-dv, _ := logix.Ints(cip.TypeDINT, 42)
+dv, _ := logix.Ints(cip.TypeDINT, 42) // logix.Uints for ULINT and LWORD above 2^63-1
 err = lc.Write(ctx, "Counter", dv)
 err = lc.WriteBit(ctx, "Flags.3", 4, true) // Read-Modify-Write
 tags, err := lc.ListTags(ctx, "")
 ```
 
-`Read` and `Write` switch to the fragmented services for large values, `ReadMany` packs several reads into Multiple Service Packets, and `Template` and `DecodeStruct` read structure definitions and decode user-defined types. Over a Class 3 connection with `Large: true` and `logix.WithMaxData(3900)`, transfers are as large as programming tools use. BOOL arrays are addressed by DWORD, as in Logix.
+`Read` and `Write` switch to the fragmented services for large values, `ReadMany` packs several reads into Multiple Service Packets, and `Template` and `DecodeStruct` read structure definitions and decode user-defined types. Over a Class 3 connection with `Large: true` and `logix.WithMaxData(3900)`, transfers are as large as programming tools use. BOOL arrays are addressed by DWORD, as in Logix. `logix.Floats(cip.TypeREAL, x)` refuses a finite value outside the REAL range with `ErrType` instead of writing an infinity.
 
 `logix.NewTagServer()` attached to a `server.Server` emulates a controller's tag database (symbolic and instance addressing, fragmentation, bit writes, the tag list, templates, the program name), which pycomm3 and cpppo accept. It is a test tool: no programs, tasks, modes or alarms.
 

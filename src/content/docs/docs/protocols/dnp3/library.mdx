@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-dnp3](/projects/go-dnp3/) implements both ends of DNP3 (IEEE 1815-2012) in Go: a master (package `client`) and an outstation (package `server`), on a complete link layer, transport function and application layer. It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-dnp3); [API.md](https://github.com/otfabric/go-dnp3/blob/main/API.md) in the repository is the map. This page follows v1.3.1.
+[go-dnp3](/projects/go-dnp3/) implements both ends of DNP3 (IEEE 1815-2012) in Go: a master (package `client`) and an outstation (package `server`), on a complete link layer, transport function and application layer. It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-dnp3); [API.md](https://github.com/otfabric/go-dnp3/blob/main/API.md) in the repository is the map. This page follows v1.9.0.
 
 From v1.0.0 the API follows semantic versioning: a breaking change comes only with a new major version.
 
@@ -18,7 +18,7 @@ From v1.0.0 the API follows semantic versioning: a breaking change comes only wi
 go get github.com/otfabric/go-dnp3
 ```
 
-Go 1.23 or later.
+Go 1.26 or later (since v1.8.0); CI tests Go 1.26 and 1.27.
 
 | Package | What it is |
 |---|---|
@@ -113,7 +113,9 @@ if errors.As(err, &ce) {
 }
 ```
 
-Several controls go in one request; `Operate` returns the status of each. With select-before-operate a refused SELECT ends the operation and the OPERATE is not sent. `WithRetry` repeats only the requests that are safe to repeat (reads, time, unsolicited and class functions): controls, freezes, restarts and writes are never repeated.
+Several controls go in one request; `Operate` returns the status of each. With select-before-operate a refused SELECT ends the operation and the OPERATE is not sent. `WithRetry` repeats only the requests that are safe to repeat (reads, time, unsolicited and class functions): controls, freezes, restarts and writes are never repeated. A control the outstation answers NOT_SUPPORTED, with IIN2.2, still reports its statuses as a `*dnp3.CommandError`. `FreezeAtTime` refuses a negative interval or one of 2^32 ms or more with `ErrInvalidOption`, and nothing is sent.
+
+**ACTIVATE_CONFIG** (since v1.6.0). `c.ActivateConfig(ctx, headers...)` sends file specifications (g70v8) or octet strings (g110) and returns the status of each g91v1 object of the response; it is never retried. On the outstation, a `Handler` that also implements `server.ActivateConfigHandler` answers it. `client.WithSolicitedConfirm(false)` and `client.WithUnsolicitedConfirm(false)` withhold application confirmations, for tests that watch an outstation keep unconfirmed events.
 
 ## An outstation
 
@@ -178,6 +180,8 @@ c, err := client.Dial(ctx, "/dev/ttyUSB0", client.WithStream(func(ctx context.Co
 
 Leave the port's read timeout at zero: inactivity is detected by the link layer's keep-alive (`client.Link.KeepAlive`, 60 s by default).
 
+Both ends bound what a peer can make them do. A TLS handshake must finish within 10 s, and the master's default dialer has a 10 s connect timeout. An outstation plans at most four complete reads of its database per READ, walks only the points that exist for ASSIGN_CLASS, keeps accepting after a transient `Accept` error, and keeps a UDP socket after an error on one datagram. A panic while serving a request, in go-dnp3 or in your `Handler`, is logged with its stack and the request goes unanswered; the process goes on. Files of 4 GiB or more are refused by `FSFileServer`, and file blocks are at most 65527 octets.
+
 ## Security
 
 Plain DNP3 has no authentication. Keep it on isolated networks, and restrict the masters an outstation answers with `server.WithMasters`, which keeps a misconfigured master out but is not authentication.
@@ -202,6 +206,9 @@ c, err := client.Dial(ctx, addr,
 - The outstation keeps the 18 **security statistics** per master (g121), and reports them as events (g122) every `StatisticsThreshold` increments, for a SCADA system to alarm on.
 - Only the control direction is authenticated, and READ requests are not challenged: use TLS where responses must be protected.
 - Not implemented: the remote update key change, user management with certificates, AES-GMAC, and the master challenging the outstation's responses.
+- `app.FileAuthentication` and `secauth.User` print and log without their password or keys.
+
+Upgrade to v1.4.0 or later if a master you do not control can reach your outstation: earlier versions could be crashed by a malformed READ of a file transport object.
 
 ## Errors
 
@@ -250,8 +257,8 @@ The first seven start an outstation and a master in one process: `go run ./examp
 ## Limitations
 
 - **Secure Authentication**: update keys are configured out of band; no remote update key change, user management or AES-GMAC. Aggressive mode is verified between go-dnp3's own ends only, as no reference stack in the interop suite has it.
-- **Data sets, private registration objects and the virtual terminal** (groups 83, 85 to 88, 90, 91, 112, 113) have no procedures: exchange them with the generic request methods.
-- **Conformance**: the outstation is tested with a scripted master and against three other stacks, but not with the DNP Users Group's IED conformance procedures, and go-dnp3 declares no subset level.
+- **Data sets, private registration objects and the virtual terminal** (groups 83, 85 to 88, 90, 112, 113) have no procedures: exchange them with the generic request methods. Group 91 is used by ACTIVATE_CONFIG.
+- **Conformance, not certification**: since v1.4.0 CI runs the DNP Users Group's IED certification procedures (dnp3c: 3.1 rev 1 at subset levels 2 and 3, 2.7 at level 2) against a test outstation built on the library. That is not a certification, go-dnp3 declares no subset level of its own, and the run leaves out double-bit inputs in 3.1r1, serial and UDP, multi-drop and the network tests of section 9.
 - **UDP outstation**: one socket serves one master at a time.
 - **Multi-fragment requests** are neither sent nor reassembled: a request is one fragment.
 

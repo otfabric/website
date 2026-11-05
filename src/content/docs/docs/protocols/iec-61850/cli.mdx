@@ -10,7 +10,7 @@ import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
 [iec61850ctl](https://github.com/otfabric/iec61850ctl) is a command-line tool for IEC 61850. It is built on [go-iec61850](https://github.com/otfabric/go-iec61850) and [go-mms](https://github.com/otfabric/go-mms) and ships as a static Go binary with no CGO and no libiec61850 at runtime. Over MMS it browses and reads IEDs, subscribes to reports, operates controls, writes scalar settings, transfers files and reads journals. On the station bus it sniffs, subscribes to and publishes GOOSE and Sampled Values, and reads and writes their control blocks. It also parses SCL offline, runs a local MMS server from SCL, and can expose a small read-only HTTP/JSON API.
 
-The current release is v0.4.0, built on go-iec61850 v1.2.1 and go-mms v1.2.1.
+This page follows v0.8.0, built on go-iec61850 v1.6.0 and go-mms v1.4.0.
 
 ## Install
 
@@ -19,7 +19,7 @@ The current release is v0.4.0, built on go-iec61850 v1.2.1 and go-mms v1.2.1.
     Download a binary for your platform from [GitHub Releases](https://github.com/otfabric/iec61850ctl/releases). Builds exist for Linux, macOS and Windows on amd64 and arm64, plus Linux arm/v7.
   </TabItem>
   <TabItem label="go install">
-    Requires Go 1.24 or later.
+    Requires Go 1.26 or later.
 
     ```sh
     go install github.com/otfabric/iec61850ctl@latest
@@ -53,6 +53,12 @@ Most client commands need `--host`. Host, port and IED name can also come from t
 | `--log-level` | | `warn` | Structured logs on stderr: `debug`, `info`, `warn`, `error`, `off` |
 | `--log-format` | | `text` | `text` or `json` |
 | `--debug` | | off | Shorthand for `--log-level debug` |
+| `--local-tsel`, `--remote-tsel` | | `0001` | Calling and called COTP T-selector, hex, at most 4 octets |
+| `--ssel`, `--psel` | | `0001`, `00000001` | Called session and presentation selector, hex |
+| `--ap-title`, `--ae-qualifier` | | `1.1.1.999.1`, `12` | Called ACSE AP-title and AE-qualifier |
+| `--tpdu-size` | | `1024` | Proposed COTP TPDU size, 128 to 65531 |
+
+The ISO addressing defaults match libiec61850 (since v0.8.0) and suit most IEDs without any flag. An IED that refuses the connection with COTP *address unknown* (reason 3) needs the values from its SCL `ConnectedAP` (`OSI-TSEL`, `OSI-SSEL`, `OSI-PSEL`, `OSI-AP-Title`, `OSI-AE-Qualifier`), for example `--remote-tsel 00000001 --ap-title 1,3,9999,23 --ae-qualifier 23`. Selectors take an even number of hex digits; an empty value (`--remote-tsel=`) omits the parameter, and an invalid one exits 2.
 
 Retries apply only to establishing the connection. Invalid input, authentication failures and interrupts are never retried, and logs never go to stdout.
 
@@ -138,7 +144,7 @@ iec61850ctl get ds --ld MNSREF615LD0 --ln LLN0 --name MeasFlt --detailed
    ```
 </Steps>
 
-`--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`). `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically, so a dropped association ends the subscription with exit code `3` instead of waiting silently.
+`--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`). `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically, so a dropped association ends the subscription with exit code `4` instead of waiting silently.
 
 ## Control and scalar writes
 
@@ -210,7 +216,7 @@ iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
 iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
 ```
 
-`goose subscribe` checks `confRev`, `datSet`, `goID` and the member types, and supervises the stream the way an `LGOS` node does: timeouts, `stNum` and `sqNum` gaps, duplicates and restarts, with a summary per stream at the end. With `--count` it exits `4` if the count is not reached within `--duration`. `--gocb` takes the GSEControl name, `LD/name`, `IED/LD/name` or the gocbRef. Publishers whose MMS domain is the bare LD instance, such as go-iec61850 servers and `iec61850ctl server start`, need `--bare-domain`.
+`goose subscribe` checks `confRev`, `datSet`, `goID` and the member types, and supervises the stream the way an `LGOS` node does: timeouts, `stNum` and `sqNum` gaps, duplicates and restarts, with a summary per stream at the end. With `--count` it exits `5` if the count is not reached within `--duration`. `--gocb` takes the GSEControl name, `LD/name`, `IED/LD/name` or the gocbRef. Publishers whose MMS domain is the bare LD instance, such as go-iec61850 servers and `iec61850ctl server start`, need `--bare-domain`.
 
 ## Sampled Values
 
@@ -261,7 +267,8 @@ iec61850ctl scl parse --input device.cid --flatten
 `scl parse` and `scl convert` (SCL to CSV) need no device. go-iec61850 also ships a separate SCL tool, `sclparse`, with `summary`, `validate`, `detect`, `inspect`, `dump-json` and `list-*` subcommands:
 
 ```sh
-go install github.com/otfabric/go-iec61850/scl/cmd/sclparse@latest
+# Release binaries are on https://github.com/otfabric/go-iec61850/releases, or from a checkout:
+# make build   (sclparse is a nested module since go-iec61850 v1.3.0)
 sclparse summary station.scd
 sclparse validate --strict station.scd
 sclparse list-reports --json station.scd
@@ -291,6 +298,7 @@ iec61850ctl server start --scl device.cid --values device.json --port 102
 | `--ready-json` | Print one readiness JSON line on stdout after bind |
 | `--fixture-id` | Fixture revision included in the readiness line |
 | `--files-dir` | Serve a directory read-only through the MMS file services |
+| `--allow-readonly-fc-writes` | Accept client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`), for simulators and test fixtures only. Off by default since v0.7.0: IEC 61850-7-2 makes them read-only, and such a write is answered object-access-denied |
 | `--max-connections` | Reserved; not enforced |
 
 Binding port 102 may need elevated privileges; use `--port 1102` for testing, or `--port 0` for an ephemeral port that the readiness line reports. Every server registers handlers for `InteropLD/GGIO1.SPCSO1` (direct), `SPCSO2` (SBO) and `SPCSO3` (SBOw), which update the matching `stVal`; for other models they are inert. `server generate-config` exports a libiec61850 `.cfg` from serialized JSON for external C tooling; iec61850ctl does not run `.cfg` files.
@@ -321,15 +329,19 @@ Exit codes are stable, so scripts can tell failures apart:
 | Code | Meaning |
 |---|---|
 | `0` | Success |
-| `1` | Failure (unclassified) |
-| `2` | Usage error or invalid input, including a refused `goose publish` or `sv publish` |
-| `3` | Connection failed or lost |
-| `4` | Timeout, or `--count` not reached before `--duration` |
-| `5` | Not found: object, file, IED, RCB, control block, network interface |
-| `6` | Rejected or access denied, including failed controls and raw-socket permission errors |
-| `7` | Write verification, control confirmation or control block enable read-back mismatch |
+| `2` | Usage error: invalid flag, argument or value, including a refused `goose publish` or `sv publish` without `--yes`, `--iface` or `--live` |
+| `3` | Invalid reference, configuration or SCL |
+| `4` | Connection failed or lost, including a dropped report subscription |
+| `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
+| `6` | Rejected by the server, including failed select or operate, an MMS access-denied result and a refused GoCB or MSVCB write |
 | `8` | Service not supported by the server or platform, such as raw Ethernet on Windows |
-| `130` | Interrupted |
+| `9` | Permission: authentication failed, a service the server refuses as not permitted, or a raw-socket permission error |
+| `10` | Failure (unclassified) |
+| `11` | Not found: object, file, dataset, IED, RCB, journal, control block, network interface, including an MMS *object-non-existent* answer |
+| `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`) or control block enable read-back mismatch |
+| `130` | Interrupted (SIGINT or SIGTERM) |
+
+The codes follow the OT Fabric CLI exit-code table since v0.5.0. `IEC61850CTL_FORMAT` (or `IEC61850CTL_OUTPUT_FORMAT`) sets the default of `--format` on the commands that have it.
 
 With `--format json`, `control operate` and `set object` still print their JSON document when they fail after reaching execution, and the exit code follows `status` or `write_ok`. The full machine contract per command is in [docs/AUTOMATION.md](https://github.com/otfabric/iec61850ctl/blob/main/docs/AUTOMATION.md).
 

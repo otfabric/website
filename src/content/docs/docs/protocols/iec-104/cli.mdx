@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[iec104ctl](https://github.com/otfabric/iec104ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files, over TCP, TLS or the application-layer security of IEC 62351-5. As a controlled station it simulates an RTU from a YAML model. It is built on [go-iec104](/docs/protocols/iec-104/library/). This page describes v0.2.0, which adds IEC 62351-5 and is built on go-iec104 v0.0.4.
+[iec104ctl](https://github.com/otfabric/iec104ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files, over TCP, TLS or the application-layer security of IEC 62351-5. As a controlled station it simulates an RTU from a YAML model. It is built on [go-iec104](/docs/protocols/iec-104/library/). This page describes v0.6.0, built on go-iec104 v0.2.0. IEC 62351-5 arrived in v0.2.0.
 
 <Aside type="caution" title="Responsible use">
 iec104ctl sends real telecontrol requests. Use it only on stations and networks you own or are authorized to test. A station often accepts few connections and sends its events on only one: connecting to a station in service can take its events away from the control centre.
@@ -62,7 +62,7 @@ Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel
     ```
   </TabItem>
   <TabItem label="Go">
-    Requires Go 1.25 or later:
+    Requires Go 1.26 or later:
 
     ```sh
     go install github.com/otfabric/iec104ctl@latest
@@ -257,6 +257,7 @@ The safety model:
 - A command is sent **exactly once**. It is never repeated, also not when its confirmation does not arrive (exit 5).
 - A refusal by the station exits 6, and the message says which step was refused.
 - `client reset` has no default for `--qualifier` (`process` or `events`).
+- `client clock --time` refuses a time outside the years 1970 to 2069 (in the `--timezone` zone) with exit 3, because a time tag carries a two-digit year.
 - There is no dry-run flag; the simulated station is the place to rehearse.
 
 ```sh
@@ -279,6 +280,9 @@ iec104ctl client file get --ip 192.168.1.10 --ioa 30000 --name 1 --output record
 | 6 | The station refused the request (including cause 17 under IEC 62351-5), or a protocol error |
 | 7 | Partial success: a valid result that holds failures (a refused address in `read`, a failed test in `ping`) |
 | 10 | Output or internal error |
+| 130 | Interrupted by Ctrl-C or SIGTERM before a result |
+
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool. `IEC104CTL_FORMAT` sets the default of `--format` (`IEC104CTL_OUTPUT_FORMAT` is still accepted). Files iec104ctl writes (`client file get --output`, `server generate-config --output` and the uploads the station stores) are readable by their owner only (mode 0600).
 
 ## Environment variables
 
@@ -324,9 +328,12 @@ files:
 
 uploads:
   accept: true
+  max_files: 64          # the defaults
+  max_file_size: 1048576
+  max_total_size: 16777216
 ```
 
-The station answers general, group and counter interrogations, read, clock synchronization, the test command and the reset process command. It executes commands on their `target` point, direct or select-before-operate (`select_required`, `select_timeout` default 30 s), and reports the change with cause 11. Values with `simulate` change by themselves (`toggle`, `ramp`, `sine`, `random`, `count`). State changes are queued until a controlling station acknowledges them; measured values are not kept. It serves any number of connections, and queued events go to the one that started data transfer last. It serves one common address per instance.
+The station answers general, group and counter interrogations, read, clock synchronization, the test command and the reset process command. It executes commands on their `target` point, direct or select-before-operate (`select_required`, `select_timeout` default 30 s), and reports the change with cause 11. Values with `simulate` change by themselves (`toggle`, `ramp`, `sine`, `random`, `count`). State changes are queued until a controlling station acknowledges them; measured values are not kept. It serves any number of connections, and queued events go to the one that started data transfer last. It serves one common address per instance. With `uploads.accept` the station keeps at most 64 delivered files of up to 1 MiB each and 16 MiB in total by default (since v0.6.0); a delivery beyond a limit is refused when it is announced, and a file delivered to an address that already holds one replaces it.
 
 With `--secure` and the certificate, key and trust flags, every controlling station must associate with a certificate `--security-trust` accepts, and each one (each AIM) gets its own association; `--association-id` is the station's AIS. `--roles viewer,operator,...` gives every controlling station those roles of IEC TS 60870-5-7 (`viewer`, `operator`, `engineer`, `installer`, `secadm`, `secaud`, `rbacmnt`), and a request no role permits is refused with cause 17. The station logs `secured` when a controlling station has associated, `security-refused` when an association is refused, and `refused` for a request its roles do not permit.
 

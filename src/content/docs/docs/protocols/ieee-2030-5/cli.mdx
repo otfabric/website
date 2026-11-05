@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[ieee20305ctl](https://github.com/otfabric/ieee20305ctl) is a command-line tool for IEEE 2030.5 in both roles, built on [go-ieee20305](/docs/protocols/ieee-2030-5/library/). As a **device** it reads a server's DeviceCapability, registers and checks the PIN, lists the DER programs, controls and tariffs the server assigns, answers events, reports metering and DER status, and subscribes to notifications; `client run` is a whole device agent. As a **server** it serves every resource of the IEEE 2030.5 WADL from a YAML seed, and an operator issues and cancels controls while it runs. It also makes a test PKI and checks certificates the way an IEEE 2030.5 peer does. Output is text, a table or JSON, with stable exit codes. This page follows v0.2.1.
+[ieee20305ctl](https://github.com/otfabric/ieee20305ctl) is a command-line tool for IEEE 2030.5 in both roles, built on [go-ieee20305](/docs/protocols/ieee-2030-5/library/). As a **device** it reads a server's DeviceCapability, registers and checks the PIN, lists the DER programs, controls and tariffs the server assigns, answers events, reports metering and DER status, and subscribes to notifications; `client run` is a whole device agent. As a **server** it serves every resource of the IEEE 2030.5 WADL from a YAML seed, and an operator issues and cancels controls while it runs. It also makes a test PKI and checks certificates the way an IEEE 2030.5 peer does. Output is text, a table or JSON, with stable exit codes. This page follows v0.4.0, built on go-ieee20305 v0.6.0.
 
 <Aside type="caution" title="Responsible use">
 A device certificate is the identity of a real device: what ieee20305ctl sends with it, the server attributes to that device. `client respond`, `report`, `der put`, `put`, `post` and `delete` change what the server holds, and the operator commands change what devices receive. Use ieee20305ctl against servers you run or are authorized to test, with certificates issued for testing.
@@ -102,7 +102,7 @@ device  device-1.pem  device-1.key  518C61748B9C454A99D44A5260F0E8996E5F89B7  21
 device  device-2.pem  device-2.key  2C2E719BCEC2D37A1D297B0A03FF2DE7FDCFB6C9  118598599005
 ```
 
-`--hmn` gives the device certificates a HardwareModuleName, as real device certificates have. `cert lfdi` prints the identifiers of any certificate, `cert inspect` the whole certificate, and `cert verify` checks a chain the way an IEEE 2030.5 peer does.
+`--hmn` gives the device certificates a HardwareModuleName, as real device certificates have. Every file is written with mode 0600 through a temporary file, never through a symlink, in a directory of mode 0750. `cert lfdi` prints the identifiers of any certificate, `cert inspect` the whole certificate, and `cert verify` checks a chain the way an IEEE 2030.5 peer does.
 
 ## Connecting to a server
 
@@ -166,7 +166,7 @@ ieee20305ctl client der put --settings derg.xml --capability dercap.xml
 ieee20305ctl client subscribe /derp/1/derc --listen 127.0.0.1:18444 --count 1
 ```
 
-The server must reach the listener of `client subscribe`: give `--notify-url` when `--listen` is not that address.
+The server must reach the listener of `client subscribe`: give `--notify-url` when `--listen` is not that address. The listener takes notifications only from a peer with a server certificate (serverAuth) of the device's CAs, and only those of the subscription it made; `--listen-allow-anonymous` also takes peers without a certificate, as the GridAPPS-D server posts. `client run --notify-listen` has the same rule, and `--notify-allow-anonymous`.
 
 ## Running a device agent
 
@@ -196,7 +196,7 @@ ieee20305ctl server start --listen 127.0.0.1:8443 --cert pki/server.pem --key pk
 
 The server serves every resource of the WADL, keeps the event lifecycle and the Responses, sends notifications, and writes a record for everything that happens. `--profile csipaus` serves CSIP-AUS, `--ccm8` offers CCM_8 first, `--in-band` lets unknown devices register themselves, and `--advertise` announces it with DNS-SD. The [seed file](https://github.com/otfabric/ieee20305ctl/blob/main/docs/server-config.md) is YAML or JSON.
 
-While it runs, the operator commands act on it through the control socket. Those that change what devices receive need `--yes`:
+While it runs, the operator commands act on it through the control socket. `server start` replaces a stale socket at `--control-socket` but refuses to remove anything else there (exit 4, `control_socket_failed`). Those that change what devices receive need `--yes`:
 
 ```sh
 export IEEE20305CTL_CONTROL_SOCKET=/tmp/ieee20305.sock
@@ -248,8 +248,9 @@ Results go to stdout as text, `--format table` or `--format json`, whose fields 
 | 5 | Timeout; `outcome_unknown` when the request may have changed the server, which is never sent again by itself |
 | 6 | The server refused (4xx, 5xx), broke the protocol, or has another PIN |
 | 10 | Output or internal error |
+| 130 | Interrupted (Ctrl-C or SIGTERM) before a one-shot command has its result |
 
-With `--format json`, a failure is an object with `error.kind`, a stable `error.code` and the HTTP detail. [exitcodes.md](https://github.com/otfabric/ieee20305ctl/blob/main/docs/exitcodes.md) lists every code.
+`IEEE20305CTL_FORMAT` sets the default format (`IEEE20305CTL_OUTPUT_FORMAT` is still accepted). With `--format json`, a failure is an object with `error.kind`, a stable `error.code` and the HTTP detail. [exitcodes.md](https://github.com/otfabric/ieee20305ctl/blob/main/docs/exitcodes.md) lists every code.
 
 ## Limitations
 

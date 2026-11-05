@@ -11,7 +11,7 @@ import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 OCPP (Open Charge Point Protocol) is the protocol between an EV charging station and the system that manages it. The Open Charge Alliance (OCA) publishes it, with a JSON schema for every message. This page explains **OCPP-J**, OCPP over WebSocket with JSON, in the three versions the OT Fabric projects implement: **1.6J** (with the Security Whitepaper extensions), **2.0.1** and **2.1**.
 
 <Aside type="caution" title="Pre-release">
-[go-ocpp](/projects/go-ocpp/) v0.1.3 and [ocppctl](/projects/ocppctl/) v0.1.1 are pre-release, and their APIs and flags may still change. They are interoperability tested, not OCA certified. See [Testing and interop](/docs/protocols/ocpp/testing/).
+[go-ocpp](/projects/go-ocpp/) v0.2.0 and [ocppctl](/projects/ocppctl/) v0.3.0 are pre-release, and their APIs and flags may still change. They are interoperability tested, not OCA certified. See [Testing and interop](/docs/protocols/ocpp/testing/).
 </Aside>
 
 ## The two roles
@@ -113,8 +113,8 @@ OCPP is one of several protocols around a charger. ISO 15118 runs between the ca
 
 | Project | What it is |
 |---|---|
-| [go-ocpp](/projects/go-ocpp/) | OCPP 1.6J, 2.0.1 and 2.1 for Go: a charging station client and a CSMS server on one RPC engine, every action typed and validated against the OCA schemas, security profiles 1 to 3, compression, a test kit and certificate helpers. One dependency. Pre-release, v0.1.3. |
-| [ocppctl](/projects/ocppctl/) | A command-line tool on go-ocpp: probe a CSMS, send any message, simulate one or hundreds of stations, run scenarios in CI, and serve a CSMS for station development. v0.1.1. |
+| [go-ocpp](/projects/go-ocpp/) | OCPP 1.6J, 2.0.1 and 2.1 for Go: a charging station client and a CSMS server on one RPC engine, every action typed and validated against the OCA schemas, security profiles 1 to 3, compression, a test kit and certificate helpers. One dependency. Pre-release, v0.2.0. |
+| [ocppctl](/projects/ocppctl/) | A command-line tool on go-ocpp: probe a CSMS, send any message, simulate one or hundreds of stations, run scenarios in CI, and serve a CSMS for station development. v0.3.0. |
 | [ocpp-interop](/projects/ocpp-interop/) | Docker images of five independent OCPP implementations behind one container contract, with deterministic fixtures for every action of each version. v0.4.1. |
 
 <CardGrid>

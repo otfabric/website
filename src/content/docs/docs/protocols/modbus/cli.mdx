@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
-[modbusctl](/projects/modbusctl/) is a command-line tool for Modbus over TCP, UDP and serial lines (RTU and ASCII). It is built on [go-modbus](/docs/protocols/modbus/library/) and covers the whole path from "what is this device?" to a hardware-free replay of it. Output is text, a table or JSON, with stable exit codes for scripts and CI. This page follows modbusctl v3.2.0.
+[modbusctl](/projects/modbusctl/) is a command-line tool for Modbus over TCP, UDP and serial lines (RTU and ASCII). It is built on [go-modbus](/docs/protocols/modbus/library/) and covers the whole path from "what is this device?" to a hardware-free replay of it. Output is text, a table or JSON, with stable exit codes for scripts and CI. This page follows modbusctl v3.5.1, built on go-modbus v1.11.1.
 
 ## Install
 
@@ -36,7 +36,7 @@ Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel
     Same steps with `darwin` in the file name and `shasum -a 256 -c -` to verify. If macOS refuses a binary downloaded with a browser, run `xattr -d com.apple.quarantine /usr/local/bin/modbusctl`.
   </TabItem>
   <TabItem label="From source">
-    Requires Go 1.25 or later.
+    Requires Go 1.26 or later.
     ```sh
     git clone https://github.com/otfabric/modbusctl.git
     cd modbusctl
@@ -181,43 +181,45 @@ modbusctl
 ## Writing
 
 <Aside type="caution" title="client write and client diagnostic change device state">
-`client write` changes coils and holding registers. FC08 sub-functions such as `restartcommunications`, `clearcountersanddiagnosticreg` and `forcelistenonlymode` change device state too. Only use them on equipment you are authorized to change, and know what each address controls.
+`client write` changes coils and holding registers. FC08 sub-functions such as `restartcommunications`, `clearcountersanddiagnosticreg` and `forcelistenonlymode` change device state too. Only use them on equipment you are authorized to change, and know what each address controls. Both need `--yes` (since v3.3.0).
 </Aside>
 
 ```sh
 # One holding register (FC06)
-modbusctl client write --ip 192.168.1.10 --start 100 --values 1234
+modbusctl client write --ip 192.168.1.10 --start 100 --values 1234 --yes
 
 # Switch coil 8 on (FC05)
-modbusctl client write --ip 192.168.1.10 --function 5 --start 8 --values on
+modbusctl client write --ip 192.168.1.10 --function 5 --start 8 --values on --yes
 
 # A big-endian float32 setpoint: two registers, FC16
-modbusctl client write --ip 192.168.1.10 --start 200 --codec float32/layout:4321 --values 21.5
+modbusctl client write --ip 192.168.1.10 --start 200 --codec float32/layout:4321 --values 21.5 --yes
 ```
 
 The safety model is explicit:
 
+- `client write` and the state-changing `client diagnostic` sub-functions (`restartcommunications`, `changeasciiinputdelimiter`, `forcelistenonlymode`, `clearcountersanddiagnosticreg`, `clearoverruncounterandflag`) need `--yes`. Without it they exit 2 (`confirmation_required`) and send nothing. `--yes` has no environment variable, so it cannot be set by accident.
 - `--start` is required. There is no default address for a write.
-- Values, codec, quantity limits and the address range are all validated before anything is sent. A rejected command exits with code 3 and has sent nothing.
-- A write is sent exactly once and never retried. If it times out, read the value back before sending it again.
-- The documentation describes no dry-run mode and no confirmation prompt. Rehearse against a simulator instead.
+- Values, codec, quantity limits and the address range are all validated before anything is sent. A rejected command exits with code 2 or 3 and has sent nothing. Quantities are limited per function code, and ranges past 65535 are refused.
+- A write is sent exactly once and never retried. If it times out (exit 5), read the value back before sending it again.
+- There is no dry-run mode. Rehearse against a simulator.
 
 ## Output and exit codes
 
-`--format text|json|table` (or `MODBUSCTL_OUTPUT_FORMAT`) controls the final result on stdout for the client commands. Progress for `scan` and `record` goes to stderr, so stdout stays a single parseable result. Capture files take their encoding from the file name (`.mbcap`, `.mbcap.jsonl`, `.mbcap.csv`). `client poll --format json` writes one JSON object per poll (JSON Lines). With `--format json`, a fatal error is one JSON object with `kind`, `code` and `message`.
+`--format text|json|table` (or `MODBUSCTL_FORMAT`; the older `MODBUSCTL_OUTPUT_FORMAT` is still accepted) controls the final result on stdout for the client commands. Progress for `scan` and `record` goes to stderr, so stdout stays a single parseable result. Capture files take their encoding from the file name (`.mbcap`, `.mbcap.jsonl`, `.mbcap.csv`). `client poll --format json` writes one JSON object per poll (JSON Lines). With `--format json`, every fatal error, including an unknown flag or command, is one `{"error":{"kind","code","message"}}` object on stdout, with nothing on stderr unless `--debug` is set. `server static` and `server replay` print their progress to stderr.
 
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 2 | Usage error (reserved) |
+| 2 | Usage: unknown command or flag, wrong arguments, or a write without `--yes` (`confirmation_required`) |
 | 3 | Invalid input, flags or configuration |
 | 4 | Transport: TCP or UDP dial failure, or a serial port that cannot be opened |
 | 5 | Timeout: a request or network timeout on a client command (SunSpec and FC08 diagnostics report timeouts as 6) |
 | 6 | Protocol error or Modbus exception |
 | 7 | Partial success: valid output, but some units, scan requests or polls failed |
 | 10 | Output, internal or unknown error |
+| 130 | Interrupted by Ctrl-C or SIGTERM before a result |
 
-Match on the exit code or the JSON `code`, not on message text.
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool; 1, 8 and 9 are not used. Match on the exit code or the JSON `code`, not on message text.
 
 ## Environment variables
 
@@ -295,6 +297,8 @@ modbusctl capture decode --input site.mbcap --target 2 --function 4 --profile me
 modbusctl capture strings --input session.mbcap      # device names, in four byte orders
 modbusctl capture frequencies --input session.mbcap  # registers that read like ~50 Hz
 ```
+
+Text and table output escape control characters, bidi controls and invalid UTF-8 in strings that come from a device or a file, so a device cannot inject terminal escape sequences; JSON output is unchanged. modbusctl does not write through a symbolic link at an output path, refuses an `--output` that names the command's own input, and creates captures, exports and discovery results with mode 0600. Blocks files and device profiles over 16 MiB are refused.
 
 `discover` is Modbus TCP only. Unless you pass `--listen`, the servers listen on all interfaces, and without TLS they accept any client, so run them on trusted networks. `discover` caps large subnets unless you pass `--force-large-scan`, and `--resolve-mac` uses raw sockets that may need `CAP_NET_RAW`.
 

@@ -8,11 +8,11 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-[sparkplugbctl](/projects/sparkplugbctl/) is the command-line tool for Sparkplug B, built on [go-sparkplugb](/docs/profiles/sparkplugb/library/). It watches a broker, publishes and decodes payloads, and plays any Sparkplug role for testing a SCADA host or an edge gateway. This page follows v0.1.1.
+[sparkplugbctl](/projects/sparkplugbctl/) is the command-line tool for Sparkplug B, built on [go-sparkplugb](/docs/profiles/sparkplugb/library/). It watches a broker, publishes and decodes payloads, and plays any Sparkplug role for testing a SCADA host or an edge gateway. This page follows v0.3.6, built on go-sparkplugb v0.3.3.
 
 ## Install
 
-Download the archive for your platform (Linux, macOS and Windows, amd64 and arm64) from [GitHub Releases](https://github.com/otfabric/sparkplugbctl/releases), check its SHA-256 checksum and put `sparkplugbctl` on your `PATH`. With Go 1.27 or later:
+Download the archive for your platform (Linux, macOS and Windows, amd64 and arm64) from [GitHub Releases](https://github.com/otfabric/sparkplugbctl/releases), check its SHA-256 checksum and put `sparkplugbctl` on your `PATH`. With Go 1.27.3 or later (the version its `go.mod` requires):
 
 ```sh
 go install github.com/otfabric/sparkplugbctl@latest
@@ -41,7 +41,7 @@ sparkplugbctl version   # prints the go-sparkplugb version it is built with
 | `--tls-cert`, `--tls-key`, `--tls-ca` | `SPARKPLUGBCTL_TLS_CERT`, `SPARKPLUGBCTL_TLS_KEY`, `SPARKPLUGBCTL_TLS_CA` | none |
 | `--json` | `SPARKPLUGBCTL_JSON` | `false` |
 
-A flag on the command line wins over its environment variable.
+A flag on the command line wins over its environment variable. `SPARKPLUGBCTL_FORMAT=json` (or `SPARKPLUGBCTL_OUTPUT_FORMAT`) has the effect of `--json`. `--tls-ca` applies with or without a client certificate.
 
 ## Watch a broker
 
@@ -99,6 +99,23 @@ sparkplugbctl publish --topic "spBv1.0/plant/NDATA/gw1" \
 sparkplugbctl encode --metric "temperature:Double=22.5" | sparkplugbctl decode
 base64 -d < payload.b64 | sparkplugbctl decode --json
 ```
+
+## Exit codes
+
+The codes follow the OT Fabric CLI table since v0.2.0 ([docs/exitcodes.md](https://github.com/otfabric/sparkplugbctl/blob/main/docs/exitcodes.md)):
+
+| Code | Meaning |
+|---|---|
+| 0 | Success; `listen`, `host`, `app` and `edge` also exit 0 when stopped with Ctrl-C or SIGTERM |
+| 2 | Usage: unknown command or flag, missing required flag, an invalid `SPARKPLUGBCTL_*` value |
+| 3 | Invalid input: an unreadable input or TLS file, a payload that does not decode, a metric that does not parse |
+| 4 | Transport: connecting, subscribing or publishing failed |
+| 5 | Timeout |
+| 9 | Permission refused by the operating system |
+| 10 | Output or internal error |
+| 130 | Interrupted before a result |
+
+A metric whose value does not fit its datatype, such as a UInt8 of 256, shows no value in the output rather than a truncated one.
 
 <Aside type="caution" title="Limitations">
 MQTT 3.1.1 only, like go-sparkplugb. `--metric` does not take DateTime, arrays, DataSets or Templates, though `listen` and `decode` show them. `publish` sends exactly what you give it: it does not check that a `seq` fits the node's session, so use it to probe a host, not to impersonate a running edge node.

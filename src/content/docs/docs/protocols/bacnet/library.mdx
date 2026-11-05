@@ -22,7 +22,7 @@ Client only. go-bacnet is tested on every change against five open-source BACnet
 go get github.com/otfabric/go-bacnet@latest
 ```
 
-Requires **Go 1.23** or newer.
+Requires **Go 1.26** or newer; CI tests Go 1.26 and 1.27. This page follows go-bacnet v0.5.0.
 
 The module is split by protocol layer:
 
@@ -305,7 +305,7 @@ Use `errors.Is` and `errors.As`; do not parse error strings.
 | `bacnet.ErrInvalidConfig` | `client.New` was given an option it cannot run with |
 | `bacnet.ErrDeviceManagementDisabled` | DeviceCommunicationControl or ReinitializeDevice without opt-in |
 
-A remote error is a definite answer and is never wrapped in `OutcomeUnknownError`. An Abort with reason `segmentation-not-supported`, `buffer-overflow` or `apdu-too-long` means the reply did not fit: ask for less. Context cancellation and deadlines stay visible to `errors.Is` even when wrapped.
+Since v0.5.0 a decoded value that does not fit its Go field (a VT session identifier above 255, a file position past the signed 32-bit range, an extended vendor identifier above 65535) is refused with `ErrMalformed` instead of keeping its low bits; [ERRORS.md](https://github.com/otfabric/go-bacnet/blob/main/ERRORS.md) lists the fields. `device.ReadSnapshot` reports such values in `PartialErrors`, and the file services return `ErrProtocolViolation` for a position that would wrap. A remote error is a definite answer and is never wrapped in `OutcomeUnknownError`. An Abort with reason `segmentation-not-supported`, `buffer-overflow` or `apdu-too-long` means the reply did not fit: ask for less. Context cancellation and deadlines stay visible to `errors.Is` even when wrapped.
 
 ```go
 c, err := client.New(client.WithSegmentWindow(0))

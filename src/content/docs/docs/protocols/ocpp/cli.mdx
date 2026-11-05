@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[ocppctl](https://github.com/otfabric/ocppctl) is a command-line tool for OCPP 1.6J, 2.0.1 and 2.1, in both roles, built on [go-ocpp](/docs/protocols/ocpp/library/). As a **Charging Station** it probes a CSMS, sends any message, runs one or thousands of simulated stations and runs scenarios with expectations. As a **CSMS** it accepts real or simulated stations, answers them from a model, streams everything they send and sends them CALLs on request. Offline, it validates payloads, decodes frames and computes certificate hashes. Output is text, a table or JSON, with stable exit codes.
+[ocppctl](https://github.com/otfabric/ocppctl) is a command-line tool for OCPP 1.6J, 2.0.1 and 2.1, in both roles, built on [go-ocpp](/docs/protocols/ocpp/library/). As a **Charging Station** it probes a CSMS, sends any message, runs one or thousands of simulated stations and runs scenarios with expectations. As a **CSMS** it accepts real or simulated stations, answers them from a model, streams everything they send and sends them CALLs on request. Offline, it validates payloads, decodes frames and computes certificate hashes. Output is text, a table or JSON, with stable exit codes. This page follows ocppctl v0.3.0, built on go-ocpp v0.2.0.
 
 <Aside type="caution" title="Responsible use">
 OCPP controls real chargers and real money. `server call` resets stations and starts and stops sessions; `client call` and the simulated stations start and stop transactions a CSMS may bill; a simulated station under the identity of a real one can push that station off its CSMS. Use ocppctl on systems you own or are authorized to test, with test identities and test tokens.
@@ -46,6 +46,7 @@ sudo install -m 0755 "$(find ocppctl-dl -type f -name 'ocppctl*' | head -n1)" /u
 ```
   </TabItem>
   <TabItem label="Go">
+Requires Go 1.26 or later.
 ```sh
 go install github.com/otfabric/ocppctl@latest
 ```
@@ -226,18 +227,21 @@ ocppctl cert hash --cert cs001.pem --issuer ca.pem       # CertificateHashData f
 
 ## Output formats and exit codes
 
-`--format text|json|table` (or `OCPPCTL_OUTPUT_FORMAT`) controls the result on stdout; progress and the `--debug` frame trace go to stderr. Streams (`client run`, `server start`) write one event per line, as JSON Lines with `--format json`. With JSON, a failure is a single error object with `kind`, `code`, `message` and an `ocpp` object (the CALLERROR code, the field that failed, the HTTP status of a refused handshake).
+`--format text|json|table` (or `OCPPCTL_FORMAT`; `OCPPCTL_OUTPUT_FORMAT` is still accepted) controls the result on stdout; progress and the `--debug` frame trace go to stderr. Streams (`client run`, `server start`) write one event per line, as JSON Lines with `--format json`. With JSON, a failure is a single error object with `kind`, `code`, `message` and an `ocpp` object (the CALLERROR code, the field that failed, the HTTP status of a refused handshake).
 
 | Code | Meaning |
 |---|---|
 | 0 | Success |
 | 2 | Usage, or `server call` of a state-changing action without `--yes` |
 | 3 | Invalid input; nothing was sent |
-| 4 | Transport: cannot connect, TLS, handshake refused, no common version, connection lost |
+| 4 | Transport: cannot connect, TLS, handshake refused, no common version, connection lost; `station_busy` when more than 64 CALLs to one station wait (not sent, safe to retry) |
 | 5 | Timeout (`outcome_unknown` when the request may have changed state) |
 | 6 | The peer answered with a CALLERROR or an invalid response, or did not accept the boot |
 | 7 | Partial success: failed scenario steps or stations |
-| 10 | Output or internal error, or interrupted |
+| 10 | Output or internal error; `server start` also stops with 10 when its output fails |
+| 130 | Interrupted by Ctrl-C or SIGTERM before a result |
+
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool. Text and table output escape control characters in strings a peer chose (identities, action names, CALLERROR descriptions, the `--debug` trace) as `\xNN`, and keep payloads as sent, so integers above 2^53 are not rounded; JSON output is unchanged. Errors redact credentials in a malformed `--url`.
 
 ## Environment variables
 
@@ -249,13 +253,13 @@ Most flags have an `OCPPCTL_*` variable, and a flag on the command line wins. Th
 | `OCPPCTL_PASSWORD_FILE`, `OCPPCTL_PASSWORD` | `--password-file`, or the password itself |
 | `OCPPCTL_OCPP_VERSION` | `--ocpp-version` |
 | `OCPPCTL_TLS_CA`, `OCPPCTL_TLS_CERT`, `OCPPCTL_TLS_KEY` | `--tls-ca`, `--tls-cert`, `--tls-key` |
-| `OCPPCTL_OUTPUT_FORMAT` | `--format` |
+| `OCPPCTL_FORMAT` (or `OCPPCTL_OUTPUT_FORMAT`) | `--format` |
 | `OCPPCTL_CONTROL_SOCKET` | `--control-socket` |
 
 The README lists all of them.
 
 ## Tested against
 
-ocppctl v0.1.1 was run against the five reference implementations of [ocpp-interop](/docs/protocols/ocpp/testing/) v0.4.1, with every fixture sample in both directions. Of 1218 exchanges, 1154 passed, 29 were answered with a CALLERROR, 32 were skipped because the reference could not send the message, and 3 failed on schema-invalid responses of ocpp-go, which ocppctl refuses. Each one is explained in [docs/KNOWN_ISSUES.md](https://github.com/otfabric/ocppctl/blob/main/docs/KNOWN_ISSUES.md).
+ocppctl v0.3.0 was run against the five reference implementations of [ocpp-interop](/docs/protocols/ocpp/testing/) v0.5.3 (the same counts as v0.1.1 against v0.4.1), with every fixture sample in both directions. Of 1218 exchanges, 1154 passed, 29 were answered with a CALLERROR, 32 were skipped because the reference could not send the message, and 3 failed on schema-invalid responses of ocpp-go, which ocppctl refuses. Each one is explained in [docs/KNOWN_ISSUES.md](https://github.com/otfabric/ocppctl/blob/main/docs/KNOWN_ISSUES.md).
 
 <LinkCard title="ocppctl on GitHub" description="README, docs/station-model.md, docs/scenarios.md, docs/server-config.md, docs/exitcodes.md" href="https://github.com/otfabric/ocppctl" />

@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-knx](/projects/go-knx/) is a native Go implementation of KNX over KNXnet/IP: frames, cEMI, datapoint types, discovery, a tunnelling client, routing, group communication and a KNXnet/IP server with virtual devices, with KNX IP Secure and Data Secure. It is pure Go with no dependencies outside the standard library and no cgo, and runs on embedded Linux (ARM, ARM64), servers, macOS and Windows. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-knx). This page follows v0.4.2.
+[go-knx](/projects/go-knx/) is a native Go implementation of KNX over KNXnet/IP: frames, cEMI, datapoint types, discovery, a tunnelling client, routing, group communication and a KNXnet/IP server with virtual devices, with KNX IP Secure and Data Secure. It is pure Go with no dependencies outside the standard library and no cgo, and runs on embedded Linux (ARM, ARM64), servers, macOS and Windows. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-knx). This page follows v0.7.0.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-knx
 ```
 
-Go 1.23 or later. The packages:
+Go 1.26 or later (CI runs Go 1.26 and 1.27). The packages:
 
 | Package | Purpose |
 |---|---|
@@ -124,7 +124,16 @@ c, err := devmgmt.Dial(ctx, "192.168.1.10")
 // Read the serial number: interface object 0 (device), property 11.
 ```
 
-`devmgmt` reads and writes the interface object properties of a KNXnet/IP interface or router itself (`M_PropRead`, `M_PropWrite`) over UDP or TCP. It manages the interface, not the devices on the bus.
+`devmgmt` reads and writes the interface object properties of a KNXnet/IP interface or router itself (`M_PropRead`, `M_PropWrite`) over UDP or TCP. A call without a context deadline ends after `devmgmt.DefaultTimeout` (3 s) with `knx.ErrTimeout`.
+
+A device on the KNX network is managed through the client's link with `client.Device`: remote property services (A_PropertyValue_Read and _Write, A_PropertyDescription_Read, A_DeviceDescriptor_Read), connectionless or in a transport connection.
+
+```go
+dev := c.Device(knx.MustParseIndividualAddress("1.1.5"), client.WithToolKey(toolKey))
+serial, err := dev.PropertyRead(ctx, 0, 11, 1, 1) // object 0 (device), PID 11, start 1, one element
+```
+
+With the device's tool key (`client.WithToolKey`, or the key in the client's Data Secure table) the access is secured with KNX Data Secure tool access (S-A_Sync, then S-A_Data); `PropertyWrite` refuses data above `client.MaxPropertyData` (250 octets) before sending. The `mgmt` package has the device side, `mgmt.Responder`.
 
 ## A KNXnet/IP server with virtual devices
 
@@ -140,7 +149,7 @@ s.AddDevice(dev)
 err := s.Serve(ctx) // until ctx is done
 ```
 
-The server answers discovery and description, accepts tunnelling over UDP and TCP from several clients (one per tunnelling address), offers busmonitor and device management connections, and routes when `server.WithRouting(true)` is set. Virtual devices store written values and answer reads according to their group object flags; `device.OnChange` reports writes. KNXnet/IP clients connect to it like to a real IP interface: ETS-style tools, Home Assistant through xknx, Calimero and knxd. It is a KNXnet/IP server with an application-level device model, not an emulation of a TP line.
+The server answers discovery and description, accepts tunnelling over UDP and TCP from several clients (one per tunnelling address), offers busmonitor and device management connections, and routes when `server.WithRouting(true)` is set. Virtual devices store written values and answer reads according to their group object flags; `device.OnChange` reports writes. The server's own device answers remote device management at its individual address, and `server.WithToolKey` makes it accept only access secured with that tool key. A client that reconnects from the same endpoints restarts at sequence 0, and frames of a channel are accepted only from that connection's endpoints. KNXnet/IP clients connect to it like to a real IP interface: ETS-style tools, Home Assistant through xknx, Calimero and knxd. It is a KNXnet/IP server with an application-level device model, not an emulation of a TP line.
 
 <Aside type="note" title="Serial numbers">
 go-knx has no KNX manufacturer code. The server's serial number starts with the placeholder `0x00FA`; a product built on it sets its own with `server.WithSerial`.
@@ -166,7 +175,7 @@ table, err := kr.DataSecure(seq) // group keys and senders from the keyring
 c, err := client.DialTunnel(ctx, "192.168.1.10", nil, client.WithDataSecure(table))
 ```
 
-With a Data Secure table the client secures outgoing telegrams to groups that have a key and opens incoming ones, with per-sender sequence numbers, and answers `S-A_Sync`. With a tool key for its own address it also acts as the **surrogate** through which tools such as Calimero send secured group telegrams. General point-to-point Data Secure, beyond the surrogate service, is not implemented.
+With a Data Secure table the client secures outgoing telegrams to groups that have a key and opens incoming ones, with per-sender sequence numbers, and answers `S-A_Sync`. With a tool key for its own address it also acts as the **surrogate** through which tools such as Calimero send secured group telegrams. Point-to-point Data Secure is implemented for tool access (device management with a device's tool key, as tool and as device); device-to-device link keys and secure commissioning (FDSK) are not.
 
 ## Keyrings
 
@@ -180,12 +189,12 @@ Every error matches a sentinel of the root package with `errors.Is`:
 |---|---|
 | `knx.ErrInvalidAddress`, `knx.ErrInvalidValue`, `knx.ErrInvalidOption` | Bad input, refused before anything is sent |
 | `knx.ErrMalformed`, `knx.ErrUnsupported` | A frame that cannot be decoded, or a service, version or type not implemented |
-| `knx.ErrTimeout` | No answer in time: connect, description, group read |
+| `knx.ErrTimeout` | No answer in time: connect, description, group read, device management. A cancelled context matches `context.Canceled` instead |
 | `knx.ErrConnectionLost`, `knx.ErrClosed` | The tunnel is gone, or was closed |
 | `knx.ErrRejected`, `knx.ErrBusy` | The peer refused with a KNXnet/IP status code, or a limit was reached |
 | `knx.ErrNotConfirmed` | The `L_Data.con` reported an error or did not arrive |
 
-`knxnetip.StatusOf(err)` returns the KNXnet/IP status code behind an `ErrRejected`. The full list is in [ERRORS.md](https://github.com/otfabric/go-knx/blob/main/ERRORS.md).
+`knxnetip.StatusOf(err)` returns the KNXnet/IP status code behind an `ErrRejected`. Calls that collect answers are bounded: `GroupReadAll` stops at `client.DefaultMaxResponses` (1000, `client.WithMaxResponses`) and `discovery.Search` at `discovery.DefaultMaxResults` (256, `discovery.WithMaxResults`). A frame too long for a KNXnet/IP datagram is refused with `knx.ErrInvalidValue` and the tunnel stays up. The full list is in [ERRORS.md](https://github.com/otfabric/go-knx/blob/main/ERRORS.md).
 
 ## Logging and metrics
 
@@ -193,6 +202,6 @@ Every error matches a sentinel of the root package with `errors.Is`:
 
 ## What is not implemented
 
-KNX TP1, RF and powerline media directly (go-knx reaches them through IP interfaces and routers), ETS project import, point-to-point Data Secure beyond the surrogate service, asking peers by `S-A_Sync` automatically, and KNX IoT. Status and roadmap: [IMPLEMENTATION-STATUS.md](https://github.com/otfabric/go-knx/blob/main/docs/IMPLEMENTATION-STATUS.md).
+KNX TP1, RF and powerline media directly (go-knx reaches them through IP interfaces and routers), ETS project import, point-to-point Data Secure beyond tool access (link keys, FDSK), asking peers by `S-A_Sync` automatically, and KNX IoT. Status and roadmap: [IMPLEMENTATION-STATUS.md](https://github.com/otfabric/go-knx/blob/main/docs/IMPLEMENTATION-STATUS.md).
 
 <LinkCard title="knxctl" description="The same library on the command line." href="/docs/protocols/knx/cli/" />

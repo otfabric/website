@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
-[bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. Output is text, a table or JSON, with stable exit codes.
+[bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. Output is text, a table or JSON, with stable exit codes. This page follows bacnetctl v0.3.0, built on go-bacnet v0.5.0.
 
 <Aside type="caution" title="Status and scope">
 bacnetctl is a **client only**: it does not simulate a BACnet device. Version 0.1.0 is tested automatically against a simulated device and was run by hand against five open-source BACnet stacks in containers. It has **not been run against physical devices**.
@@ -64,7 +64,7 @@ Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel
     ```
   </TabItem>
   <TabItem label="Go toolchain">
-    Requires Go 1.25 or later.
+    Requires Go 1.26 or later.
 
     ```sh
     go install github.com/otfabric/bacnetctl@latest
@@ -191,7 +191,7 @@ bacnetctl bbmd bdt --device 10.0.20.1
 bacnetctl decode 810a0017 0100 3003 0c 0c00000001 1955 3e 4441ac0000 3f
 ```
 
-`monitor` subscribes with SubscribeCOV, renews while running and cancels on exit; `--poll` reads periodically for devices without COV. `decode` takes the hex of a UDP payload and shows BVLC, NPDU, APDU and the service; nothing is sent.
+`monitor` subscribes with SubscribeCOV, renews while running and cancels on exit; `--poll` reads periodically for devices without COV. `decode` takes the hex of a UDP payload and shows BVLC, NPDU, APDU and the service; nothing is sent. `file get` creates a new `--output` file with mode 0600, because a file object can hold a device configuration or credentials. When notifications were lost because output could not keep up, the next `monitor` record carries a `gap` mark.
 
 ## Writes and other changes
 
@@ -229,13 +229,14 @@ The safety model:
 2. `delete`, `reinitialize` and `comm-control` refuse to run without `--yes-i-am-sure`, which has no environment variable.
 3. A request that changes the device is sent **exactly once**. Without an acknowledgement bacnetctl reports `outcome_unknown` (exit 5) and does not resend: read the state back before repeating the command.
 4. Passwords for `reinitialize` and `comm-control` come from `--password` or `BACNETCTL_PASSWORD` and are never printed, not even with `--debug`. BACnet sends them in clear text.
+5. Values a device cannot hold are refused before sending: a year outside 1900 to 2154 for `time sync` and `ack --event-time`, and a `file put` past the last octet a file object can address (exit 3).
 </Steps>
 
 There is no dry-run flag. `discover`, `whohas` and `router list` are read-only but broadcast to every device on the network; limit them with `--low`/`--high`, `--network` or `--target` on large or fragile networks.
 
 ## Output formats and exit codes
 
-`--format text|json|table` (or `BACNETCTL_OUTPUT_FORMAT`) controls the result on stdout only; progress and diagnostics go to stderr. `monitor` and `events` stream JSON Lines in JSON mode. A failure in JSON mode is a single `{"error": {"kind", "code", "message", "bacnet"}}` object on stdout, also for usage errors. The JSON shapes are a stable contract (`docs/json-output.md`).
+`--format text|json|table` (or `BACNETCTL_FORMAT`; the older `BACNETCTL_OUTPUT_FORMAT` is still accepted) controls the result on stdout only; progress and diagnostics go to stderr. `monitor` and `events` stream JSON Lines in JSON mode. A failure in JSON mode is a single `{"error": {"kind", "code", "message", "bacnet"}}` object on stdout, also for usage errors. The JSON shapes are a stable contract (`docs/json-output.md`).
 
 | Code | Meaning |
 |---|---|
@@ -246,7 +247,11 @@ There is no dry-run flag. `discover`, `whohas` and `router list` are read-only b
 | 5 | Timeout; for a change, `outcome_unknown` |
 | 6 | The device refused (Error, Reject, Abort), or a protocol error |
 | 7 | Partial success: a valid result that holds failures |
+| 8 | Unsupported: an optional service the device does not provide (`unsupported`) |
 | 10 | Output or internal error |
+| 130 | Interrupted by Ctrl-C or SIGTERM before a result |
+
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool.
 
 `--debug` adds the client's diagnostics and the chain of causes on stderr without changing stdout or the exit code.
 
@@ -257,7 +262,7 @@ Every configuration flag has a `BACNETCTL_*` variable; a flag on the command lin
 | Variable | Flag | Default |
 |---|---|---|
 | `BACNETCTL_DEVICE` | `--device` | none |
-| `BACNETCTL_OUTPUT_FORMAT` | `--format` | text |
+| `BACNETCTL_FORMAT` (or `BACNETCTL_OUTPUT_FORMAT`) | `--format` | text |
 | `BACNETCTL_LOCAL_PORT` | `--local-port` | 0 (47808 for discovery commands) |
 | `BACNETCTL_INTERFACE` | `--interface` | chosen by the system |
 | `BACNETCTL_BBMD`, `BACNETCTL_BBMD_TTL` | `--bbmd`, `--bbmd-ttl` | none, 60 |

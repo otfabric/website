@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[ethernetipctl](https://github.com/otfabric/ethernetipctl) is a command-line tool for EtherNet/IP and CIP in both roles, built on [go-ethernetip](/docs/protocols/ethernet-ip/library/). As an **originator** it finds devices with one ListIdentity request, identifies them, reads and writes any attribute with explicit messages (unconnected, routed through a backplane or over a Class 3 connection), lists the objects a device implements, opens and closes connections, streams I/O data and diagnoses a device step by step. It reads and writes the tags of Rockwell Logix controllers and inspects, validates and generates EDS files. As an **adapter** it simulates a device from a small model, so that a scanner or a PLC has something to talk to. Output is text, a table or JSON, with stable exit codes. This page follows v0.2.2.
+[ethernetipctl](https://github.com/otfabric/ethernetipctl) is a command-line tool for EtherNet/IP and CIP in both roles, built on [go-ethernetip](/docs/protocols/ethernet-ip/library/). As an **originator** it finds devices with one ListIdentity request, identifies them, reads and writes any attribute with explicit messages (unconnected, routed through a backplane or over a Class 3 connection), lists the objects a device implements, opens and closes connections, streams I/O data and diagnoses a device step by step. It reads and writes the tags of Rockwell Logix controllers and inspects, validates and generates EDS files. As an **adapter** it simulates a device from a small model, so that a scanner or a PLC has something to talk to. Output is text, a table or JSON, with stable exit codes. This page follows v0.5.1, built on go-ethernetip v0.5.0.
 
 <Aside type="caution" title="Responsible use">
 ethernetipctl sends real CIP requests. `write`, `reset`, `assembly write`, `tag write` and `io` with output data change a device, and do nothing without `--yes`. An exclusive-owner I/O connection replaces the outputs a PLC writes. Use ethernetipctl on devices and networks you own or are authorized to test. It never scans address ranges.
@@ -52,7 +52,7 @@ go install github.com/otfabric/ethernetipctl@latest
   </TabItem>
 </Tabs>
 
-The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/ethernetipctl#windows-powershell). Check the install with `ethernetipctl version`. Building from source needs Go 1.25 or later.
+The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/ethernetipctl#windows-powershell). Check the install with `ethernetipctl version`. Building from source needs Go 1.26 or later.
 
 ## Command tree
 
@@ -165,7 +165,7 @@ Diagnosis of 127.0.0.1:44818: 8 passed, 0 failed, 0 skipped in 3 ms
   OK      connection-manager        1.0 ms  close_format_rejects=0 close_other_rejects=0 close_requests=4 ...
 ```
 
-The exit code is 0 when every check passed and 7 when one failed or was skipped; the report is always written.
+The exit code is 0 when every check passed and 1 when one failed or was skipped; the report is always written.
 
 ## Logix tags
 
@@ -235,7 +235,7 @@ The adapter answers sessions, ListIdentity over TCP and UDP, explicit messages (
 
 ## Output formats and exit codes
 
-`--format text|json|table` (or `ETHERNETIPCTL_OUTPUT_FORMAT`) controls the result on stdout; progress, connection state and the `--debug` trace go to stderr. Streams (`io`, `adapter`) write JSON Lines with `--format json`. A failure is a single error object with the CIP status, and the shapes are a stable contract ([docs/json-output.md](https://github.com/otfabric/ethernetipctl/blob/main/docs/json-output.md)):
+`--format text|json|table` (or `ETHERNETIPCTL_FORMAT`; `ETHERNETIPCTL_OUTPUT_FORMAT` is still accepted) controls the result on stdout; progress, connection state and the `--debug` trace go to stderr. Streams (`io`, `adapter`) write JSON Lines with `--format json`. A failure is a single error object with the CIP status, and the shapes are a stable contract ([docs/json-output.md](https://github.com/otfabric/ethernetipctl/blob/main/docs/json-output.md)):
 
 ```json
 {"error": {"kind": "refused", "code": "attribute_not_supported", "message": "...", "cip_status": 20}}
@@ -244,20 +244,24 @@ The adapter answers sessions, ListIdentity over TCP and UDP, explicit messages (
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 2 | Usage: unknown command or flag, missing argument |
-| 3 | Invalid input (nothing sent), a change without `--yes`, `eds validate` of a file with errors |
+| 1 | Findings: `diagnose` with a failed or skipped check |
+| 2 | Usage: unknown command or flag, missing argument, a change without `--yes` |
+| 3 | Invalid input (nothing sent), `eds validate` of a file with errors |
 | 4 | Transport: connection refused or lost, cannot listen |
 | 5 | Timeout: no answer, or an I/O connection timed out |
 | 6 | Refused by the target (CIP status) or protocol error |
-| 7 | Partial: `diagnose` with a failed or skipped check |
-| 10 | Output or internal error, interrupted |
+| 8 | Unsupported: the target does not support the command or service |
+| 10 | Output or internal error |
+| 130 | Interrupted (Ctrl-C or SIGTERM) before a one-shot command has its result |
+
+Values that do not fit their field (a connection size above 65529, a REAL beyond its range, a bit beyond the type's width, a control character in an EDS name) are refused with exit 3 before anything is sent. Files ethernetipctl writes (`eds generate --output`, code generation) are created with mode 0600, and an adapter model above 16 MiB is refused. With `--format json`, the fatal error of a stream is one compact line after its records.
 
 ## Environment variables
 
-`ETHERNETIPCTL_OUTPUT_FORMAT`, `ETHERNETIPCTL_TIMEOUT`, `ETHERNETIPCTL_PORT`, `ETHERNETIPCTL_ROUTE`, `ETHERNETIPCTL_CONNECTED`, `ETHERNETIPCTL_TYPE`, `ETHERNETIPCTL_DISCOVER_ADDRESS`, `ETHERNETIPCTL_IO_ADDRESS`, `ETHERNETIPCTL_ADAPTER_CONFIG` and `ETHERNETIPCTL_LISTEN` set their flags; a flag on the command line wins. `--yes` has no variable, on purpose.
+`ETHERNETIPCTL_FORMAT`, `ETHERNETIPCTL_TIMEOUT`, `ETHERNETIPCTL_PORT`, `ETHERNETIPCTL_ROUTE`, `ETHERNETIPCTL_CONNECTED`, `ETHERNETIPCTL_TYPE`, `ETHERNETIPCTL_DISCOVER_ADDRESS`, `ETHERNETIPCTL_IO_ADDRESS`, `ETHERNETIPCTL_ADAPTER_CONFIG` and `ETHERNETIPCTL_LISTEN` set their flags; a flag on the command line wins. `--yes` has no variable, on purpose.
 
 ## Tested against
 
-The library underneath, go-ethernetip, runs its interop suite in both directions against twelve independent stacks, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, in the containers of [ethernetip-interop](/docs/protocols/ethernet-ip/testing/) v0.4.0. ethernetipctl's own tests start go-ethernetip servers and Logix tag servers on loopback and run the command tree against them, and every command in its README is run against the simulated adapter with its real output in [docs/examples.md](https://github.com/otfabric/ethernetipctl/blob/main/docs/examples.md). If ethernetipctl has trouble with a device, [open an issue](https://github.com/otfabric/ethernetipctl/issues) with the `--debug` trace.
+The library underneath, go-ethernetip, runs its interop suite in both directions against twelve independent stacks, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, in the containers of [ethernetip-interop](/docs/protocols/ethernet-ip/testing/) v0.6.1. ethernetipctl's own tests start go-ethernetip servers and Logix tag servers on loopback and run the command tree against them, and every command in its README is run against the simulated adapter with its real output in [docs/examples.md](https://github.com/otfabric/ethernetipctl/blob/main/docs/examples.md). If ethernetipctl has trouble with a device, [open an issue](https://github.com/otfabric/ethernetipctl/issues) with the `--debug` trace.
 
 <LinkCard title="ethernetipctl on GitHub" description="README, docs/adapter-config.md, docs/json-output.md, docs/exitcodes.md, docs/examples.md, SECURITY.md" href="https://github.com/otfabric/ethernetipctl" />

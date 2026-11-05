@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-ieee20305](/projects/go-ieee20305/) implements both ends of IEEE 2030.5 in Go: a **client** of one server, a device **agent** that gives the client a device's behaviour, and a **server** for every resource of the IEEE 2030.5 WADL, with an operator's API beside it. The resource model is generated from the official IEEE 2030.5-2023 and CSIP-AUS v1.3 schemas. The core module has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ieee20305); [API.md](https://github.com/otfabric/go-ieee20305/blob/main/API.md) in the repository is the map. This page follows v0.5.2.
+[go-ieee20305](/projects/go-ieee20305/) implements both ends of IEEE 2030.5 in Go: a **client** of one server, a device **agent** that gives the client a device's behaviour, and a **server** for every resource of the IEEE 2030.5 WADL, with an operator's API beside it. The resource model is generated from the official IEEE 2030.5-2023 and CSIP-AUS v1.3 schemas. The core module has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ieee20305); [API.md](https://github.com/otfabric/go-ieee20305/blob/main/API.md) in the repository is the map. This page follows v0.6.0.
 
 Before v1.0.0, a minor release may change the API; the [release notes](https://github.com/otfabric/go-ieee20305/blob/main/RELEASE.md) say what changed.
 
@@ -18,7 +18,7 @@ Before v1.0.0, a minor release may change the API; the [release notes](https://g
 go get github.com/otfabric/go-ieee20305
 ```
 
-Go 1.23 or later. The CCM_8 cipher suite is a module of its own, which needs Go 1.26.8:
+Go 1.26 or later (CI runs Go 1.26 and 1.27). The CCM_8 cipher suite is a module of its own, which needs Go 1.26.8:
 
 ```sh
 go get github.com/otfabric/go-ieee20305/tlsccm
@@ -69,7 +69,7 @@ if err := client.CheckPIN(reg, 111115); err != nil {
 | `Time(ctx)` | The server's clock and the local clock's offset from it |
 | `Subscribe`, `Unsubscribe` | Subscriptions; `NewNotificationHandler` is the `http.Handler` that receives the notifications |
 
-The client follows links only within its server, and refuses a link or a redirect to another one. It does not repeat a `POST` after a failure unless `Config.RetryPOST` is set, since a lost answer leaves the outcome unknown.
+The client follows links only within its server, and refuses a link or a redirect to another one, or one that carries userinfo. It bounds what a server can make it read: `Iterate`, `Walk` and `FindEndDevice` stop with `ErrProtocol` beyond `Config.MaxListItems` items of a list, and `Walk` beyond `WalkOptions.MaxResources` resources (4096 when zero). A body cut off by the context's deadline or a cancellation fails with `ErrTimeout` or `ErrCanceled`. It does not repeat a `POST` after a failure unless `Config.RetryPOST` is set, since a lost answer leaves the outcome unknown.
 
 ## A device agent
 
@@ -136,7 +136,7 @@ What the server does by itself:
 - **Parts.** Creating an EndDevice creates its lists (FSAs, DERs, log events, subscriptions…); creating a DERProgram its control list, active control list, curves and default control.
 - **The event lifecycle.** The server keeps each event's EventStatus as it starts, ends, is cancelled (`Admin.CancelEvent`) or superseded, and computes the Active lists and the CurrentDERProgram.
 - **Responses and metering.** Responses are stored once per device, event and status. A MirrorUsagePoint becomes a UsagePoint with its readings. `FlowPolicy` answers flow reservation requests.
-- **Notifications.** Every change to a subscribed resource, by a device, by `Admin` or in the `Store`, is delivered as the latest state, retried, and cancelled when undeliverable. Notification URIs on loopback and link-local addresses are refused unless `NotificationURIAllowed` says otherwise.
+- **Notifications.** Every change to a subscribed resource, by a device, by `Admin` or in the `Store`, is delivered as the latest state, retried, and cancelled when undeliverable. Notification URIs on loopback and link-local addresses are refused unless `NotificationURIAllowed` says otherwise; `DefaultNotificationURIAllowed` also refuses zoned IPv6 literals and numeric hosts such as `127.1`. The URI is checked again before each notification, and a notification that gets a redirect fails instead of following it.
 - **Editions.** The server encodes for each device in the edition it was provisioned with (`DeviceSpec.Edition`, `Config.DefaultEdition`).
 
 Resources live in memory unless `Config.Store` gives another `Store`; there is no database adapter in the module. `Hooks` replace the default handling of any WADL resource with your own.
@@ -168,7 +168,7 @@ err = csipserver.SetDefaultLimits(ctx, srv.Admin(), program, limits)
 |---|---|
 | `security.CertificateLFDI(cert)`, `LFDI.SFDI()` | The identifiers of a certificate; `SFDI.Valid()` checks the check digit |
 | `security.Verify`, `VerifyPeerCertificate` | Chain verification that accepts the critical HardwareModuleName that `crypto/x509` refuses |
-| `security.ClientTLSConfig`, `ServerTLSConfig`, `NotificationTLSConfig` | TLS 1.2 or later, mutual authentication, ECDHE-ECDSA suites |
+| `security.ClientTLSConfig`, `ServerTLSConfig`, `NotificationTLSConfig` | TLS 1.2 or later, mutual authentication, ECDHE-ECDSA suites; `ServerTLSConfig` checks the client chain on resumed sessions too |
 | `security.TestCA`, `TestServerCert`, `TestDeviceCert`, `TestDeviceCertHMN` | Throwaway certificates for tests and examples |
 
 Go's `crypto/tls` has no CCM_8 ([golang/go#27484](https://github.com/golang/go/issues/27484)), so the core module offers the ECDHE-ECDSA AES-GCM suites, which most servers accept. For a peer that offers nothing but `TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8`, such as the GridAPPS-D server and the EPRI client, use the module `tlsccm`:

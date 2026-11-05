@@ -18,11 +18,11 @@ Test against something that is not live equipment first. OT Fabric gives you thr
 
 ## modbus-simulator
 
-modbus-simulator is a deterministic, stateful **Modbus TCP** device simulator, plain or over TLS. You describe the devices in a JSON fixture, it serves them on one listener (routed by unit ID 1-247), writes are kept in memory, and every request can be recorded to a JSON Lines trace that you assert on in CI. This section follows v1.2.0, which was hardened with chaos, stress and fuzz test suites and fixed what they found.
+modbus-simulator is a deterministic, stateful **Modbus TCP** device simulator, plain or over TLS. You describe the devices in a JSON fixture, it serves them on one listener (routed by unit ID 1-247), writes are kept in memory, and every request can be recorded to a JSON Lines trace that you assert on in CI. This section follows v1.4.0, built on go-modbus v1.11.0. v1.2.0 was hardened with chaos, stress and fuzz test suites and fixed what they found.
 
 ### Install
 
-Pre-built binaries for Linux, macOS and Windows are on the [releases page](https://github.com/otfabric/modbus-simulator/releases). With Go 1.25 or later:
+Pre-built binaries for Linux, macOS and Windows are on the [releases page](https://github.com/otfabric/modbus-simulator/releases). With Go 1.26 or later:
 
 ```sh
 go install github.com/otfabric/modbus-simulator@latest

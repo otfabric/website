@@ -10,7 +10,7 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 OPC UA PubSub (IEC 62541-14, "Part 14") sends data from publishers to any number of subscribers without sessions. A publisher samples a set of values at a fixed interval and sends it as a message over UDP, raw Ethernet or a message broker; subscribers take the messages they are interested in from what arrives. It complements client/server: PubSub fans data out to many receivers, and into IT and cloud systems through MQTT or AMQP, while client/server stays the way to browse, write, call methods and configure.
 
-[go-opcua](/projects/go-opcua/) implements both sides, standalone or inside its server, and [opcuactl](/projects/opcuactl/) has a `pubsub` command group to listen, publish, discover and configure from a terminal. This page describes go-opcua v1.27.0 and opcuactl v0.10.3.
+[go-opcua](/projects/go-opcua/) implements both sides, standalone or inside its server, and [opcuactl](/projects/opcuactl/) has a `pubsub` command group to listen, publish, discover and configure from a terminal. This page describes go-opcua v1.31.0 and opcuactl v0.13.0.
 
 ## The model
 
@@ -149,12 +149,13 @@ opcuactl pubsub publish --url opc.udp://224.0.0.22:4840 --publisher-id 2234 --wr
 # Who publishes here?
 opcuactl pubsub discover --url opc.udp://224.0.0.22:4840
 
-# The PubSub configuration of a server, and a new connection on it
+# The PubSub configuration of a server, and a new connection on it (a local test server without message security)
+export OPCUACTL_INSECURE_NO_SECURITY=true
 opcuactl pubsub config show -e opc.tcp://localhost:4840
 opcuactl pubsub config add-connection -e opc.tcp://localhost:4840 --name Diag --url opc.udp://224.0.0.22:4840 --publisher-id 2234
 ```
 
-`--security-group` with a session to the SKS (`-e` and the usual security flags) decrypts secured groups, `pubsub sks get-keys` fetches keys, `pubsub decode` decodes captured messages, `pubsub call` and `pubsub respond` exercise Actions, and `--diagnostics` prints the Part 14 counters. The [opcuactl page](/docs/protocols/opc-ua/cli/#pubsub) and the opcuactl README list every flag.
+A session to a server over `opc.tcp` (`-e`, for `--metadata-node`, `config` and the SKS) takes the usual security flags; without message security it needs `--insecure-no-security`. `--security-group` with a session to the SKS decrypts secured groups, `pubsub sks get-keys` fetches keys, `pubsub decode` decodes captured messages, `pubsub call` and `pubsub respond` exercise Actions, and `--diagnostics` prints the Part 14 counters. The [opcuactl page](/docs/protocols/opc-ua/cli/#pubsub) and the opcuactl README list every flag.
 
 <Aside type="caution" title="Publishing reaches real subscribers">
 A test publisher on a production multicast group or broker topic feeds whatever listens there. Use your own group, PublisherId and topic for tests.

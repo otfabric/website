@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[knxctl](https://github.com/otfabric/knxctl) is a command-line tool for KNX over KNXnet/IP, built on [go-knx](/docs/protocols/knx/library/). It finds gateways and inspects them, monitors group telegrams, reads and switches group objects, encodes and decodes datapoint types and frames, and runs a simulated KNXnet/IP server. It is one static binary, and output is text, a table or JSON with stable exit codes. This page follows v0.5.1; the full reference is [docs/cli.md](https://github.com/otfabric/knxctl/blob/main/docs/cli.md).
+[knxctl](https://github.com/otfabric/knxctl) is a command-line tool for KNX over KNXnet/IP, built on [go-knx](/docs/protocols/knx/library/). It finds gateways and inspects them, monitors group telegrams, reads and switches group objects, encodes and decodes datapoint types and frames, and runs a simulated KNXnet/IP server. It is one static binary, and output is text, a table or JSON with stable exit codes. This page follows v0.8.0, built on go-knx v0.7.0; the full reference is [docs/cli.md](https://github.com/otfabric/knxctl/blob/main/docs/cli.md).
 
 ## Install
 
@@ -20,6 +20,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
     ```sh
     go install github.com/otfabric/knxctl@latest
     ```
+    Go 1.26 or later.
   </TabItem>
 </Tabs>
 
@@ -31,7 +32,7 @@ knxctl sends nothing onto the KNX network unless the command says so:
 
 - `discover`, `describe`, `diagnose` and `tunnel connect` talk only to the KNXnet/IP server; `discover` sends one search request, no scan.
 - `monitor`, `group listen`, `routing monitor` and `busmonitor` only listen.
-- `property read` reads the interface's own properties; nothing reaches the bus.
+- `property read` reads the interface's own properties; nothing reaches the bus. With `--device`, `property read` and `property write` send a request to that device on the KNX network.
 - `dpt` and `decode` work offline.
 - Only `group write`, `group respond`, `group answer` and `group read` send telegrams, and they validate the address, datapoint type and value before they connect: a command that exits 2 or 3 has sent nothing.
 
@@ -93,10 +94,14 @@ knxctl group write 1/2/3 on --routing --source 1.1.250 --interface eth0
 knxctl busmonitor 192.168.1.10 --count 20                         # raw TP1 frames, decoded
 knxctl property read 192.168.1.10 device 11                       # serial number
 knxctl property read 192.168.1.10 knxnetip 76 --count 15 --tcp    # friendly name
+knxctl property read 192.168.1.10 device 11 --device 1.1.5        # serial number of device 1.1.5
+knxctl property read 192.168.1.10 device 11 --device 1.1.5 --connected --keyring site.knxkeys --keyring-password ...
 knxctl tunnel feature get 192.168.1.10 max-apdu
 ```
 
 Routing joins `224.0.23.12:3671` and sends with the source address `--source`; set it to an address of your line. A busmonitor connection is exclusive on an interface: it cannot open while a tunnel is connected, and blocks tunnels while it is open.
+
+With `--device`, the request goes through a tunnel to that device (A_PropertyValue_Read and _Write, connectionless or with `--connected` in a transport connection). When the device has a tool key (`--tool-key`, `KNXCTL_TOOL_KEY` or its entry in `--keyring`), the access is secured with KNX Data Secure tool access and never falls back to plain. `knxctl serve --tool-key` makes the simulator's own device accept only such secured access.
 
 ## KNX Secure
 
@@ -144,7 +149,7 @@ Larger setups come from a JSON file (`--config site.json`): devices, group objec
 
 ## Output and exit codes
 
-`--format text|table|json` (or `KNXCTL_FORMAT`). Errors are one `error:` line on stderr, or one JSON error document with `--format json`.
+`--format text|table|json` (or `KNXCTL_FORMAT`; `KNXCTL_OUTPUT_FORMAT` is also accepted). Errors are one `error:` line on stderr, or one JSON error document with `--format json`.
 
 | Code | Meaning |
 |---|---|
@@ -153,12 +158,13 @@ Larger setups come from a JSON file (`--config site.json`): devices, group objec
 | 2, 3 | Usage error or invalid input: nothing was sent |
 | 4 | Transport: a socket failed or the tunnel was lost |
 | 5 | Timeout: no answer to a connect or description, or no response to a read |
-| 6 | Protocol: a malformed frame, an unconfirmed telegram, a KNX Secure failure |
-| 7 | Permission refused by the operating system |
+| 6 | Protocol: a malformed frame, an unconfirmed telegram, a KNX Secure failure; or rejected by the server (no free tunnelling slot, busy) |
 | 8 | Not supported by the server or go-knx |
-| 9 | Rejected by the server: no free tunnelling slot, busy |
+| 9 | Permission refused by the operating system |
 | 10 | Output or internal error |
 | 130 | Interrupted before a result |
+
+Everything a command can check is checked before it connects: a negative `--count` or `--duration`, `--raw` over 254 octets, property data over 1007 octets (248 with `--device`) and a keyring or `--config` file over 16 MiB exit 3. `group read --all` stops at 1000 responses, with a warning on stderr. With `--format json`, a stream that fails after its records ends with one compact error line, so stdout stays valid JSON Lines.
 
 The full table and the JSON shapes: [exitcodes.md](https://github.com/otfabric/knxctl/blob/main/docs/exitcodes.md) and [json-output.md](https://github.com/otfabric/knxctl/blob/main/docs/json-output.md).
 
