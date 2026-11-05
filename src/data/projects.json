@@ -652,17 +652,17 @@
 		"standards": [],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-otfp",
-		"description": "Find out which OT protocol an endpoint speaks, and read the device's identity, with safe connection-level probes. 14 protocols, graded confidence, zero runtime dependencies.",
+		"description": "Find out which OT protocol an endpoint speaks, and read the device's identity, with safe connection-level probes. 18 protocols, graded confidence, zero runtime dependencies.",
 		"icon": "go-otfp",
 		"highlights": [
-			"Detects 14 protocols: Modbus TCP, SunSpec, IEC 61850 MMS, Siemens S7comm and S7comm-plus, OPC UA, EtherNet/IP, BACnet/IP, PROFINET IO, DNP3, IEC 60870-5-104, OCPP, IEEE 2030.5, OpenADR 3 and 2.0b, and CAN over TCP gateways.",
+			"Detects 18 protocols: Modbus TCP, SunSpec, IEC 61850 MMS, Siemens S7comm and S7comm-plus, OPC UA, EtherNet/IP, BACnet/IP, PROFINET IO, DNP3, IEC 60870-5-104, OCPP, IEEE 2030.5, OpenADR 3 and 2.0b, KNXnet/IP, MQTT 3.1.1 and 5, Sparkplug B, CAN over TCP gateways and CANopen through CiA 309-3 gateways.",
 			"Safe by design: each protocol gets its standard handshake or one harmless request. It never writes a value, issues a control or changes a device's configuration.",
-			"Identify mode sends each protocol's own read-only identity service (Read Device Identification, the CIP Identity object, SZL, MMS Identify, the BACnet Device object, OPC UA GetEndpoints, PROFINET I&M0) and returns vendor, model, version and serial.",
+			"Identify mode sends each protocol's own read-only identity service (Read Device Identification, the CIP Identity object, SZL, MMS Identify, the BACnet Device object, OPC UA GetEndpoints, PROFINET I&M0, the KNXnet/IP description, the CANopen identity object over SDO) and returns vendor, model, version and serial. Sparkplug B is read-only: it subscribes for a bounded window and never publishes.",
 			"Port-agnostic over TCP, UDP and TLS: the target port's likely protocols go first, then the rest, so a protocol on a non-standard port is still found.",
 			"Graded confidence on one shared scale, with the evidence behind every match and a stable fingerprint signature per result.",
 			"An OT-safe mode for production networks: passive probes only, the likely protocols of a port first, and 250 ms between probes.",
-			"Validated against 11 reference servers from the OT Fabric interop suites, end-to-end fuzzed, tested against hostile servers and a cross-protocol false-positive matrix, with 98% test coverage.",
-			"Standard library only, so it drops into any Go program. Ships with the otprobe command-line tool."
+			"Validated against 18 reference servers and setups from the OT Fabric interop suites, from pymodbus and open62541 to calimero-server, Mosquitto, HiveMQ CE and CANopenNode. End-to-end fuzzed, tested against hostile and chaos peers and a cross-protocol false-positive matrix, with at least 90% test coverage in every package.",
+			"Standard library only, so it drops into any Go program; Go 1.26 or later. Ships with the otprobe command-line tool."
 		]
 	},
 	{
@@ -676,12 +676,13 @@
 		"icon": "go-otfp",
 		"highlights": [
 			"otprobe detect 10.0.0.5:502 --identify probes one endpoint and reads the device identity; a bare host sweeps the well-known OT ports.",
-			"tcp://, udp:// and tls:// targets, so BACnet/IP, PROFINET and EtherNet/IP over UDP and Modbus/TCP Security or wss:// over TLS are covered.",
+			"tcp://, udp:// and tls:// targets, so BACnet/IP, PROFINET, EtherNet/IP and KNXnet/IP over UDP and Modbus/TCP Security or wss:// over TLS are covered.",
 			"--safe keeps to passive probes and paces them 250 ms apart, to stay under OT intrusion detection thresholds.",
 			"Text output for people, --format table for one row per probe and --format json with a versioned schema for scripts.",
-			"Stable exit codes for automation: 0 detected, 1 no match, 4 unreachable, 5 timeout, 7 matched below high confidence.",
+			"Stable exit codes for automation: 0 detected, 1 no match, 2 usage, 3 invalid input, 4 unreachable, 5 timeout, 7 matched below high confidence, 10 interrupted or internal error.",
 			"--trace shows the raw probe and response bytes; shell completion for bash, zsh, fish and PowerShell.",
-			"Prebuilt binaries on the go-otfp releases page, or go install github.com/otfabric/go-otfp/cmd/otprobe@latest."
+			"--canopen-node picks the CANopen node whose identity is read through a CiA 309-3 gateway in --identify mode.",
+			"Prebuilt binaries on the go-otfp releases page, or make build in a go-otfp checkout: otprobe is a nested module, so go install does not work."
 		]
 	},
 	{

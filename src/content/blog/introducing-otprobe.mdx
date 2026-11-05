@@ -133,8 +133,7 @@ You can detect a single protocol, or register fingerprinters of your own next to
 ## Get it
 
 ```sh frame="terminal"
-go install github.com/otfabric/go-otfp/cmd/otprobe@latest   # the CLI
 go get github.com/otfabric/go-otfp                          # the library
 ```
 
-Prebuilt otprobe binaries are on the [releases page](https://github.com/otfabric/go-otfp/releases). Both are MIT-licensed. go-otfp is pre-1.0 and its API changed substantially in this release, so read the [release notes](https://github.com/otfabric/go-otfp/blob/main/RELEASE.md) before upgrading from v0.0.3. Security issues go to security@otfabric.io.
+Prebuilt otprobe binaries are on the [releases page](https://github.com/otfabric/go-otfp/releases). Since v0.2.0 otprobe is a nested module, so build it from a checkout with `make build` rather than `go install`. Both are MIT-licensed. go-otfp is pre-1.0 and its API changed substantially in this release, so read the [release notes](https://github.com/otfabric/go-otfp/blob/main/RELEASE.md) before upgrading from v0.0.3. Security issues go to security@otfabric.io.
