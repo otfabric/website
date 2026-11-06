@@ -1,6 +1,6 @@
 ---
 title: bacnetctl
-description: Installing and using bacnetctl, the BACnet/IP command-line client for discovery, reads, writes, COV monitoring and network diagnostics.
+description: Installing and using bacnetctl, the BACnet/IP command-line client for discovery, reads, writes, COV monitoring and network diagnostics, with a simulated device for testing clients.
 sidebar:
   label: bacnetctl
   order: 2
@@ -8,10 +8,10 @@ sidebar:
 
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
-[bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. Output is text, a table or JSON, with stable exit codes. This page follows bacnetctl v0.3.0, built on go-bacnet v0.5.0.
+[bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. With `server run` it also serves a simulated BACnet/IP device, on go-bacnet's server, for developing and testing clients without hardware. Output is text, a table or JSON, with stable exit codes. This page follows bacnetctl v0.4.0, built on go-bacnet v0.6.0.
 
 <Aside type="caution" title="Status and scope">
-bacnetctl is a **client only**: it does not simulate a BACnet device. Version 0.1.0 is tested automatically against a simulated device and was run by hand against five open-source BACnet stacks in containers. It has **not been run against physical devices**.
+bacnetctl is a BACnet/IP client and, with `server run`, one simulated device for development and testing. The simulated device keeps its state in memory and does not model a process: values change when clients write them. It is not meant to stand in for a controller on a plant network. The client commands are tested automatically against a simulated device and were run by hand against five open-source BACnet stacks in containers; `server run` was run against the clients of three of them. Neither has **been run against physical devices**.
 </Aside>
 
 ## Install
@@ -131,6 +131,9 @@ bacnetctl
 │   └── fdt              Read the foreign device table of a BBMD
 ├── reinitialize         Restart a device (ReinitializeDevice)
 ├── comm-control         Silence a device, or let it speak again
+├── server
+│   ├── run              Serve a simulated device (go-bacnet server)
+│   └── example          Print the built-in example device file
 ├── decode               Decode a captured BACnet/IP datagram (offline)
 ├── types                List the object types bacnetctl knows by name
 ├── properties           List the property identifiers bacnetctl knows by name
@@ -251,7 +254,9 @@ There is no dry-run flag. `discover`, `whohas` and `router list` are read-only b
 | 10 | Output or internal error |
 | 130 | Interrupted by Ctrl-C or SIGTERM before a result |
 
-The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool.
+The codes follow the OT Fabric CLI exit-code table shared by every `*ctl` tool. `server run` exits 0 when stopped with Ctrl-C, SIGTERM or `--duration`, 3 for a device file it cannot serve (`invalid_config`) or cannot read (`input_file_open_failed`), and 4 when the port is in use.
+
+Since v0.4.0 property 133 is named `enable`, as in ANSI/ASHRAE 135 (it was `log-enable`). This changes the `property` field of `read`, `describe` and `monitor` output for that property; `log-enable` is still accepted as input.
 
 `--debug` adds the client's diagnostics and the chain of causes on stderr without changing stdout or the exit code.
 
@@ -274,15 +279,53 @@ Every configuration flag has a `BACNETCTL_*` variable; a flag on the command lin
 
 The README lists all of them. `--debug` and `--yes-i-am-sure` have none.
 
-## Simulation
+## Serve a simulated device
 
-bacnetctl has no server or simulation mode. Its test suite includes a simulated BACnet/IP device (`internal/bactest`), which you can run from a source checkout to try commands safely:
+`server run` serves one BACnet device on this computer with the server of [go-bacnet](/docs/protocols/bacnet/library/#serve-a-device): for developing and testing clients (bacnetctl itself, a supervisor, a gateway) without hardware. What it supports is what go-bacnet's [server support table](https://github.com/otfabric/go-bacnet/blob/main/docs/SERVER_SUPPORT.md) lists; bacnetctl claims nothing beyond it.
+
+<Aside type="caution" title="It answers whoever can reach it">
+Without `--read-only` the simulated device accepts every client's writes, and with `--bbmd` it forwards broadcasts between subnets. Give it a device instance no real device on that network has, and keep it on loopback or a test network.
+</Aside>
 
 ```sh
-go run ./internal/bactest/bacsim -listen 127.0.0.1:47809 &
-bacnetctl objects --device 127.0.0.1:47809 --values
+# The built-in example device, on every address, UDP port 47808, until Ctrl-C
+bacnetctl server run
+
+# A device file on loopback, on a free port, the records as JSON Lines
+bacnetctl server run --config device.json --listen 127.0.0.1 --port 0 --format json
+
+# In another terminal: use it like any device
+bacnetctl objects --device 127.0.0.1:47808 --values
+bacnetctl write --device 127.0.0.1:47808 av:1 pv 22.5 --priority 8
+
+# Also the BBMD of this subnet, with a peer BBMD on another one
+bacnetctl server run --listen 192.168.1.10 --bbmd --bdt 10.0.20.1
+
+# Start a device file of your own from the example
+bacnetctl server example > device.json
 ```
 
-For independent stacks, use the [bacnet-interop](/docs/protocols/bacnet/testing/) containers.
+The state is in memory: writes, created and deleted objects and file content last as long as the process, and the device file is never changed. A ReinitializeDevice is acknowledged and printed as a record; the process does not restart. Text messages and private transfers are not served (the confirmed ones get Reject unrecognized-service).
+
+| Flag | Environment | Meaning |
+|---|---|---|
+| `--config` | `BACNETCTL_SERVER_CONFIG` | Device file (JSON); without it the built-in example device |
+| `--listen` | `BACNETCTL_SERVER_LISTEN` | IPv4 address to bind (default: every address) |
+| `--port` | `BACNETCTL_SERVER_PORT` | UDP port (default: `port` of the device file, or 47808; `0` picks a free port, named in the `listening` record) |
+| `--instance`, `--name`, `--vendor-id` | `BACNETCTL_SERVER_INSTANCE`, `_NAME`, `_VENDOR_ID` | Override the identity of the device file (vendor identifier 999 unless given) |
+| `--max-apdu` | `BACNETCTL_SERVER_MAX_APDU` | Largest APDU accepted, 50 to 1476 (default 1476) |
+| `--max-segments` | `BACNETCTL_SERVER_MAX_SEGMENTS` | Segments accepted per message, 2 to 255 (default 64; 0 disables segmentation) |
+| `--read-only` | `BACNETCTL_SERVER_READ_ONLY` | Refuse every write (write-access-denied) and delete (object-deletion-not-permitted) |
+| `--password` | `BACNETCTL_SERVER_PASSWORD` | Password DeviceCommunicationControl and ReinitializeDevice must carry, at most 20 octets; never printed |
+| `--bbmd`, `--bdt`, `--bbmd-address`, `--no-foreign-devices` | `BACNETCTL_SERVER_BBMD`, `_BDT`, `_BBMD_ADDRESS`, `_NO_FOREIGN` | Also be a BBMD on the same address, with peer BBMDs, its own address, and optionally no foreign devices |
+| `--duration` | `BACNETCTL_DURATION` | Stop after this many seconds (0 = until Ctrl-C or SIGTERM) |
+
+`--interface` (`BACNETCTL_INTERFACE`) picks the interface whose broadcast address the I-Am and I-Have go to.
+
+stdout gets one record when the device listens and one for every request that changes it: `write` (with value, priority and `allowed` or `refused`), `create`, `delete`, `reinitialize` and `time-sync`. In JSON mode they are JSON Lines, with shapes in `docs/json-output.md`. The start line and a summary go to stderr.
+
+**Device file.** A JSON object with `device_instance`, `device_name`, an optional `port`, `objects` and an optional `object_lifecycle`. It is a superset of the bacnet-interop device fixtures: `device-server-v1` and `device-baseline-v2` load as they are. Supported object types are analog, binary and multi-state inputs, outputs and values (analog points optionally with out-of-range alarms); characterstring, integer and positive-integer values; notification classes; trend logs with a seeded `log_buffer`; and stream or record files. `object_lifecycle.creatable_types` enables CreateObject for analog and binary points, files and the value types. An unknown field, or one that does not apply to its object type, is refused.
+
+For independent stacks, use the [bacnet-interop](/docs/protocols/bacnet/testing/) containers. The in-process device of the test suite (`internal/bactest/bacsim`) is still there for a source checkout.
 
 <LinkCard title="bacnetctl on GitHub" description="README, docs/exitcodes.md, docs/json-output.md, SECURITY.md" href="https://github.com/otfabric/bacnetctl" />

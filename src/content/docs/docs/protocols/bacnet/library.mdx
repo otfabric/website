@@ -1,6 +1,6 @@
 ---
 title: Go library
-description: Using go-bacnet, the pure-Go BACnet/IP client library, to discover devices, read and write properties and subscribe to change of value.
+description: Using go-bacnet, the pure-Go BACnet/IP client and server library, to discover devices, read and write properties, subscribe to change of value, and serve a BACnet device of your own.
 sidebar:
   label: Go library
   order: 1
@@ -8,13 +8,13 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-bacnet](https://github.com/otfabric/go-bacnet) is a pure-Go BACnet/IP **client** library. It discovers devices, reads and writes properties, subscribes to change-of-value (COV) and alarm notifications, transfers files and manages objects on BACnet/IP (Annex J) over IPv4. It handles routed networks, foreign-device registration and segmentation, and has no dependencies outside the Go standard library.
+[go-bacnet](https://github.com/otfabric/go-bacnet) is a pure-Go BACnet/IP library with a **client** and a **server**. The client discovers devices, reads and writes properties, subscribes to change-of-value (COV) and alarm notifications, transfers files and manages objects on BACnet/IP (Annex J) over IPv4, including routed networks, foreign-device registration and segmentation. The server (packages `server`, `server/object` and `bbmd`, new in v0.6.0) serves a BACnet device of your own, with its objects, on the same codecs, and can also be the BBMD of its subnet. There are no dependencies outside the Go standard library.
 
 <Aside type="caution" title="Status">
-Client only. go-bacnet is tested on every change against five open-source BACnet stacks in containers, and its requests are checked against Wireshark's dissector. It has **not been validated against physical controllers yet**. The API is v0 and can still change between minor versions; the release notes in `RELEASE.md` list every change.
+The client is tested on every change against five open-source BACnet stacks in containers. The server is tested against the go-bacnet client and against the clients of three independent stacks (the bacnet-stack command-line tools, BACnet4J and BACpypes3) in bacnet-interop client-mode containers. Client requests and server replies are checked against Wireshark's dissector. Neither side has **been validated against physical controllers yet**. The API is v0 and can still change between minor versions; the release notes in `RELEASE.md` list every change.
 </Aside>
 
-**Not in scope:** a BACnet server or device object model, a BBMD server, MS/TP, BACnet/IPv6, BACnet/SC and BTL certification. BACnet/IP has no authentication or encryption and the library adds none.
+**Not in scope:** a BACnet router, MS/TP, BACnet/IPv6, BACnet/SC and BTL certification. BACnet/IP has no authentication or encryption and the library adds none.
 
 ## Install
 
@@ -22,17 +22,22 @@ Client only. go-bacnet is tested on every change against five open-source BACnet
 go get github.com/otfabric/go-bacnet@latest
 ```
 
-Requires **Go 1.26** or newer; CI tests Go 1.26 and 1.27. This page follows go-bacnet v0.5.0.
+Requires **Go 1.26** or newer; CI tests Go 1.26 and 1.27. This page follows go-bacnet v0.6.0.
 
 The module is split by protocol layer:
 
 | Package | Role |
 |---|---|
 | `bacnet` (root) | Leaf types: object identifiers, property references, addresses, application values, errors |
-| `bip` | BACnet/IP UDP endpoints (`bip.Endpoint`, a `netip.AddrPort`) |
+| `bip` | BACnet/IP UDP endpoints (`bip.Endpoint`, a `netip.AddrPort`) and the UDP transport (`bip.Transport`, `bip.ListenUDP`), shared by client and server |
 | `bvlc`, `npdu`, `apdu` | Codecs for the three framing layers |
 | `service` | Encode and decode of service payloads |
 | `client` | The supervisory runtime: socket, transactions, discovery, routing, COV |
+| `server` | Serves one `object.Device` on a BACnet/IP endpoint: transactions, segmentation, COV, events, hooks |
+| `server/object` | The Device object and the built-in object types the server serves |
+| `bbmd` | An optional BBMD for a server: BDT, FDT, foreign devices, broadcast forwarding |
+
+In v0.6.0 the `Transport` interface and the UDP transport moved from `client` to `bip`. `client.Transport`, `client.InboundPacket` and `client.OutboundPacket` are type aliases of the `bip` types, so existing code compiles unchanged. One breaking change: `service.GetEnrollmentSummaryRequest.EnrollmentFilter` is now a `*service.RecipientProcess`.
 
 ## The client and its socket
 
@@ -289,6 +294,106 @@ The client renews a subscription at half its lifetime. States run Pending, Activ
 
 Event and alarm notifications are separate from COV. `WithEventNotificationHandler` runs synchronously on the receive path: return promptly and do not call client methods that wait for responses. For slow handlers use `WithEventDispatcher` (bounded worker pool) or `OpenEventStream` (bounded channel). `AcknowledgeAlarm`, `GetEventInformation`, `GetAlarmSummary` and `GetEnrollmentSummary` are typed helpers.
 
+## Serve a device
+
+<Aside type="caution" title="A served device answers anyone">
+BACnet/IP has no authentication. A device served with go-bacnet answers whoever can reach UDP 47808 and, unless `Hooks.BeforeWrite` refuses, accepts their writes. Give it a device instance no other device on that network has, and keep it on loopback or a test network until you know what you are doing.
+</Aside>
+
+```go title="main.go"
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"os/signal"
+
+	"github.com/otfabric/go-bacnet"
+	"github.com/otfabric/go-bacnet/server"
+	"github.com/otfabric/go-bacnet/server/object"
+)
+
+func main() {
+	dev, err := object.NewDevice(object.DeviceConfig{Instance: 1234, Name: "dev-1234", VendorID: 999})
+	if err != nil {
+		log.Fatal(err)
+	}
+	setpoint, err := object.NewAnalogValue(object.PointConfig{Instance: 1, Name: "setpoint", Units: 62, Value: 21, Commandable: true})
+	if err != nil {
+		log.Fatal(err)
+	}
+	temp, err := object.NewAnalogInput(object.PointConfig{Instance: 1, Name: "temperature", Units: 62, Value: 20, COVIncrement: 0.5})
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, o := range []object.Object{setpoint, temp} {
+		if err := dev.Add(o); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	s, err := server.New(dev, server.WithLocalAddr("0.0.0.0:47808"), server.WithHooks(server.Hooks{
+		// BeforeWrite can refuse a write with a BACnet error.
+		BeforeWrite: func(_ context.Context, obj bacnet.ObjectIdentifier, w object.Write) error {
+			log.Printf("write %s %s priority=%d", obj, w.Property.Identifier, w.Priority)
+			return nil
+		},
+	}))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
+	_ = s.IAm() // announce the device
+
+	// The application owns its input values; COV subscribers are notified
+	// when a change exceeds COV_Increment.
+	_ = temp.SetPresentValue(bacnet.RealValue(21.5))
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	<-ctx.Done()
+}
+```
+
+`server.New` takes an `*object.Device`, opens the socket (UDP 47808 by default) and starts the receive loop, a bounded worker pool, housekeeping and the event engine. Objects added to the Device are served at once. `Object_List`, `Protocol_Services_Supported` and `Protocol_Object_Types_Supported` are computed from what is served, and `Database_Revision` increases when an object is added, removed or renamed. `Close` is idempotent, sends nothing (subscribers see their subscriptions lapse) and returns when every server goroutine has exited. State is in memory only: persisting it across restarts is the application's job.
+
+### Objects
+
+| Object | Notes |
+|---|---|
+| Device | Identity, Object_List, services and object types supported, Active_COV_Subscriptions |
+| Analog, Binary, Multi-state Input / Output / Value | Outputs commandable, values optionally commandable; COV increment; intrinsic reporting on inputs and values |
+| Notification Class | Priority, Ack_Required, Recipient_List (changed with AddListElement / RemoveListElement) |
+| Trend Log | Polled logging of a local property, or `TrendLog.Log` from the application; read with ReadRange |
+| File | Stream and record files in memory, read-only files, or an `object.FileAccessor` of your own |
+| Calendar, Schedule | Evaluated against the server clock; a Schedule writes its value to properties of local objects |
+| CharacterString, Integer, Positive Integer Value | Optionally commandable; COV on every change |
+| Structured View | Node type, subordinate list and annotations |
+
+Any type that implements `object.Object` can be added. Optional interfaces add behaviour: `COVReporter`, `EventReporter` (intrinsic reporting and the alarm services), `RangeReader`, `ListModifier`, `FileAccessor`, `Deletable` and `Poller`. `Device.RegisterFactory` enables CreateObject for a type. Objects are safe for concurrent use, so the application can change values while the server reads them.
+
+### Services, options and hooks
+
+The server answers ReadProperty, ReadPropertyMultiple, WriteProperty, WritePropertyMultiple, ReadRange, Who-Is and Who-Has, Add/RemoveListElement, CreateObject and DeleteObject, AtomicReadFile and AtomicWriteFile, SubscribeCOV, SubscribeCOVProperty and SubscribeCOVPropertyMultiple, AcknowledgeAlarm, GetAlarmSummary, GetEventInformation, GetEnrollmentSummary, DeviceCommunicationControl and ReinitializeDevice. It sends segmented replies and reassembles segmented requests. Event notifications follow the Notification Class Recipient_List; a recipient on a remote network is reached through the router the server learnt from received SNET and I-Am-Router-To-Network.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `WithLocalAddr`, `WithPort`, `WithInterface`, `WithTransport` | UDP 47808 | Endpoint |
+| `WithWorkers(workers, queue)` | 4, 64 | Bounded handler pool; a full queue is answered with Abort out-of-resources |
+| `WithMaxAPDU` | 1476 | Max_APDU_Length_Accepted |
+| `WithSegmentation(maxSegments, window)` | 64, 4 | 0 segments disables segmentation |
+| `WithPassword` | none | Required by DeviceCommunicationControl and ReinitializeDevice when set |
+| `WithCOVLimits(max, maxLifetime)` | 256, none | With a lifetime limit, indefinite subscriptions are refused |
+| `WithBBMD` | none | A `bbmd.BBMD` sharing the endpoint |
+| `WithHooks` | none | The application's part of device-level services |
+
+`Hooks` run on a worker with the request's context. `BeforeWrite` and `BeforeDelete` can refuse with a BACnet error made with `object.Err`, and `Reinitialize` performs a ReinitializeDevice (without it the request is acknowledged). `TimeSync`, `PrivateTransfer`, `TextMessage` and `WriteGroup` are the whole service: without the hook the service is not advertised and a confirmed request gets Reject unrecognized-service.
+
+`bbmd.New(bbmd.Config{Self, BDT, MaxForeignDevices, RejectRegistrations})` returns a BBMD for `server.WithBBMD`. It registers foreign devices, keeps the BDT and FDT and forwards broadcasts; Write-BDT is refused with a NAK. Without a BBMD the server answers every BBMD function with its NAK.
+
+Not served: LifeSafetyOperation, VT, authentication and audit services (Reject), and routing between networks. The full matrix, with the evidence for every row, is [docs/SERVER_SUPPORT.md](https://github.com/otfabric/go-bacnet/blob/main/docs/SERVER_SUPPORT.md).
+
 ## Errors
 
 Use `errors.Is` and `errors.As`; do not parse error strings.
@@ -320,7 +425,7 @@ errors.Is(err, bacnet.ErrInvalidConfig) // true
 | APDU timeout | 3 s |
 | Retransmissions | 3, reads only; writes are never retransmitted |
 | Segment timeout | 2 s |
-| Segment window | 16 proposed when sending, 1 when receiving; `WithSegmentWindow` sets both (1..127) |
+| Segment window | 16 proposed when sending, 1 when receiving; `WithSegmentWindow` sets both (1..127). Since v0.6.0 a segmented request sends segment 0 alone and waits for its SegmentACK, which carries the actual window |
 | Device registry | 4096 observations, 8 paths per instance, 30 min TTL (`WithRegistryOptions`) |
 
 `WithTransactionOptions` sets the APDU timeout, retransmit count and segment timeout. A context deadline or cancellation ends a request earlier and affects no other request. A request that finds all 255 invoke IDs in use waits until its context ends.
@@ -340,9 +445,10 @@ c, err := client.New(client.WithLogger(logger.With("component", "bacnet")))
 
 ## Limitations
 
-- Client only: no device object model, no BBMD server, no multi-BBMD failover.
+- No BACnet router, and no multi-BBMD failover on the client.
+- Server: state in memory only; intrinsic reporting covers out-of-range, change-of-state and change-of-reliability (a Multi-state Output does not report); the router table holds at most 64 networks. Calendar, Schedule, Structured View and the value types are verified against the go-bacnet client only.
 - BACnet/IP over IPv4 only. No MS/TP, BACnet/IPv6 or BACnet/SC.
 - Some services have codec evidence only, because no open-source stack executes them: SubscribeCOVPropertyMultiple, COVNotificationMultiple, audit services and VT services. AuthRequest and the VT services are partial.
-- Tested against open-source stacks in containers; no physical controller results are recorded yet. See [Testing and interop](/docs/protocols/bacnet/testing/).
+- Client and server are tested against open-source stacks in containers; no physical controller results are recorded yet. See [Testing and interop](/docs/protocols/bacnet/testing/).
 
-<LinkCard title="go-bacnet on GitHub" description="README, API.md, ERRORS.md, OBSERVABILITY.md and docs/CLIENT_SUPPORT.md" href="https://github.com/otfabric/go-bacnet" />
+<LinkCard title="go-bacnet on GitHub" description="README, API.md, ERRORS.md, OBSERVABILITY.md, docs/CLIENT_SUPPORT.md and docs/SERVER_SUPPORT.md" href="https://github.com/otfabric/go-bacnet" />

@@ -51,6 +51,16 @@ bacnetctl release --device 192.168.1.20 analog-value:1 --priority 8
 
 Objects are written as `type:instance` (`analog-input:1`, or `ai:1`) and properties by name (`present-value`, or `pv`).
 
+No controller at hand? `bacnetctl server run` serves a simulated device to practise on, from a JSON device file or a built-in example:
+
+```sh
+# Terminal 1: the example device on loopback, every write printed as it happens
+bacnetctl server run --listen 127.0.0.1
+
+# Terminal 2: use it like any device
+bacnetctl objects --device 127.0.0.1 --values
+```
+
 ### From Go
 
 ```sh
@@ -96,21 +106,48 @@ func main() {
 }
 ```
 
+Serve a device of your own, with a commandable setpoint:
+
+```go title="device.go"
+dev, err := object.NewDevice(object.DeviceConfig{Instance: 1234, Name: "dev-1234", VendorID: 999})
+if err != nil {
+	log.Fatal(err)
+}
+av, err := object.NewAnalogValue(object.PointConfig{Instance: 1, Name: "setpoint", Units: 62, Value: 21, Commandable: true})
+if err != nil {
+	log.Fatal(err)
+}
+if err := dev.Add(av); err != nil {
+	log.Fatal(err)
+}
+s, err := server.New(dev) // binds UDP port 47808
+if err != nil {
+	log.Fatal(err)
+}
+defer s.Close()
+_ = s.IAm()
+// The application owns its values; COV subscribers are notified.
+_ = av.SetPresentValue(bacnet.RealValue(22))
+```
+
+The imports are `github.com/otfabric/go-bacnet`, `github.com/otfabric/go-bacnet/server` and `github.com/otfabric/go-bacnet/server/object`. A complete device that runs until interrupted is in [`examples/server`](https://github.com/otfabric/go-bacnet/tree/main/examples/server).
+
 
 ## What go-bacnet supports
 
 | | |
 |---|---|
-| Role | Client only |
-| Transport | BACnet/IP (Annex J) over IPv4, routed networks, foreign-device registration, segmentation |
-| Services | Who-Is / I-Am discovery, read and write properties, COV and alarm notifications, file transfer, object management |
+| Roles | Client, and server: a BACnet device of your own with its objects, optionally also the BBMD of its subnet |
+| Transport | BACnet/IP (Annex J) over IPv4, routed networks, foreign-device registration, segmentation in both directions |
+| Client services | Who-Is / I-Am discovery, read and write properties, COV and alarm notifications, file transfer, object management |
+| Server | Device, analog, binary and multi-state points, Notification Class, Trend Log, File, Calendar, Schedule, CharacterString, Integer and Positive Integer Value, Structured View; reads and writes, COV, intrinsic reporting and the alarm services, ReadRange, files, object creation and deletion, device management |
 | Dependencies | Go standard library only |
 | Go version | 1.26 or later |
 
 <Callout type="note" title="Status">
-go-bacnet is tested on every change against five independent open-source BACnet stacks, and its requests are checked against Wireshark's dissector. It has not yet been validated against physical controllers, and the API is v0.
+The client is tested on every change against five independent open-source BACnet stacks. The server, new in go-bacnet v0.6.0, is driven by the clients of three of them: the bacnet-stack command-line tools, BACnet4J and BACpypes3. Both sides are checked against Wireshark's dissector. Neither has been validated against physical controllers yet, and the API is v0.
 </Callout>
 
 ## Interoperability
 
-[bacnet-interop](https://github.com/otfabric/bacnet-interop) provides Dockerized devices from BACnet Stack (C), BACpypes3 (Python), BACnet4J (Java), System.IO.BACnet (C#) and Worldiety (Go), including BBMD and routed-network scenarios.
+[bacnet-interop](https://github.com/otfabric/bacnet-interop) provides Dockerized devices from BACnet Stack (C), BACpypes3 (Python), BACnet4J (Java), System.IO.BACnet (C#) and Worldiety (Go), including BBMD and routed-network scenarios. Since v0.12.0 the BACnet Stack, BACnet4J and BACpypes3 images also run as **clients**, with scenario files for testing a BACnet server: discovery, reads and writes, COV, files, alarms, device management, segmentation and the BBMD.
