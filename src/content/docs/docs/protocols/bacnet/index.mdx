@@ -13,7 +13,7 @@ BACnet (Building Automation and Control Network) is the open protocol of buildin
 This page explains the protocol as the OT Fabric projects use it. It is an orientation, not conformance language: for normative detail use a licensed copy of ANSI/ASHRAE 135.
 
 <Aside type="note" title="Scope of OT Fabric for BACnet">
-The OT Fabric BACnet projects are **clients only**. They discover devices and read, write and subscribe to them. They do not implement a BACnet device (server), a BBMD, MS/TP, BACnet/IPv6 or BACnet Secure Connect (BACnet/SC). They have been tested against five open-source BACnet stacks in containers and have **not yet been validated against physical controllers**.
+The OT Fabric BACnet projects are **clients and servers**. The client discovers devices and reads, writes and subscribes to them. Since go-bacnet v0.6.0 the server serves a BACnet device of your own, with its objects, and can also be the BBMD of its subnet; `bacnetctl server run` puts it behind one command as a simulated device. They do not implement a BACnet router, MS/TP, BACnet/IPv6 or BACnet Secure Connect (BACnet/SC). The client has been tested against five open-source BACnet stacks in containers, the server against the clients of three of them, and neither has **yet been validated against physical controllers**.
 </Aside>
 
 ## The data model: objects and properties
@@ -99,7 +99,7 @@ Trend Log objects keep a buffer of records, read with **ReadRange** by position,
 
 BACnet/IP has **no authentication and no encryption**. Anyone who can reach a device on UDP 47808 can read it, write to it and restart it. Anyone on the path can read, forge or alter traffic, including Who-Is, I-Am, property responses and COV notifications. A device instance number is not an identity. The passwords of DeviceCommunicationControl and ReinitializeDevice travel in clear text.
 
-BACnet Secure Connect (BACnet/SC) is the secured variant of the standard; the OT Fabric projects do not implement it. Keep building automation traffic on isolated, trusted networks and never expose UDP 47808 to the Internet.
+BACnet Secure Connect (BACnet/SC) is the secured variant of the standard; the OT Fabric projects do not implement it. Keep building automation traffic on isolated, trusted networks and never expose UDP 47808 to the Internet. The same holds for a device you serve with go-bacnet or `bacnetctl server run`: it answers whoever can reach it, so give it a device instance no real device on that network has and keep it on loopback or a test network.
 
 <Aside type="caution">
 Writes to `present-value` start and stop fans, move valves and dampers and change setpoints. DeviceCommunicationControl can silence a device so its alarms are no longer delivered, and ReinitializeDevice restarts it. Only use BACnet tooling on devices and networks you own or are authorised to work on.
@@ -128,17 +128,17 @@ For energy work this is where building loads become visible and controllable. En
 
 ## OT Fabric for BACnet
 
-<Badge text="Client only" variant="caution" /> <Badge text="Not yet validated on physical controllers" variant="caution" />
+<Badge text="Client and server" variant="success" /> <Badge text="Not yet validated on physical controllers" variant="caution" />
 
 | Project | What it is |
 |---|---|
-| **go-bacnet** | Pure-Go BACnet/IP client library, no dependencies outside the standard library |
-| **bacnetctl** | Command-line client for discovery, reads, writes, COV monitoring, alarms, trends, files and network diagnostics |
-| **bacnet-interop** | Dockerized reference stacks (bacnet-stack, BACpypes3, BACnet4J, Worldiety, System.IO.BACnet) with fixtures and routed and BBMD scenarios |
+| **go-bacnet** | BACnet/IP client and server library (a device with its objects, and an optional BBMD), no dependencies outside the standard library |
+| **bacnetctl** | Command-line client for discovery, reads, writes, COV monitoring, alarms, trends, files and network diagnostics, plus `server run`, a simulated device for testing clients |
+| **bacnet-interop** | Dockerized reference stacks (bacnet-stack, BACpypes3, BACnet4J, Worldiety, System.IO.BACnet) with fixtures and routed and BBMD scenarios; bacnet-stack, BACnet4J and BACpypes3 also run as clients to test a server |
 
 <CardGrid>
-  <LinkCard title="go-bacnet" description="Client library. Project page." href="/projects/go-bacnet/" />
-  <LinkCard title="bacnetctl" description="Command-line client. Project page." href="/projects/bacnetctl/" />
+  <LinkCard title="go-bacnet" description="Client and server library. Project page." href="/projects/go-bacnet/" />
+  <LinkCard title="bacnetctl" description="Command-line client and simulated device. Project page." href="/projects/bacnetctl/" />
   <LinkCard title="bacnet-interop" description="Interop suite. Project page." href="/projects/bacnet-interop/" />
   <LinkCard title="Source on GitHub" description="github.com/otfabric/go-bacnet, bacnetctl, bacnet-interop" href="https://github.com/otfabric/go-bacnet" />
 </CardGrid>

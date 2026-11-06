@@ -64,7 +64,7 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-bacnet",
-		"description": "BACnet/IP client: discovery, properties, COV and alarms, routed networks and foreign-device registration.",
+		"description": "BACnet/IP client and server: discovery, properties, COV and alarms, routed networks and foreign-device registration on the client; a device of your own with its objects, intrinsic reporting and an optional BBMD on the server.",
 		"icon": "go-bacnet"
 	},
 	{
@@ -421,7 +421,7 @@
 			"bacnet"
 		],
 		"status": "available",
-		"description": "Discover BACnet devices, list point lists, read, write at priority, monitor COV and inspect alarms.",
+		"description": "Discover BACnet devices, list point lists, read, write at priority, monitor COV and inspect alarms, or serve a simulated device from a JSON file to test clients against.",
 		"icon": "go-bacnet"
 	},
 	{
@@ -737,7 +737,7 @@
 			"bacnet"
 		],
 		"status": "available",
-		"description": "BACnet/IP reference devices: BACnet Stack, BACpypes3, BACnet4J, System.IO.BACnet and Worldiety.",
+		"description": "BACnet/IP reference devices: BACnet Stack, BACpypes3, BACnet4J, System.IO.BACnet and Worldiety. BACnet Stack, BACnet4J and BACpypes3 also run as clients to test a BACnet server.",
 		"icon": "go-bacnet"
 	},
 	{
