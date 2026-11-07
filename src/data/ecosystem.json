@@ -2,7 +2,7 @@
  "title": "Industrial Protocol Stack Landscape",
  "verified": "2026-11-07",
  "notes": [
-  "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
+  "Stars and forks are snapshots taken on the verified date and cover the whole repository; where an entry has starsAsOf, its stars and forks are from that earlier date.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
   "release is the newest stable version from the channel the project actually publishes to; source names that channel.",
   "maintenance: active = a commit in the last 12 months, slowing = 12 to 36 months, quiet = more than 36 months; archived, deprecated and discontinued follow the project's own statement.",
@@ -4292,7 +4292,7 @@
    "emerging": true,
    "otfabric": true,
    "package": "https://pkg.go.dev/github.com/otfabric/go-ocpp",
-   "notes": "Both roles on one RPC engine, every action typed and validated against the OCA schemas, including the 2.1 SEND and CALLRESULTERROR. Tested against the five ocpp-interop references.",
+   "notes": "Both roles on one RPC engine, every action typed and validated against the OCA schemas, including the 2.1 SEND and CALLRESULTERROR. Tested against the eight ocpp-interop references.",
    "sources": [
     "https://github.com/otfabric/go-ocpp"
    ],
@@ -4954,7 +4954,7 @@
    "emerging": true,
    "otfabric": true,
    "package": "https://pkg.go.dev/github.com/otfabric/go-dnp3",
-   "notes": "Both roles with no dependencies outside the standard library: file transfer, device attributes, multi-drop, dual end point and Secure Authentication v5 with aggressive mode and statistics. Tested against the four dnp3-interop references.",
+   "notes": "Both roles with no dependencies outside the standard library: file transfer, device attributes, multi-drop, dual end point and Secure Authentication v5 with aggressive mode and statistics. Tested against the five dnp3-interop references.",
    "sources": [
     "https://github.com/otfabric/go-dnp3"
    ],
@@ -5603,7 +5603,7 @@
    "emerging": true,
    "otfabric": true,
    "package": "https://pkg.go.dev/github.com/otfabric/go-ethernetip",
-   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the twelve ethernetip-interop references.",
+   "notes": "Client, scanner and adapter with no dependencies outside the standard library, plus Logix tag services, an emulated Logix tag database and EDS parsing and code generation. EtherNet/IP over TLS for explicit messaging; no DTLS. Not ODVA conformance tested. Tested against the thirteen ethernetip-interop references.",
    "sources": [
     "https://github.com/otfabric/go-ethernetip",
     "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@latest"
@@ -9546,7 +9546,7 @@
    "emerging": true,
    "otfabric": true,
    "package": "https://pkg.go.dev/github.com/otfabric/go-knx",
-   "notes": "KNX over KNXnet/IP in pure Go: frames, cEMI and 209 datapoint subtypes, discovery, tunnelling over UDP and TCP, routing, group communication, device management, busmonitor and a KNXnet/IP server with virtual devices, with KNX IP Secure, Data Secure and ETS keyrings from public sources. Tested in both directions against Calimero, knxd, xknx and KNXUltimate; not KNX certified, not yet tested on a physical interface.",
+   "notes": "KNX over KNXnet/IP in pure Go: frames, cEMI and 239 datapoint subtypes, discovery, tunnelling over UDP and TCP, routing, group communication, device management, busmonitor and a KNXnet/IP server with virtual devices, with KNX IP Secure, Data Secure and ETS keyrings from public sources. Tested in both directions against Calimero, knxd, xknx, KNXUltimate and cB-Sigma knx; not KNX certified, not yet tested on a physical interface.",
    "sources": [
     "https://github.com/otfabric/go-knx",
     "https://proxy.golang.org/github.com/otfabric/go-knx/@latest"

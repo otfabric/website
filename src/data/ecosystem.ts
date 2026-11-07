@@ -26,6 +26,8 @@ export interface Implementation {
 	repo?: string;
 	stars: number | null;
 	forks?: number;
+	/** Date of the stars and forks snapshot, when it is older than `verified`. */
+	starsAsOf?: string;
 	repoCreated?: string;
 	historySince?: string;
 	lastCommit?: string;
