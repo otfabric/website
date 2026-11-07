@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-10-30",
+ "verified": "2026-11-07",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -191,7 +191,8 @@
    "sources": [
     "https://github.com/stephane/libmodbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "pymodbus",
@@ -208,10 +209,10 @@
    "forks": 1077,
    "repoCreated": "2011-12-05",
    "historySince": "2008",
-   "lastCommit": "2026-10-16",
+   "lastCommit": "2026-11-04",
    "release": {
-    "version": "3.16.1",
-    "date": "2026-10-11",
+    "version": "3.16.2",
+    "date": "2026-11-03",
     "source": "PyPI",
     "url": "https://pypi.org/project/pymodbus/"
    },
@@ -232,7 +233,8 @@
    "sources": [
     "https://github.com/pymodbus-dev/pymodbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "nmodbus",
@@ -273,7 +275,8 @@
    "sources": [
     "https://github.com/NModbus/NModbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "goburrow-modbus",
@@ -311,7 +314,8 @@
    "sources": [
     "https://github.com/goburrow/modbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "modbus4j",
@@ -368,7 +372,7 @@
    "forks": 265,
    "repoCreated": "2015-11-07",
    "historySince": "2015",
-   "lastCommit": "2026-09-16",
+   "lastCommit": "2026-11-03",
    "release": {
     "version": "8.0.25",
     "date": "2026-03-20",
@@ -391,7 +395,8 @@
    "sources": [
     "https://github.com/yaacov/node-modbus-serial"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "modbusmaster",
@@ -426,7 +431,8 @@
    "sources": [
     "https://github.com/4-20ma/ModbusMaster"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "modbus-esp8266",
@@ -502,7 +508,8 @@
    "sources": [
     "https://github.com/Cloud-Automation/node-modbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "simonvetter-modbus",
@@ -543,7 +550,8 @@
    "sources": [
     "https://github.com/simonvetter/modbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "j2mod",
@@ -584,7 +592,8 @@
    "sources": [
     "https://github.com/steveohara/j2mod"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "tokio-modbus",
@@ -624,7 +633,8 @@
    "sources": [
     "https://github.com/slowtec/tokio-modbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "digitalpetri-modbus",
@@ -640,7 +650,7 @@
    "stars": 863,
    "forks": 253,
    "historySince": "2014",
-   "lastCommit": "2026-10-16",
+   "lastCommit": "2026-11-02",
    "release": {
     "version": "2.1.6",
     "date": "2026-08-08",
@@ -664,7 +674,8 @@
    "sources": [
     "https://github.com/digitalpetri/modbus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "otfabric-go-modbus",
@@ -680,12 +691,12 @@
    "stars": 2,
    "repoCreated": "2026-03-12",
    "historySince": "2026",
-   "lastCommit": "2026-11-05",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v1.11.1",
-    "date": "2026-11-05",
+    "version": "v1.12.0",
+    "date": "2026-11-07",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-modbus/@v/v1.11.1.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-modbus/@v/v1.12.0.info"
    },
    "roles": [
     "client",
@@ -705,7 +716,8 @@
    "sources": [
     "https://github.com/otfabric/go-modbus"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "tmw-modbus",
@@ -745,12 +757,12 @@
    "forks": 1470,
    "repoCreated": "2013-12-20",
    "historySince": "2013",
-   "lastCommit": "2026-10-17",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v1.5.9",
-    "date": "2026-10-04",
+    "version": "v1.5.10",
+    "date": "2026-10-30",
     "source": "GitHub release",
-    "url": "https://github.com/open62541/open62541/releases/tag/v1.5.9"
+    "url": "https://github.com/open62541/open62541/releases/tag/v1.5.10"
    },
    "roles": [
     "client",
@@ -784,7 +796,7 @@
    "forks": 1059,
    "repoCreated": "2016-02-12",
    "historySince": "2016",
-   "lastCommit": "2026-10-17",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "2.0.1",
     "date": "2026-10-12",
@@ -807,7 +819,8 @@
    "sources": [
     "https://github.com/OPCFoundation/UA-.NETStandard"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "node-opcua",
@@ -824,10 +837,10 @@
    "forks": 517,
    "repoCreated": "2014-01-22",
    "historySince": "2014",
-   "lastCommit": "2026-10-25",
+   "lastCommit": "2026-11-06",
    "release": {
-    "version": "2.187.16",
-    "date": "2026-10-25",
+    "version": "2.187.23",
+    "date": "2026-11-06",
     "source": "npm",
     "url": "https://www.npmjs.com/package/node-opcua"
    },
@@ -846,7 +859,8 @@
    "sources": [
     "https://github.com/node-opcua/node-opcua"
    ],
-   "verified": "2026-10-25"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-25"
   },
   {
    "id": "opcua-asyncio",
@@ -863,7 +877,7 @@
    "forks": 458,
    "repoCreated": "2018-08-02",
    "historySince": "2015",
-   "lastCommit": "2026-10-10",
+   "lastCommit": "2026-11-03",
    "release": {
     "version": "2.1.0",
     "date": "2026-10-06",
@@ -885,7 +899,8 @@
    "sources": [
     "https://github.com/FreeOpcUa/opcua-asyncio"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "python-opcua",
@@ -920,7 +935,8 @@
    "sources": [
     "https://github.com/FreeOpcUa/python-opcua"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "milo",
@@ -937,7 +953,7 @@
    "forks": 477,
    "repoCreated": "2016-05-06",
    "historySince": "2016",
-   "lastCommit": "2026-10-16",
+   "lastCommit": "2026-11-04",
    "release": {
     "version": "v1.1.8",
     "date": "2026-10-06",
@@ -963,7 +979,8 @@
    "sources": [
     "https://github.com/eclipse-milo/milo"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "async-opcua",
@@ -980,7 +997,7 @@
    "forks": 52,
    "repoCreated": "2024-12-18",
    "historySince": "2017",
-   "lastCommit": "2026-10-14",
+   "lastCommit": "2026-10-30",
    "release": {
     "version": "0.19.0",
     "date": "2026-07-18",
@@ -1002,7 +1019,8 @@
    "sources": [
     "https://github.com/FreeOpcUa/async-opcua"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "locka99-opcua",
@@ -1037,7 +1055,8 @@
    "sources": [
     "https://github.com/locka99/opcua"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "gopcua",
@@ -1054,7 +1073,7 @@
    "forks": 332,
    "repoCreated": "2018-07-23",
    "historySince": "2018",
-   "lastCommit": "2026-09-17",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "v0.9.1",
     "date": "2026-08-09",
@@ -1075,7 +1094,8 @@
    "sources": [
     "https://github.com/gopcua/opcua"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "otfabric-go-opcua",
@@ -1091,7 +1111,7 @@
    "stars": 0,
    "repoCreated": "2026-03-10",
    "historySince": "2026",
-   "lastCommit": "2026-11-03",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v1.31.0",
     "date": "2026-11-03",
@@ -1121,7 +1141,8 @@
    "sources": [
     "https://github.com/otfabric/go-opcua"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "unified-automation",
@@ -1239,12 +1260,12 @@
    "forks": 311,
    "repoCreated": "2019-10-06",
    "historySince": "2004",
-   "lastCommit": "2026-10-17",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "1.6.1",
-    "date": "2026-08-28",
+    "version": "1.7.0",
+    "date": "2026-11-04",
     "source": "SourceForge and git tag",
-    "url": "https://sourceforge.net/projects/bacnet/files/bacnet-stack/bacnet-stack-1.6.1/"
+    "url": "https://sourceforge.net/projects/bacnet/files/bacnet-stack/bacnet-stack-1.7.0/"
    },
    "roles": [
     "client",
@@ -1264,7 +1285,8 @@
    "sources": [
     "https://github.com/bacnet-stack/bacnet-stack"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "bacpypes3",
@@ -1281,7 +1303,7 @@
    "forks": 41,
    "repoCreated": "2023-03-09",
    "historySince": "2023",
-   "lastCommit": "2026-09-29",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "0.0.110",
     "date": "2026-09-24",
@@ -1304,7 +1326,8 @@
    "sources": [
     "https://github.com/JoelBender/BACpypes3"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "bacpypes",
@@ -1342,7 +1365,8 @@
    "sources": [
     "https://github.com/JoelBender/bacpypes"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "system-io-bacnet",
@@ -1387,7 +1411,8 @@
    "sources": [
     "https://github.com/ela-compil/BACnet"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "bacnet4j",
@@ -1405,7 +1430,7 @@
    "forks": 122,
    "repoCreated": "2014-06-10",
    "historySince": "2008",
-   "lastCommit": "2026-10-01",
+   "lastCommit": "2026-10-30",
    "release": {
     "version": "v6.1.0",
     "date": "2026-03-23",
@@ -1432,7 +1457,8 @@
    "sources": [
     "https://github.com/RadixIoT/BACnet4J"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "ulbios-bacnet",
@@ -1463,7 +1489,8 @@
    "sources": [
     "https://github.com/ulbios/bacnet"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "bacnet-js-client",
@@ -1499,7 +1526,8 @@
    "sources": [
     "https://github.com/bacnet-js/client"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "bacnet-js-device",
@@ -1538,7 +1566,8 @@
    "sources": [
     "https://github.com/bacnet-js/device"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "worldiety-bacnet",
@@ -1572,7 +1601,51 @@
    "sources": [
     "https://github.com/worldiety/bacnet"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
+  },
+  {
+   "id": "cb-sigma-bacnet",
+   "name": "bacnet (cB-Sigma)",
+   "protocol": "bacnet",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/bacnet",
+   "repo": "cB-Sigma/bacnet",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-10-12",
+   "release": {
+    "version": "v0.2.0",
+    "date": "2026-10-11",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/bacnet/@v/v0.2.0.info"
+   },
+   "roles": [
+    "client",
+    "server",
+    "router"
+   ],
+   "capabilities": [
+    "BACnet/IP",
+    "BBMD",
+    "BACnet/IPv6",
+    "BACnet/SC"
+   ],
+   "interop": "bacnet-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/bacnet",
+   "notes": "Pure Go BACnet client and, since v0.2.0, a device that serves an object table, written for the SigmaM2M oneM2M platform. BACnet/IP with foreign-device registration and a BBMD function, BACnet/IPv6, and BACnet/SC as hub connector, hub function and direct connections over TLS 1.3; segmentation both ways. No MS/TP. A companion module, bacnet-sim, is a simulated device with fault switches; bacnet-interop runs both as a reference device.",
+   "sources": [
+    "https://github.com/cB-Sigma/bacnet",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/bacnet/@latest",
+    "https://github.com/cB-Sigma/bacnet-sim"
+   ],
+   "verified": "2026-11-07"
   },
   {
    "id": "otfabric-go-bacnet",
@@ -1588,7 +1661,7 @@
    "stars": 0,
    "repoCreated": "2026-07-31",
    "historySince": "2026",
-   "lastCommit": "2026-11-06",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.6.0",
     "date": "2026-11-06",
@@ -1609,7 +1682,8 @@
    "sources": [
     "https://github.com/otfabric/go-bacnet"
    ],
-   "verified": "2026-11-06"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-06"
   },
   {
    "id": "cimetrics",
@@ -1719,7 +1793,8 @@
    "sources": [
     "https://github.com/mz-automation/lib60870"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "j60870",
@@ -1753,7 +1828,7 @@
    "sources": [
     "https://www.openmuc.org/iec-60870-5-104/"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07"
   },
   {
    "id": "thinkgos-go-iecp5",
@@ -1789,7 +1864,8 @@
    "sources": [
     "https://github.com/thinkgos/go-iecp5"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "riclolsen-go-iecp5",
@@ -1805,10 +1881,10 @@
    "stars": 3,
    "repoCreated": "2023-03-24",
    "historySince": "2019",
-   "lastCommit": "2026-09-29",
+   "lastCommit": "2026-10-29",
    "release": {
-    "version": "v0.4.6",
-    "date": "2026-09-29",
+    "version": "v0.4.7",
+    "date": "2026-10-29",
     "source": "Git tag",
     "url": "https://pkg.go.dev/github.com/riclolsen/go-iecp5"
    },
@@ -1828,7 +1904,8 @@
    "sources": [
     "https://github.com/riclolsen/go-iecp5"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "wendy512-go-iecp5",
@@ -1867,7 +1944,8 @@
    "sources": [
     "https://github.com/wendy512/go-iecp5"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "wendy512-iec104",
@@ -1908,7 +1986,8 @@
    "sources": [
     "https://github.com/wendy512/iec104"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "c104",
@@ -1925,7 +2004,7 @@
    "forks": 30,
    "repoCreated": "2023-04-12",
    "historySince": "2023",
-   "lastCommit": "2026-08-06",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "2.2.1",
     "date": "2025-04-23",
@@ -1950,7 +2029,8 @@
    "sources": [
     "https://github.com/Fraunhofer-FIT-DIEN/iec104-python"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "cb-sigma-iec60870",
@@ -1993,7 +2073,7 @@
     "https://github.com/cB-Sigma/iec60870",
     "https://proxy.golang.org/github.com/!c!b-!sigma/iec60870/@latest"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07"
   },
   {
    "id": "otfabric-go-iec104",
@@ -2009,7 +2089,7 @@
    "stars": 1,
    "repoCreated": "2026-10-09",
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.2.0",
     "date": "2026-11-04",
@@ -2035,7 +2115,8 @@
     "https://github.com/otfabric/go-iec104",
     "https://proxy.golang.org/github.com/otfabric/go-iec104/@latest"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "tmw-iec60870",
@@ -2075,7 +2156,7 @@
    "forks": 613,
    "repoCreated": "2017-02-10",
    "historySince": "2014",
-   "lastCommit": "2026-10-06",
+   "lastCommit": "2026-10-21",
    "release": {
     "version": "v1.6.2.1",
     "date": "2026-09-24",
@@ -2138,7 +2219,8 @@
    "sources": [
     "https://github.com/beanit/iec61850bean"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "dscsystems-go-iec61850",
@@ -2183,8 +2265,9 @@
     "https://proxy.golang.org/github.com/dscsystems/go-iec61850/@latest",
     "https://github.com/otfabric/iec61850-interop"
    ],
-   "verified": "2026-10-28",
-   "interop": "iec61850-interop"
+   "verified": "2026-11-07",
+   "interop": "iec61850-interop",
+   "starsAsOf": "2026-10-28"
   },
   {
    "id": "iec61850-rust",
@@ -2199,12 +2282,12 @@
    "repo": "csp0924/iec61850-rust",
    "stars": null,
    "historySince": "2026",
-   "lastCommit": "2026-09-06",
+   "lastCommit": "2026-11-01",
    "release": {
-    "version": "0.2.0",
-    "date": "2026-09-05",
+    "version": "0.4.0",
+    "date": "2026-11-01",
     "source": "crates.io",
-    "url": "https://crates.io/crates/iec61850-server/0.2.0"
+    "url": "https://crates.io/crates/iec61850-server/0.4.0"
    },
    "roles": [
     "client",
@@ -2228,7 +2311,52 @@
     "https://crates.io/api/v1/crates/iec61850-server",
     "https://github.com/otfabric/iec61850-interop"
    ],
-   "verified": "2026-10-28"
+   "verified": "2026-11-07"
+  },
+  {
+   "id": "cb-sigma-iec61850",
+   "name": "iec61850 (cB-Sigma)",
+   "protocol": "iec-61850",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/iec61850",
+   "repo": "cB-Sigma/iec61850",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-10-11",
+   "release": {
+    "version": "v0.1.0",
+    "date": "2026-10-11",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/iec61850/@v/v0.1.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "MMS",
+    "GOOSE",
+    "Sampled Values",
+    "Reports",
+    "TLS",
+    "SCL",
+    "R-GOOSE / R-SV"
+   ],
+   "interop": "iec61850-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/iec61850",
+   "notes": "Pure Go MMS client on its own OSI stack with the IEC 61850-8-1 client services, the data model, SCL, GOOSE and Sampled Values publishers (Layer 2, HSR/PRP and routable over UDP) with IEC 62351 security, and ICCP / TASE.2 types, written for the SigmaM2M oneM2M platform. IEC's NSD files and SCL schema are loaded at run time, not shipped. The IED server is the companion module iec61850-sim; iec61850-interop runs the pair as an IED and GOOSE reference.",
+   "sources": [
+    "https://github.com/cB-Sigma/iec61850",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/iec61850/@latest",
+    "https://github.com/cB-Sigma/iec61850-sim"
+   ],
+   "verified": "2026-11-07"
   },
   {
    "id": "otfabric-go-iec61850",
@@ -2245,12 +2373,12 @@
    "forks": 1,
    "repoCreated": "2026-03-20",
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v1.6.0",
-    "date": "2026-11-04",
+    "version": "v1.8.1",
+    "date": "2026-11-07",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-iec61850/@v/v1.6.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-iec61850/@v/v1.8.1.info"
    },
    "roles": [
     "client",
@@ -2273,7 +2401,8 @@
    "sources": [
     "https://github.com/otfabric/go-iec61850"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "otfabric-go-mms",
@@ -2290,7 +2419,7 @@
    "forks": 1,
    "repoCreated": "2026-03-19",
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v1.4.0",
     "date": "2026-11-04",
@@ -2311,7 +2440,8 @@
    "sources": [
     "https://github.com/otfabric/go-mms"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "tmw-iec61850",
@@ -2356,7 +2486,7 @@
    "forks": 510,
    "repoCreated": "2017-12-20",
    "historySince": "2017",
-   "lastCommit": "2026-10-15",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "1.0.0",
     "date": "2026-09-07",
@@ -2376,7 +2506,8 @@
    "sources": [
     "https://github.com/apache/plc4x"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "s7netplus",
@@ -2413,7 +2544,8 @@
    "sources": [
     "https://github.com/S7NetPlus/s7netplus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "python-snap7",
@@ -2430,10 +2562,10 @@
    "forks": 282,
    "repoCreated": "2013-10-09",
    "historySince": "2013",
-   "lastCommit": "2026-10-13",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "3.2.1",
-    "date": "2026-10-04",
+    "version": "3.3.1",
+    "date": "2026-10-28",
     "source": "PyPI",
     "url": "https://pypi.org/project/python-snap7/"
    },
@@ -2456,7 +2588,8 @@
    "sources": [
     "https://github.com/gijzelaerr/python-snap7"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "gos7",
@@ -2473,7 +2606,7 @@
    "forks": 154,
    "repoCreated": "2018-02-01",
    "historySince": "2018",
-   "lastCommit": "2026-09-24",
+   "lastCommit": "2026-10-30",
    "release": null,
    "roles": [
     "client"
@@ -2488,7 +2621,8 @@
    "sources": [
     "https://github.com/robinson/gos7"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "nodes7",
@@ -2524,7 +2658,8 @@
    "sources": [
     "https://github.com/plcpeople/nodeS7"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "snap7",
@@ -2597,7 +2732,8 @@
    "sources": [
     "https://github.com/fbarresi/Sharp7"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "s7commplus",
@@ -2614,10 +2750,10 @@
    "forks": 6,
    "repoCreated": "2026-09-17",
    "historySince": "2026",
-   "lastCommit": "2026-10-13",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "0.2.0",
-    "date": "2026-10-08",
+    "version": "0.3.0",
+    "date": "2026-10-20",
     "source": "PyPI",
     "url": "https://pypi.org/project/s7commplus/"
    },
@@ -2635,7 +2771,8 @@
    "sources": [
     "https://github.com/gijzelaerr/s7commplus"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "otfabric-go-s7comm",
@@ -2651,12 +2788,12 @@
    "stars": 0,
    "repoCreated": "2026-03-13",
    "historySince": "2026",
-   "lastCommit": "2026-11-03",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.9.0",
-    "date": "2026-11-03",
+    "version": "v0.12.0",
+    "date": "2026-11-07",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-s7comm/@v/v0.9.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-s7comm/@v/v0.12.0.info"
    },
    "roles": [
     "client"
@@ -2671,7 +2808,8 @@
    "sources": [
     "https://github.com/otfabric/go-s7comm"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "siaccess",
@@ -2759,7 +2897,8 @@
    "sources": [
     "https://github.com/OpenLEADR/openleadr-python"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "openleadr-rs",
@@ -2776,10 +2915,10 @@
    "forks": 30,
    "repoCreated": "2024-10-01",
    "historySince": "2024",
-   "lastCommit": "2026-10-13",
+   "lastCommit": "2026-11-02",
    "release": {
-    "version": "0.2.7",
-    "date": "2026-10-06",
+    "version": "0.2.8",
+    "date": "2026-10-30",
     "source": "crates.io",
     "url": "https://crates.io/crates/openleadr-vtn"
    },
@@ -2799,7 +2938,8 @@
    "sources": [
     "https://github.com/OpenLEADR/openleadr-rs"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "elaadnl-openadr3",
@@ -2816,10 +2956,10 @@
    "forks": 3,
    "repoCreated": "2025-04-08",
    "historySince": "2025",
-   "lastCommit": "2026-08-07",
+   "lastCommit": "2026-11-06",
    "release": {
-    "version": "2.4.0",
-    "date": "2026-08-07",
+    "version": "2.4.2",
+    "date": "2026-10-26",
     "source": "PyPI",
     "url": "https://pypi.org/project/openadr3-client/"
    },
@@ -2838,7 +2978,8 @@
    "sources": [
     "https://github.com/ElaadNL/openadr3-client"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "avob-openadr",
@@ -2870,7 +3011,8 @@
    "sources": [
     "https://github.com/avob/OpenADR"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "epri-vtn",
@@ -2905,7 +3047,8 @@
    "sources": [
     "https://github.com/epri-dev/OpenADR-Virtual-Top-Node"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "epri-ven",
@@ -2943,7 +3086,8 @@
    "sources": [
     "https://github.com/epri-dev/OpenADR-Virtual-End-Node"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
   },
   {
    "id": "epri-ven-lib",
@@ -2978,7 +3122,50 @@
    "sources": [
     "https://github.com/epri-dev/OpenADR-VEN-Library"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-18"
+  },
+  {
+   "id": "cb-sigma-openadr",
+   "name": "openadr (cB-Sigma)",
+   "protocol": "openadr",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/openadr",
+   "repo": "cB-Sigma/openadr",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-11-07",
+   "release": {
+    "version": "v0.2.1",
+    "date": "2026-11-07",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/openadr/@v/v0.2.1.info"
+   },
+   "roles": [
+    "VTN",
+    "VEN",
+    "Business logic"
+   ],
+   "capabilities": [
+    "2.0a",
+    "2.0b",
+    "3.0",
+    "3.1"
+   ],
+   "interop": "openadr-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/openadr",
+   "notes": "Pure Go OpenADR 2.0b (and 2.0a) and OpenADR 3: messages, XML signatures with replay protection, simple HTTP and XMPP transports, and since v0.2.0 a ready 2.0b VTN and VEN and a 3.1 VTN with webhooks and an MQTT notifier, plus an OpenADR 3 client. Written for the SigmaM2M oneM2M platform. openadr-interop runs it as a second 3.1 VTN and as a client reference.",
+   "sources": [
+    "https://github.com/cB-Sigma/openadr",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/openadr/@latest"
+   ],
+   "verified": "2026-11-07"
   },
   {
    "id": "otfabric-go-openadr",
@@ -2994,7 +3181,7 @@
    "stars": 0,
    "repoCreated": "2026-10-12",
    "historySince": "2026",
-   "lastCommit": "2026-11-05",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.6.0",
     "date": "2026-11-05",
@@ -3017,7 +3204,8 @@
    "sources": [
     "https://github.com/otfabric/go-openadr"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "mobilityhouse-ocpp",
@@ -3034,7 +3222,7 @@
    "forks": 398,
    "repoCreated": "2019-05-09",
    "historySince": "2019",
-   "lastCommit": "2026-10-04",
+   "lastCommit": "2026-10-27",
    "release": {
     "version": "2.1.0",
     "date": "2025-07-16",
@@ -3059,7 +3247,8 @@
     "https://pypi.org/pypi/ocpp/json",
     "https://github.com/mobilityhouse/ocpp/blob/master/CHANGELOG.md"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "java-oca-ocpp",
@@ -3100,7 +3289,8 @@
     "https://github.com/ChargeTimeEU/Java-OCA-OCPP",
     "https://mvnrepository.com/artifact/eu.chargetime.ocpp"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "ocpp-go",
@@ -3141,7 +3331,8 @@
     "https://github.com/lorenzodonini/ocpp-go",
     "https://proxy.golang.org/github.com/lorenzodonini/ocpp-go/@v/list"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "everest-libocpp",
@@ -3178,12 +3369,13 @@
    "interop": "ocpp-interop",
    "relation": "Merged into the EVerest repository at lib/everest/ocpp",
    "maintenance": "archived",
-   "notes": "Charging-station-side OCPP library. The standalone repository was archived on 2026-04-27 and development continues inside EVerest; its README says the 2.0.1 implementation has been OCA certified on several hardware platforms and 2.1 is under development. ocpp-interop runs the libocpp of everest-core 2026.02.1.",
+   "notes": "Charging-station-side OCPP library. The standalone repository was archived on 2026-04-27 and development continues inside EVerest; its README says the 2.0.1 implementation has been OCA certified on several hardware platforms and 2.1 is under development. ocpp-interop runs the libocpp of EVerest 2026.02.2.",
    "sources": [
     "https://github.com/EVerest/libocpp",
     "https://github.com/EVerest/EVerest/tree/main/lib/everest/ocpp"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "citrineos",
@@ -3200,12 +3392,12 @@
    "forks": 168,
    "repoCreated": "2023-10-17",
    "historySince": "2023",
-   "lastCommit": "2026-10-06",
+   "lastCommit": "2026-10-21",
    "release": {
-    "version": "v2.0.1",
-    "date": "2026-10-06",
+    "version": "v2.1.0",
+    "date": "2026-10-21",
     "source": "GitHub release",
-    "url": "https://github.com/citrineos/citrineos-core/releases/tag/v2.0.1"
+    "url": "https://github.com/citrineos/citrineos-core/releases/tag/v2.1.0"
    },
    "roles": [
     "CSMS"
@@ -3224,7 +3416,8 @@
     "https://github.com/citrineos/citrineos-core/releases",
     "https://registry.npmjs.org/@citrineos/base"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "everest",
@@ -3241,12 +3434,12 @@
    "forks": 206,
    "repoCreated": "2021-12-20",
    "historySince": "2020",
-   "lastCommit": "2026-10-16",
+   "lastCommit": "2026-11-06",
    "release": {
-    "version": "2026.02.1",
-    "date": "2026-07-16",
+    "version": "2026.02.2",
+    "date": "2026-11-05",
     "source": "GitHub release",
-    "url": "https://github.com/EVerest/EVerest/releases/tag/2026.02.1"
+    "url": "https://github.com/EVerest/EVerest/releases/tag/2026.02.2"
    },
    "roles": [
     "Charging station"
@@ -3284,7 +3477,7 @@
    "forks": 497,
    "repoCreated": "2013-09-05",
    "historySince": "2013",
-   "lastCommit": "2026-10-11",
+   "lastCommit": "2026-11-03",
    "release": {
     "version": "steve-3.14.1",
     "date": "2026-08-12",
@@ -3307,7 +3500,8 @@
     "https://github.com/steve-community/steve",
     "https://github.com/steve-community/steve/releases"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "microocpp",
@@ -3344,7 +3538,8 @@
     "https://github.com/matth-x/MicroOcpp",
     "https://www.micro-ocpp.com/"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "rust-ocpp",
@@ -3384,7 +3579,8 @@
     "https://github.com/tommymalmqvist/rust-ocpp",
     "https://crates.io/api/v1/crates/rust-ocpp"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "ocpp-rpc",
@@ -3425,7 +3621,8 @@
     "https://github.com/mikuso/ocpp-rpc",
     "https://registry.npmjs.org/ocpp-rpc"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "ocpp-core",
@@ -3442,12 +3639,12 @@
    "forks": 125,
    "repoCreated": "2020-12-28",
    "historySince": "2020",
-   "lastCommit": "2026-10-04",
+   "lastCommit": "2026-10-27",
    "release": {
-    "version": "V1.8.0",
-    "date": "2026-10-04",
+    "version": "V1.9.0",
+    "date": "2026-10-27",
     "source": "GitHub release",
-    "url": "https://github.com/dallmann-consulting/OCPP.Core/releases/tag/V1.8.0"
+    "url": "https://github.com/dallmann-consulting/OCPP.Core/releases/tag/V1.9.0"
    },
    "roles": [
     "CSMS"
@@ -3507,7 +3704,8 @@
     "https://github.com/c-jimenez/open-ocpp",
     "https://github.com/c-jimenez/open-ocpp/releases"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "openocpp-chargelab",
@@ -3546,7 +3744,8 @@
     "https://chargelab.co/blog/introducing-openocpp",
     "https://openocpp.com/"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "izivia-ocpp-toolkit",
@@ -3563,7 +3762,7 @@
    "forks": 16,
    "repoCreated": "2022-06-09",
    "historySince": "2022",
-   "lastCommit": "2026-10-02",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "3.0.0",
     "date": "2026-09-10",
@@ -3588,7 +3787,8 @@
     "https://github.com/IZIVIA/ocpp-toolkit",
     "https://maven-central.storage-download.googleapis.com/maven2/com/izivia/ocpp-toolkit/maven-metadata.xml"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "wwcp-ocpp",
@@ -3605,7 +3805,7 @@
    "forks": 26,
    "repoCreated": "2016-05-23",
    "historySince": "2016",
-   "lastCommit": "2026-10-19",
+   "lastCommit": "2026-11-07",
    "release": null,
    "roles": [
     "CSMS",
@@ -3622,7 +3822,8 @@
    "sources": [
     "https://github.com/OpenChargingCloud/WWCP_OCPP"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "monta-library-ocpp",
@@ -3639,10 +3840,10 @@
    "forks": 2,
    "repoCreated": "2024-09-05",
    "historySince": "2024",
-   "lastCommit": "2026-10-19",
+   "lastCommit": "2026-10-30",
    "release": {
-    "version": "v3.0.2",
-    "date": "2026-09-29",
+    "version": "v3.0.3",
+    "date": "2026-10-28",
     "source": "Git tag (JitPack)",
     "url": "https://jitpack.io/#monta-app/library-ocpp"
    },
@@ -3658,7 +3859,8 @@
    "sources": [
     "https://github.com/monta-app/library-ocpp"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "ocpp-charging-stations-simulator",
@@ -3675,7 +3877,7 @@
    "forks": 100,
    "repoCreated": "2022-05-18",
    "historySince": "2020",
-   "lastCommit": "2026-10-18",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "v4.12.0",
     "date": "2026-08-23",
@@ -3695,7 +3897,8 @@
     "https://github.com/SAP/e-mobility-charging-stations-simulator",
     "https://github.com/SAP/e-mobility-charging-stations-simulator/releases"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
   },
   {
    "id": "ha-ocpp",
@@ -3712,12 +3915,12 @@
    "forks": 166,
    "repoCreated": "2021-02-04",
    "historySince": "2021",
-   "lastCommit": "2026-10-15",
+   "lastCommit": "2026-11-05",
    "release": {
-    "version": "v0.12.1",
-    "date": "2026-10-05",
+    "version": "v0.12.2",
+    "date": "2026-10-20",
     "source": "GitHub release",
-    "url": "https://github.com/lbbrhzn/ocpp/releases/tag/v0.12.1"
+    "url": "https://github.com/lbbrhzn/ocpp/releases/tag/v0.12.2"
    },
    "roles": [
     "CSMS"
@@ -3849,7 +4052,132 @@
    "sources": [
     "https://github.com/motown-io/motown"
    ],
-   "verified": "2026-10-19"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-19"
+  },
+  {
+   "id": "cb-sigma-ocpp",
+   "name": "ocpp (cB-Sigma)",
+   "protocol": "ocpp",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/ocpp",
+   "repo": "cB-Sigma/ocpp",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-10-12",
+   "release": {
+    "version": "v0.2.0",
+    "date": "2026-10-11",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/ocpp/@v/v0.2.0.info"
+   },
+   "roles": [
+    "CSMS",
+    "Charging station"
+   ],
+   "capabilities": [
+    "1.6J",
+    "1.6S",
+    "2.0.1",
+    "2.1",
+    "Security profiles"
+   ],
+   "interop": "ocpp-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/ocpp",
+   "notes": "Pure Go OCPP core for 1.6J, OCPP-S 1.6, 2.0.1 and 2.1, with 2.1 SEND and CALLRESULTERROR, validation of every message against the OCA JSON schemas it embeds, 2.x signed messages and, since v0.2.0, a CSMS and a charging station package. Written for the SigmaM2M oneM2M platform, whose CSMS is built on it; the business logic is not part of it. ocpp-interop runs it in both roles.",
+   "sources": [
+    "https://github.com/cB-Sigma/ocpp",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/ocpp/@latest"
+   ],
+   "verified": "2026-11-07"
+  },
+  {
+   "id": "ocpp-kit",
+   "name": "ocpp-kit",
+   "protocol": "ocpp",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "MIT OR Apache-2.0",
+   "url": "https://github.com/hupe1980/ocpp-kit",
+   "repo": "hupe1980/ocpp-kit",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-09-15",
+   "release": {
+    "version": "0.3.0",
+    "date": "2026-09-15",
+    "source": "crates.io",
+    "url": "https://crates.io/crates/ocpp-kit/0.3.0"
+   },
+   "roles": [
+    "CSMS",
+    "Charging station"
+   ],
+   "capabilities": [
+    "1.6J",
+    "2.0.1",
+    "2.1",
+    "Security profiles"
+   ],
+   "interop": "ocpp-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://crates.io/crates/ocpp-kit",
+   "notes": "Rust toolkit in layers: payloads for every 1.6J, 2.0.1 and 2.1 action generated from the OCA schemas, OCPP-J framing with 2.1 SEND and CALLRESULTERROR and signed messages, a sans-I/O engine, and a Tokio transport with its own WebSocket and permessage-deflate for a charging station, a CSMS and a local controller. Its station connects with security profiles 1 to 3 only. The lower layers are no_std.",
+   "sources": [
+    "https://github.com/hupe1980/ocpp-kit",
+    "https://crates.io/api/v1/crates/ocpp-kit"
+   ],
+   "verified": "2026-11-07"
+  },
+  {
+   "id": "seanlee-ocpp",
+   "name": "ocpp (seanlee0923)",
+   "protocol": "ocpp",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/seanlee0923/ocpp",
+   "repo": "seanlee0923/ocpp",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-08-13",
+   "release": {
+    "version": "v0.3.0",
+    "date": "2026-08-13",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/seanlee0923/ocpp/@v/v0.3.0.info"
+   },
+   "roles": [
+    "CSMS",
+    "Charging station"
+   ],
+   "capabilities": [
+    "1.6J",
+    "2.0.1",
+    "2.1",
+    "Security profiles"
+   ],
+   "interop": "ocpp-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/seanlee0923/ocpp",
+   "notes": "Go OCPP-J CSMS server on gorilla/websocket with a station client package, message types and validation generated from the OCA JSON schemas for 1.6, 2.0.1 and 2.1, and security profiles 0 to 3. No compression and no CALLRESULTERROR; OCPP 1.6 without the security whitepaper messages. The README is in Korean, with an English translation.",
+   "sources": [
+    "https://github.com/seanlee0923/ocpp",
+    "https://proxy.golang.org/github.com/seanlee0923/ocpp/@latest"
+   ],
+   "verified": "2026-11-07"
   },
   {
    "id": "trialog-qocpp",
@@ -3942,12 +4270,12 @@
    "stars": 0,
    "repoCreated": "2026-10-18",
    "historySince": "2026",
-   "lastCommit": "2026-11-05",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.2.0",
-    "date": "2026-11-05",
+    "version": "v0.3.3",
+    "date": "2026-11-07",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-ocpp/@v/v0.2.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-ocpp/@v/v0.3.3.info"
    },
    "roles": [
     "CSMS",
@@ -3968,7 +4296,8 @@
    "sources": [
     "https://github.com/otfabric/go-ocpp"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "stepfunc-dnp3",
@@ -3988,12 +4317,12 @@
    "stars": 159,
    "forks": 37,
    "historySince": "2020",
-   "lastCommit": "2026-10-19",
+   "lastCommit": "2026-10-29",
    "release": {
-    "version": "1.7.0",
-    "date": "2026-09-21",
+    "version": "1.8.0",
+    "date": "2026-10-29",
     "source": "crates.io",
-    "url": "https://crates.io/crates/dnp3/1.7.0"
+    "url": "https://crates.io/crates/dnp3/1.8.0"
    },
    "prerelease": {
     "version": "1.8.0-M1",
@@ -4019,7 +4348,8 @@
     "https://crates.io/api/v1/crates/dnp3",
     "https://www.nuget.org/packages/dnp3"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "opendnp3",
@@ -4062,7 +4392,8 @@
     "https://github.com/dnp3/opendnp3",
     "https://www.nuget.org/packages/opendnp3"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "dsc-go-dnp3",
@@ -4078,12 +4409,12 @@
    "stars": 2,
    "forks": 0,
    "historySince": "2026",
-   "lastCommit": "2026-10-18",
+   "lastCommit": "2026-10-28",
    "release": {
-    "version": "v0.8.1",
-    "date": "2026-10-18",
+    "version": "v0.8.2",
+    "date": "2026-10-28",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/dscsystems/go-dnp3/@v/v0.8.1.info"
+    "url": "https://proxy.golang.org/github.com/dscsystems/go-dnp3/@v/v0.8.2.info"
    },
    "roles": [
     "master",
@@ -4107,7 +4438,8 @@
     "https://github.com/dscsystems/go-dnp3",
     "https://proxy.golang.org/github.com/dscsystems/go-dnp3/@latest"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "dnp3py",
@@ -4147,7 +4479,8 @@
     "https://github.com/craigpnnl/dnp3py",
     "https://pypi.org/pypi/dnp3py/json"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "cb-sigma-dnp3",
@@ -4163,12 +4496,12 @@
    "stars": 0,
    "forks": 0,
    "historySince": "2026",
-   "lastCommit": "2026-10-12",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.3.0",
-    "date": "2026-10-11",
+    "version": "v0.3.1",
+    "date": "2026-11-07",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/dnp3/@v/v0.3.0.info"
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/dnp3/@v/v0.3.1.info"
    },
    "roles": [
     "master",
@@ -4186,13 +4519,15 @@
    "maintenance": "active",
    "emerging": true,
    "package": "https://pkg.go.dev/github.com/cB-Sigma/dnp3",
-   "notes": "Pure Go master and outstation written for the SigmaM2M oneM2M platform, with Secure Authentication v5 including update key changes and user certificates, a gateway and device profile documents. Interop tested against opendnp3 by its authors. A companion module, dnp3-sim, is a fault-injecting simulated outstation built on it.",
+   "notes": "Pure Go master and outstation written for the SigmaM2M oneM2M platform, with Secure Authentication v5 including update key changes and user certificates, a gateway and device profile documents. Interop tested against opendnp3 by its authors, and a dnp3-interop reference in both roles. A companion module, dnp3-sim, is a fault-injecting simulated outstation built on it.",
    "sources": [
     "https://github.com/cB-Sigma/dnp3",
     "https://proxy.golang.org/github.com/!c!b-!sigma/dnp3/@latest",
     "https://github.com/cB-Sigma/dnp3-sim"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20",
+   "interop": "dnp3-interop"
   },
   {
    "id": "nfm-dnp3",
@@ -4228,7 +4563,9 @@
     "https://github.com/fxodell/dnp3py",
     "https://pypi.org/pypi/nfm-dnp3/json"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20",
+   "interop": "dnp3-interop"
   },
   {
    "id": "yadnp3",
@@ -4245,12 +4582,12 @@
    "stars": 0,
    "forks": 0,
    "historySince": "2013",
-   "lastCommit": "2026-10-19",
+   "lastCommit": "2026-11-01",
    "release": {
-    "version": "3.2.1.4",
-    "date": "2026-10-19",
+    "version": "3.2.1.5",
+    "date": "2026-11-01",
     "source": "PyPI",
-    "url": "https://pypi.org/project/yadnp3/3.2.1.4/"
+    "url": "https://pypi.org/project/yadnp3/3.2.1.5/"
    },
    "roles": [
     "master",
@@ -4275,7 +4612,8 @@
     "https://github.com/f0rw4rd/yadnp3",
     "https://pypi.org/pypi/yadnp3/json"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "pydnp3",
@@ -4313,7 +4651,8 @@
     "https://github.com/Kisensum/pydnp3",
     "https://pypi.org/pypi/pydnp3/json"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "volttron-dnp3-python",
@@ -4352,7 +4691,8 @@
     "https://github.com/VOLTTRON/dnp3-python",
     "https://pypi.org/pypi/dnp3-python/json"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "dart-dnp3",
@@ -4391,7 +4731,8 @@
     "https://github.com/gencto/dnp3_plugin",
     "https://pub.dev/api/packages/dnp3"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "gec-dnp3",
@@ -4423,7 +4764,8 @@
    "sources": [
     "https://github.com/gec/dnp3"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-20"
   },
   {
    "id": "tmw-dnp3-scl",
@@ -4496,7 +4838,7 @@
     "https://www.nuget.org/packages/dnp3_protocol",
     "https://github.com/FreyrSCADA/DNP3"
    ],
-   "verified": "2026-10-20"
+   "verified": "2026-11-07"
   },
   {
    "id": "jpembedded-dnp3",
@@ -4588,7 +4930,7 @@
    "repo": "otfabric/go-dnp3",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v1.9.0",
     "date": "2026-11-04",
@@ -4616,7 +4958,8 @@
    "sources": [
     "https://github.com/otfabric/go-dnp3"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "anu-envoy",
@@ -4632,7 +4975,7 @@
    "stars": 27,
    "forks": 24,
    "historySince": "2023",
-   "lastCommit": "2026-09-18",
+   "lastCommit": "2026-10-26",
    "release": {
     "version": "v2.5.0",
     "date": "2026-09-18",
@@ -4653,7 +4996,8 @@
     "https://github.com/bsgip/envoy",
     "https://github.com/bsgip/envoy/tree/v2.5.0"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "gridappsd-2030-5-server-go",
@@ -4669,12 +5013,12 @@
    "stars": 0,
    "forks": 0,
    "historySince": "2026",
-   "lastCommit": "2026-10-22",
+   "lastCommit": "2026-11-05",
    "release": {
-    "version": "v0.18.0",
-    "date": "2026-10-21",
+    "version": "v0.19.0",
+    "date": "2026-11-05",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-server-go/@v/v0.18.0.info"
+    "url": "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-server-go/@v/v0.19.0.info"
    },
    "roles": [
     "server"
@@ -4694,7 +5038,8 @@
     "https://github.com/GRIDAPPSD/ieee-2030_5-server-go",
     "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-server-go/@latest"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "gridappsd-2030-5-client-go",
@@ -4710,7 +5055,7 @@
    "stars": 0,
    "forks": 0,
    "historySince": "2026",
-   "lastCommit": "2026-10-21",
+   "lastCommit": "2026-11-04",
    "release": {
     "version": "v0.1.0",
     "date": "2026-10-21",
@@ -4735,7 +5080,8 @@
     "https://github.com/GRIDAPPSD/ieee-2030_5-client-go",
     "https://proxy.golang.org/github.com/gridappsd/ieee-2030_5-client-go/@latest"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "py20305",
@@ -4751,12 +5097,12 @@
    "stars": 4,
    "forks": 0,
    "historySince": "2026",
-   "lastCommit": "2026-10-21",
+   "lastCommit": "2026-11-06",
    "release": {
-    "version": "0.16.0",
-    "date": "2026-10-21",
+    "version": "1.0.0",
+    "date": "2026-11-06",
     "source": "PyPI",
-    "url": "https://pypi.org/project/py20305/0.16.0/"
+    "url": "https://pypi.org/project/py20305/1.0.0/"
    },
    "roles": [
     "client"
@@ -4779,7 +5125,8 @@
     "https://pypi.org/pypi/py20305/json",
     "https://open-satori.org"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "sep2-client-rust",
@@ -4817,7 +5164,8 @@
     "https://crates.io/api/v1/crates/sep2_client",
     "https://crates.io/api/v1/crates/sep2_common"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "open-dynamic-export",
@@ -4852,7 +5200,8 @@
     "https://github.com/longzheng/open-dynamic-export",
     "https://opendynamicexport.com/csip-aus/"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "volttron-ieee-2030-5",
@@ -4868,12 +5217,12 @@
    "stars": 501,
    "forks": 283,
    "historySince": "2013",
-   "lastCommit": "2026-09-23",
+   "lastCommit": "2026-11-02",
    "release": {
-    "version": "9.2.0",
-    "date": "2026-10-15",
+    "version": "v9.3.0",
+    "date": "2026-11-02",
     "source": "Git tag",
-    "url": "https://github.com/VOLTTRON/volttron/tree/9.2.0"
+    "url": "https://github.com/VOLTTRON/volttron/tree/9.3.0"
    },
    "roles": [
     "client"
@@ -4921,7 +5270,8 @@
     "https://github.com/ismell/aio2030dot5",
     "https://pypi.org/pypi/aio2030dot5/json"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "gridappsd-2030-5-python",
@@ -4958,7 +5308,8 @@
     "https://github.com/GRIDAPPSD/gridappsd-2030_5",
     "https://pypi.org/pypi/gridappsd-2030-5/json"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "envoy-schema",
@@ -4974,7 +5325,7 @@
    "stars": 14,
    "forks": 4,
    "historySince": "2023",
-   "lastCommit": "2026-09-18",
+   "lastCommit": "2026-11-05",
    "release": {
     "version": "2.7.0",
     "date": "2026-09-18",
@@ -4996,7 +5347,8 @@
     "https://github.com/bsgip/envoy-schema",
     "https://pypi.org/pypi/envoy-schema/json"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "cactus-client",
@@ -5012,12 +5364,12 @@
    "stars": 3,
    "forks": 5,
    "historySince": "2025",
-   "lastCommit": "2026-10-15",
+   "lastCommit": "2026-11-05",
    "release": {
-    "version": "1.3.3",
-    "date": "2026-10-15",
+    "version": "1.3.5",
+    "date": "2026-11-05",
     "source": "PyPI",
-    "url": "https://pypi.org/project/cactus-client/1.3.3/"
+    "url": "https://pypi.org/project/cactus-client/1.3.5/"
    },
    "roles": [
     "client"
@@ -5037,7 +5389,8 @@
     "https://pypi.org/pypi/cactus-client/json",
     "https://github.com/bsgip/cactus-test-definitions"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "cactus-runner",
@@ -5053,7 +5406,7 @@
    "stars": 7,
    "forks": 4,
    "historySince": "2025",
-   "lastCommit": "2026-09-24",
+   "lastCommit": "2026-11-05",
    "release": {
     "version": "v2.10.0",
     "date": "2026-09-24",
@@ -5076,7 +5429,8 @@
     "https://github.com/bsgip/cactus-runner",
     "https://github.com/bsgip/cactus-test-definitions"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "epri-2030-5-client",
@@ -5113,7 +5467,8 @@
     "https://www.epri.com/research/products/000000003002014087",
     "https://markslicker.github.io/"
    ],
-   "verified": "2026-10-23"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-23"
   },
   {
    "id": "kitu-spark",
@@ -5179,7 +5534,7 @@
    "repo": "otfabric/go-ieee20305",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.6.0",
     "date": "2026-11-04",
@@ -5207,7 +5562,8 @@
    "sources": [
     "https://github.com/otfabric/go-ieee20305"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "otfabric-go-ethernetip",
@@ -5222,12 +5578,12 @@
    "repo": "otfabric/go-ethernetip",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-05",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.5.0",
-    "date": "2026-11-05",
+    "version": "v0.5.2",
+    "date": "2026-11-06",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.5.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@v/v0.5.2.info"
    },
    "roles": [
     "scanner",
@@ -5252,7 +5608,8 @@
     "https://github.com/otfabric/go-ethernetip",
     "https://proxy.golang.org/github.com/otfabric/go-ethernetip/@latest"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "opener",
@@ -5290,7 +5647,8 @@
     "https://github.com/EIPStackGroup/OpENer",
     "https://github.com/otfabric/go-ethernetip/blob/main/docs/research/STACKS.md"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "eipscanner",
@@ -5326,7 +5684,8 @@
    "sources": [
     "https://github.com/nimbuscontrols/EIPScanner"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "pycomm3",
@@ -5368,7 +5727,8 @@
     "https://github.com/ottowayi/pycomm3",
     "https://pypi.org/pypi/pycomm3/json"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "cpppo",
@@ -5408,7 +5768,8 @@
     "https://github.com/pjkundert/cpppo",
     "https://pypi.org/pypi/cpppo/json"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "libplctag",
@@ -5491,7 +5852,8 @@
     "https://github.com/libplctag/libplctag.NET",
     "https://api.nuget.org/v3-flatcontainer/libplctag/index.json"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "pylogix",
@@ -5529,7 +5891,8 @@
     "https://github.com/dmroeder/pylogix",
     "https://pypi.org/pypi/pylogix/json"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "gologix",
@@ -5569,7 +5932,8 @@
     "https://github.com/danomagnum/gologix",
     "https://proxy.golang.org/github.com/danomagnum/gologix/@latest"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "loki-go-ethernet-ip",
@@ -5601,7 +5965,7 @@
     "https://github.com/loki-os/go-ethernet-ip",
     "https://proxy.golang.org/github.com/loki-os/go-ethernet-ip/@latest"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07"
   },
   {
    "id": "rseip",
@@ -5639,7 +6003,8 @@
     "https://github.com/Joylei/eip-rs",
     "https://crates.io/api/v1/crates/rseip"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "node-ethernet-ip",
@@ -5677,7 +6042,8 @@
     "https://github.com/cmseaton42/node-ethernet-ip",
     "https://registry.npmjs.org/ethernet-ip"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "st-ethernet-ip",
@@ -5719,7 +6085,8 @@
     "https://github.com/SerafinTech/ST-node-ethernet-ip",
     "https://registry.npmjs.org/st-ethernet-ip"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "eeip-net",
@@ -5758,7 +6125,8 @@
     "https://github.com/rossmann-engineering/EEIP.NET",
     "https://api.nuget.org/v3-flatcontainer/eeip/index.json"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "ether-ip",
@@ -5792,7 +6160,8 @@
    "sources": [
     "https://github.com/epics-modules/ether_ip"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "etherip-java",
@@ -5827,7 +6196,8 @@
    "sources": [
     "https://github.com/ornl-epics/etherip"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
   },
   {
    "id": "pycomm",
@@ -5863,7 +6233,51 @@
     "https://github.com/ruscito/pycomm",
     "https://pypi.org/pypi/pycomm/json"
    ],
-   "verified": "2026-10-26"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-26"
+  },
+  {
+   "id": "cb-sigma-enip",
+   "name": "enip (cB-Sigma)",
+   "protocol": "ethernet-ip",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/enip",
+   "repo": "cB-Sigma/enip",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-11-07",
+   "release": {
+    "version": "v0.2.1",
+    "date": "2026-11-07",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/enip/@v/v0.2.1.info"
+   },
+   "roles": [
+    "client",
+    "scanner",
+    "adapter"
+   ],
+   "capabilities": [
+    "Logix tags",
+    "Class 3",
+    "Class 1 I/O",
+    "Discovery"
+   ],
+   "interop": "ethernetip-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/enip",
+   "notes": "Pure Go EtherNet/IP client and adapter for Logix controller tags, tag browsing and structure templates, CIP object attributes and class 1 implicit I/O, written for the SigmaM2M oneM2M platform. No cgo and no dependency beyond the standard library and its own broadcast helper. ethernetip-interop runs it as a server and a client reference.",
+   "sources": [
+    "https://github.com/cB-Sigma/enip",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/enip/@latest",
+    "https://github.com/cB-Sigma/enip-sim"
+   ],
+   "verified": "2026-11-07"
   },
   {
    "id": "rta-ethernet-ip",
@@ -6002,7 +6416,7 @@
    "repo": "otfabric/go-profinet",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-05",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.7.0",
     "date": "2026-11-05",
@@ -6032,7 +6446,8 @@
     "https://github.com/otfabric/go-profinet",
     "https://proxy.golang.org/github.com/otfabric/go-profinet/@latest"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "p-net",
@@ -6049,7 +6464,7 @@
    "stars": 599,
    "forks": 234,
    "historySince": "2018",
-   "lastCommit": "2026-06-15",
+   "lastCommit": "2026-10-27",
    "release": {
     "version": "public/v1.0.2",
     "date": "2025-04-23",
@@ -6075,7 +6490,8 @@
     "https://github.com/otfabric/profinet-interop/blob/main/versions.yaml",
     "https://github.com/otfabric/go-profinet/blob/main/docs/research/STACKS.md"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "pnio-rs",
@@ -6115,7 +6531,8 @@
     "https://github.com/core-engineering/pnio-rs",
     "https://crates.io/api/v1/crates/pnio"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "profinet-py",
@@ -6156,7 +6573,8 @@
     "https://github.com/f0rw4rd/profinet-py",
     "https://pypi.org/pypi/profinet-py/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "pnio-dcp",
@@ -6191,7 +6609,7 @@
     "https://gitlab.com/pyshacks/pnio_dcp",
     "https://pypi.org/pypi/pnio-dcp/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07"
   },
   {
    "id": "openpnio",
@@ -6221,7 +6639,8 @@
    "sources": [
     "https://github.com/DDex89/OpenPNIO"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "profinettools",
@@ -6250,12 +6669,13 @@
    "capabilities": [
     "DCP"
    ],
-   "maintenance": "slowing",
+   "maintenance": "quiet",
    "notes": "A Windows desktop tool on WinPcap or Npcap that scans a network with DCP and assigns station names and IP settings, a WPF rewrite of the older profinetexplorer.",
    "sources": [
     "https://github.com/fbarresi/ProfinetTools"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "openprofinet",
@@ -6289,7 +6709,8 @@
    "sources": [
     "https://github.com/naresh97/OpenProfinet"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "node-profinetdcp",
@@ -6325,7 +6746,8 @@
     "https://github.com/ktemelkov/node-profinetdcp",
     "https://registry.npmjs.org/profinetdcp"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "profinet-rs",
@@ -6366,7 +6788,8 @@
    "sources": [
     "https://github.com/pasrom/profinet-rs"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "alfredkrohmer-profinet",
@@ -6395,7 +6818,8 @@
     "https://github.com/alfredkrohmer/profinet",
     "https://github.com/otfabric/go-profinet/blob/main/docs/research/STACKS.md"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "pi-community-stack",
@@ -6589,7 +7013,7 @@
    "repo": "otfabric/go-canbus",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.8.0",
     "date": "2026-11-04",
@@ -6622,7 +7046,8 @@
     "https://github.com/otfabric/go-canbus",
     "https://proxy.golang.org/github.com/otfabric/go-canbus/@latest"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "linux-socketcan",
@@ -6700,7 +7125,8 @@
    "sources": [
     "https://github.com/linux-can/can-utils"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "python-can",
@@ -6743,7 +7169,8 @@
     "https://github.com/hardbyte/python-can",
     "https://pypi.org/pypi/python-can/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "socketcan-rs",
@@ -6782,7 +7209,8 @@
     "https://github.com/socketcan-rs/socketcan-rs",
     "https://index.crates.io/so/ck/socketcan"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "scapy-can",
@@ -6798,7 +7226,7 @@
    "stars": 12600,
    "forks": 2300,
    "historySince": "2003",
-   "lastCommit": "2026-10-29",
+   "lastCommit": "2026-11-04",
    "release": {
     "version": "2.8.0",
     "date": "2026-10-02",
@@ -6822,7 +7250,8 @@
     "https://github.com/secdev/scapy",
     "https://pypi.org/pypi/scapy/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "python-can-isotp",
@@ -6860,7 +7289,8 @@
     "https://github.com/pylessard/python-can-isotp",
     "https://pypi.org/pypi/can-isotp/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "cantools",
@@ -6876,7 +7306,7 @@
    "stars": 2300,
    "forks": 657,
    "historySince": "2015",
-   "lastCommit": "2026-10-29",
+   "lastCommit": "2026-11-04",
    "release": {
     "version": "45.1.2",
     "date": "2026-10-29",
@@ -6902,7 +7332,8 @@
     "https://github.com/cantools/cantools",
     "https://pypi.org/pypi/cantools/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "canmatrix",
@@ -6943,7 +7374,8 @@
     "https://github.com/ebroecker/canmatrix",
     "https://pypi.org/pypi/canmatrix/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "einride-can-go",
@@ -6982,7 +7414,8 @@
     "https://github.com/einride/can-go",
     "https://proxy.golang.org/go.einride.tech/can/@latest"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "brutella-can",
@@ -7018,7 +7451,8 @@
     "https://github.com/brutella/can",
     "https://proxy.golang.org/github.com/brutella/can/@latest"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "javacan",
@@ -7058,7 +7492,8 @@
     "https://github.com/pschichtel/JavaCAN",
     "https://repo1.maven.org/maven2/tel/schich/javacan-core/maven-metadata.xml"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "socketcansharp",
@@ -7099,7 +7534,8 @@
     "https://github.com/derek-will/SocketCANSharp",
     "https://api.nuget.org/v3/registration5-gz-semver2/socketcansharp/index.json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "node-can",
@@ -7138,7 +7574,8 @@
     "https://github.com/sebi2k1/node-can",
     "https://registry.npmjs.org/socketcan"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "opendbc",
@@ -7155,7 +7592,7 @@
    "stars": 3400,
    "forks": 2300,
    "historySince": "2017",
-   "lastCommit": "2026-10-27",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "0.3.1",
     "date": "2026-04-22",
@@ -7175,7 +7612,8 @@
     "https://github.com/commaai/opendbc",
     "https://pypi.org/pypi/opendbc/json"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "can-dbc",
@@ -7211,7 +7649,8 @@
     "https://github.com/oxibus/can-dbc",
     "https://index.crates.io/ca/n-/can-dbc"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "isotp-c",
@@ -7240,7 +7679,8 @@
    "sources": [
     "https://github.com/lishen2/isotp-c"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "savvycan",
@@ -7256,7 +7696,7 @@
    "stars": 1800,
    "forks": 467,
    "historySince": "2015",
-   "lastCommit": "2026-10-28",
+   "lastCommit": "2026-11-03",
    "release": {
     "version": "V220",
     "date": "2025-05-08",
@@ -7349,7 +7789,8 @@
    "sources": [
     "https://github.com/CaringCaribou/caringcaribou"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "can-isotp-module",
@@ -7378,7 +7819,8 @@
    "sources": [
     "https://github.com/hartkopp/can-isotp"
    ],
-   "verified": "2026-10-29"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-29"
   },
   {
    "id": "vector-xl-driver",
@@ -7481,7 +7923,7 @@
    "repo": "otfabric/go-canopen",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-04",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v0.4.1",
     "date": "2026-11-04",
@@ -7513,7 +7955,8 @@
     "https://proxy.golang.org/github.com/otfabric/go-canopen/@latest"
    ],
    "protocol": "canopen",
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "canopennode",
@@ -7556,7 +7999,8 @@
     "https://github.com/otfabric/canopen-interop/blob/main/versions.yaml"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "lely-canopen",
@@ -7591,7 +8035,7 @@
     "EDS/DCF tools"
    ],
    "interop": "canopen-interop",
-   "maintenance": "active",
+   "maintenance": "slowing",
    "notes": "Lely's core libraries: a C stack (liblely-co) and a C++ application layer with asynchronous master and slave drivers, CiA 302 network boot-up, LSS, MPDOs, and Python dcf-tools that check EDS files and generate configurations. ROS 2's ros2_canopen builds on it.",
    "sources": [
     "https://gitlab.com/lely_industries/lely-core",
@@ -7599,7 +8043,7 @@
     "https://gitlab.com/api/v4/projects/lely_industries%2Flely-core"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07"
   },
   {
    "id": "python-canopen",
@@ -7641,7 +8085,8 @@
     "https://pypi.org/pypi/canopen/json"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "canfestival",
@@ -7674,7 +8119,8 @@
     "https://github.com/Beremiz/CanFestival"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "embedded-office-canopen",
@@ -7710,7 +8156,8 @@
     "https://github.com/embedded-office/canopen-stack"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "gocanopen",
@@ -7725,7 +8172,7 @@
    "stars": 16,
    "forks": 9,
    "historySince": "2022",
-   "lastCommit": "2026-10-07",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "v2.1.1",
     "date": "2026-10-07",
@@ -7751,7 +8198,8 @@
     "https://proxy.golang.org/github.com/samsamfire/gocanopen/v2/@latest"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "node-canopen",
@@ -7789,7 +8237,8 @@
     "https://registry.npmjs.org/canopen"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "zencan",
@@ -7804,7 +8253,7 @@
    "stars": 47,
    "forks": 15,
    "historySince": "2024",
-   "lastCommit": "2026-10-22",
+   "lastCommit": "2026-10-30",
    "release": {
     "version": "0.0.5",
     "date": "2026-09-05",
@@ -7828,7 +8277,8 @@
     "https://crates.io/api/v1/crates/zencan-node"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "canopen-rs",
@@ -7871,7 +8321,8 @@
     "https://crates.io/api/v1/crates/canopen-rs"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "oze-canopen",
@@ -7909,7 +8360,8 @@
     "https://crates.io/api/v1/crates/oze-canopen"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "canopenterm",
@@ -7946,7 +8398,8 @@
     "https://github.com/mupfdev/CANopenTerm"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "canopeneditor",
@@ -7961,7 +8414,7 @@
    "stars": 264,
    "forks": 100,
    "historySince": "2016",
-   "lastCommit": "2026-10-22",
+   "lastCommit": "2026-11-07",
    "release": {
     "version": "v4.2.3",
     "date": "2024-11-29",
@@ -7997,7 +8450,7 @@
    "stars": 292,
    "forks": 138,
    "historySince": "2022",
-   "lastCommit": "2026-10-25",
+   "lastCommit": "2026-11-06",
    "release": {
     "version": "0.3.4",
     "date": "2026-05-24",
@@ -8021,7 +8474,8 @@
     "https://github.com/ros-industrial/ros2_canopen"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "angelodlfrtr-go-canopen",
@@ -8059,7 +8513,7 @@
     "https://proxy.golang.org/github.com/angelodlfrtr/go-canopen/@latest"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07"
   },
   {
    "id": "ros-canopen",
@@ -8093,7 +8547,8 @@
     "https://github.com/ros-industrial/ros_canopen"
    ],
    "protocol": "canopen",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "emotas-canopen",
@@ -8274,7 +8729,8 @@
     "https://repo1.maven.org/maven2/org/eclipse/tahu/tahu-core/maven-metadata.xml",
     "https://sparkplug.eclipse.org/specification/version/3.0/"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "tahu-js",
@@ -8312,7 +8768,8 @@
     "https://github.com/eclipse-tahu/tahu",
     "https://registry.npmjs.org/sparkplug-client"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "tahu-c",
@@ -8342,7 +8799,8 @@
     "https://github.com/eclipse-tahu/tahu",
     "https://github.com/otfabric/sparkplugb-interop/blob/main/PLAN.md"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "tahu-python",
@@ -8375,7 +8833,8 @@
     "https://github.com/eclipse-tahu/tahu",
     "https://pypi.org/pypi/tahu/json"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "pysparkplug",
@@ -8417,7 +8876,8 @@
     "https://pypi.org/pypi/pysparkplug/json",
     "https://github.com/otfabric/go-sparkplugb#go-sparkplugb-vs-other-sparkplug-b-stacks"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "sparkplugnet",
@@ -8462,7 +8922,8 @@
     "https://api.nuget.org/v3-flatcontainer/sparkplugnet/index.json",
     "https://github.com/otfabric/go-sparkplugb#go-sparkplugb-vs-other-sparkplug-b-stacks"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "srad",
@@ -8478,12 +8939,12 @@
    "stars": 10,
    "forks": 1,
    "historySince": "2025",
-   "lastCommit": "2026-09-16",
+   "lastCommit": "2026-11-04",
    "release": {
-    "version": "0.5.0",
-    "date": "2026-05-08",
+    "version": "0.6.0",
+    "date": "2026-11-04",
     "source": "crates.io",
-    "url": "https://crates.io/crates/srad/0.5.0"
+    "url": "https://crates.io/crates/srad/0.6.0"
    },
    "roles": [
     "edge node",
@@ -8505,7 +8966,8 @@
     "https://crates.io/api/v1/crates/srad",
     "https://github.com/otfabric/go-sparkplugb#go-sparkplugb-vs-other-sparkplug-b-stacks"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "sparkplughost",
@@ -8543,7 +9005,8 @@
     "https://github.com/EvergenEnergy/sparkplughost",
     "https://proxy.golang.org/github.com/!evergen!energy/sparkplughost/@latest"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "hivemqtt-sparkplug",
@@ -8578,7 +9041,8 @@
     "https://github.com/hivemq/hivemq-mqtt-client-dotnet",
     "https://api.nuget.org/v3/registration5-gz-semver2/hivemqtt.sparkplug/index.json"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "nautilus-sparkplug",
@@ -8594,12 +9058,12 @@
    "stars": 45,
    "forks": 9,
    "historySince": "2026",
-   "lastCommit": "2026-10-26",
+   "lastCommit": "2026-11-05",
    "release": {
-    "version": "v0.18.0",
-    "date": "2026-10-15",
+    "version": "v0.20.0",
+    "date": "2026-11-05",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/joyautomation/nautilus/@v/v0.18.0.info"
+    "url": "https://proxy.golang.org/github.com/joyautomation/nautilus/@v/v0.20.0.info"
    },
    "roles": [
     "edge node",
@@ -8616,7 +9080,8 @@
     "https://github.com/joyautomation/nautilus",
     "https://proxy.golang.org/github.com/joyautomation/nautilus/@latest"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "synapse",
@@ -8653,7 +9118,8 @@
     "https://github.com/joyautomation/synapse",
     "https://jsr.io/@joyautomation/synapse/meta.json"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "sparklernet",
@@ -8694,7 +9160,8 @@
     "https://github.com/longkerdandy/SparklerNet",
     "https://api.nuget.org/v3-flatcontainer/sparklernet/index.json"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "plugb",
@@ -8734,7 +9201,8 @@
     "https://github.com/philipp2604/PlugB",
     "https://api.nuget.org/v3/registration5-gz-semver2/philipp2604.plugb/index.json"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "otfabric-go-sparkplugb",
@@ -8749,12 +9217,12 @@
    "repo": "otfabric/go-sparkplugb",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-01",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.3.3",
-    "date": "2026-11-01",
+    "version": "v0.3.4",
+    "date": "2026-11-06",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-sparkplugb/@v/v0.3.3.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-sparkplugb/@v/v0.3.4.info"
    },
    "roles": [
     "edge node",
@@ -8781,7 +9249,8 @@
     "https://github.com/otfabric/go-sparkplugb",
     "https://proxy.golang.org/github.com/otfabric/go-sparkplugb/@latest"
    ],
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "mqtt-spb-wrapper",
@@ -8820,7 +9289,8 @@
     "https://github.com/javier-fg/mqtt-spb-wrapper",
     "https://pypi.org/pypi/mqtt-spb-wrapper/json"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "node-red-sparkplug-plus",
@@ -8864,7 +9334,8 @@
     "https://github.com/thomassorensen2650/node-red-contrib-mqtt-sparkplug-plus",
     "https://registry.npmjs.org/node-red-contrib-mqtt-sparkplug-plus"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "sparkplug-rs",
@@ -8901,7 +9372,8 @@
     "https://github.com/ahlner/sparkplug-rs",
     "https://crates.io/api/v1/crates/sparkplug-rs"
    ],
-   "verified": "2026-10-27"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-27"
   },
   {
    "id": "cirrus-link-mqtt-modules",
@@ -9050,12 +9522,12 @@
    "repo": "otfabric/go-knx",
    "stars": 0,
    "historySince": "2026",
-   "lastCommit": "2026-11-05",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.7.0",
-    "date": "2026-11-05",
+    "version": "v0.8.2",
+    "date": "2026-11-07",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-knx/@v/v0.7.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-knx/@v/v0.8.2.info"
    },
    "roles": [
     "client",
@@ -9080,7 +9552,8 @@
     "https://proxy.golang.org/github.com/otfabric/go-knx/@latest"
    ],
    "protocol": "knx",
-   "verified": "2026-11-05"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-11-05"
   },
   {
    "id": "calimero",
@@ -9130,7 +9603,8 @@
     "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "calimero-server",
@@ -9179,7 +9653,8 @@
     "https://github.com/otfabric/knx-interop/blob/main/versions.yaml"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "calimero-tools",
@@ -9227,7 +9702,8 @@
     "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knxd",
@@ -9280,12 +9756,12 @@
    "repo": "XKNX/xknx",
    "stars": 349,
    "forks": 124,
-   "lastCommit": "2026-10-25",
+   "lastCommit": "2026-11-05",
    "release": {
-    "version": "4.0.0",
-    "date": "2026-10-15",
+    "version": "4.1.1",
+    "date": "2026-11-05",
     "source": "PyPI",
-    "url": "https://pypi.org/project/xknx/4.0.0/"
+    "url": "https://pypi.org/project/xknx/4.1.1/"
    },
    "roles": [
     "client",
@@ -9306,7 +9782,8 @@
     "https://pypi.org/pypi/xknx/json"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knxultimate",
@@ -9320,12 +9797,12 @@
    "repo": "Supergiovane/KNXUltimate",
    "stars": 42,
    "forks": 15,
-   "lastCommit": "2026-10-28",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "6.3.1",
-    "date": "2026-10-28",
+    "version": "6.4.0",
+    "date": "2026-11-07",
     "source": "npm",
-    "url": "https://www.npmjs.com/package/knxultimate/v/6.3.1"
+    "url": "https://www.npmjs.com/package/knxultimate/v/6.4.0"
    },
    "roles": [
     "client",
@@ -9346,7 +9823,8 @@
     "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "ha-knx",
@@ -9360,10 +9838,10 @@
    "repo": "home-assistant/core",
    "stars": null,
    "release": {
-    "version": "2026.10.4",
-    "date": "2026-10-24",
+    "version": "2026.11.0",
+    "date": "2026-11-04",
     "source": "PyPI",
-    "url": "https://pypi.org/project/homeassistant/2026.10.4/"
+    "url": "https://pypi.org/project/homeassistant/2026.11.0/"
    },
    "roles": [
     "client"
@@ -9386,7 +9864,7 @@
     "https://pypi.org/pypi/homeassistant/json"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07"
   },
   {
    "id": "openhab-knx",
@@ -9423,7 +9901,7 @@
     "https://github.com/otfabric/knx-interop/blob/main/docs/CANDIDATES.md"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07"
   },
   {
    "id": "node-red-knx-ultimate",
@@ -9437,12 +9915,12 @@
    "repo": "Supergiovane/node-red-contrib-knx-ultimate",
    "stars": 178,
    "forks": 35,
-   "lastCommit": "2026-10-28",
+   "lastCommit": "2026-11-07",
    "release": {
-    "version": "8.3.1",
-    "date": "2026-10-28",
+    "version": "8.4.0",
+    "date": "2026-11-07",
     "source": "npm",
-    "url": "https://www.npmjs.com/package/node-red-contrib-knx-ultimate/v/8.3.1"
+    "url": "https://www.npmjs.com/package/node-red-contrib-knx-ultimate/v/8.4.0"
    },
    "roles": [
     "client"
@@ -9463,7 +9941,8 @@
     "https://registry.npmjs.org/node-red-contrib-knx-ultimate"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knx-go",
@@ -9494,7 +9973,8 @@
     "https://proxy.golang.org/github.com/vapourismo/knx-go/@latest"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knx-js",
@@ -9530,7 +10010,8 @@
     "https://registry.npmjs.org/knx"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knx-rs",
@@ -9544,12 +10025,12 @@
    "repo": "metaneutrons/knx-rs",
    "stars": 6,
    "forks": 3,
-   "lastCommit": "2026-10-29",
+   "lastCommit": "2026-11-01",
    "release": {
-    "version": "0.12.0",
-    "date": "2026-10-29",
+    "version": "0.14.0",
+    "date": "2026-11-01",
     "source": "crates.io",
-    "url": "https://crates.io/crates/knx-rs-core/0.12.0"
+    "url": "https://crates.io/crates/knx-rs-core/0.14.0"
    },
    "roles": [
     "client",
@@ -9571,7 +10052,8 @@
     "https://crates.io/api/v1/crates/knx-rs-core"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knust",
@@ -9611,7 +10093,8 @@
     "https://crates.io/api/v1/crates/knust"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knxyz",
@@ -9650,7 +10133,8 @@
     "https://pypi.org/pypi/knxyz/json"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "thelsing-knx",
@@ -9679,13 +10163,14 @@
     "TP, RF and IP",
     "Arduino and ESP-IDF"
    ],
-   "maintenance": "active",
+   "maintenance": "slowing",
    "notes": "A KNX device stack for microcontrollers (ESP8266, ESP32, SAMD21, RP2040, STM32, CC1310 and others) and Linux that implements most of System B and is configured with ETS, using .knxprod files generated with Kaenx-Creator. The base of the OpenKNX devices.",
    "sources": [
     "https://github.com/thelsing/knx"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "openknx-knx",
@@ -9758,7 +10243,8 @@
     "https://github.com/envy/esp-knx-ip"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knx-net",
@@ -9794,7 +10280,8 @@
     "https://api.nuget.org/v3-flatcontainer/knx.net/index.json"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "linknx",
@@ -9831,7 +10318,8 @@
     "https://github.com/linknx/linknx"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knxdclient",
@@ -9870,7 +10358,8 @@
     "https://pypi.org/pypi/knxdclient/json"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
   },
   {
    "id": "knxmap",
@@ -9905,7 +10394,53 @@
     "https://github.com/takeshixx/knxmap"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07",
+   "starsAsOf": "2026-10-30"
+  },
+  {
+   "id": "cb-sigma-knx",
+   "name": "knx (cB-Sigma)",
+   "protocol": "knx",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/knx",
+   "repo": "cB-Sigma/knx",
+   "stars": null,
+   "historySince": "2026",
+   "lastCommit": "2026-11-07",
+   "release": {
+    "version": "v0.2.1",
+    "date": "2026-11-07",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/knx/@v/v0.2.1.info"
+   },
+   "roles": [
+    "client",
+    "router"
+   ],
+   "capabilities": [
+    "KNX IP Secure",
+    "Data Secure",
+    "TCP tunnelling",
+    "Busmonitor",
+    "Datapoint types",
+    "ETS project import",
+    "ETS keyrings"
+   ],
+   "interop": "knx-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/knx",
+   "notes": "Pure Go KNXnet/IP client and router with KNX IP Secure tunnelling and routing, KNX Data Secure, extended search, 24 datapoint type families, and import of ETS projects and keyrings, written for the SigmaM2M oneM2M platform. No USB or serial interfaces. A companion module, knx-sim, is a gateway and router with fault switches; knx-interop runs the client as a reference and every client against the simulator.",
+   "sources": [
+    "https://github.com/cB-Sigma/knx",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/knx/@latest",
+    "https://github.com/cB-Sigma/knx-sim"
+   ],
+   "verified": "2026-11-07"
   },
   {
    "id": "knx-falcon-sdk",
@@ -9938,7 +10473,7 @@
     "https://support.knx.org/hc/en-us/articles/4410819071122-How-to-get-the-Manufacturer-Falcon-6-NET-SDK"
    ],
    "protocol": "knx",
-   "verified": "2026-10-30"
+   "verified": "2026-11-07"
   },
   {
    "id": "tapko-kaistack",
