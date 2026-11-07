@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[canopenctl](https://github.com/otfabric/canopenctl) is a command-line toolkit for CANopen networks, built on [go-canopen](/docs/protocols/canopen/library/) and [go-canbus](/docs/protocols/can-bus/library/). It decodes live traffic and trace files, reads and writes object dictionaries, manages nodes, gives devices node-IDs, boots a network as a CiA 302 manager, maps and watches PDOs, validates and converts EDS and DCF files, downloads programs, operates CiA 402 drives and simulates complete devices. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.4.0, built on go-canopen v0.4.1 and go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canopenctl/blob/main/docs/cli.md).
+[canopenctl](https://github.com/otfabric/canopenctl) is a command-line toolkit for CANopen networks, built on [go-canopen](/docs/protocols/canopen/library/) and [go-canbus](/docs/protocols/can-bus/library/). It decodes live traffic and trace files, reads and writes object dictionaries, manages nodes, gives devices node-IDs, boots a network as a CiA 302 manager, maps and watches PDOs, validates and converts EDS and DCF files, downloads programs, operates CiA 402 drives and simulates complete devices. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.5.0, built on go-canopen v0.4.1 and go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canopenctl/blob/main/docs/cli.md).
 
 ## Install
 
@@ -53,7 +53,7 @@ CANopen devices drive motors, valves and power electronics, so canopenctl is **r
 
 - `monitor`, `decode`, `heartbeat watch`, `emcy watch`, `mpdo watch`, and `pdo watch` with `--cob-id` or `--map`, never transmit. On an slcan adapter they open it listen-only, so it does not even acknowledge frames.
 - `sdo read`, `sdo dump`, `scan`, `pdo show`, `pdo watch`, `dcf export`, `program status` and `cia402 state` send only SDO read requests.
-- Every command that changes a device or the network (`sdo write`, `nmt`, `pdo map`, `dcf apply`, `cdcf apply`, the `cia402` motion and state commands, `sync`, `time`, every `lss` command, `mpdo configure`, `boot`, `store`, `restore`, `program download` and `program control`, `simulate`) refuses to run on an interface that is not virtual without `--yes`, and exits 9. The interface kind is read from the kernel, and an slcan adapter always needs `--yes`.
+- Every command that changes a device or the network (`sdo write`, `nmt`, `pdo map`, `dcf apply`, `cdcf apply`, the `cia402` motion and state commands, `sync`, `time`, every `lss` command, `mpdo configure`, `boot`, `store`, `restore`, `program download` and `program control`, `simulate`) refuses to run on an interface that is not virtual without `--yes`, and exits 13 (9 before v0.5.0). The interface kind is read from the kernel, and an slcan adapter always needs `--yes`.
 - Transmissions are bounded by `--count`, `--duration`, `--timeout`, `--retries` or `--max-time`, and everything is validated before the first frame: an invocation that exits 2, 3, 8 or 9 has sent nothing.
 - Only `scan`, `lss identify`, `lss fastscan`, `lss assign-all` and `boot` address nodes you did not name.
 
@@ -179,10 +179,11 @@ To talk to a simulated node from another canopenctl process, run both on `vcan0`
 | 5 | A device did not answer |
 | 6 | A device violated the protocol |
 | 8 | Not available on this platform, such as SocketCAN on macOS or Windows |
-| 9 | Refused for safety (a change on a real interface without `--yes`), or a privilege missing to open the interface |
+| 9 | A privilege missing to open the interface |
 | 10 | Output or internal error |
 | 11 | The device refused an SDO transfer (abort code in the error) |
 | 12 | The device is in a state that prevents the operation: drive fault, inactive PDO, LSS refusal, failed boot or program download |
+| 13 | Refused for safety: a state-changing command on an interface that is not virtual without `--yes`. Before v0.5.0 this was 9; the JSON error (`"kind": "safety"`, `"code": "confirmation_required"`) is unchanged |
 | 130 | Interrupted before a result; a stream stopped with Ctrl-C ends with 0 |
 
 Uploads (`sdo read`, `pdo`, `program status`, USDO with `--fd`) are limited by `--max-size` (default 1 MiB, up to 1 GiB); a larger one is aborted with 0x05040005 before it is held, exit 6. `--retries` repeats timeouts and SDO transfers broken by a lost, duplicated or reordered frame. Files canopenctl writes (`sdo read --output`, `eds convert`, `eds generate`, `dcf export`, `cdcf convert --output`) have mode 0600.

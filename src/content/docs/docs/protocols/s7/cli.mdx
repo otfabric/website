@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-[s7commctl](https://github.com/otfabric/s7commctl) is a command-line S7comm client for ISO-on-TCP (TCP port 102), built on [go-s7comm](/docs/protocols/s7/library/). It is meant for commissioning, troubleshooting and engineering work on PLCs you are responsible for. This page follows s7commctl v0.4.0, built on go-s7comm v0.9.0.
+[s7commctl](https://github.com/otfabric/s7commctl) is a command-line S7comm client for ISO-on-TCP (TCP port 102), built on [go-s7comm](/docs/protocols/s7/library/). It is meant for commissioning, troubleshooting and engineering work on PLCs you are responsible for. This page follows s7commctl v0.5.0, built on go-s7comm v0.12.0.
 
 ## Install
 
@@ -91,6 +91,8 @@ When you meet an unfamiliar endpoint, start with read-only steps and widen only 
    ```sh
    s7commctl identify --ip 192.168.1.10 --rack 0 --slot 1 --format json
    ```
+
+   Since v0.5.0 the fields come from SZL 0x0011 and 0x001C by record index: `module_name` is the module's name (such as `PLC_1`), `cpu_type` its module type (such as `CPU 315-2 PN/DP`) and `fw_version` reads `Vx.y.z`; `module_type`, `system_name`, `plant_id`, `copyright` and `memory_card_serial` were added (a string or null in JSON). Before v0.5.0, `identify`, `fingerprint`, `diagnostic`, `profile` and the block commands sent requests a real S7-300 or S7-400 could not answer correctly and decoded answers at wrong offsets, so values recorded with an older version differ.
 
 3. Get a capability summary (setup, rack/slot, identity and block list) in one run:
 

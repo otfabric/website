@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: How go-s7comm is tested against two independent Snap7 server implementations with snap7-interop, and what is and is not covered.
+description: How go-s7comm is tested against two independent Snap7 servers with snap7-interop and against recorded traffic of real S7-300 and S7-400 CPUs, how to test your own S7 client against OT Fabric's server image, and what is and is not covered.
 sidebar:
   label: Testing and interop
   order: 3
@@ -8,20 +8,20 @@ sidebar:
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-Real S7 PLCs differ by family and firmware, and you should never test client code against a running process. OT Fabric tests its S7 client against [snap7-interop](https://github.com/otfabric/snap7-interop): two S7 servers built from independent implementations, loaded with the same memory fixtures and checked to behave the same.
+Real S7 PLCs differ by family and firmware, and you should never test client code against a running process. OT Fabric tests its S7 client against [snap7-interop](https://github.com/otfabric/snap7-interop): two S7 servers built from independent implementations, loaded with the same memory fixtures and checked to behave the same. Since go-s7comm v0.11.0 it is also tested against 25 recordings of real S7-300 and S7-400 CPUs, and snap7-interop publishes OT Fabric's own S7 server as a third image, so you can test your client against it.
 
 ## snap7-interop
 
-snap7-interop publishes two container images. Both speak classic S7comm over ISO-on-TCP on container port 102:
+snap7-interop publishes two reference images. Both speak classic S7comm over ISO-on-TCP on container port 102:
 
 | Image | Implementation |
 |---|---|
 | `ghcr.io/otfabric/snap7-interop-native` | Native Snap7, built from the SCADACS fork at a pinned revision (Snap7 1.4.0 lineage, LGPL-3.0-or-later) |
 | `ghcr.io/otfabric/snap7-interop-python` | Pure-Python server from `python-snap7` 3.2.1, with no native library in the image |
 
-The current release is **v0.3.0**, built for `linux/amd64` and `linux/arm64`. Tags never move and there is no `latest` tag; pin by digest where you can. Releases up to v0.2.0 were published as `snap-interop-native` and `snap-interop-python`; those tags stay available.
+The current release is **v0.6.1** (container contract 1.1), built for `linux/amd64` and `linux/arm64`. Reference tags never move and there is no `latest` tag for them; pin by digest where you can. Releases up to v0.2.0 were published as `snap-interop-native` and `snap-interop-python`; those tags stay available.
 
-The repository does not depend on go-s7comm, so any S7 client can use it.
+Nothing in the repository outside `own/go-s7comm/` depends on go-s7comm, and CI checks it, so any S7 client can use the references. Each run also writes `reports/results.json` in the organisation's interop-result-v1 format, one result per fixture.
 
 ### Fixtures define the server
 
@@ -63,7 +63,7 @@ A fixture is a JSON file that describes the server's memory: which areas exist, 
 1. Pull an image:
 
    ```sh
-   docker pull ghcr.io/otfabric/snap7-interop-native:v0.3.0
+   docker pull ghcr.io/otfabric/snap7-interop-native:v0.6.1
    ```
 
 2. Start it with a compiled fixture from a checkout of the repository. Map the container's port 102 to an unprivileged host port such as 1102:
@@ -74,7 +74,7 @@ A fixture is a JSON file that describes the server's memory: which areas exist, 
      --cap-drop ALL --cap-add NET_BIND_SERVICE \
      -v "$PWD/fixtures/compiled:/fixtures:ro" \
      -e SNAP_INTEROP_FIXTURE=/fixtures/basic-db.compiled.json \
-     ghcr.io/otfabric/snap7-interop-native:v0.3.0
+     ghcr.io/otfabric/snap7-interop-native:v0.6.1
    ```
 
 3. Point a client at it, with rack 0 and slot 2:
@@ -117,11 +117,27 @@ Results are normalized to outcomes such as `success`, `address-out-of-range`, `u
 
 ### Known differences
 
-Both servers reject a write to a read-only area with item return code `0x0A`, not a distinct "write protected" code. The fixture therefore expects `address-out-of-range` and proves the rejection with a follow-up read. Out-of-range access returns item code `0x05` on both. The Python adapter adds behaviour the stock `python-snap7` server lacks (out-of-range rejection, single-bit writes, read-only enforcement) so that both match native Snap7.
+Both reference servers reject a write to a read-only area with item return code `0x0A`, not a distinct "write protected" code. The fixture therefore expects `address-out-of-range` and proves the rejection with a follow-up read. Out-of-range access returns item code `0x05` on both. The Python adapter adds behaviour the stock `python-snap7` server lacks (out-of-range rejection, single-bit writes, read-only enforcement) so that both match native Snap7, so agreement on those points is by construction, not two independent observations.
+
+OT Fabric's own server answers the read-only write with `0x03` (object access not allowed), the code a real CPU 315-2 PN/DP sends for a refused write. snap7-interop v0.6.1 lists this as an intentional, classified difference (`tests/known-differences.tsv`), with the Siemens documentation as evidence.
+
+## Test your client against OT Fabric's server
+
+`ghcr.io/otfabric/snap7-interop-otfabric` is the `server` package of go-s7comm behind the same container contract (adapter name `otfabric`), so an S7 client can run the same fixtures and commands against it as against the references:
+
+```sh
+docker run --rm -p 3102:102 --read-only \
+  --tmpfs /tmp --tmpfs /run/snap-interop:uid=10001,gid=10001,mode=0755 \
+  --cap-drop ALL --cap-add NET_BIND_SERVICE \
+  -e SNAP_INTEROP_FIXTURE=/fixtures/basic-db.compiled.json \
+  ghcr.io/otfabric/snap7-interop-otfabric:latest
+```
+
+Its tags are go-s7comm versions (and `latest`), not snap7-interop versions, and it is not in a snap7-interop release. It reports `independentEngine: false`: a result against it is evidence about your client, not independent evidence about go-s7comm. It is test infrastructure only, like the references.
 
 ## Testing go-s7comm
 
-go-s7comm has a build-tagged interop package that runs the full fixture matrix against both servers:
+go-s7comm v0.12.0 is qualified against snap7-interop v0.6.1, with the native and Python images pinned by digest. Its build-tagged interop package runs the full fixture matrix against both servers, and all 15 fixtures pass on both:
 
 ```sh
 make interop
@@ -135,7 +151,18 @@ This pulls pinned image digests, starts both containers for each fixture on host
 | `SNAP_INTEROP_MANAGED=0` | Use servers that are already running, at `SNAP_INTEROP_NATIVE_ADDR` and `SNAP_INTEROP_PYTHON_ADDR` |
 | `SNAP_INTEROP_FIXTURE=<id>` | Run a single fixture, for example `basic-db` |
 
-`make check` compiles and lints the interop package but does not start Docker. go-s7comm's interop workflow runs the full matrix against the pinned images on every push and pull request.
+`make check` compiles and lints the interop package but does not start Docker. go-s7comm's interop workflow runs the full matrix against the pinned images on every push and pull request. A separate, manual Self-interop workflow runs the client against `snap7-interop-otfabric`; on 2026-11-07 the v0.12.0 client passed all 15 fixtures against the v0.12.0 server image, with the read-only difference above.
+
+### Recorded traffic of real CPUs
+
+`testdata/captures` holds 25 recordings, made by others, between real CPUs (a CPU 315-2 PN/DP, an IM151-8 PN/DP CPU, an S7-400 and another S7-300) and five clients (Snap7, STEP 7 5.5, TIA Portal V13, WinCC Advanced and libnodave): 14,393 S7 PDUs. They are replayed in the tests, and no live PLC is involved:
+
+- every PDU decodes, with the counts Wireshark 4.6.9 gives;
+- the requests go-s7comm builds equal, byte for byte, those of Snap7, TIA Portal and libnodave, for setup, Read Var, SZL reads, block functions and uploads;
+- `Identify`, `GetCPUState`, `GetProtectionLevel`, `ReadDiagBuffer`, `BlockCounts`, `ListBlocks`, `GetBlockInfo` and `UploadBlock` give, against the recorded answers, the values Snap7 logged or Wireshark decodes;
+- the server answers every recorded Setup Communication, Read Var and Write Var job byte for byte as the CPU did: 26 setups, 3,411 reads (timers, counters and the S7-400's DBREAD items included) and 2,081 writes.
+
+The recordings showed that, before v0.11.0, the client's SZL, block and upload requests did not match what real CPUs answer; v0.11.0 fixed them, and the s7commctl commands built on them from v0.5.0.
 
 Besides interop, go-s7comm has unit tests with frame fixtures in `testdata/`, race detector runs (`make test-race`), benchmarks for discovery, probing and the wire parsers (`make bench`), static analysis (`make lint`, `make lint-ci`) and `govulncheck` (`make vuln`). s7commctl's own tests cover command wiring, configuration, input validation, output formatting, the write confirmation helpers and the pcap and replay parsers. Protocol codec coverage lives in go-s7comm.
 
@@ -149,9 +176,10 @@ Besides interop, go-s7comm has unit tests with frame fixtures in `testdata/`, ra
 | Concurrent clients and reconnects | Validated |
 | Reads larger than the PDU | Chunking happens in the client; the servers cover one large request |
 | Range scans, compare reads, discovery, rack/slot probing | Client-side logic, not fixture-tested |
-| Timers and counters | Deferred |
-| Identify, SZL, CPU state, diagnostics | Deferred until both servers are characterized |
-| Block list, upload and download | Deferred |
+| Identify, SZL, CPU state, protection level, diagnostic buffer | Validated against recorded CPU answers; not in the fixtures, which hold memory only |
+| Block counts, list, info and upload | Validated against recorded CPU answers; block download is not covered |
+| Server: timers, counters and DBREAD items | Validated against recorded CPU answers; no interop peer has them |
+| Client: timers and counters | Tested against go-s7comm's own fake server only |
 | Optimized S7-1200/1500 data blocks | Out of scope |
 | Scan-cycle or program execution | Out of scope: the servers hold static memory, not a PLC program |
 

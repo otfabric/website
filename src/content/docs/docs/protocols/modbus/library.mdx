@@ -16,7 +16,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-modbus
 ```
 
-go-modbus requires **Go 1.26** or later; CI tests Go 1.26 and 1.27. Its only dependency is [go-serial](/projects/go-serial/), used for RTU and ASCII. The bundled command-line tool is a module of its own since v1.10.0, so the library no longer pulls in a CLI framework. This page follows go-modbus v1.11.1.
+go-modbus requires **Go 1.26** or later; CI tests Go 1.26 and 1.27. Its only dependency is [go-serial](/projects/go-serial/), used for RTU and ASCII. The bundled command-line tool is a module of its own since v1.10.0, so the library no longer pulls in a CLI framework. This page follows go-modbus v1.12.0. In v1.12.0 the bundled `modbus-cli` exits with the organisation's exit codes (2 usage, 3 invalid TLS files, 4 connection, 5 timeout, and so on) instead of 1 for every failure; the library is unchanged.
 
 The library is organized in tiers. Use the lowest one that does the job:
 

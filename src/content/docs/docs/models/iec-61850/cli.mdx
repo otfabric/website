@@ -86,13 +86,19 @@ Without `--source` (`-s`), the `model` and `catalog` commands use the embedded c
 
 Every command prints text, or JSON with `--json`, so the model can feed scripts, tag lists and UIs directly.
 
+Since go-iec61850-model v0.3.0 nsdctl uses the organisation's exit codes:
+
 | Code | Meaning |
 |---|---|
 | 0 | OK |
-| 1 | Usage error, or a name or reference the model does not define |
-| 2 | Source error |
-| 3 | Validation error |
-| 4 | Differences found (`diff --exit-code`) |
-| 5 | Refused by the licence policy |
+| 1 | Findings: `validate` found errors, `dependencies` found unsatisfied dependencies, or differences (`diff --exit-code`, `generate --check`, `sources check`, `schema --exit-code`) |
+| 2 | Usage error, a name the model does not define, a path that does not resolve, a refused overwrite |
+| 3 | A source cannot be read or parsed; an invalid lock or registry, a load error, a digest mismatch or an unpinned package |
+| 4 | A download of `sources fetch` failed |
+| 9 | Refused by the licence policy (`generate --publish`) |
+| 10 | Writing the output failed, or an unexpected error |
+| 130 | Interrupted (SIGINT or SIGTERM) |
+
+Before v0.3.0, usage errors were 1, source errors 2, validation errors 3, differences 4 and a licence refusal 5; scripts that test the codes need the new values.
 
 The [command reference](https://github.com/otfabric/go-iec61850-model/blob/main/docs/cli.md) and the [use cases](https://github.com/otfabric/go-iec61850-model/blob/main/docs/use-cases.md) in the repository have every command with real output.

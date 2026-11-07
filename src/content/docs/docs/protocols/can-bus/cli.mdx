@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[canbusctl](https://github.com/otfabric/canbusctl) is a command-line toolkit for CAN, CAN FD, CAN XL, ISO-TP and CAN databases, built on [go-canbus](/docs/protocols/can-bus/library/). It watches and records traffic, converts and replays traces, decodes and encodes frames with a DBC, KCD or ARXML database and generates Go from it, sends and receives ISO-TP messages, simulates a database's traffic and puts a fault-injecting bridge between two interfaces. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.8.0, built on go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canbusctl/blob/main/docs/cli.md).
+[canbusctl](https://github.com/otfabric/canbusctl) is a command-line toolkit for CAN, CAN FD, CAN XL, ISO-TP and CAN databases, built on [go-canbus](/docs/protocols/can-bus/library/). It watches and records traffic, converts and replays traces, decodes and encodes frames with a DBC, KCD or ARXML database and generates Go from it, sends and receives ISO-TP messages, simulates a database's traffic and puts a fault-injecting bridge between two interfaces. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.9.0, built on go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canbusctl/blob/main/docs/cli.md).
 
 ## Install
 
@@ -56,7 +56,7 @@ sudo canbusctl up can0 --yes
 CAN frames can move brakes, drives and power electronics, so canbusctl is **passive by default**:
 
 - `monitor`, `record`, `stats`, `isotp monitor`, `xl monitor` and every `dbc` and `trace` command never transmit. On an slcan adapter they open it listen-only, so the adapter does not even acknowledge frames.
-- Every command that transmits refuses an interface that is not virtual (`vcan`, `vxcan` or `virtual`) unless `--yes` is given (exit 9). The kind is read from the kernel, and an slcan adapter always needs `--yes`.
+- Every command that transmits refuses an interface that is not virtual (`vcan`, `vxcan` or `virtual`) unless `--yes` is given (exit 13; it was 9 before v0.9.0). The kind is read from the kernel, and an slcan adapter always needs `--yes`.
 - Transmissions are bounded by `--max-frames` (10000 by default), `--duration` and `--rate`; `simulate` always has a duration.
 - Nothing probes the bus: canbusctl never guesses identifiers or sends traffic you did not ask for. `isotp receive` sends flow control frames, as any ISO-TP receiver must.
 - A transmitting command checks everything first: if it exits 2, 3, 8 or 9 it has sent nothing.
@@ -179,8 +179,9 @@ The faults are emulated in userspace: frames are dropped, duplicated, delayed, r
 | 5 | Timeout: an ISO-TP peer did not answer |
 | 6 | ISO-TP protocol failure |
 | 8 | Unsupported here, such as SocketCAN on macOS or Windows |
-| 9 | Refused for safety (transmission or a change without `--yes`), or permission (`CAP_NET_ADMIN` missing) |
+| 9 | Permission: `CAP_NET_ADMIN` missing for `up`, `down` or `configure` |
 | 10 | Output or internal error |
+| 13 | Refused for safety: a transmission on an interface that is not virtual, or an administrative change, without `--yes`. Before v0.9.0 this was 9; the JSON error (`"kind": "safety"`, `"code": "confirmation_required"`) is unchanged |
 | 130 | Interrupted before a result; a stream stopped with Ctrl-C ends with 0 |
 
 Files canbusctl creates (`record -o`, `monitor -o`, `trace convert`, `dbc generate` and `convert`) have mode 0600, and an output path that is a symbolic link is refused. `replay` reads a whole trace file before the first frame, so a malformed record anywhere exits 3 with nothing sent. [docs/exitcodes.md](https://github.com/otfabric/canbusctl/blob/main/docs/exitcodes.md) lists every code.

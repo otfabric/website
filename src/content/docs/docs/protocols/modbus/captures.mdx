@@ -166,7 +166,7 @@ mbtracectl export timeline site.pcapng --slow 200ms --flag slow -o slow.csv
 ssh gw 'tcpdump -i eth0 -U -w - port 502' | mbtracectl export mbcap - -o site.mbcap
 ```
 
-Several files are read as one trace (`mbtracectl summary ring_*.pcapng`), `--json` gives machine output with a JSON Schema per document, and the exit codes are 0, 1 and 2.
+Several files are read as one trace (`mbtracectl summary ring_*.pcapng`), `--json` gives machine output with a JSON Schema per document, and the exit codes follow the organisation's table since go-modbus-trace v0.6.0: 0 success, 2 usage, 3 a trace that cannot be opened, is not a trace or is damaged, 10 an output that cannot be written, 130 interrupted. Before, every failure but a usage error was 1.
 
 ### From a trace to a simulated device
 
