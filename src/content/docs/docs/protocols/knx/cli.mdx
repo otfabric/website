@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-[knxctl](https://github.com/otfabric/knxctl) is a command-line tool for KNX over KNXnet/IP, built on [go-knx](/docs/protocols/knx/library/). It finds gateways and inspects them, monitors group telegrams, reads and switches group objects, encodes and decodes datapoint types and frames, and runs a simulated KNXnet/IP server. It is one static binary, and output is text, a table or JSON with stable exit codes. This page follows v0.8.0, built on go-knx v0.7.0; the full reference is [docs/cli.md](https://github.com/otfabric/knxctl/blob/main/docs/cli.md).
+[knxctl](https://github.com/otfabric/knxctl) is a command-line tool for KNX over KNXnet/IP, built on [go-knx](/docs/protocols/knx/library/). It finds gateways and inspects them, monitors group telegrams, reads and switches group objects, encodes and decodes datapoint types and frames, and runs a simulated KNXnet/IP server. It is one static binary, and output is text, a table or JSON with stable exit codes. This page follows v0.9.0, built on go-knx v0.8.1; the full reference is [docs/cli.md](https://github.com/otfabric/knxctl/blob/main/docs/cli.md).
 
 ## Install
 
@@ -146,6 +146,8 @@ knxctl serve --routing --keyring project.knxkeys --keyring-host 1.1.0
 ```
 
 Larger setups come from a JSON file (`--config site.json`): devices, group objects with flags and initial values, tunnelling addresses. ETS, Home Assistant, xknx and other KNXnet/IP clients connect to it as to an IP interface; [docs/serve.md](https://github.com/otfabric/knxctl/blob/main/docs/serve.md) says what is and is not emulated.
+
+A secure `serve` ends KNX IP Secure sessions that stay idle for 60 s (120 s before v0.9.0); `--secure-session-timeout` changes it. Routing senders (`group write --routing`, `serve --routing`) are paced and pause after a ROUTING_BUSY, as go-knx v0.8 does, so a burst of telegrams takes longer than before. `dpt list`, `encode`, `decode` and `serve --object` know 239 datapoint types since v0.9.0.
 
 ## Output and exit codes
 

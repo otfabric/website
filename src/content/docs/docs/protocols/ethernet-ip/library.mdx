@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-ethernetip](/projects/go-ethernetip/) implements EtherNet/IP and CIP in Go, in both roles: a client and a scanner (the originator) and a server (the target, or adapter). It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ethernetip); [API.md](https://github.com/otfabric/go-ethernetip/blob/main/API.md) in the repository is the map. This page follows v0.5.0.
+[go-ethernetip](/projects/go-ethernetip/) implements EtherNet/IP and CIP in Go, in both roles: a client and a scanner (the originator) and a server (the target, or adapter). It has no dependencies outside the Go standard library and no cgo. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ethernetip); [API.md](https://github.com/otfabric/go-ethernetip/blob/main/API.md) in the repository is the map. This page follows v0.5.2.
 
 ## Install
 
@@ -99,6 +99,8 @@ _ = io.SetOutput(out)     // sent from the next interval on
 in, run, at := io.Input() // the last input, the run flag, when it arrived
 _ = io.Close(ctx)         // Forward_Close
 ```
+
+The Forward_Open path always names the configuration instance, `20 04 24 <ConfigInstance> 2C <O->T> 2C <T->O>`, also when `ConfigInstance` is 0 (since v0.5.1; before, 0 left the segment out, which some adapters refuse).
 
 Sizes are application data sizes: the scanner adds the sequence count and the run/idle header to the Forward_Open connection size. The default formats are what targets commonly expect, O->T with the 32-bit run/idle header and T->O modeless; `OutputFormat` and `InputFormat` change them.
 

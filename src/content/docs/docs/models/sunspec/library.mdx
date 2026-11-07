@@ -16,7 +16,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 go get github.com/otfabric/go-sunspec
 ```
 
-go-sunspec requires **Go 1.26** or later (CI runs Go 1.26 and 1.27) and go-modbus **v1.11.1** or later, and depends on nothing else. The packages are `sunspec` (discovery, reading, decoding, encoding and serving), `sunspec/registry` (model metadata) and `sunspec/devicefile` (SunSpec devices as JSON files). This page follows go-sunspec v0.9.0.
+go-sunspec requires **Go 1.26** or later (CI runs Go 1.26 and 1.27) and go-modbus **v1.11.1** or later, and depends on nothing else. The packages are `sunspec` (discovery, reading, decoding, encoding and serving), `sunspec/registry` (model metadata) and `sunspec/devicefile` (SunSpec devices as JSON files). This page follows go-sunspec v0.10.0.
 
 ## Connect and read
 
@@ -77,9 +77,27 @@ func main() {
 }
 ```
 
+### Writing a point
+
+`Device.WritePoint` (since v0.10.0) sets one read-write point of a model's top-level group, in engineering units or by symbol name:
+
+```go
+// Limit an inverter to 62.5 % of its rated power (model 123, Immediate Controls).
+controls := device.ModelByID(123)
+point, err := device.WritePoint(ctx, *controls, "WMaxLimPct", 62.5)
+if errors.Is(err, sunspec.ErrPointNotWritable) {
+	// read-only in the model definition: nothing was sent
+}
+fmt.Printf("Limit now %g %%\n", *point.ScaledValue)
+
+_, err = device.WritePoint(ctx, *controls, "WMaxLim_Ena", "ENABLED") // enum points take a symbol name
+```
+
+It reads the model first, so the value is scaled with the device's current scale factor and a changed model chain is caught (`ErrModelChanged`), then writes that point's registers, and only those, with FC 16, and returns the point as the device reports it afterwards. Read-only points, count points, models without a schema and devices on input registers fail with `ErrPointNotWritable` before anything is sent; a value that does not fit fails with an `*EncodeError`. DER controls change how equipment on the grid behaves, so treat a write as an operation on that equipment.
+
 ### A read-only client
 
-`Detect`, `Discover` and every `Device` method only read registers, with function codes 03 and 04. A monitoring program can make that a property of its connection, so that no code path, its own or a dependency's, can write to the device:
+Everything except `WritePoint` (`Detect`, `Discover` and the other `Device` methods) only reads registers, with function codes 03 and 04. A monitoring program can make that a property of its connection, so that no code path, its own or a dependency's, can write to the device:
 
 ```go
 client, err := modbus.New(modbus.Config{
@@ -88,7 +106,7 @@ client, err := modbus.New(modbus.Config{
 })
 ```
 
-The client refuses any other function code with `modbus.ErrFunctionCodeNotAllowed` before a byte reaches the wire. Everything in go-sunspec works through such a client unchanged; sunspecctl and SunSpec Explorer read devices this way.
+The client refuses any other function code with `modbus.ErrFunctionCodeNotAllowed` before a byte reaches the wire. Everything in go-sunspec except `WritePoint` works through such a client unchanged, and `WritePoint` is refused before it is sent; sunspecctl and SunSpec Explorer read devices this way.
 
 ### Transports
 
@@ -377,7 +395,7 @@ go-sunspec defines no logger, metrics, retry or timeout settings of its own. Con
 
 ## Limitations
 
-- **The client side only reads.** `Device` does not write SunSpec control points. You can write registers with the same go-modbus client (`client.WriteRegisters`) at the address and offset of the discovered model, and `EncodeModel` gives you the registers for values by point name, but go-sunspec does not validate what the value does to the device.
+- **The client writes one point at a time.** `WritePoint` sets top-level points of a model; it does not write repeating groups, and go-sunspec does not judge what a value does to the device.
 - Only models in the compiled registry are decoded and encoded by name. Others are read and served as raw registers.
 - A served device's layout is fixed when the `Server` is created. A model longer than 125 registers takes several requests to read and can show a different update in each, as with any Modbus device.
 - Treat decoded values as untrusted input. Validate ranges before using them for control decisions, and escape strings such as the manufacturer or serial number before putting them in HTML, SQL or shell commands.

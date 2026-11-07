@@ -434,7 +434,7 @@ const schema = [
 					${row('Latest release', rel)}
 					${row('Pre-release', pre)}
 					${row('Last commit', esc(day(i.lastCommit)))}
-					${row('Stars · forks', i.stars != null ? `${num(i.stars)} · ${num(i.forks)}` : '')}
+					${row('Stars · forks', i.stars != null ? `${num(i.stars)} · ${num(i.forks)}${i.starsAsOf ? ` (as of ${esc(day(i.starsAsOf))})` : ''}` : '')}
 					${row('Repository created', esc(day(i.repoCreated)))}
 					${row('History since', esc(i.historySince))}
 					${row('Builds on', ups)}

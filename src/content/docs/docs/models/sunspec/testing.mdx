@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: How go-sunspec and sunspecctl are tested without hardware, how to test your own SunSpec code against a served device, and what has and has not been validated.
+description: How go-sunspec and sunspecctl are tested, against pysunspec2 and cB-Sigma with sunspec-interop and without hardware, how to test your own SunSpec code against a served device or OT Fabric's image, and what has and has not been validated.
 sidebar:
   label: Testing and interop
   order: 3
@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 
-There is no separate interoperability suite for SunSpec. SunSpec runs on top of Modbus, so the Modbus transport under go-sunspec is the part that is tested against other implementations (see the [Modbus overview](/docs/protocols/modbus/) and its testing page). This page covers how go-sunspec and sunspecctl are tested, and how to test your own SunSpec code without an inverter on the desk.
+SunSpec has its own interoperability suite, [sunspec-interop](/projects/sunspec-interop/): independent SunSpec implementations in containers, behind one command-line contract, with deterministic fixtures. The Modbus transport under go-sunspec is tested separately, against five Modbus stacks (see the [Modbus testing page](/docs/protocols/modbus/testing/)). This page covers both, how go-sunspec and sunspecctl are tested without hardware, and how to test your own SunSpec code without an inverter on the desk.
 
 ## How go-sunspec is tested
 
@@ -23,7 +23,7 @@ The go-sunspec test suite needs no hardware. Since v0.5.0 the library can serve 
 | Stress | Concurrent discovery and reads through one client, a pooled client and many clients while values are updated and clients write, across server stop and start; a read must never be torn or go back in time. |
 | Generated registry check | A test fails if the committed `registry/models_gen.go` differs from what the generator produces from `models/`. |
 
-The chaos tests found the two defects fixed in v0.5.0: reads through an existing `Device` decoded a changed device with its old layout, and an endless model chain looked complete. CI runs the tests with the race detector on Go 1.23 to 1.26, and `make check` enforces a coverage threshold that Codecov tracks.
+The chaos tests found the two defects fixed in v0.5.0: reads through an existing `Device` decoded a changed device with its old layout, and an endless model chain looked complete. CI runs the tests with the race detector on Go 1.26 and 1.27, and `make check` enforces a coverage threshold that Codecov tracks.
 
 ```sh
 make test       # tests with the race detector
@@ -35,6 +35,51 @@ make check      # format, vet, lint, vulnerability scan, race tests, coverage ga
 Randomized chaos runs log their seed; `SUNSPEC_CHAOS_SEED` replays one.
 
 sunspecctl's own tests run against go-sunspec's `testutil` fixture server and against devices that `serve` runs in the same process, so every command, including `capture` and `serve`, is tested without hardware.
+
+## sunspec-interop
+
+sunspec-interop v0.3.0 (container contract 1.2) publishes two independent references, each in both roles:
+
+| Image | Stack | Roles |
+|---|---|---|
+| `ghcr.io/otfabric/sunspec-interop-pysunspec2` | [pysunspec2](https://github.com/sunspec/pysunspec2) 1.3.7, the SunSpec Alliance's Python stack | device, client |
+| `ghcr.io/otfabric/sunspec-interop-cbsigma` | [cB-Sigma sunspec](https://github.com/cB-Sigma/sunspec) v0.3.0 (client) and [sunspec-sim](https://github.com/cB-Sigma/sunspec-sim) v0.3.0 (device), Go, Apache-2.0 | device, client |
+
+pysunspec2 has no Modbus server: in the device role it encodes the register map from a fixture, and a small Modbus TCP layer of the adapter serves those registers, so the SunSpec encoding is pysunspec2's and the transport is not. The cbsigma image is cB-Sigma's code on both sides, transport included.
+
+The fixtures cover models 1, 101, 103, 111, 120, 123, 160 and, in the `der` fixture, the IEEE 1547-2018 models 701, 702, 704 and 705, at base addresses 0, 40000 and 50000: repeating and nested repeating groups (the volt-var curves of model 705), groups that occur once, not-implemented values, signed setpoints, 32-bit floats, 64-bit accumulators and scale factors from -3 to 3. The self-test of every release runs every client against every device, on amd64 and arm64, writes `results.json` in the organisation's interop-result-v1 format, and has no known differences. The two references differ without a case failing in two places: sunspec-sim encodes a `pad` point as 0x8000 and pysunspec2 as 0, and cB-Sigma's client refuses a write of a read-only point before sending it, where pysunspec2 sends it and the device refuses it.
+
+```sh
+git clone https://github.com/otfabric/sunspec-interop && cd sunspec-interop
+make images smoke interop     # build, then self-test
+make run-pysunspec2           # a device on 127.0.0.1:1502
+```
+
+### go-sunspec against the references
+
+`make interop` in go-sunspec, and its Interop workflow, run against the sunspec-interop v0.3.0 images pinned by digest:
+
+| Test | Direction | Shows |
+|---|---|---|
+| `TestGoReadsPeerDevice` | go-sunspec reads a device the peer encoded | The model chain and every raw and scaled point, nested repeating groups included, match what the peer's client reads from the same device |
+| `TestPeerReadsGoServer` | The peer reads `Server` | The peer finds the device and reads the same points, and the registers equal those the peer encodes for the same values |
+| `TestPeerWritesGoServer` | The peer writes `Server` | A write of a read-write point lands and one of a read-only point is refused, inside groups too (model 704's power factor, a point of a model 705 curve) |
+| `TestGoWritesPeerDevice`, `TestGoWritesPeerDER` | go-sunspec writes the device | `WritePoint` of a scaled point, an enum, model 702 `WMax` and a curve adoption request lands and reads back; a read-only point is refused before anything is sent |
+
+`WritePoint` writes top-level points only, so writes inside groups are shown only in the direction peer to `Server`.
+
+### Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/sunspec-interop-otfabric` is go-sunspec behind the same container contract as the reference images (adapter name `otfabric`), so you can test your SunSpec client or device against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-sunspec -p 127.0.0.1:1502:1502 ghcr.io/otfabric/sunspec-interop-otfabric:<tag> server
+until docker exec go-sunspec test -f /run/sunspec-interop/ready; do sleep 0.1; done
+```
+
+It is go-sunspec on go-modbus, serving the same fixtures as the references; its registers equal sunspec-sim's on every fixture. Its client does not declare `write-group`, since `WritePoint` writes top-level points only, so those cases are `unsupported` for it. `version` prints the versions inside the image.
+
+Its tags are go-sunspec versions, such as `v0.10.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a sunspec-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## Model definitions
 
@@ -117,7 +162,8 @@ go srv.Serve(ctx, &modbus.ServerConfig{URL: "tcp://127.0.0.1:1502"})
 ## What has been validated
 
 <Aside type="note" title="Validation status">
-- go-sunspec is tested against its own `Server`, its `testutil` fixture server and offline decoding. The client and the server share the model definitions and the codecs, so these tests prove that both sides agree with each other and with the definitions, not that they agree with an independent SunSpec implementation. The repository describes no run against another SunSpec stack or certified test equipment.
+- go-sunspec v0.10.0 is tested against two independent SunSpec implementations, pysunspec2 1.3.7 and cB-Sigma sunspec and sunspec-sim v0.3.0, in both directions, on the models of the sunspec-interop fixtures (see above). Other models, vendor models, Modbus RTU and real devices are not in that suite.
+- Its own tests run against its `Server`, its `testutil` fixture server and offline decoding. The client and the server share the model definitions and the codecs, so those tests prove that both sides agree with each other and with the definitions; the interop suite is what shows agreement with others. Nothing is certified by the SunSpec Alliance.
 - The underlying Modbus TCP transport (go-modbus) is tested against five independent Modbus TCP stacks. That covers the wire protocol, not SunSpec decoding or encoding.
 - Contributors are asked to verify changes that affect what is read from a device against real hardware when possible, and to name the device in the pull request. The repository does not publish a list of devices it has been verified against.
 </Aside>

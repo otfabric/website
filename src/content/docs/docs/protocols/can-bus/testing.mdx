@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Test CAN code on Linux virtual CAN against independent implementations with canbus-interop (can-utils with the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix), and see what go-canbus and canbusctl have and have not been validated against.
+description: Test CAN code on Linux virtual CAN against independent implementations with canbus-interop (can-utils with the kernel's ISO-TP, python-can, socketcan-rs, Scapy, python-can-isotp, cantools and canmatrix), test your own code against OT Fabric's go-canbus image, and see what go-canbus and canbusctl have and have not been validated against.
 sidebar:
   label: Testing and interop
   order: 3
@@ -16,7 +16,7 @@ ISO 11898-1 and ISO 15765-2 are not public, and DBC has no public specification 
 
 ## canbus-interop
 
-canbus-interop v0.5.0 (container contract 1.3) packages:
+canbus-interop v0.7.0 (container contract 1.4) packages:
 
 | Adapter | Implementation | Version | Licence | Exercises |
 |---|---|---|---|---|
@@ -30,7 +30,7 @@ canbus-interop v0.5.0 (container contract 1.3) packages:
 
 **What "independent" means here.** The four raw-CAN clients (can-utils, python-can, socketcan-rs, Scapy) are independently written userspace programs, but they all use the same Linux `CAN_RAW` code in the kernel. They are independent in how they build, parse and present frames (identifier flags, lengths, FD flags, filters, socket options, log formats), not in controller or bus behaviour. The two ISO-TP implementations, the kernel's and python-can-isotp's, are genuinely independent, and so are cantools and canmatrix as database tools.
 
-Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canbus-interop/blob/main/versions.yaml), and the multi-architecture images (amd64 and arm64) are published to GitHub Container Registry; the canutils image ships the source of its GPL binaries. A weekly workflow reports new upstream releases.
+Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canbus-interop/blob/main/versions.yaml), and the multi-architecture images (amd64 and arm64) are published to GitHub Container Registry; the canutils image ships the source of its GPL binaries. A weekly workflow reports new upstream releases. Each image says in its version document whether it is an independent implementation (`independentEngine`), and a self-test run writes `results.json` in the organisation's interop-result-v1 format.
 
 ## Running the reference stacks
 
@@ -46,7 +46,7 @@ Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canbus-i
 2. CAN interfaces belong to a network namespace and Docker networks do not carry CAN, so containers run with `--network host`. Start a receiver:
 
    ```sh
-   docker run --rm --network host ghcr.io/otfabric/canbus-interop-canutils:v0.5.0 \
+   docker run --rm --network host ghcr.io/otfabric/canbus-interop-canutils:v0.7.0 \
        receive --interface vcan0 --count 1 --fd
    ```
 
@@ -54,22 +54,35 @@ Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canbus-i
 
    ```sh
    echo '{"id":291,"fd":true,"brs":true,"len":12,"data":"000102030405060708090a0b"}' |
-       docker run --rm -i --network host ghcr.io/otfabric/canbus-interop-socketcanrs:v0.5.0 send --fd
+       docker run --rm -i --network host ghcr.io/otfabric/canbus-interop-socketcanrs:v0.7.0 send --fd
    ```
 
 4. Run the self-test, every reference against every other:
 
    ```sh
-   make images smoke selftest
+   make images smoke interop   # make selftest is an alias
    ```
 
 </Steps>
 
 On macOS or Docker Desktop, whose kernel has no CAN, `make images smoke selftest-dbc` runs everything that needs no CAN interface. Every image speaks the same commands, flags, JSON documents and exit codes ([container contract](https://github.com/otfabric/canbus-interop/blob/main/docs/CONTAINER_CONTRACT.md)), and `print-capabilities` tells a test suite which scenarios a stack can run.
 
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/canbus-interop-otfabric` is go-canbus behind the same container contract as the reference images (adapter name `otfabric`), so you can test your CAN, ISO-TP or database code against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run --rm --network host ghcr.io/otfabric/canbus-interop-otfabric:<tag> \
+    receive --interface vcan0 --fd --count 10 --timeout-ms 10000
+```
+
+Like every image of the suite it runs in the host network namespace, where the `vcan` interfaces are. Raw CAN goes through go-canbus's `socketcan` package (CAN, CAN FD, CAN XL, filters, error frames, candump logs), ISO-TP through its userspace `isotp.Conn` rather than the kernel's, and databases through its DBC, KCD and ARXML parsers. go-canbus's own Self-interop workflow, run by hand, tests a commit against `:latest`, to catch a change that breaks an earlier release.
+
+Its tags are go-canbus versions, such as `v0.8.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a canbus-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## What go-canbus is tested on
 
-Against canbus-interop v0.5.0, on Linux with `vcan0` and the published images pinned by digest, in CI on amd64 and arm64: **170 scenarios pass, 0 fail, 13 are skipped**, and 132 records are documented differences.
+go-canbus v0.8.0 pins the images of canbus-interop v0.6.0 by digest (v0.7.0 changes only the contract's additions and adds OT Fabric's own image). On Linux with `vcan0`, in CI on amd64 and arm64: **170 scenarios pass, 0 fail, 13 are skipped**, and 132 records are documented differences, the same as against v0.5.0.
 
 | Area | Scenarios | References |
 |---|---|---|

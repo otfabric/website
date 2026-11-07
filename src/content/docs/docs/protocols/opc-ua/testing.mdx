@@ -22,7 +22,7 @@ OT Fabric tests its OPC UA implementation against six independent stacks rather 
 | opcua-asyncio (`asyncua`) | Python | opcua-asyncio 2.1.0 on CPython 3.14 | RSA policies only, no reverse connect, no PubSub; event history read only |
 | UA-.NETStandard GDS (`dotnet-gds`) | C# | UA-.NETStandard 2.0.1 with `Opc.Ua.Gds.Server` and `Opc.Ua.Gds.Client` | The reference Global Discovery Server and GDS pull client, in an image of its own |
 
-The images are `ghcr.io/otfabric/opcua-interop-<adapter>:<version>` (`open62541`, `milo`, `async-opcua`, `dotnet`, `node-opcua`, `asyncua` and `dotnet-gds`), for linux/amd64 and linux/arm64. Tags are immutable, and go-opcua pins all seven by digest to v0.17.0.
+The images are `ghcr.io/otfabric/opcua-interop-<adapter>:<version>` (`open62541`, `milo`, `async-opcua`, `dotnet`, `node-opcua`, `asyncua` and `dotnet-gds`), for linux/amd64 and linux/arm64. Tags are immutable, and go-opcua v1.31.0 pins all seven by digest to opcua-interop **v0.19.0**, the current release. Since v0.18.0 a run writes `reports/results.json` in the organisation's interop-result-v1 format, and known deviations are reported as known, never as passes.
 
 Each image has the same modes: `server` (start a server from a fixture), `client` (run one probe operation), `test`, `validate-fixture` and `print-capabilities`. An Eclipse Mosquitto broker, pinned by digest, carries the MQTT PubSub tests.
 
@@ -35,11 +35,10 @@ The reference servers are a safe target for the library and for opcuactl. They b
 1. **Start a server.** From a checkout of opcua-interop (needs Docker with BuildKit, `make`, `jq`, and `openssl` 1.1 or later for certificates):
 
     ```sh
-    make run-open62541   # open62541 server on port 4840
-    make run-milo        # Milo server on port 4841
-    make run-dotnet      # UA-.NETStandard server on port 4843
-    make run-asyncua     # opcua-asyncio server on port 4845
-    make run-dotnet-gds  # UA-.NETStandard Global Discovery Server on port 4846
+    make run-open62541             # open62541 server on 127.0.0.1:4840
+    make run-milo PORT=4841        # Eclipse Milo server on 127.0.0.1:4841
+    make run-dotnet PORT=4843      # UA-.NETStandard server
+    make run-dotnet-gds PORT=4846  # UA-.NETStandard Global Discovery Server, with the gds fixture
     ```
 
 2. **Probe it with the reference client.**
@@ -90,7 +89,7 @@ docker run --rm ghcr.io/otfabric/opcua-interop-open62541:latest print-capabiliti
 docker run --rm ghcr.io/otfabric/opcua-interop-dotnet:latest print-capabilities
 ```
 
-| Feature (v0.17.0) | open62541 | Milo | async-opcua | UA-.NETStandard | node-opcua | asyncua |
+| Feature (v0.19.0) | open62541 | Milo | async-opcua | UA-.NETStandard | node-opcua | asyncua |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | DataChangeFilter, client and server | Yes | Yes | Yes | Yes | Yes | Client only |
 | Reverse connect | Yes | No | Yes | Not wired | Yes | No |
@@ -169,6 +168,20 @@ Verified with every peer that has the feature, in both directions, among others:
 With open62541 only, because no other peer has the feature: all ECC policies including Brainpool and Curve448 (the AEAD and Brainpool policies in SignAndEncrypt only), username tokens and renewal over ECC, reverse connect including secured channels (also with async-opcua and node-opcua), and mDNS discovery.
 
 Interop found go-opcua defects that Go-to-Go tests could not: the RSA-OAEP-SHA256 block size (UA-.NETStandard), the first sequence number of a channel (async-opcua), the renewal of a superseded token (asyncua) and in-place key swaps on renewal (open62541, Milo). The peers' own deviations, such as ignored TimestampsToReturn or writes with a SourceTimestamp accepted, are pinned by the tests and listed in go-opcua's [interop gaps](https://github.com/otfabric/go-opcua/blob/main/docs/interop-gaps.md).
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/opcua-interop-otfabric` is go-opcua behind the same container contract as the reference images (adapter name `otfabric`), so you can test your OPC UA client or server against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-opcua -p 127.0.0.1:4840:4840 ghcr.io/otfabric/opcua-interop-otfabric:<tag> \
+  server --fixture /fixtures/baseline/fixture.json
+until docker exec go-opcua test -f /run/opcua-interop/ready; do sleep 0.1; done
+```
+
+The server builds the same baseline address space as the references, and `client <operation>` runs go-opcua's client against your server. opcua-interop v0.19.0 added cases for what the image covers, run across every pair that declares the capability: history, alarms and events, ECC, X.509 user tokens, reverse connect, `opc.https` and `opc.wss`, codecs, certificate push and trust lists, GDS pull and PubSub. Against the v0.19.0 references, the v1.29.5 image passed 802 interop checks with 0 failures and 13 known deviations, and 117 PubSub checks. `version` prints the versions inside the image.
+
+Its tags are go-opcua versions, such as `v1.29.5`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a opcua-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## What has not been validated
 

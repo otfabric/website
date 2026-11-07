@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Test CANopen code on Linux virtual CAN against CANopenNode, Lely CANopen and python canopen with canopen-interop, and see what go-canopen and canopenctl have and have not been validated against, including LSS, MPDOs, the CiA 302 boot-up, EDS files and CANopen FD.
+description: Test CANopen code on Linux virtual CAN against CANopenNode, Lely CANopen and python canopen with canopen-interop, test your own stack against OT Fabric's go-canopen image, and see what go-canopen and canopenctl have and have not been validated against, including LSS, MPDOs, the CiA 302 boot-up, EDS files and CANopen FD.
 sidebar:
   label: Testing and interop
   order: 3
@@ -16,7 +16,7 @@ The CiA specifications are member documents, and go-canopen is built from public
 
 ## canopen-interop
 
-canopen-interop v0.2.0 (container contract 1.1) packages three stacks, each as a **device** (SDO server, NMT slave, heartbeat, EMCY and PDO producer, with the object dictionary of one shared EDS) and as a **master** (SDO client with block transfer, NMT master, heartbeat and EMCY consumers):
+canopen-interop v0.4.0 (container contract 1.2) packages three stacks, each as a **device** (SDO server, NMT slave, heartbeat, EMCY and PDO producer, with the object dictionary of one shared EDS) and as a **master** (SDO client with block transfer, NMT master, heartbeat and EMCY consumers):
 
 | Adapter | Implementation | Version | Licence | Also offers |
 |---|---|---|---|---|
@@ -24,7 +24,7 @@ canopen-interop v0.2.0 (container contract 1.1) packages three stacks, each as a
 | `lely` | [Lely CANopen](https://gitlab.com/lely_industries/lely-core) lely-core (C and C++), with Lely's Python dcf-tools | v2.3.5 | Apache-2.0 | LSS master and slave, PDO reception, EDS checker, MPDOs, CiA 302 boot master, concise DCF generator |
 | `pythoncanopen` | [python canopen](https://github.com/christiansandberg/canopen) on python-can 4.6.1 | 2.4.1 | MIT (python-can LGPL-3.0) | PDO configuration and reception, SYNC producer, EDS importer, CiA 402 node, LSS master, RPDO sender with the SYNC window |
 
-The shared test device, [`interop-device.eds`](https://github.com/otfabric/canopen-interop/blob/main/fixtures/eds/interop-device.eds), holds the CiA 301 communication objects and a test area with every basic type, a 64-character string, a DOMAIN for segmented and block transfers, and read-only, write-only and range-limited objects. Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canopen-interop/blob/main/versions.yaml), the multi-architecture images (amd64 and arm64) are published to GitHub Container Registry, and a weekly workflow reports new upstream releases.
+The shared test device, [`interop-device.eds`](https://github.com/otfabric/canopen-interop/blob/main/fixtures/eds/interop-device.eds), holds the CiA 301 communication objects and a test area with every basic type, a 64-character string, a DOMAIN for segmented and block transfers, and read-only, write-only and range-limited objects. Every upstream is pinned in [versions.yaml](https://github.com/otfabric/canopen-interop/blob/main/versions.yaml), the multi-architecture images (amd64 and arm64) are published to GitHub Container Registry, and a weekly workflow reports new upstream releases. Each image says in its capability document whether it is an independent implementation (`independentEngine`), and every self-test writes `results.json` in the organisation's interop-result-v1 format.
 
 The self-test runs every master against every device before any library is tested: 389 checks pass, 15 are documented differences between the stacks and 32 are skipped where a stack lacks a capability ([COMPATIBILITY.md](https://github.com/otfabric/canopen-interop/blob/main/docs/COMPATIBILITY.md)).
 
@@ -42,14 +42,14 @@ The self-test runs every master against every device before any library is teste
 2. CAN interfaces belong to a network namespace and Docker networks do not carry CAN, so containers run with `--network host`. Start a Lely device as node 5:
 
    ```sh
-   docker run --rm --network host ghcr.io/otfabric/canopen-interop-lely:v0.2.0 \
+   docker run --rm --network host ghcr.io/otfabric/canopen-interop-lely:v0.4.0 \
        device --interface vcan0 --node-id 5 --eds /fixtures/eds/interop-device.eds --timeout-ms 60000 &
    ```
 
 3. Read from it with another stack, or with your own code:
 
    ```sh
-   docker run --rm --network host ghcr.io/otfabric/canopen-interop-canopennode:v0.2.0 \
+   docker run --rm --network host ghcr.io/otfabric/canopen-interop-canopennode:v0.4.0 \
        sdo-upload --interface vcan0 --node-id 5 --index 0x1008
    canopenctl sdo read 5 0x1008 0 -i vcan0
    ```
@@ -57,16 +57,31 @@ The self-test runs every master against every device before any library is teste
 4. Run the self-test, every reference against every other:
 
    ```sh
-   make images smoke selftest
+   make images smoke interop   # make selftest is an alias
    ```
 
 </Steps>
 
 On macOS or Docker Desktop, whose kernel has no CAN, `make images smoke selftest-eds` runs everything that needs no CAN interface. Every image speaks the same commands, flags, JSON documents and exit codes ([container contract](https://github.com/otfabric/canopen-interop/blob/main/docs/CONTAINER_CONTRACT.md)), and `print-capabilities` tells a test suite which scenarios a stack can run.
 
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/canopen-interop-otfabric` is go-canopen behind the same container contract as the reference images (adapter name `otfabric`), so you can test your CANopen master or device against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-canopen --network host ghcr.io/otfabric/canopen-interop-otfabric:<tag> \
+    device --interface vcan0 --node-id 5 --eds /fixtures/eds/interop-device.eds --timeout-ms 600000
+docker run --rm --network host ghcr.io/otfabric/canopen-interop-otfabric:<tag> \
+    sdo-upload --interface vcan0 --node-id 5 --index 0x1018 --subindex 1
+```
+
+The device serves the shared EDS like the references, and the master commands (`sdo-upload`, `sdo-download`, `nmt`, `listen`) run go-canopen's client. `print-version` prints the versions inside the image.
+
+Its tags are go-canopen versions, such as `v0.4.1`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a canopen-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## What go-canopen is tested on
 
-go-canopen v0.3.0 against canopen-interop v0.2.0, on Linux with `vcan0` and the published images pinned by digest: **1,620 scenarios, 1,276 pass, 0 fail**, 57 documented differences and 287 skips. v0.3.1 changed only the CiA 302 boot-up, and CI runs the suite on amd64 and arm64.
+go-canopen v0.4.1 pins the images of canopen-interop v0.3.1 (contract 1.1) by digest; v0.4.0 changes only the contract's additions. On Linux with `vcan0`: **1,620 scenarios, 1,276 pass, 0 fail**, 57 documented differences and 287 skips, the same counts as against v0.2.0. Two lely scenarios that timed out once in a full run under load passed on every repeat, so they are counted as timing, not differences. CI runs the suite on amd64 and arm64.
 
 | Area | go-canopen as master | Each stack as master of a go-canopen node |
 |---|---|---|
@@ -86,7 +101,7 @@ The documented differences are behaviours where the stacks differ and CiA 301 al
 
 ## What canopenctl is tested on
 
-canopenctl v0.2.1 runs its commands against the same images: `sdo`, `scan`, `nmt`, `heartbeat`, `emcy`, `pdo`, `dcf`, `eds` and `cia402`, and since v0.2.0 `lss`, `mpdo`, `boot` (one stack's device at a time, and a mixed network of all three with a simulated node), `cdcf` byte for byte against Lely's generators, and Lely's boot master booting `canopenctl simulate`. **152 pass, 0 fail**, 5 documented differences and 63 skips where a stack or the contract's device lacks a capability.
+canopenctl v0.5.0 (results recorded with v0.4.0 on go-canopen v0.4.1, against canopen-interop v0.3.1) runs its commands against the same images: `sdo`, `scan`, `nmt`, `heartbeat`, `emcy`, `pdo`, `dcf`, `eds` and `cia402`, and since v0.2.0 `lss`, `mpdo`, `boot` (one stack's device at a time, and a mixed network of all three with a simulated node), `cdcf` byte for byte against Lely's generators, and Lely's boot master booting `canopenctl simulate`. **152 pass, 0 fail**, 5 documented differences and 63 skips where a stack or the contract's device lacks a capability.
 
 ### Beyond the interop suite
 

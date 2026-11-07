@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-sparkplugb](/projects/go-sparkplugb/) implements Sparkplug B 3.0.0 over MQTT 3.1.1 in Go, in all three roles: edge node, primary host application and application. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-sparkplugb), and runnable programs are in [examples/](https://github.com/otfabric/go-sparkplugb/tree/main/examples). This page follows v0.3.3.
+[go-sparkplugb](/projects/go-sparkplugb/) implements Sparkplug B 3.0.0 over MQTT 3.1.1 in Go, in all three roles: edge node, primary host application and application. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-sparkplugb), and runnable programs are in [examples/](https://github.com/otfabric/go-sparkplugb/tree/main/examples). This page follows v0.3.4.
 
 ```sh
 go get github.com/otfabric/go-sparkplugb
@@ -64,7 +64,7 @@ update, _ := payload.NewAliasMetric(1, pb.DataType_Double, 23.1)
 node.PublishNodeData(ctx, []*pb.Payload_Metric{update})
 ```
 
-The node moves through the states `connecting`, `subscribing`, `waiting_for_primary_host` and `online`. `Rebirth` publishes the births again with current values; a host's `Node Control/Rebirth` command does the same. Every publish before a birth fails with `ErrNoBirth`, and an alias used twice across the node is refused with `ErrDuplicateID`. `Close` ends the session before the NDEATH, so no NBIRTH can follow it; a publish after that returns `ErrNotConnected`.
+The node moves through the states `connecting`, `subscribing`, `waiting_for_primary_host` and `online`. `Rebirth` publishes the births again with current values, the DBIRTHs in the order the devices were first born (since v0.3.4); a host's `Node Control/Rebirth` command does the same. Every publish before a birth fails with `ErrNoBirth`, and an alias used twice across the node is refused with `ErrDuplicateID`. `Close` ends the session before the NDEATH, so no NBIRTH can follow it; a publish after that returns `ErrNotConnected`.
 
 | Config field | What it does |
 |---|---|

@@ -16,7 +16,7 @@ Interoperability between implementations does not establish conformance: they ca
 
 ## profinet-interop
 
-profinet-interop v0.6.0 (container contract 1.2) packages:
+profinet-interop v0.8.0 (container contract 1.3) packages:
 
 | Adapter | Implementation | Version | Licence | Role | go-profinet tested as |
 |---|---|---|---|---|---|
@@ -31,7 +31,7 @@ profinet-interop v0.6.0 (container contract 1.2) packages:
 
 The p-net tree is the last complete public GPLv3 snapshot: since 2024 the public branch of p-net is an evaluation version without build files, ports or sample application. That tree predates p-net's v1.0.2 security fixes, so it is a lab oracle for isolated test networks only. Two candidates were evaluated and not used: profinet-python (no licence, and a Connect that compliant devices reject) and the PI Community Stack (members only, under an agreement that forbids combining it with copyleft code).
 
-Every upstream is pinned in [versions.yaml](https://github.com/otfabric/profinet-interop/blob/main/versions.yaml). No image is published: most of the implementations are GPL, so every user builds the images from upstream. A weekly workflow compares each pin with its latest upstream release, builds and smoke-tests a candidate, and keeps an issue open while any pin is behind; pins are never moved automatically.
+Every upstream is pinned in [versions.yaml](https://github.com/otfabric/profinet-interop/blob/main/versions.yaml). No reference image is published: most of the implementations are GPL, so every user builds the images from upstream. Since v0.7.0 the matrix is also written as `matrix/interop-result-v1.json`, the organisation's result format, and since v0.8.0 `make interop` runs a small cross-stack self-test between chosen adapters: DCP Identify, Get and Set NameOfStation of every DCP tool against every IO-Device, and Connect, cyclic data and I&M0 of every IO-Controller against every IO-Device, each pair on its own bridge network. A weekly workflow compares each pin with its latest upstream release, builds and smoke-tests a candidate, and keeps an issue open while any pin is behind; pins are never moved automatically.
 
 ## Running the reference stacks
 
@@ -79,6 +79,8 @@ go-profinet's Interop workflow runs on pull requests, pushes to main and weekly;
 | scapy and tshark | Decoder of every capture | 47 | 0 | 0 | 9 |
 | **Total** | | **248** | **0** | **6** | **14** |
 
+These are the results of go-profinet v0.6.0 against profinet-interop v0.6.0, the latest recorded in go-profinet's INTEROPERABILITY.md; v0.7.0 and v0.8.0 changed the result format, the contract's capability document and the own image, not the references.
+
 The n/a are limits of the peers: pnio-rs has no diagnosis records and no DCP Set, p-net and pnio-rs refuse re-parameterization in data exchange, profinet-py ignores a GSDML's UsedInSlots, and the kernel flushes its forwarding table where the mrp adapter cannot observe it. The deviations are profinet-py's I&M1 write with a block two octets too long, umrp's automatic manager reclaiming the manager role as a client, and decoder limits. The full matrix, feature by feature with the evidence of each check, is [MATRIX.md](https://github.com/otfabric/profinet-interop/blob/v0.6.0/docs/MATRIX.md), summarized in go-profinet's [FEATURE-STATUS.md](https://github.com/otfabric/go-profinet/blob/main/docs/FEATURE-STATUS.md).
 
 ```sh
@@ -86,6 +88,23 @@ make interop-images   # clones otfabric/profinet-interop and builds its images
 make interop          # runs the suite; results in interop-results/
 make interop-matrix   # regenerates profinet-interop's matrix from them
 ```
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/profinet-interop-otfabric` is go-profinet behind the same container contract as the reference images (adapter name `otfabric`), so you can test your PROFINET IO-Controller, IO-Device or DCP tool against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker network create --subnet 10.77.0.0/24 pn
+docker run -d --name otf --network pn --ip 10.77.0.30 --cap-add NET_RAW --cap-add NET_ADMIN \
+  ghcr.io/otfabric/profinet-interop-otfabric:<tag> device --station otf-dut --gsdml-out /run/profinet-interop/otf-dut.xml
+docker exec otf cat /run/profinet-interop/otf-dut.xml > otf-dut.xml    # its GSDML, for your controller
+docker run --rm --network pn --ip 10.77.0.4 --cap-add NET_RAW --cap-add NET_ADMIN \
+  ghcr.io/otfabric/profinet-interop-otfabric:<tag> dcp identify
+```
+
+Unlike the references, this image is published, because go-profinet is MIT. To test your device, run it as the IO-Controller: `controller --station NAME --model FILE.xml [--advanced] [--im0] [--duration 3s]` with your GSDML mounted. The commands are in the contract's section `otfabric`, and `version` prints the version.
+
+Its tags are go-profinet versions, such as `v0.7.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a profinet-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## Beyond interop
 

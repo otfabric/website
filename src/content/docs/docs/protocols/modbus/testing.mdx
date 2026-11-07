@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Simulate Modbus devices with modbus-simulator and modbusctl, run go-modbus against five reference stacks with modbus-interop, and see what has and has not been validated.
+description: Simulate Modbus devices with modbus-simulator and modbusctl, run go-modbus against five reference stacks with modbus-interop, test your own stack against go-modbus in a container, and see what has and has not been validated.
 sidebar:
   label: Testing and interop
   order: 4
@@ -201,7 +201,7 @@ No access to the device, but a packet trace of its traffic? `mbtracectl export m
 
 ## modbus-interop
 
-[modbus-interop](https://github.com/otfabric/modbus-interop) packages five independent Modbus TCP implementations as container images with the same command interface. It contains no library under test: a library pulls the images and owns its own scenarios and assertions.
+[modbus-interop](https://github.com/otfabric/modbus-interop) packages five independent Modbus TCP implementations as container images with the same command interface. Its current release is v0.3.3 (container contract 1.1). It contains no library under test: a library pulls the images and owns its own scenarios and assertions.
 
 | Adapter | Implementation | Version | Language |
 |---|---|---|---|
@@ -232,9 +232,24 @@ The stacks differ. Not every one has FC22 or FC43, and they differ in what they 
 
 The reference servers are unauthenticated and accept writes from anyone. They publish on loopback only and must never be attached to a plant network.
 
+A self-test run with `REPORT_DIR` set also writes `reports/results.json` in the organisation's interop-result-v1 format, with a stable ID per scenario and the digest of every image.
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/modbus-interop-otfabric` is go-modbus behind the same container contract as the reference images (adapter name `otfabric`), so you can test your client against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-modbus -p 127.0.0.1:1502:1502 ghcr.io/otfabric/modbus-interop-otfabric:<tag> server
+until docker exec go-modbus test -f /run/modbus-interop/ready; do sleep 0.1; done
+```
+
+It serves the same fixture as the reference servers, so anything that uses a `modbus-interop-<adapter>` image can use this one in its place, and its `client` commands drive your server the same way.
+
+Its tags are go-modbus versions, such as `v1.10.5`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a modbus-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## What go-modbus has been validated against
 
-go-modbus runs its interop suite on every push (`make interop` in the go-modbus repository, about five minutes, Docker required). It is qualified against modbus-interop v0.2.0.
+go-modbus runs its interop suite on every push (`make interop` in the go-modbus repository, about five minutes, Docker required). It is qualified against modbus-interop v0.3.3, with the images pinned by digest.
 
 | Reference | go-modbus client to reference server | Reference client to go-modbus server |
 |---|---|---|

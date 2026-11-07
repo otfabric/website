@@ -38,6 +38,8 @@ go get github.com/otfabric/go-iec61850   # Go 1.26+
 go get github.com/otfabric/go-mms        # Go 1.26+, pulled in automatically by go-iec61850
 ```
 
+This page follows go-iec61850 v1.8.1 and go-mms v1.4.0.
+
 ## Connecting
 
 ### Plain TCP
@@ -358,7 +360,8 @@ func main() {
 	re := srv.EnableReports()
 	defer re.Stop()
 
-	err = srv.RegisterControl("InteropLD", "GGIO1.SPCSO1", iec61850.CtlModelDirectNormal,
+	// The MMS domain is the IED name followed by the LD instance (IED1 + InteropLD).
+	err = srv.RegisterControl("IED1InteropLD", "GGIO1.SPCSO1", iec61850.CtlModelDirectNormal,
 		iec61850.ControlHandler{
 			OnOperate: func(ctx context.Context, req iec61850.ControlRequest) error {
 				log.Printf("operate: %s ctlVal=%v", req.Ref, req.CtlVal)
@@ -370,7 +373,7 @@ func main() {
 	}
 
 	// Store keys are "LD/itemID"; SetValue triggers change-detection reports.
-	srv.SetValue(ctx, "InteropLD/GGIO1$ST$SPS1$stVal", mms.NewBoolean(true))
+	srv.SetValue(ctx, "IED1InteropLD/GGIO1$ST$SPS1$stVal", mms.NewBoolean(true))
 
 	ln, err := iso.Listen(":102")
 	if err != nil {
@@ -379,6 +382,8 @@ func main() {
 	log.Fatal(srv.ListenAndServe(ctx, ln))
 }
 ```
+
+Since v1.7.0 a server built from SCL names its logical devices as IEC 61850-8-1 does, like the other IEC 61850 stacks: the MMS domain is `LDevice@ldName` when the SCL gives one, otherwise the IED name followed by `LDevice@inst` (`IED1InteropLD` here; it was the bare `InteropLD`). Data set members, report control block `DatSet`, GoCB and MSVCB references and the keys of `SetValue` and `RegisterControl` follow. A client that finds the logical devices with `ListLogicalDevices` is not affected; one that addresses `InteropLD/...` directly sets `DialOptions.IEDName`. `NewServerModelFromSCLWithOptions(..., iec61850.ServerModelOptions{InstanceDomainNames: true})` keeps the old names. v1.7.0 also fixed reports with the data-reference bit of `OptFlds` set, which left the references out; cB-Sigma's client found it in iec61850-interop.
 
 Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s). After an enhanced-security operate the server sends a positive CommandTermination. Interlocking and synchrocheck are your handler's job. Since v1.5.0 the server refuses client writes to the read-only functional constraints ST, MX, SG, SR, OR and EX with object-access-denied, so no MMS client can overwrite a breaker's `Pos.stVal`; the application changes them with `SetValue`. A simulator whose peers drive status over MMS sets `ServerOptions.AllowReadOnlyFCWrites`. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. `EnableSettingGroups` and `EnableJournals` start the other engines, `ServerOptions.Authenticate` checks the association, and `Server.Shutdown(ctx)` stops accepting associations and drains the active ones.
 

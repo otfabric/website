@@ -1,6 +1,6 @@
 ---
 title: Go library
-description: Connect to Siemens S7 PLCs from Go with go-s7comm, read and write memory areas, inspect CPUs and blocks, and handle structured read results.
+description: Connect to Siemens S7 PLCs from Go with go-s7comm, read and write memory areas, inspect CPUs and blocks, handle structured read results, and serve an in-memory S7 server in tests.
 sidebar:
   label: Go library
   order: 1
@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-[go-s7comm](https://github.com/otfabric/go-s7comm) is a pure Go S7comm client. It needs no cgo and no Snap7 library. It covers:
+[go-s7comm](https://github.com/otfabric/go-s7comm) is a pure Go S7comm client, with an in-memory S7 server for tests. It needs no cgo and no Snap7 library. It covers:
 
 - connection setup over TCP, COTP Class 0 and S7 Setup Communication
 - reads and writes for data blocks (DB), inputs, outputs and markers, with a structured `ReadResult`
@@ -16,9 +16,10 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 - SZL-based identification, CPU state, protection level and the diagnostic buffer
 - block listing, block metadata and block upload
 - discovery over CIDR ranges, rack/slot probing, readable range scans and compare reads
-- low-level PDU encoding and parsing in the `wire` package
+- low-level PDU encoding and parsing in the `wire` package, for both sides
+- an in-memory test server (`server`, since v0.10.0) with data blocks, inputs, outputs, markers, timers and counters
 
-It is a client only. There is no S7 server in the library. For a server to test against, see [Testing and interop](/docs/protocols/s7/testing/).
+The server is for tests and test benches, not a PLC: it runs no program. For the reference servers to test against, see [Testing and interop](/docs/protocols/s7/testing/).
 
 ## Install
 
@@ -26,13 +27,14 @@ It is a client only. There is no S7 server in the library. For a server to test 
 go get github.com/otfabric/go-s7comm
 ```
 
-go-s7comm requires Go 1.26 or later; CI tests Go 1.26 and 1.27. This page follows v0.9.0. The module has three packages you import:
+go-s7comm requires Go 1.26 or later; CI tests Go 1.26 and 1.27. This page follows v0.12.0. The module has four packages you import:
 
 | Package | Purpose |
 |---|---|
 | `client` | High-level operations: connect, read, write, discovery, probing, SZL, blocks |
 | `model` | Areas, addresses, device and connection info, value encoders and decoders |
-| `wire` | S7 PDU encoding and parsing, TSAP helpers, frame inspection |
+| `wire` | S7 PDU encoding and parsing, client and server side, TSAP helpers, frame inspection |
+| `server` | An in-memory S7 server for tests: Setup Communication, Read Var and Write Var |
 
 The transport stack is `client` → [go-cotp](https://github.com/otfabric/go-cotp) (Class 0 transport service) → [go-tpkt](https://github.com/otfabric/go-tpkt) (RFC 1006 framing). go-cotp owns go-tpkt, so go-s7comm does not import go-tpkt directly.
 
@@ -188,7 +190,11 @@ blocks, err := c.ListAllBlocks(ctx)
 
 `ListBlocks(ctx, blockType)`, `GetBlockInfo(ctx, blockType, number)` and `UploadBlock(ctx, blockType, number)` work on a single block type. `UploadBlock` always sends an end-upload request when it finishes, with its own 500 ms timeout.
 
+`Client.BlockCounts` returns the number of blocks of each type.
+
 `Identify`, `GetBlockInfo`, `ListAllBlocks` and `ReadDiagBuffer` are best-effort. They can return a partial value **and** an error at the same time, so check both. What a PLC exposes through SZL depends on its family and firmware.
+
+v0.11.0 rebuilt these requests from 25 recordings of real S7-300 and S7-400 CPUs. Before it, the SZL requests lacked their method byte, `Identify`, `GetCPUState`, `GetProtectionLevel` and `ReadDiagBuffer` read the wrong offsets, `ListBlocks` and `GetBlockInfo` used SZL lists instead of the block functions, and `UploadBlock` sent the wrong file name and upload ID, so a real CPU could not answer them correctly. `Identify` now reads SZL 0x0011 and 0x001C records by index (order number, firmware, module, system, plant, copyright, serial, module type and memory card texts), `GetCPUState` reads the mode of SZL 0x0424, `GetProtectionLevel` reads SZL 0x0232 index 4 (Siemens level 1 none, 2 write protected, 3 read/write protected), and `ReadDiagBuffer` decodes the 20-byte records. `wire.ParseWriteVarResponse` now fails on the first refused item, not only the first one. Some `wire` functions changed signature with it (`ParseStartUploadResponse` returns a `StartUpload`, and the upload requests take its `uint32` ID): see the release notes before upgrading code that uses `wire` directly.
 
 ## Discovery and probing
 
@@ -297,10 +303,28 @@ c := client.New("10.0.0.1", client.WithLogger(logger))
 
 There is no metrics interface.
 
+## A server for tests
+
+Package `server` holds data blocks, inputs, outputs, markers, timers and counters in memory and answers S7 clients on ISO-on-TCP:
+
+```go
+srv, err := server.New(server.Config{}) // PDU up to 480, 32 connections
+if err != nil {
+	log.Fatal(err)
+}
+_ = srv.RegisterDB(1, make([]byte, 64), server.AreaOptions{})
+_ = srv.RegisterDB(2, []byte{0xAA}, server.AreaOptions{ReadOnly: true})
+_ = srv.RegisterArea(server.AreaMerkers, make([]byte, 32), server.AreaOptions{})
+go func() { _ = srv.ListenAndServe(ctx, "127.0.0.1:1102") }()
+defer srv.Close()
+```
+
+It answers Setup Communication (up to two parallel jobs, as the recorded CPUs grant), Read Var and Write Var with the item return codes Siemens defines: `0x0A` for an object that does not exist, `0x05` for an invalid address, `0x06` and `0x07` for a data type that is not supported or inconsistent, and `0x03` for a write to a read-only area, where Snap7-based servers send `0x0A`. Timers and counters (`AreaTimers`, `AreaCounters`, since v0.12.0) are read as TIMER and COUNTER items and refuse writes, and the S7-400's DBREAD items are answered read only. An answer larger than the PDU gets header error `0x8500`, and any other job `0x8104`. For every Setup Communication, Read Var and Write Var job in the recordings it gives the CPU's answer byte for byte. It runs no program, its timers and counters do not run, and it has no access protection or TLS.
+
 ## Limitations
 
 - Classic S7comm only. S7comm-plus and optimized (symbolic) data blocks on S7-1200 and S7-1500 are not supported.
-- Client only. There is no server.
+- The server is for tests, not a PLC emulator.
 - What `Identify` and the diagnostics return depends on the PLC model and firmware. Missing fields are normal.
 - Block upload depends on the CPU's capabilities and protection level.
 

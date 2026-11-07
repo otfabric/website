@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-[go-knx](/projects/go-knx/) is a native Go implementation of KNX over KNXnet/IP: frames, cEMI, datapoint types, discovery, a tunnelling client, routing, group communication and a KNXnet/IP server with virtual devices, with KNX IP Secure and Data Secure. It is pure Go with no dependencies outside the standard library and no cgo, and runs on embedded Linux (ARM, ARM64), servers, macOS and Windows. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-knx). This page follows v0.7.0.
+[go-knx](/projects/go-knx/) is a native Go implementation of KNX over KNXnet/IP: frames, cEMI, datapoint types, discovery, a tunnelling client, routing, group communication and a KNXnet/IP server with virtual devices, with KNX IP Secure and Data Secure. It is pure Go with no dependencies outside the standard library and no cgo, and runs on embedded Linux (ARM, ARM64), servers, macOS and Windows. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-knx). This page follows v0.8.2.
 
 ## Install
 
@@ -24,7 +24,7 @@ Go 1.26 or later (CI runs Go 1.26 and 1.27). The packages:
 | `knxnetip` | KNXnet/IP frames: header, HPAI, DIBs, CRI and CRD, core, device management, tunnelling, routing and secure bodies |
 | `cemi` | cEMI frames: `L_Data`, `L_Busmon`, `L_Raw`, `M_PropRead` and `M_PropWrite`, function properties, reset; TP1 frames |
 | `apdu` | TPCI and APCI |
-| `dpt` | Datapoint types: 209 subtypes of DPT 1 to 14, 16 to 22, 26, 29, 232, 242 and 251, with ranges, units and text |
+| `dpt` | Datapoint types: 239 subtypes (30 more since v0.8.0, among them 5.100, 15.000, 20.107, 21.x, 22.x, 27.001, 217.001, 222.100/101, 234.001/002 and 275.100/101), with ranges, units and text |
 | `discovery` | Search and description |
 | `tunnel` | Tunnelling client over UDP and TCP, busmonitor, feature services |
 | `routing` | Routing on the multicast group |
@@ -166,7 +166,9 @@ creds, err := kr.Tunnels(knx.MustParseIndividualAddress("1.1.0"))[0].Credentials
 c, err := client.DialTunnel(ctx, "192.168.1.10", []tunnel.Option{tunnel.WithSecure(creds)})
 ```
 
-Secure sessions run over TCP by default and over UDP with `tunnel.WithUDP()`. The client verifies the server's device authentication when it has the code. On the server, `server.WithSecure` binds secure users to tunnelling addresses and allows secure device management for user 1, the management user, only; plain connections to a secure server are refused with `E_CONNECTION_TYPE`. Secure routing uses the backbone key with timer synchronisation: `routing.WithSecure(key, latency)` in a client, `server.WithSecureRouting` in the server, and `kr.BackboneKey()` from a keyring.
+Secure sessions run over TCP by default and over UDP with `tunnel.WithUDP()`. The client sends its session keep-alive after 30 s idle (`tunnel.WithSessionKeepAlive`), and a server ends a session idle for 60 s (`server.WithSecureSessionTimeout`; before v0.8.0 it waited the 120 s connection alive time). The client verifies the server's device authentication when it has the code. On the server, `server.WithSecure` binds secure users to tunnelling addresses and allows secure device management for user 1, the management user, only; plain connections to a secure server are refused with `E_CONNECTION_TYPE`. Secure routing uses the backbone key with timer synchronisation: `routing.WithSecure(key, latency)` in a client, `server.WithSecureRouting` in the server, and `kr.BackboneKey()` from a keyring.
+
+Routing honours flow control since v0.8.0: after a ROUTING_BUSY the client and the server wait the announced time plus a random delay and then send at a reduced rate, and the server queues and paces its routing indications instead of dropping what exceeds the rate. A TCP connection is kept when one frame's body does not parse, and the tunnel client answers a DISCONNECT_REQUEST for another channel with E_CONNECTION_ID. `mgmt.Description.Type` is a `mgmt.PDT` since v0.8.0 (it was a `uint8`), so code that assigns a typed `uint8` needs a conversion.
 
 ## KNX Data Secure
 

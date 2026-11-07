@@ -11,7 +11,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 [go-ocpp](/projects/go-ocpp/) implements both ends of OCPP-J in Go: a Charging Station (package `client`) and a CSMS (package `server`), on one RPC engine, for OCPP 1.6J, 2.0.1 and 2.1. Every action is a typed request and response generated from the OCA JSON schemas, and every message is validated in both directions. The authoritative reference for each symbol is the godoc on [pkg.go.dev](https://pkg.go.dev/github.com/otfabric/go-ocpp); [API.md](https://github.com/otfabric/go-ocpp/blob/main/API.md) in the repository is the map.
 
 <Aside type="caution" title="Pre-release">
-go-ocpp is pre-release, and a minor release may still change the API (every change is listed in its RELEASE.md). Pin a version. This page follows v0.2.0.
+go-ocpp is pre-release, and a minor release may still change the API (every change is listed in its RELEASE.md). Pin a version. This page follows v0.3.3.
 </Aside>
 
 go-ocpp is a protocol library. It transports, validates and dispatches messages. Charging behaviour, authorization policy, persistence and billing belong to the application's handlers.
@@ -274,6 +274,7 @@ The caller's context bounds each call as well. A handshake the server refuses (u
 - `WithMetrics(ocpp.Metrics)`: callbacks for connects, refusals, disconnects, reconnect attempts, calls done and handled, and protocol errors. Embed `ocpp.NopMetrics`.
 - `WithCallInterceptor` and `WithHandlerInterceptor` wrap every outgoing and incoming CALL, for tracing spans.
 - `WithFrameObserver` sees every frame, raw. ocppctl's `--debug` uses it.
+- `ocpp.ConnInfo.Compression` (since v0.3.0) tells every callback that gets a connection's `ConnInfo` (metrics, frame observer, interceptors) whether the handshake negotiated permessage-deflate, and `server.Session.Compression()` tells the same of a station's session. It is false before the handshake completes.
 
 ## Example programs
 

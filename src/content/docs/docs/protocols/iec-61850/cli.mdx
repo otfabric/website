@@ -10,7 +10,7 @@ import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
 [iec61850ctl](https://github.com/otfabric/iec61850ctl) is a command-line tool for IEC 61850. It is built on [go-iec61850](https://github.com/otfabric/go-iec61850) and [go-mms](https://github.com/otfabric/go-mms) and ships as a static Go binary with no CGO and no libiec61850 at runtime. Over MMS it browses and reads IEDs, subscribes to reports, operates controls, writes scalar settings, transfers files and reads journals. On the station bus it sniffs, subscribes to and publishes GOOSE and Sampled Values, and reads and writes their control blocks. It also parses SCL offline, runs a local MMS server from SCL, and can expose a small read-only HTTP/JSON API.
 
-This page follows v0.8.0, built on go-iec61850 v1.6.0 and go-mms v1.4.0.
+This page follows v0.10.0, built on go-iec61850 v1.7.0 and go-mms v1.4.0.
 
 ## Install
 
@@ -62,7 +62,7 @@ The ISO addressing defaults match libiec61850 (since v0.8.0) and suit most IEDs 
 
 Retries apply only to establishing the connection. Invalid input, authentication failures and interrupts are never retried, and logs never go to stdout.
 
-Set `--ied-name` when the server names its domains `<IED><LD>` (libiec61850 and IEC61850bean do this), so LD names appear bare. Leave it unset against `iec61850ctl server start`, whose domains are already bare LD names; setting it there breaks browse and read.
+Set `--ied-name` when the server names its domains `<IED><LD>`, as IEC 61850-8-1 requires and libiec61850, IEC61850bean and `iec61850ctl server start` do, so LD names appear bare. Against `server start` from v0.9.0 that is `--ied-name InteropIED` for the interop fixtures, whose domain is `InteropIEDInteropLD`; before v0.9.0 the self-server used bare LD instance names (`InteropLD`), and its `--instance-domain-names` flag brings them back.
 
 Each command opens one association, writes `Connecting to host:port` to stderr, and on exit closes with a bounded Conclude (about 2 s) followed by Abort if that fails.
 
@@ -140,8 +140,10 @@ iec61850ctl get ds --ld MNSREF615LD0 --ln LLN0 --name MeasFlt --detailed
    ```sh
    iec61850ctl subscribe report \
      --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01 --type BR \
-     --purge-buf --interrogation --max-reports 1 --format jsonl
+     --purge-buf --interrogation --max-reports 1 --format jsonl --yes
    ```
+
+   `--purge-buf` empties the device's buffer, so it needs `--yes` since v0.10.0.
 </Steps>
 
 `--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`). `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically, so a dropped association ends the subscription with exit code `4` instead of waiting silently.
@@ -149,7 +151,7 @@ iec61850ctl get ds --ld MNSREF615LD0 --ln LLN0 --name MeasFlt --detailed
 ## Control and scalar writes
 
 <Aside type="caution">
-`control operate` and `set object` change the state of the IED. On a protection relay or bay controller that can mean opening a breaker. Practise against `iec61850ctl server start` or an iec61850-interop adapter, inspect the control model first, and use `--confirm-ref` so the tool checks the result.
+`control operate` and `set object` change the state of the IED. On a protection relay or bay controller that can mean opening a breaker. Practise against `iec61850ctl server start` or an iec61850-interop adapter, inspect the control model first, and use `--confirm-ref` so the tool checks the result. Since v0.10.0 both need `--yes`: without it they refuse before connecting and exit 2. `control operate --dry-run` plans the sequence without it.
 </Aside>
 
 ```sh
@@ -161,12 +163,12 @@ iec61850ctl control operate \
   --object InteropLD/GGIO1.SPCSO2 \
   --value true --type bool --mode auto \
   --confirm-ref 'InteropLD/GGIO1.SPCSO2.stVal[ST]' \
-  --format json
+  --format json --yes
 
 # Scalar setting write with read-back verification
 iec61850ctl set object \
   --object InteropLD/GGIO1.SetInt1.setVal --fc SP \
-  --value 5 --type int --verify --format json
+  --value 5 --type int --verify --format json --yes
 ```
 
 The safety model:
@@ -213,7 +215,7 @@ iec61850ctl goose subscribe --iface eth0 --scl station.scd --gocb IED1/LD0/gcb1 
 
 # Read or disable a GoCB on an IED over MMS
 iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
-iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
+iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable --yes
 ```
 
 `goose subscribe` checks `confRev`, `datSet`, `goID` and the member types, and supervises the stream the way an `LGOS` node does: timeouts, `stNum` and `sqNum` gaps, duplicates and restarts, with a summary per stream at the end. With `--count` it exits `5` if the count is not reached within `--duration`. `--gocb` takes the GSEControl name, `LD/name`, `IED/LD/name` or the gocbRef. Publishers whose MMS domain is the bare LD instance, such as go-iec61850 servers and `iec61850ctl server start`, need `--bare-domain`.
@@ -233,7 +235,7 @@ iec61850ctl sv subscribe --iface eth0 --scl merging-unit.cid --svcb MSVCB01 \
 
 # Read or disable an MSVCB over MMS
 iec61850ctl sv svcb get --host 192.0.2.10 --ld LD0 --svcb MSVCB01
-iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable
+iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable --yes
 ```
 
 `sv subscribe` validates `confRev`, `datSet`, `smpRate`, `smpMod` and the sample size, and supervises `smpCnt` per stream. Every `--stats-interval` it prints the rate, ASDUs, lost, duplicate and out-of-order samples, timeouts, the `smpCnt` wrap, `smpSynch` and `confRev`. `--sample-every` prints every Nth sample, with 9-2LE channels in amperes and volts.
@@ -256,7 +258,7 @@ iec61850ctl sv publish --iface eth0 --scl merging-unit.cid --svcb MSVCB01 --yes 
 
 The guard rails are the same for both: an explicit `--iface` and `--yes`, and every frame carries the GOOSE `test` flag or the SV simulation bit unless you combine `--test=false` or `--simulation=false` with `--live`. A refused publish exits `2`. `sv publish` sets sample values by index, member reference or 9-2LE channel (`IA` to `VN`, with qualities `qIA` to `qVN`), and `--waveform CHANNEL=PEAK[,HZ[,PHASE]]` injects a sine computed from the sample index, so it stays exact under scheduling jitter. The summary reports samples, frames, late and skipped samples and send errors.
 
-`gocb set` and `svcb set` write the enable attribute last, and with `--enable` or `--disable` they read it back.
+`gocb set` and `svcb set` write the enable attribute last, and with `--enable` or `--disable` they read it back. Since v0.10.0 they need `--yes`, and a publish refused by a guard rail exits 13 (it was 2); a missing `--iface` is still a usage error, 2. Nothing is sent in either case.
 
 ## SCL offline
 
@@ -274,7 +276,7 @@ sclparse validate --strict station.scd
 sclparse list-reports --json station.scd
 ```
 
-`sclparse` exits 0 on success, 1 on usage errors, 2 on parse failure and 3 when `validate` finds errors.
+Since go-iec61850 v1.8.0 `sclparse` exits with the organisation's codes: 0 success, 1 when `validate` finds errors, 2 usage error, 3 when the SCL file cannot be read or parsed, 10 when the output cannot be written, 130 when interrupted. Before, usage errors were 1, parse failures 2 and validation errors 3. The binaries of v1.8.1 carry the `scl` changes of v1.5.0 to v1.8.0; v1.8.0 and older ones were built on v1.4.5.
 
 ## Server mode
 
@@ -329,7 +331,7 @@ Exit codes are stable, so scripts can tell failures apart:
 | Code | Meaning |
 |---|---|
 | `0` | Success |
-| `2` | Usage error: invalid flag, argument or value, including a refused `goose publish` or `sv publish` without `--yes`, `--iface` or `--live` |
+| `2` | Usage error: invalid flag, argument or value, a missing `--iface`, or a command that changes device state (`control operate`, `set object`, `gocb set`, `svcb set`, `subscribe report --purge-buf`) without `--yes` |
 | `3` | Invalid reference, configuration or SCL |
 | `4` | Connection failed or lost, including a dropped report subscription |
 | `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
@@ -339,6 +341,7 @@ Exit codes are stable, so scripts can tell failures apart:
 | `10` | Failure (unclassified) |
 | `11` | Not found: object, file, dataset, IED, RCB, journal, control block, network interface, including an MMS *object-non-existent* answer |
 | `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`) or control block enable read-back mismatch |
+| `13` | Refused for safety: `goose publish` or `sv publish` without `--yes`, or with the test marker off (`--test=false`, `--simulation=false`) without `--live` (since v0.10.0; it was 2) |
 | `130` | Interrupted (SIGINT or SIGTERM) |
 
 The codes follow the OT Fabric CLI exit-code table since v0.5.0. `IEC61850CTL_FORMAT` (or `IEC61850CTL_OUTPUT_FORMAT`) sets the default of `--format` on the commands that have it.

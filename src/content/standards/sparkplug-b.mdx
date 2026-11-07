@@ -12,7 +12,7 @@ facts:
   - { label: 'Topic namespace', value: 'spBv1.0' }
   - { label: 'Library', value: 'go-sparkplugb' }
   - { label: 'CLI', value: 'sparkplugbctl' }
-  - { label: 'Interop', value: 'sparkplugb-interop v0.1.0' }
+  - { label: 'Interop', value: 'sparkplugb-interop v0.4.0' }
 icon: go-sparkplugb
 docs: /docs/profiles/sparkplugb/
 carriedByOther: ['MQTT']
@@ -135,7 +135,7 @@ go-sparkplugb is pre-release (v0.1.x). Its own [conformance matrix](https://gith
 
 ## Interoperability, not certification
 
-[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations as edge nodes and host applications in containers: **Eclipse Tahu** in Java and JavaScript, **pysparkplug** (Python), **SparkplugNet** (C#), **srad** (Rust) and **sparkplughost** (Go). On every push, go-sparkplugb's host and application run against each reference edge node, and its edge node against each reference host, on **Eclipse Mosquitto, HiveMQ CE, EMQX and NanoMQ**. The steps cover births, aliases, updates of all fourteen scalar datatypes, NCMD and DCMD writes, rebirth, device death and birth, NDEATH, the will after a crash, and the primary host going offline. Where a reference lacks a capability or has a known upstream bug, the step is skipped and the reason logged.
+[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations as edge nodes and host applications in containers: **Eclipse Tahu** in Java and JavaScript, **pysparkplug** (Python), **SparkplugNet** (C#), **srad** (Rust) and **sparkplughost** (Go). On every push, go-sparkplugb's host and application run against each reference edge node, and its edge node against each reference host, on **Eclipse Mosquitto, HiveMQ CE, EMQX and NanoMQ**. The steps cover births, aliases, updates of all fourteen scalar datatypes, NCMD and DCMD writes, rebirth, device death and birth, NDEATH, the will after a crash, and the primary host going offline. DataSets, templates and properties run in a `composite` fixture. Where a reference lacks a capability or has a known upstream bug, the step is skipped and the reason logged. sparkplugb-interop also publishes go-sparkplugb as an image for others to test against.
 
 This is interoperability testing, not the **Sparkplug Compatible** program. That program requires passing the official Eclipse Sparkplug TCK for a profile and being listed by the Eclipse Foundation. go-sparkplugb has not been run against the TCK and does not claim Sparkplug Compatible status. Templates, DataSets, arrays and properties are covered by the library's own codec tests only, because no reference fixture uses them yet.
 

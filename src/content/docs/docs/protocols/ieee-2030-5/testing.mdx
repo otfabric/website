@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Test IEEE 2030.5 code against four independent implementations with ieee20305-interop (ANU Envoy, GridAPPS-D, DER Security py20305 and the EPRI client), and see what go-ieee20305 and ieee20305ctl have and have not been validated against.
+description: Test IEEE 2030.5 code against four independent implementations with ieee20305-interop (ANU Envoy, GridAPPS-D, DER Security py20305 and the EPRI client), test your own stack against OT Fabric's go-ieee20305 image, and see what go-ieee20305 and ieee20305ctl have and have not been validated against.
 sidebar:
   label: Testing and interop
   order: 3
@@ -19,9 +19,11 @@ Interoperability between implementations does not establish conformance: they ca
 | Adapter | Upstream | Language | Licence | Roles |
 |---|---|---|---|---|
 | `envoy` | [ANU Envoy](https://github.com/bsgip/envoy) v2.5.0 | Python | MIT | server (CSIP-AUS) |
-| `gridappsd` | [GridAPPS-D server](https://github.com/GRIDAPPSD/ieee-2030_5-server-go) v0.18.0 and [client](https://github.com/GRIDAPPSD/ieee-2030_5-client-go) v0.1.0 | Go | Battelle BSD | server and client |
-| `py20305` | [DER Security py20305](https://github.com/DERSecurity/py20305) v0.16.0 | Python | Apache-2.0 | client |
+| `gridappsd` | [GridAPPS-D server](https://github.com/GRIDAPPSD/ieee-2030_5-server-go) v0.19.0 and [client](https://github.com/GRIDAPPSD/ieee-2030_5-client-go) v0.1.0 | Go | Battelle BSD | server and client |
+| `py20305` | [DER Security py20305](https://github.com/DERSecurity/py20305) v0.16.2 | Python | Apache-2.0 | client |
 | `epri` | [EPRI IEEE 2030.5 Client](https://github.com/epri-dev/IEEE-2030.5-Client) v0.2.11 | C | BSD-3-Clause | client |
+
+ieee20305-interop's current release is **v0.4.1** (container contract 0.3), with every upstream on its latest release. Each image says whether it is an independent implementation, and every self-test writes `results.json` in the organisation's interop-result-v1 format.
 
 IEEE 2030.5 shapes the contract differently from the other suites. Mutual TLS is mandatory, so the tests generate a PKI at run time and mount each end's certificates; nothing is baked into an image. A server is **seeded, not scripted**: the fixture provisions its devices and its programs, controls, default controls and tariffs when it starts, and the server then answers every request itself. Clients find what the fixture seeded by following links, never by path, since every server picks its own.
 
@@ -85,7 +87,7 @@ A known upstream defect is recorded in `tests/known-bugs.tsv` and reported as a 
 
 ## go-ieee20305 against the references
 
-`make interop` in go-ieee20305 (Docker needed, about two minutes) runs both directions, on every push and pull request:
+`make interop` in go-ieee20305 (Docker needed, about two minutes) runs both directions, on every push and pull request. go-ieee20305 v0.6.0 is qualified against ieee20305-interop v0.4.1, with the images pinned by digest:
 
 | Direction | What is checked |
 |---|---|
@@ -102,14 +104,27 @@ A known upstream defect is recorded in `tests/known-bugs.tsv` and reported as a 
 | Metering mirrors | tested | tested | tested | tested | known bug |
 | CSIP: several programs, limits and fixed power | | tested | tested | tested | |
 | CSIP-AUS: site limits, connection point | tested | | | tested | |
-| Pricing | tested | | | partly ¹ | |
+| Pricing | tested | | | tested | |
 | Flow reservation | | tested | tested | | |
 | Subscriptions and notifications | | tested | | tested | |
 | IEEE 2030.5-2023 | | tested | tested | tested | |
 
-1. Tested with the baseline and CSIP fixtures; with CSIP-AUS, py20305 misses an interval (a known bug, below).
-
 A blank cell is a feature the reference does not have, or its image does not expose. The full matrix, with what our own end-to-end tests cover, is in go-ieee20305's [docs/FEATURES.md](https://github.com/otfabric/go-ieee20305/blob/main/docs/FEATURES.md).
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/ieee20305-interop-otfabric` is go-ieee20305 behind the same container contract as the reference images (adapter name `otfabric`), so you can test your IEEE 2030.5 client or server against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+make pki    # ./tls, from a clone of ieee20305-interop
+docker run -d --name go-ieee20305 -p 127.0.0.1:8443:443 -v "$PWD/tls:/tls:ro" \
+    ghcr.io/otfabric/ieee20305-interop-otfabric:<tag> server --version 2018 --tls-dir /tls/server
+until docker exec go-ieee20305 test -f /run/ieee20305-interop/ready; do sleep 0.1; done
+```
+
+It has both roles, IEEE 2030.5-2018 and 2023, every operation of the contract, `call issue-control` and CCM_8 and AES-128-GCM. go-ieee20305's Self-interop workflow, run by hand, tests a commit against `:latest` in both roles. `version` prints the versions inside the image.
+
+Its tags are go-ieee20305 versions, such as `v0.6.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a ieee20305-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## Beyond interop
 
@@ -141,9 +156,9 @@ Running four stacks against each other and against go-ieee20305 turned up behavi
 
 | Reference | Finding |
 |---|---|
-| EPRI client v0.2.11 | Writes every document in the namespace of the draft sep.xsd 2.0.4 (`http://ieee.org/2030.5`), so an IEEE 2030.5-2018 server refuses its metering and Responses with 400. Its 64-byte URI buffer overflows on GridAPPS-D's long hrefs. It parses strictly by that draft schema and rejects the CSIP-AUS ConnectionPointLink Envoy adds to an EndDevice |
-| py20305 v0.16.0 | Writes the CSIP-AUS extensions in `https://csipaus.org/ns`, which Envoy, reading only `/ns/v1.3`, refuses; and does not model the RateComponentLink that CSIP-AUS 1.3 requires in a TimeTariffInterval, so it finds no interval of a CSIP-AUS tariff |
-| GridAPPS-D v0.18.0 | Its EndDevice did not link its SubscriptionListLink, patched in the image; its client's notification listener needs CCM_8 and a client certificate, which the server's own delivery offers neither of; its server cannot be seeded with curves or messages |
+| EPRI client v0.2.11 | Writes every document in the namespace of the draft sep.xsd 2.0.4 (`http://ieee.org/2030.5`), so an IEEE 2030.5-2018 server refuses its metering and Responses with 400. Its 64-byte URI buffer overflows on GridAPPS-D's long hrefs, and it rejects the `deviceCategory` of an IEEE 2030.5-2018 EndDevice. It parses strictly by that draft schema and rejects the CSIP-AUS ConnectionPointLink Envoy adds to an EndDevice |
+| py20305 v0.16.0 | Wrote the CSIP-AUS extensions in `https://csipaus.org/ns`, which Envoy, reading only `/ns/v1.3`, refuses, and did not model the RateComponentLink that CSIP-AUS 1.3 requires in a TimeTariffInterval. Both were fixed upstream in v0.16.2 ([DERSecurity/py20305#80](https://github.com/DERSecurity/py20305/pull/80)), which now passes every operation it declares |
+| GridAPPS-D v0.19.0 | Its EndDevice does not link its SubscriptionListLink, patched in the image; its client's notification listener needs CCM_8 and a client certificate, which the server's own delivery offers neither of; its server cannot be seeded with curves or messages |
 | Envoy v2.5.0 | Accepts subscriptions from aggregator certificates only |
 
 Each is recorded, with its evidence, in ieee20305-interop's [known-bugs.tsv](https://github.com/otfabric/ieee20305-interop/blob/main/tests/known-bugs.tsv) and the notes of [versions.yaml](https://github.com/otfabric/ieee20305-interop/blob/main/versions.yaml).

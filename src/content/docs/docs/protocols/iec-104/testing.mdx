@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: How the OT Fabric IEC 60870-5-104 projects are tested, against which reference stacks, and what has and has not been validated.
+description: How the OT Fabric IEC 60870-5-104 projects are tested, against which reference stacks, how to test your own stack against OT Fabric's go-iec104 image, and what has and has not been validated.
 sidebar:
   label: Testing and interop
   order: 3
@@ -51,7 +51,7 @@ The `e2e` tests execute about 85% of the library's statements. The rest (malform
 
 ## The interop suite
 
-[iec104-interop](https://github.com/otfabric/iec104-interop) packages four independent IEC 104 implementations as container images, each with client and server:
+[iec104-interop](https://github.com/otfabric/iec104-interop) v0.5.0 (container contract 1.3) packages four independent IEC 104 implementations as container images, each with client and server:
 
 | Adapter | Implementation | Language | Image |
 |---|---|---|---|
@@ -60,7 +60,7 @@ The `e2e` tests execute about 85% of the library's statements. The rest (malform
 | `wendy512` | wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | Go | `ghcr.io/otfabric/iec104-interop-wendy512` |
 | `cbsigma` | cB-Sigma/iec60870 v0.3.0 | Go | `ghcr.io/otfabric/iec104-interop-cbsigma` |
 
-cB-Sigma/iec60870 is the only one with IEC 62351-5. The suite follows the latest upstream release even when it has a bug: j60870 1.8.0 cannot decode a read command (`C_RD_NA_1`) and closes the connection on one, so the read cases of j60870 pairings are listed as a known upstream bug, and the self-test fails once a release fixes it ([fix proposed upstream](https://github.com/gythialy/j60870/pull/75)). The images run as a non-root user, with base images pinned by digest and upstream sources by commit or exact version.
+cB-Sigma/iec60870 is the only one with IEC 62351-5. Contract 1.3 adds interrogation groups, a quality on `M_BO_NA_1`, mutual TLS (IEC 62351-3), file upload and the file directory, and redundancy groups (edition 2, clause 10), each behind a feature in `print-capabilities`. The suite follows the latest upstream release even when it has a bug: j60870 1.8.0 cannot decode a read command (`C_RD_NA_1`) and closes the connection on one, so the read cases of j60870 pairings are listed as a known upstream bug, and the self-test fails once a release fixes it ([fix proposed upstream](https://github.com/gythialy/j60870/pull/75)). The images run as a non-root user, with base images pinned by digest and upstream sources by commit or exact version.
 
 The repository owns the adapters, a fixture format and a **baseline fixture**: station 1 with twelve points (IOA 100..300), seven commands (IOA 500..510, one with select required) and two files (IOA 30000 and 30001). Every server adapter serves the fixture the same way. It does not contain any library under test; go-iec104 pulls the images and owns its own scenarios and assertions.
 
@@ -115,34 +115,49 @@ The stacks do not all support the same. Each image declares what it supports wit
 | General and counter interrogation, read, clock sync, test command | yes | yes ¹ | yes | yes |
 | Direct commands, select-before-operate, deactivation | yes | yes | yes | yes |
 | Commands with time tag | yes | yes | no | yes |
-| File transfer, server | yes | no | no | yes |
-| File transfer, client | yes | yes | no | yes |
+| Interrogation groups, quality on `M_BO_NA_1` | yes | yes | yes | yes |
+| File download: station / controlling station | yes / yes | yes / yes | yes / no | yes / yes |
+| File upload: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes |
+| File directory, both roles | yes | yes | yes | yes |
+| Redundancy groups: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes |
+| TLS with mutual authentication: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes |
 | STARTDT/STOPDT server events | yes | yes | no | yes |
 | Idle test disabled (`--t3 0`) | yes | no | no | no |
 | IEC 62351-5 (`--secure`) | no | no | no | yes |
-| Interrogation groups | no | no | no | no |
-| TLS | no | no | no | no |
 
 ¹ Read is declared, but j60870 1.8.0 closes the connection on a read command; those cases count as a known bug.
+
+Every "no" is a gap of go-iecp5 v1.2.6, with its evidence in [CAPABILITIES.md](https://github.com/otfabric/iec104-interop/blob/main/docs/CAPABILITIES.md). lib60870-C is built with Mbed TLS 3.6.7 for its TLS station and client.
 
 The security flags of container contract 1.2 (`--secure`, `--security-cert`, `--security-key`, `--security-trust`, `--association-id`, and `--mal`, `--dpa` or `--roles`) take certificates mounted into the cbsigma image. Because it is the only image with them, the suite's own secure cases run cB-Sigma against itself; their value is for a consumer that pairs it with another implementation.
 
 go-iecp5 drops the time-tagged commands (types 58..63) and `F_SG_NA_1` on reception, and its refusals with causes 44..47 carry no P/N bit. lib60870 and j60870 scale normalized values differently, so the contract exchanges them as the raw 16-bit number.
 
-The cross-stack self-test of v0.3.1 runs all sixteen client and server pairings of the four references, plus ten secure cases: 1172 checks passed, none failed, 23 were the known j60870 read bug and 88 were skipped for undeclared capabilities.
+The cross-stack self-test of v0.5.0 (`make interop`) runs all sixteen client and server pairings of the four references, the feature cases across every pair that declares them, and ten secure cases: in CI on amd64 and arm64, 2153 checks passed, none failed, 35 were the known j60870 read bug and 262 were skipped for undeclared capabilities. Each run writes `results.json` in the organisation's interop-result-v1 format.
 
 ## What go-iec104 is validated against
 
-go-iec104 v0.0.5 is qualified against iec104-interop v0.3.1, with the images pinned by digest. The interop workflow runs on every push and pull request (`make interop`, about four minutes).
+go-iec104 v0.2.0 is qualified against iec104-interop v0.5.0, with the images pinned by digest. The interop workflow runs on every push and pull request (`make interop`).
 
 | Reference | go-iec104 client to reference server | Reference client to go-iec104 server |
 |---|---|---|
 | lib60870-C v2.4.1 | pass | pass |
 | j60870 1.8.0 | pass, without file download and read | pass, without read |
-| wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | pass, without time-tagged commands and file transfer | pass, same exclusions |
+| wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | pass, without time-tagged commands, file download, upload, TLS and redundancy, which its station lacks | pass, without time-tagged commands and file download |
 | cB-Sigma/iec60870 v0.3.0 | pass, and IEC 62351-5 | pass, and IEC 62351-5 |
 
 **go-iec104 as client** is checked for: interrogation, counter interrogation and read value by value against the fixture; every command type with and without time tag, select-before-operate and deactivation; the refusals (unknown type, cause, common address, object); STARTDT/STOPDT cycles; `k = w = 1`; the idle test in both directions; reconnect after a station restart; concurrent sessions; file download; and a redundancy group across two stacks with failover and switchover.
+
+Contract 1.3's features run in both directions wherever a reference declares them:
+
+| Feature | go-iec104 client to reference server | Reference client to go-iec104 server |
+|---|---|---|
+| Interrogation groups | all four | all four |
+| Quality on `M_BO_NA_1` | all four (j60870 without read) | all four |
+| Mutual TLS, a wrong authority and a peer without TLS refused | lib60870-C, j60870, cB-Sigma | all four |
+| File upload, read back, refusals | lib60870-C, j60870, cB-Sigma | all four |
+| File directory | all four | all four |
+| Redundancy: STOPDT, takeover, a queued event | lib60870-C, j60870, cB-Sigma | all four |
 
 **go-iec104 as server** runs 34 scenarios per reference client, file download among them. Each must have the outcome the standard prescribes, and the client's complete result (every ASDU, in order, field by field) must equal what the same client gets from the reference server of its own stack.
 
@@ -152,13 +167,25 @@ To test against another build, set `IEC104_INTEROP_LIB60870_IMAGE`, `IEC104_INTE
 
 **iec104ctl** v0.1.0 had its client commands run against the lib60870-C, j60870 1.7.2 and wendy512/iec104 reference servers, and its simulated station driven by their clients: interrogation, counters, read, clock, test command, commands (direct, select-before-operate, cancel, refused) and, with lib60870-C and j60870, file download.
 
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/iec104-interop-otfabric` is go-iec104 behind the same container contract as the reference images (adapter name `otfabric`), so you can test your IEC 104 client or station against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-iec104 -p 127.0.0.1:2404:2404 ghcr.io/otfabric/iec104-interop-otfabric:<tag> server
+until docker exec go-iec104 test -f /run/iec104-interop/ready; do sleep 0.1; done
+```
+
+The station serves the same fixtures as the references, and `client <operation>` runs go-iec104's controlling station against yours. go-iec104's Self-interop workflow, run by hand, tests a commit against `:latest`. `version` prints the versions inside the image.
+
+Its tags are go-iec104 versions, such as `v0.1.2`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a iec104-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## What has not been validated
 
 - **Certified test equipment and field devices.** None of the projects has been run against them. Interoperability reports are welcome, with the `--debug` trace for iec104ctl.
-- **TLS against another stack.** No reference image supports TLS; it is tested between go-iec104's own client and server only.
+- **TLS with wendy512.** go-iecp5 has no TLS station; TLS is tested against lib60870-C, j60870 and cB-Sigma.
 - **IEC 62351-5 beyond cB-Sigma.** go-iec104 was derived from cB-Sigma/iec60870, not from the IEC documents, and no third implementation or certified test equipment has checked either. Treat it as interoperable with cB-Sigma, not as conformance-tested. iec104ctl's `--secure` is tested against its own simulated station and relies on go-iec104's tests against cB-Sigma.
-- **Redundancy against another station.** The reference servers send reports only on the commanding connection. Server-side redundancy and the event queue are tested by go-iec104's own tests; the client `Group` is tested across two reference stacks.
-- **File upload and the directory.** No reference image has an operation for them; they are verified by go-iec104's own tests only.
+- **Edges of file transfer and redundancy.** The suite does not compare NOS of `F_AF_NA_1` with AFQ 1 and 2, `sequence` and `timeInvalid` of `F_DR_TA_1`, or whether a connection that was taken over is closed.
 - **Type identifications outside the fixture.** The interop suite covers `M_SP`, `M_DP`, `M_ST`, `M_BO`, `M_ME_NA/NB/NC`, `M_IT` and their CP56Time2a variants, the six command types, and the system commands. Everything else (protection events, packed points, bitstring commands, parameters) is covered by codec tests only.
-- **Interrogation groups and SQ = 1 answers** are not part of the fixture.
+- **SQ = 1 answers** are not part of the fixtures.
 - **Faults.** The references are correct peers, not fault injectors. Malformed frames, wrong sequence numbers and timer boundaries are tested with go-iec104's scripted peers.
