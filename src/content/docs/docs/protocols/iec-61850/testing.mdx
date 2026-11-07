@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: How go-mms, go-iec61850 and iec61850ctl are tested against four independent IEC 61850 stacks with iec61850-interop, for MMS, GOOSE and Sampled Values, and what has and has not been validated.
+description: How go-mms, go-iec61850 and iec61850ctl are tested against five independent IEC 61850 stacks with iec61850-interop, for MMS, GOOSE and Sampled Values, how to test your own stack against OT Fabric's image, and what has and has not been validated.
 sidebar:
   label: Testing and interop
   order: 3
@@ -8,10 +8,10 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-OT Fabric tests its IEC 61850 stack against four independent implementations, in both directions: OT Fabric as client, subscriber or publisher against a reference stack, and the reference stack against the OT Fabric server, subscriber or publisher. This page lists the tools, how to run them, and exactly what the evidence covers. It describes iec61850-interop v1.0.1, go-mms v1.2.1, go-iec61850 v1.2.1 and iec61850ctl v0.4.0.
+OT Fabric tests its IEC 61850 stack against five independent implementations, in both directions: OT Fabric as client, subscriber or publisher against a reference stack, and the reference stack against the OT Fabric server, subscriber or publisher. This page lists the tools, how to run them, and exactly what the evidence covers. It describes iec61850-interop v1.4.0, go-mms v1.4.0, go-iec61850 v1.8.1 and iec61850ctl v0.10.0.
 
 <Aside type="caution">
-Interoperability has been shown against four software stacks: libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust. It is not conformance testing, the libraries have no UCA certification, and interoperability with physical IEDs (protection relays, meters, bay controllers, merging units) has not yet been formally established. Validate against your own devices, read-only first.
+Interoperability has been shown against five software stacks: libiec61850, IEC61850bean, dscsystems/go-iec61850, iec61850-rust and cB-Sigma iec61850. It is not conformance testing, the libraries have no UCA certification, and interoperability with physical IEDs (protection relays, meters, bay controllers, merging units) has not yet been formally established. Validate against your own devices, read-only first.
 </Aside>
 
 ## Simulators you can run locally
@@ -21,24 +21,25 @@ Interoperability has been shown against four software stacks: libiec61850, IEC61
 | `iec61850ctl server start --scl file.icd` | The go-iec61850 server driven by any ICD, CID or SCD, with optional value seeding from a live device | Trying reads, reports and controls against your own model |
 | go-iec61850 `NewServer` | The same server embedded in your Go program, with `RegisterControl`, `SetValue`, the report engine, and GOOSE and SV publishing | Test fixtures in Go code |
 | go-iec61850 `goose.NewHub`, `sv.NewHub` | In-memory Ethernet with fault injection (loss, duplication, reordering, corruption) | GOOSE and SV tests without privileges or a network |
-| `<stack>-ied-server` (iec61850-interop) | The IED server of libiec61850, IEC61850bean, dscsystems or iec61850-rust, loaded with the interop fixture | Independent C, Java, Go and Rust references |
-| `<stack>-goose-publisher`, `<stack>-sv-publisher` (iec61850-interop) | GOOSE and SV publishers of libiec61850, dscsystems and iec61850-rust | Independent traffic for a subscriber under test |
+| `<stack>-ied-server` (iec61850-interop) | The IED server of libiec61850, IEC61850bean, dscsystems, iec61850-rust or cbsigma, loaded with the interop fixture | Independent C, Java, Go and Rust references |
+| `<stack>-goose-publisher`, `<stack>-sv-publisher` (iec61850-interop) | GOOSE publishers of libiec61850, dscsystems, iec61850-rust and cbsigma; SV publishers of the first three | Independent traffic for a subscriber under test |
 | `libiec61850-mms-server` (iec61850-interop) | Generic MMS server (no IEC 61850 model) | Raw MMS with go-mms |
 
 Self-tests where an OT Fabric client talks to an OT Fabric server are useful for smoke testing but are not interoperability evidence.
 
 ## iec61850-interop
 
-[iec61850-interop](https://github.com/otfabric/iec61850-interop) publishes one container image per independent IEC 61850 stack, the fixtures every stack loads, and the JSON Lines contract every adapter command speaks. It owns the images and fixtures, not the assertions: those live in go-mms, go-iec61850 and iec61850ctl. Until v0.4.1 it was called mms-interop; it was renamed at v1.0.0 because it now covers MMS, IED services, GOOSE and Sampled Values. From v1.0.0 the image names, commands, flags, event shapes, exit codes and fixture revisions follow semantic versioning.
+[iec61850-interop](https://github.com/otfabric/iec61850-interop) publishes one container image per independent IEC 61850 stack, the fixtures every stack loads, and the JSON Lines contract every adapter command speaks. It owns the images and fixtures, not the assertions: those live in go-mms, go-iec61850 and iec61850ctl. Until v0.4.1 it was called mms-interop; it was renamed at v1.0.0 because it now covers MMS, IED services, GOOSE and Sampled Values. From v1.0.0 the image names, commands, flags, event shapes, exit codes and fixture revisions follow semantic versioning. The current release is **v1.4.0** (contract 1.3): v1.3.0 added OT Fabric's own image and `results.json` in the organisation's interop-result-v1 format, and v1.4.0 added cB-Sigma as a fifth reference and general interrogation reports (`*-ied-reporter --trigger gi`).
 
 | Stack | Upstream | Language | Licence | Pinned at |
 |---|---|---|---|---|
 | libiec61850 | [mz-automation/libiec61850](https://github.com/mz-automation/libiec61850) | C | GPL-3.0 | `1.6.2.1-89-g6e265c54` |
 | IEC61850bean | [beanit/iec61850bean](https://github.com/beanit/iec61850bean) | Java | Apache-2.0 | 1.9.0 |
-| dscsystems | [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) | Go | GPL-3.0 | `v0.6.5-1-g6bf3f37` |
+| dscsystems | [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) | Go | GPL-3.0 | `v0.6.6` |
 | iec61850-rust | [csp0924/iec61850-rust](https://github.com/csp0924/iec61850-rust) | Rust | MIT OR Apache-2.0 | `v0.2.0` |
+| cbsigma | [cB-Sigma/iec61850](https://github.com/cB-Sigma/iec61850) (client, GOOSE) and [cB-Sigma/iec61850-sim](https://github.com/cB-Sigma/iec61850-sim) (IED server) | Go | Apache-2.0 | `v0.1.0`, `v0.1.0` |
 
-The four share no protocol code with each other or with the OT Fabric libraries. The GPL stacks run in their own containers and are never linked into OT Fabric code.
+The five share no protocol code with each other or with the OT Fabric libraries. The GPL stacks run in their own containers and are never linked into OT Fabric code.
 
 | Image | MMS server, client | IED server, client, controller, reporter | GOOSE publisher, subscriber | SV publisher, subscriber | SVCB over MMS |
 |---|:-:|:-:|:-:|:-:|:-:|
@@ -46,8 +47,9 @@ The four share no protocol code with each other or with the OT Fabric libraries.
 | `ghcr.io/otfabric/iec61850-interop-iec61850bean` | | ✓ | | | |
 | `ghcr.io/otfabric/iec61850-interop-dscsystems` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `ghcr.io/otfabric/iec61850-interop-iec61850-rust` | ✓ | ✓ | ✓ | ✓ | |
+| `ghcr.io/otfabric/iec61850-interop-cbsigma` | | ✓ | ✓ | | |
 
-Every image is multi-arch (`linux/amd64`, `linux/arm64`), and every GitHub release lists the image digests and ships a `manifest.json` with them and the upstream pins. The authoritative capability claim, with each stack's known limitations, is `fixtures/capabilities.json` in the repository.
+Every image is multi-arch (`linux/amd64`, `linux/arm64`), and every GitHub release lists the image digests and ships a `manifest.json` with them and the upstream pins. The authoritative capability claim, with each stack's known limitations, is `fixtures/capabilities.json` in the repository. Among those found with cB-Sigma: its simulator refuses writes of ST and MX, as IEC 61850-7-2 makes them read-only, and types Enum attributes as Integer(32); and it cannot associate with iec61850-rust, which accepts only an 11-bit `parameterCBB` where cB-Sigma sends the 18 bits of ISO 9506:2003.
 
 ### Fixtures
 
@@ -72,7 +74,7 @@ A server or publisher prints one readiness line on stdout before it accepts conn
 <Tabs>
   <TabItem label="MMS and IED services">
     ```sh
-    V=v1.0.1
+    V=v1.4.0
     R=ghcr.io/otfabric/iec61850-interop
     docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
       $R-libiec61850:$V --port 1102
@@ -147,9 +149,7 @@ The suites need Docker. Tests start each adapter with `docker run`, wait for the
 
 A test skipped without a registered limitation fails CI.
 
-<Aside type="note">
-At the time of writing, go-mms, go-iec61850 and iec61850ctl pin the last images published under the old name (mms-interop v0.4.0 and v0.4.1). iec61850-interop v1.0.0 has the same adapters, commands and fixtures under the new image names, so moving the pins changes no test.
-</Aside>
+go-mms, go-iec61850 and iec61850ctl all pin the iec61850-interop v1.4.0 images by digest. go-mms has no cbsigma suite: that image has no generic MMS server or client.
 
 ## What has been validated
 
@@ -168,38 +168,53 @@ Extending this suite to every public method found the FileDirectory bug (go-mms 
 
 ### go-iec61850
 
-| Area | libiec61850 | IEC61850bean | dscsystems | iec61850-rust |
-|---|:-:|:-:|:-:|:-:|
-| Go client → stack server: browse, read and write, datasets | ✓ | ✓ | ✓ | ✓ |
-| Stack client → Go server: browse, read and write, datasets | ✓ | ✓ | ✓ | ✓ |
-| URCB reporting, both directions | ✓ | ✓ ¹ | ✓ | ✓ |
-| Direct and SBO control, both directions | ✓ | ✓ | ✓ | ✓ |
-| SBOw (enhanced security) | ✓ | skip ² | ✓ ³ | ✓ |
-| CDC reads of DPS and BCR, both directions | ✓ | ✓ | ✓ | ✓ |
-| MMS file services | ✓ | ✓ | ✓ | not in stack |
-| GOOSE: Go publisher → stack subscriber | ✓ | n/a | ✓ | ✓ |
-| GOOSE: stack publisher → Go subscriber, validated from SCL | ✓ | n/a | ✓ | ✓ |
-| GOOSE: Go IED server GoCB → stack subscriber | ✓ | n/a | ✓ | ✓ |
-| SV: Go publisher → stack subscriber, 9-2LE and generic | ✓ ⁴ | n/a | ✓ | ✓ |
-| SV: stack publisher → Go subscriber, validated from SCL | ✓ | n/a | ✓ | ✓ |
-| SV: Go IED server MSVCB → stack subscriber | ✓ | n/a | ✓ | ✓ |
-| MSVCB over MMS, Go client → stack server | ✓ | n/a | ✓ | not in stack |
+| Area | libiec61850 | IEC61850bean | dscsystems | iec61850-rust | cbsigma |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Go client → stack server: browse, read and write, datasets | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Stack client → Go server: browse, read and write, datasets | ✓ | ✓ | ✓ | ✓ | ✓ |
+| URCB reporting, both directions | ✓ | ✓ ¹ | ✓ | ✓ | ✓ |
+| Direct and SBO control, both directions | ✓ | ✓ | ✓ | ✓ | ✓ |
+| SBOw (enhanced security) | ✓ | skip ² | ✓ ³ | ✓ | ✓ |
+| CDC reads of DPS and BCR, both directions | ✓ | ✓ | ✓ | ✓ | ✓ |
+| MMS file services | ✓ | ✓ | ✓ | not in stack | not run ⁵ |
+| GOOSE: Go publisher → stack subscriber | ✓ | n/a | ✓ | ✓ | ✓ |
+| GOOSE: stack publisher → Go subscriber, validated from SCL | ✓ | n/a | ✓ | ✓ | ✓ |
+| GOOSE: Go IED server GoCB → stack subscriber | ✓ | n/a | ✓ | ✓ | ✓ |
+| SV: Go publisher → stack subscriber, 9-2LE and generic | ✓ ⁴ | n/a | ✓ | ✓ | n/a ⁵ |
+| SV: stack publisher → Go subscriber, validated from SCL | ✓ | n/a | ✓ | ✓ | n/a ⁵ |
+| SV: Go IED server MSVCB → stack subscriber | ✓ | n/a | ✓ | ✓ | n/a ⁵ |
+| MSVCB over MMS, Go client → stack server | ✓ | n/a | ✓ | not in stack | n/a ⁵ |
 
 ¹ The IEC61850bean server does not support URCB reservation; that negative test is skipped.
 ² The IEC61850bean server does not expose `SBOw[CO]` as writable.
 ³ The dscsystems controller waits for CommandTermination, which the go-iec61850 server sends since v1.1.0. That test found the gap.
 ⁴ libiec61850's SV subscriber accepts `smpMod` only as one octet and drops ASDUs with the two-octet form that go-iec61850 and libiec61850's own publisher send, so the generic stream is skipped for that subscriber and the 9-2LE stream is checked. The go-iec61850 subscriber accepts both widths, which iec61850-rust needs.
+⁵ The cbsigma image adapts the IED server, client, controller, reporter and GOOSE commands of cB-Sigma's stack. It has no generic MMS server or client, and its SV commands are not adapted (cB-Sigma/iec61850 has an SV publisher).
 
 The suites also cover BRCB EntryID resume and overflow, the integrity period (skipped against iec61850-rust, which enforces the fixture's fixed `TrgOps` and `IntgPd`), quality and timestamps, multi-client scenarios, negative cases, GOOSE retransmission and supervision timeouts, and SV header fields, optional fields and loss accounting. The per-stack matrix and every deviation are in go-iec61850's [COMPATIBILITY.md](https://github.com/otfabric/go-iec61850/blob/main/COMPATIBILITY.md) and [INTEROP.md](https://github.com/otfabric/go-iec61850/blob/main/INTEROP.md).
 
 ### iec61850ctl end to end
 
-The CLI suite runs the built binary against all four stacks, in 19 CI jobs:
+The CLI suite runs the built binary against all five stacks, in 23 CI jobs:
 
 - **Client journeys** against every IED server: browse and reads against expected values, datasets, RCB discovery, URCB GI subscription in JSON Lines, `control operate` on SPCSO1/2/3 with `--confirm-ref`, `set object` with `--verify`, BRCB purge and resume by EntryID, and negative cases. SBOw against IEC61850bean and BRCB reads against iec61850-rust are asserted as expected failures.
 - **Reverse journeys**: every stack's controller, reporter and reader against `iec61850ctl server start`.
-- **GOOSE**, against libiec61850, dscsystems and iec61850-rust: each stack's publisher into `goose subscribe` and `goose sniff`, and `goose publish` into each stack's subscriber, with both states, every value, the control block fields and the supervision timeout checked.
-- **Sampled Values**, against the same three stacks and for both streams: `sv subscribe` and `sv sniff` against each publisher and `sv publish` into each subscriber, with value, header and loss assertions, plus `sv svcb get` of `MSVCB02` over MMS.
+- **GOOSE**, against libiec61850, dscsystems, iec61850-rust and cbsigma: each stack's publisher into `goose subscribe` and `goose sniff`, and `goose publish` into each stack's subscriber, with both states, every value, the control block fields and the supervision timeout checked.
+- **Sampled Values**, against libiec61850, dscsystems and iec61850-rust and for both streams: `sv subscribe` and `sv sniff` against each publisher and `sv publish` into each subscriber, with value, header and loss assertions, plus `sv svcb get` of `MSVCB02` over MMS.
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/iec61850-interop-otfabric` is go-iec61850 behind the same container contract as the reference images (adapter name `otfabric`), so you can test your IEC 61850 client, server, GOOSE or SV code against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-iec61850 -p 127.0.0.1:1102:1102 \
+  --entrypoint otfabric-ied-server ghcr.io/otfabric/iec61850-interop-otfabric:<tag>
+docker logs -f go-iec61850    # {"event":"ready",...,"adapter":"otfabric",...}
+```
+
+The image has every command of the contract under the prefix `otfabric-`: `otfabric-mms-server` and `otfabric-mms-client` (go-mms), and `otfabric-ied-*`, `otfabric-goose-*` and `otfabric-sv-*` (go-iec61850). It loads the same fixtures as the references. `--version` on any command prints go-iec61850, its commit and the go-mms in the image.
+
+Its tags are go-iec61850 versions, such as `v1.7.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a iec61850-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## Not yet validated
 

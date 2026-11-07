@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations as edge nodes and host applications in Docker images with one container contract. [go-sparkplugb](/docs/profiles/sparkplugb/library/) pulls those images, pinned by digest, and runs every one of its roles against them on every push. The suite owns the references and the fixtures; the library owns its own scenarios and assertions.
+[sparkplugb-interop](/projects/sparkplugb-interop/) packages six independent Sparkplug B implementations as edge nodes and host applications in Docker images with one container contract. [go-sparkplugb](/docs/profiles/sparkplugb/library/) pulls those images, pinned by digest, and runs every one of its roles against them on every push. The suite owns the references and the fixtures; the library owns its own scenarios and assertions. sparkplugb-interop's current release is **v0.4.0** (container contract 0.3), which adds OT Fabric's own image; go-sparkplugb v0.3.4 pins v0.3.0, whose reference images are the same.
 
 ## The reference stacks
 
@@ -31,7 +31,7 @@ They run on four MQTT brokers, also pinned by digest: **Eclipse Mosquitto 2.1.2*
 | `TestApplication` | Application | Every reference edge node | Births, updates, device death and birth, the node's death |
 | `TestEdge` | Edge node | Every reference host | Births with aliases, alias-only data, the host's view of the node, commands, rebirth on request, device death and birth, NDEATH, the will, the primary host's STATE going offline |
 
-The two fixtures are `baseline`, a node with two devices and writable metrics, and `scalars`, all fourteen scalar datatypes at their limits. Run it with `make interop` in the go-sparkplugb repository (Docker needed).
+The fixtures are `baseline`, a node with two devices and writable metrics; `scalars`, all fourteen scalar datatypes at their limits, with a third update that takes Int8 and Int16 to their minimums; and, since v0.3.0, `composite`: DataSets, templates and metric properties with integers at each type's limits. Tahu, tahu-js and SparkplugNet run `composite` as edges, and Tahu, SparkplugNet and sparkplughost as hosts; on the SparkplugNet host properties and UInt32 DataSet cells are not compared, because it drops the first and reads the second from `long_value` only. Run it with `make interop` in the go-sparkplugb repository (Docker needed).
 
 | Reference | go-sparkplugb host and application, reference edge | go-sparkplugb edge, reference host |
 |---|:---:|:---:|
@@ -50,7 +50,8 @@ Running six stacks against each other on four brokers found real differences. sp
 
 | Finding | What go-sparkplugb does |
 |---|---|
-| Int8 and Int16 are encoded two ways: sign-extended (Tahu, SparkplugNet) or width-sized (pysparkplug, srad) | Sends sign-extended, reads both |
+| Int8 and Int16 are encoded two ways: sign-extended (Tahu, SparkplugNet) or width-sized (pysparkplug, srad). Since v0.2.2 sparkplugb-interop counts this as a specification ambiguity, not an upstream bug: Sparkplug B 3.0.0 does not say how a negative value goes in `int_value` | Sends sign-extended, reads both |
+| The DBIRTHs of a rebirth come in any order: Sparkplug 3.0.0 asks for a complete birth sequence and fixes no order among them (contract 0.3) | Applies each device's birth as it comes; only the first births follow the fixture's order |
 | Tahu (Java and JavaScript) encodes UInt32 in `long_value`, not `int_value` | Reads integers from whichever field carries them |
 | srad and Tahu send command metrics without a datatype, as the specification recommends; several stacks cannot decode that | Takes the datatype from the birth |
 | NanoMQ and HiveMQ CE can deliver a node's DBIRTH before its NBIRTH, and data out of order across topics | Holds out-of-order messages and applies them in `seq` order |
@@ -64,10 +65,29 @@ Several fixes in go-sparkplugb's first releases came from these runs: integers i
 The Eclipse Foundation's **Sparkplug Compatible** program lists products that passed the official **Eclipse Sparkplug TCK** for a profile. go-sparkplugb has not been run against the TCK, has not been listed, and makes no such claim. The interop suite shows that go-sparkplugb and six independent stacks understand each other in the steps above, on four brokers.
 </Aside>
 
-- The fixtures cover scalars, aliases, devices and writes. **Templates, DataSets, arrays and properties** are covered by go-sparkplugb's own codec tests only, because no reference fixture has them yet.
+- The fixtures cover scalars, aliases, devices, writes, DataSets, templates and properties. **Arrays** are covered by go-sparkplugb's own codec tests only, because no reference fixture has them yet.
 - Every adapter speaks **MQTT 3.1.1**, except srad, which speaks MQTT 5 only. TLS and broker authentication are not part of the interop runs.
 - The suite has not been run against **commercial** Sparkplug implementations. Interoperability reports are welcome in the [go-sparkplugb repository](https://github.com/otfabric/go-sparkplugb/issues).
 
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/sparkplugb-interop-otfabric` is go-sparkplugb behind the same container contract as the reference images (adapter name `otfabric`), so you can test your Sparkplug B edge node or host application against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker network create spb
+docker run -d --name broker --network spb eclipse-mosquitto:2.1.2-alpine mosquitto -c /mosquitto-no-auth.conf
+docker run -d --name go-host --network spb ghcr.io/otfabric/sparkplugb-interop-otfabric:<tag> \
+    host --broker tcp://broker:1883 --host-id my-host
+docker run -d --name go-edge --network spb ghcr.io/otfabric/sparkplugb-interop-otfabric:<tag> \
+    edge --broker tcp://broker:1883 --fixture baseline --primary-host my-host
+docker exec go-edge sparkplugb-interop call publish-data --payload '{"update": 0}'
+docker logs go-host    # the messages the host received, as JSON Lines
+```
+
+It is go-sparkplugb's `edge.Node` and `host.App` (the primary host application). Replace either container with your own stack on the same broker. `version` prints the versions and the commit.
+
+Its tags are go-sparkplugb versions, such as `v0.3.4`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a sparkplugb-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## The suite's own self-test
 
-sparkplugb-interop also runs every reference host against every reference edge node on each broker, so a broken reference is caught before a library is blamed for it. On 27 October 2026 it passed on all four brokers with no failures, with every known upstream bug listed in `tests/known-bugs.tsv` and checked for staleness, and a weekly workflow that tries the latest release of every reference and broker against its pin.
+sparkplugb-interop also runs every reference host against every reference edge node on each broker, so a broken reference is caught before a library is blamed for it. Every self-test writes `results.json` in the organisation's interop-result-v1 format. It passes on all four brokers with no failures, with every known upstream bug listed in `tests/known-bugs.tsv` and checked for staleness, and a weekly workflow that tries the latest release of every reference and broker against its pin.

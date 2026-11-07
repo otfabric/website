@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Test OCPP code against five independent implementations with ocpp-interop (The Mobility House, ChargeTimeEU, ocpp-go, EVerest libocpp and CitrineOS), and see what go-ocpp and ocppctl have and have not been validated against.
+description: Test OCPP code against eight independent implementations with ocpp-interop (The Mobility House, ChargeTimeEU, ocpp-go, EVerest libocpp, CitrineOS, cB-Sigma, ocpp-kit and seanlee0923/ocpp), test your own stack against OT Fabric's go-ocpp image, and see what go-ocpp and ocppctl have and have not been validated against.
 sidebar:
   label: Testing and interop
   order: 3
@@ -21,10 +21,15 @@ Interoperability between two implementations does not establish conformance to t
 | `mobilityhouse` | [The Mobility House ocpp](https://github.com/mobilityhouse/ocpp) 2.1.0 | Python | 1.6J, 2.0.1, 2.1 | station and CSMS |
 | `chargetime` | [ChargeTimeEU Java-OCA-OCPP](https://github.com/ChargeTimeEU/Java-OCA-OCPP) v2.0 | Java | 1.6J, 2.0.1 | station and CSMS |
 | `lorenzodonini` | [lorenzodonini/ocpp-go](https://github.com/lorenzodonini/ocpp-go) v0.19.0 | Go | 1.6J, 2.0.1 | station and CSMS |
-| `everest` | [EVerest libocpp](https://github.com/EVerest/everest-core/tree/2026.02.1/lib/everest/ocpp), everest-core 2026.02.1 | C++ | 1.6J, 2.0.1, 2.1 | station only |
-| `citrineos` | [CitrineOS core](https://github.com/citrineos/citrineos-core) v2.0.1 | TypeScript | 1.6J, 2.0.1, 2.1 | CSMS only |
+| `everest` | [EVerest libocpp](https://github.com/EVerest/everest-core/tree/2026.02.2/lib/everest/ocpp), everest-core 2026.02.2 | C++ | 1.6J, 2.0.1, 2.1 | station only |
+| `citrineos` | [CitrineOS core](https://github.com/citrineos/citrineos-core) v2.1.0 | TypeScript | 1.6J, 2.0.1, 2.1 | CSMS only |
+| `cbsigma` | [cB-Sigma/ocpp](https://github.com/cB-Sigma/ocpp) v0.2.0 | Go | 1.6J, 2.0.1, 2.1 | station and CSMS, with SEND and CALLRESULTERROR |
+| `ocppkit` | [hupe1980/ocpp-kit](https://github.com/hupe1980/ocpp-kit) 0.3.0 | Rust | 1.6J, 2.0.1, 2.1 | station and CSMS, with SEND, CALLRESULTERROR and a Local Controller |
+| `seanlee` | [seanlee0923/ocpp](https://github.com/seanlee0923/ocpp) v0.3.0 | Go | 1.6J (without the Security Whitepaper messages), 2.0.1, 2.1 | station and CSMS |
 
-Every adapter speaks security profiles 0 to 3, and compression where its upstream can. The pins, with the exact commit and a lock file of every dependency, are in [versions.yaml](https://github.com/otfabric/ocpp-interop/blob/main/versions.yaml); a weekly workflow keeps an issue open while a pin is behind its upstream. Each image is multi-arch (amd64 and arm64) and carries the licences of what it contains.
+ocpp-interop's current release is **v0.10.0** (container contract 0.8). v0.7.0 to v0.9.0 added cB-Sigma, ocpp-kit and seanlee0923/ocpp, and contract 0.6 added the OCPP 2.1 SEND and CALLRESULTERROR. Contract 0.8 adds an optional OCPP 2.x Local Controller (Part 4 chapter 6) between stations and a CSMS; ocpp-kit's is the only one so far, and the self-tests run every station through it to a CSMS and every CSMS behind it.
+
+Every adapter speaks security profiles 0 to 3 (ocpp-kit's station always authenticates, so 1 to 3), and compression where its upstream can: The Mobility House, ChargeTimeEU 2.0.1, CitrineOS and ocpp-kit. Each image says in its capabilities whether it is an independent implementation, and every self-test writes `results.json` in the organisation's interop-result-v1 format. The pins, with the exact commit and a lock file of every dependency, are in [versions.yaml](https://github.com/otfabric/ocpp-interop/blob/main/versions.yaml); a weekly workflow keeps an issue open while a pin is behind its upstream. Each image is multi-arch (amd64 and arm64) and carries the licences of what it contains.
 
 A version or feature becomes a **capability** of an image only when a self-test exercises it. The Mobility House's README names 1.6 and 2.0.1, for example, but its 2.1 package is a capability because the self-tests verify it.
 
@@ -64,11 +69,11 @@ A fixture describes, for one OCPP version, the stations a CSMS accepts, how eith
 
 </Steps>
 
-Security profiles 2 and 3 run with a CA and certificates you generate and mount read-only (`--tls-dir`), and a station offers compression with `--compression`. `docker compose up -d --wait` in a checkout runs the four reference CSMSs on ports 9000 to 9003. The images are unauthenticated test fixtures by default: run them on private networks and publish ports on 127.0.0.1 only.
+Security profiles 2 and 3 run with a CA and certificates you generate and mount read-only (`--tls-dir`), and a station offers compression with `--compression`. `docker compose up -d --wait` in a checkout runs four reference CSMSs (The Mobility House, ChargeTimeEU, ocpp-go and CitrineOS) on ports 9000 to 9003. The images are unauthenticated test fixtures by default: run them on private networks and publish ports on 127.0.0.1 only.
 
 ## The self-tests
 
-ocpp-interop tests its references against each other: every station against every CSMS, for each version, with CALLs from both ends, plus TLS (profiles 2 and 3) and compression wherever both ends declare them. The v0.4.1 run (2026-10-19) had **2444 PASS, 31 KNOWN_ISSUE, 308 SKIP_UNSUPPORTED and 0 FAIL**. Every action was exchanged with a pass in at least one pairing: 39 of 39 in 1.6, 64 of 64 in 2.0.1 and 90 of 91 in 2.1. The missing one, NotifyPeriodicEventStream, is a SEND, and no released upstream implements SEND or CALLRESULTERROR yet.
+ocpp-interop tests its references against each other: every station against every CSMS, for each version, with CALLs from both ends, plus TLS (profiles 2 and 3) and compression wherever both ends declare them. The run of the eight references on 7 November 2026 had **9010 PASS, 56 KNOWN_ISSUE, 836 SKIP_UNSUPPORTED and 0 FAIL**, and the Local Controller pairings another 1712 PASS, 72 KNOWN_ISSUE and 65 SKIP_UNSUPPORTED, with 0 FAIL. Every action of every version is exchanged with a pass in at least one pairing, 91 of 91 in 2.1 included: SEND and CALLRESULTERROR run between cB-Sigma and ocpp-kit.
 
 A known upstream defect is recorded with the line of upstream code that causes it, and reported as KNOWN_ISSUE instead of FAIL. An entry that no longer reproduces fails the run, so the list cannot go stale. The [compatibility matrix](https://github.com/otfabric/ocpp-interop/blob/main/docs/COMPATIBILITY.md) has every pairing.
 
@@ -76,23 +81,52 @@ A known upstream defect is recorded with the line of upstream code that causes i
 
 go-ocpp runs its own suite (`make interop`, Docker needed) in both directions: go-ocpp as the station against each reference CSMS, and each reference station against go-ocpp as the CSMS. On each connection it sends every sample of the fixture from its own end, answers every sample the reference sends, checks that an action that does not exist is answered `NotImplemented` or `NotSupported`, and checks that a close is noticed. Every request and response a reference sends must also pass go-ocpp's typed validation.
 
-Results against ocpp-interop v0.4.1 (2026-10-19): **1458 scenarios pass and none fails**, across all five references and both roles. 163 are skipped, each with its reason: a role or version a reference does not have, compression a reference cannot do, actions CitrineOS's REST API cannot send, and known upstream defects.
+go-ocpp v0.3.3 is qualified against ocpp-interop v0.10.0, with the images pinned by digest. Results of 7 November 2026: **2872 scenarios pass and none fails**, across all eight references and both roles. 217 are skipped, each with its reason: a role or version a reference does not have, compression a reference cannot do, actions CitrineOS's REST API cannot send, and known upstream defects.
 
 | OCPP | Pass | Skipped |
 |---|---|---|
-| 1.6J | 393 | 40 |
-| 2.0.1 | 632 | 34 |
-| 2.1 | 432 | 88 |
+| 1.6J | 680 | 62 |
+| 2.0.1 | 1107 | 36 |
+| 2.1 | 1076 | 94 |
 
-- **TLS**: profiles 2 and 3 pass with every reference CSMS and every reference station. go-ocpp as the station connects both by address and by host name (SNI); CitrineOS passes by host name only, a known upstream defect.
-- **Compression**: passes with The Mobility House in both roles and with CitrineOS as the CSMS.
-- **OCPP 2.1**: against three independent implementations: The Mobility House and CitrineOS as CSMSs, The Mobility House and EVerest libocpp as stations.
+The 34 CALLRESULTERROR tests (9 pass, 25 skipped where a reference does not declare it) have no version in their names. By reference:
+
+| Reference | Pass | Skipped |
+|---|---|---|
+| The Mobility House ocpp 2.1.0 | 524 | 11 |
+| ChargeTimeEU Java-OCA-OCPP v2.0 | 244 | 20 |
+| lorenzodonini/ocpp-go v0.19.0 | 236 | 28 |
+| EVerest libocpp 2026.02.2 | 216 | 32 |
+| CitrineOS core v2.1.0 | 247 | 81 |
+| cB-Sigma/ocpp v0.2.0 | 450 | 6 (compression, which its station cannot offer) |
+| ocpp-kit 0.3.0 | 534 | 2 (NotifyWebPaymentStarted, which it has in the wrong direction) |
+| seanlee0923/ocpp v0.3.0 | 420 | 36 |
+
+- **TLS**: profiles 2 and 3 pass with every reference CSMS and every reference station, by address and by host name (SNI).
+- **Compression**: passes with The Mobility House and ocpp-kit in both roles and with CitrineOS as the CSMS, in 1.6J, 2.0.1 and 2.1.
+- **OCPP 2.1**: against six independent implementations: five CSMSs (The Mobility House, CitrineOS, cB-Sigma, ocpp-kit and seanlee0923/ocpp) and five stations (The Mobility House, EVerest libocpp, cB-Sigma, ocpp-kit and seanlee0923/ocpp). Every one of the 91 actions is exchanged with an independent stack.
+- **SEND and CALLRESULTERROR**: in both directions against cB-Sigma and ocpp-kit.
 
 The per-version action matrices are in [docs/compatibility](https://github.com/otfabric/go-ocpp/tree/main/docs/compatibility).
 
 ### ocppctl
 
-ocppctl runs the same references with `scripts/interop.sh`, every fixture sample in both directions: 1218 exchanges, 1154 passed, 29 answered with a CALLERROR (9 of them ocppctl's own NotSupported for services it does not have), 32 skipped because the reference did not send the message, and 3 failed on ocpp-go's schema-invalid 2.0.1 responses, which ocppctl refuses.
+ocppctl v0.3.0 was run against the five references of ocpp-interop v0.5.3 with `scripts/interop.sh`, every fixture sample in both directions: 1218 exchanges, 1154 passed, 29 answered with a CALLERROR (9 of them ocppctl's own NotSupported for services it does not have), 32 skipped because the reference did not send the message, and 3 failed on ocpp-go's schema-invalid 2.0.1 responses, which ocppctl refuses.
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/ocpp-interop-otfabric` is go-ocpp behind the same container contract as the reference images (adapter name `otfabric`), so you can test your OCPP station or CSMS against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-ocpp -p 127.0.0.1:9000:9000 ghcr.io/otfabric/ocpp-interop-otfabric:<tag> server --version 2.0.1
+until docker exec go-ocpp test -f /run/ocpp-interop/ready; do sleep 0.1; done
+# your station connects to ws://127.0.0.1:9000/ocpp/<identity of the fixture>; the CSMS calls it with:
+docker exec go-ocpp ocpp-interop call --station <identity> Reset --payload '{"type":"Immediate"}'
+```
+
+For a CSMS under test, run it as a station instead (`client run --version 2.0.1 --url ws://<your CSMS>/ocpp`) and send CALLs with `docker exec … ocpp-interop call`. It has both roles in 1.6J, 2.0.1 and 2.1, security profiles 0 to 3, compression, SEND and CALLRESULTERROR. ocpp-interop's own workflow tests each published version against the eight references and through ocpp-kit's Local Controller. `version` prints the versions inside the image.
+
+Its tags are go-ocpp versions, such as `v0.3.3`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a ocpp-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## Chaos, fuzz and soak testing
 
@@ -109,25 +143,28 @@ The OCA schemas are vendored with their SHA-256 sums, and the generated packages
 
 ## What is and is not validated
 
-**Validated**: every action of 1.6J and 2.0.1, and 90 of 91 of 2.1, exchanged with an independent implementation; security profiles 1 to 3 and compression in both roles; OCPP 2.1 against three independent stacks; every payload the references send passes go-ocpp's validation.
+**Validated**: every action of 1.6J, 2.0.1 and 2.1 exchanged with an independent implementation; security profiles 1 to 3 and compression in both roles, against two independent stacks each way; OCPP 2.1 against six independent stacks; SEND and CALLRESULTERROR against two; every payload the references send passes go-ocpp's validation.
 
 **Not covered yet**:
 
-- SEND and CALLRESULTERROR against any independent implementation, because no released reference implements them. go-ocpp's are verified against go-ocpp only.
-- Compression with go-ocpp as the CSMS against a second independent station.
+- The Local Controller: go-ocpp does not implement one yet. ocpp-interop's own-stack workflow runs the released go-ocpp through ocpp-kit's Local Controller as station and as CSMS; go-ocpp's suite does not.
+- Station-initiated 2.1 messages that CitrineOS refuses, against a second CSMS: CitrineOS's answers are checked only against the schema.
+- ocppctl against the three references added since ocpp-interop v0.5.3.
 - Real charging stations and production CSMSs. The references are open-source stacks in containers.
 
 ### Findings about the references
 
-Running five stacks against each other and against go-ocpp turned up defects in the references themselves, each recorded with its upstream source line:
+Running eight stacks against each other and against go-ocpp turned up defects in the references themselves, each recorded with its upstream source line:
 
 | Reference | Finding |
 |---|---|
 | The Mobility House ocpp 2.1.0 | A 2.1 CALL without a handler is never answered (fixed on master, not released). A 1.6 SecurityEventNotification cannot be built without the optional `techInfo`. Its validator uses draft-04 rules for the draft-06 2.0.1 schemas, so it refuses `20000.0` for an integer |
 | lorenzodonini/ocpp-go v0.19.0 | The 2.0.1 station answers Reset and SetNetworkProfile with `"statusInfo": null`, which the schema does not allow. GetCompositeScheduleResponse does not have the OCA structure. NotifyReport drops `"tbc": false` |
 | ChargeTimeEU Java-OCA-OCPP v2.0 | 2.0.1 compression keeps its context while announcing that it does not (Java-WebSocket 1.6.0) |
-| CitrineOS core v2.0.1 | TLS works only for stations that send SNI: a station that connects by IP address gets a handshake failure |
-| EVerest libocpp | Its message queue cannot send ReportDERControl, GetCertificateChainStatus or NotifyWebPaymentStarted |
+| CitrineOS core v2.1.0 | Has no 2.1 schema for nine station messages (NotifyDERAlarm, ReportDERControl, the periodic event streams and others) and answers them `FormatViolation`. v2.0.1's TLS worked only for stations that send SNI; v2.1.0 fixed it |
+| EVerest libocpp 2026.02.2 | Its message queue cannot send ReportDERControl, GetCertificateChainStatus or NotifyWebPaymentStarted |
+| ocpp-kit 0.3.0 | Has OCPP 2.1 NotifyWebPaymentStarted as a station message, where 2.1 has the CSMS send it ([hupe1980/ocpp-kit#1](https://github.com/hupe1980/ocpp-kit/issues/1)), and its integer fields refuse `20000.0`, a valid integer in the draft-06 OCA schemas |
+| seanlee0923/ocpp v0.3.0 | Its CSMS validates `20000.0` as an integer and then cannot decode it into a Go `int` (`FormatViolation`); its 1.6 package has no Security Whitepaper messages |
 
 Building go-ocpp and ocppctl also found three bugs in go-ocpp itself, all fixed in v0.1.2 and v0.1.3: frames lost on close, integral numbers such as `20000.0` refused for integer fields, and a SEND dropped when the peer closes right after it.
 
