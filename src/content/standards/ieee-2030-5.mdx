@@ -9,7 +9,7 @@ facts:
   - { label: 'Profiles', value: 'CSIP, CSIP-AUS' }
   - { label: 'Library', value: 'go-ieee20305' }
   - { label: 'CLI', value: 'ieee20305ctl' }
-  - { label: 'Interop', value: 'ieee20305-interop v0.2.0' }
+  - { label: 'Interop', value: 'ieee20305-interop v0.4.1' }
 icon: go-ieee20305
 docs: /docs/protocols/ieee-2030-5/
 ---
@@ -120,5 +120,5 @@ log.Fatal(hs.ListenAndServeTLS("", ""))
 | Dependencies | None outside the Go standard library in the core module |
 
 <Callout type="note" title="Pre-1.0, interoperability tested">
-go-ieee20305 v0.6.0 and ieee20305ctl v0.4.0 are pre-1.0: a minor release may still change the API. Both are tested against four independent implementations packaged by [ieee20305-interop](https://github.com/otfabric/ieee20305-interop) v0.2.0: ANU Envoy (Python), GridAPPS-D (Go, server and client), DER Security py20305 (Python) and the EPRI client (C), in both editions and with the baseline, CSIP and CSIP-AUS fixtures. That is interoperability, not SunSpec CSIP certification.
+go-ieee20305 v0.6.0 and ieee20305ctl v0.4.0 are pre-1.0: a minor release may still change the API. Both are tested against four independent implementations packaged by [ieee20305-interop](https://github.com/otfabric/ieee20305-interop) v0.4.1, which also publishes go-ieee20305 as an image for others to test against: ANU Envoy (Python), GridAPPS-D (Go, server and client), DER Security py20305 (Python) and the EPRI client (C), in both editions and with the baseline, CSIP and CSIP-AUS fixtures. That is interoperability, not SunSpec CSIP certification.
 </Callout>

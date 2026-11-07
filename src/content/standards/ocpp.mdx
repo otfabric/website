@@ -9,7 +9,7 @@ facts:
   - { label: 'Versions', value: '1.6J, 2.0.1, 2.1' }
   - { label: 'Library', value: 'go-ocpp' }
   - { label: 'CLI', value: 'ocppctl' }
-  - { label: 'Interop', value: 'ocpp-interop v0.4.1' }
+  - { label: 'Interop', value: 'ocpp-interop v0.10.0' }
 icon: go-ocpp
 docs: /docs/protocols/ocpp/
 ---
@@ -104,5 +104,5 @@ Every request is validated against its OCA schema before it is sent, every respo
 | Dependencies | One: a WebSocket library ([coder/websocket](https://github.com/coder/websocket)) |
 
 <Callout type="note" title="Pre-release">
-go-ocpp v0.2.0 and ocppctl v0.3.0 are pre-release, and the API may still change. Both are tested in both roles against five independent implementations packaged by [ocpp-interop](https://github.com/otfabric/ocpp-interop) v0.4.1: The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), lorenzodonini/ocpp-go (Go), EVerest libocpp (C++) and CitrineOS (TypeScript), including TLS and compression. Passing those tests is not an Open Charge Alliance certification.
+go-ocpp v0.3.3 and ocppctl v0.3.0 are pre-release, and the API may still change. go-ocpp is tested in both roles against eight independent implementations packaged by [ocpp-interop](https://github.com/otfabric/ocpp-interop) v0.10.0: The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), lorenzodonini/ocpp-go, cB-Sigma and seanlee0923/ocpp (Go), EVerest libocpp (C++), CitrineOS (TypeScript) and ocpp-kit (Rust), including TLS, compression, SEND and CALLRESULTERROR; ocppctl against the first five. ocpp-interop also publishes go-ocpp as an image for others to test against. Passing those tests is not an Open Charge Alliance certification.
 </Callout>

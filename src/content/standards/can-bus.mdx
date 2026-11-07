@@ -10,7 +10,7 @@ facts:
   - { label: 'Frames', value: 'Classical CAN (8 bytes), CAN FD (64 bytes), CAN XL (2048 bytes); 11- or 29-bit identifiers' }
   - { label: 'Library', value: 'go-canbus' }
   - { label: 'CLI', value: 'canbusctl' }
-  - { label: 'Interop', value: 'canbus-interop v0.5.0' }
+  - { label: 'Interop', value: 'canbus-interop v0.7.0' }
 icon: go-canbus
 docs: /docs/protocols/can-bus/
 layers:
@@ -121,5 +121,5 @@ The same `Bus` runs on a serial-line adapter (`slcan.Open`) on Linux, macOS and 
 | Platforms | Linux (amd64, arm64, armv7) for SocketCAN; frames, slcan, the virtual bus, ISO-TP, traces and databases also on macOS and Windows. No cgo |
 
 <Callout type="note" title="Early versions, interoperability tested">
-go-canbus v0.8.0, canbusctl v0.8.0 and canbus-interop v0.5.0 are pre-1.0. The library is tested on Linux virtual CAN against seven independent implementations, packaged by [canbus-interop](https://github.com/otfabric/canbus-interop): can-utils with the kernel's ISO-TP (C), python-can, Scapy and python-can-isotp (Python), socketcan-rs (Rust), and cantools and canmatrix for DBC, KCD and ARXML. 170 interop scenarios pass and none fail, with 132 documented differences between database tools and 13 skips where a stack lacks a feature such as CAN XL. That is interoperability, not ISO or CiA conformance: the standards are not public. Virtual CAN shows frame encoding and protocol logic, not electrical behaviour or timing, and nothing has been tested on real CAN hardware yet. CAN has no security of its own, so test on a virtual or isolated bench bus.
+go-canbus v0.8.0, canbusctl v0.9.0 and canbus-interop v0.7.0 are pre-1.0. The library is tested on Linux virtual CAN against seven independent implementations, packaged by [canbus-interop](https://github.com/otfabric/canbus-interop): can-utils with the kernel's ISO-TP (C), python-can, Scapy and python-can-isotp (Python), socketcan-rs (Rust), and cantools and canmatrix for DBC, KCD and ARXML. canbus-interop also publishes go-canbus as a container image, so others can test their CAN code against it. 170 interop scenarios pass and none fail, with 132 documented differences between database tools and 13 skips where a stack lacks a feature such as CAN XL. That is interoperability, not ISO or CiA conformance: the standards are not public. Virtual CAN shows frame encoding and protocol logic, not electrical behaviour or timing, and nothing has been tested on real CAN hardware yet. CAN has no security of its own, so test on a virtual or isolated bench bus.
 </Callout>

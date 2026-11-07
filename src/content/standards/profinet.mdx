@@ -9,7 +9,7 @@ facts:
   - { label: 'Roles', value: 'IO-Controller, IO-Device and IO-Supervisor' }
   - { label: 'Library', value: 'go-profinet' }
   - { label: 'CLI', value: 'profinetctl' }
-  - { label: 'Interop', value: 'profinet-interop v0.6.0' }
+  - { label: 'Interop', value: 'profinet-interop v0.8.0' }
 icon: go-profinet
 docs: /docs/protocols/profinet/
 ---
@@ -100,5 +100,5 @@ d, err := ctrl.AddDevice(controller.DeviceConfig{StationName: "io-rack-1", Model
 | Platforms | Linux AF_PACKET, macOS and BSD BPF, Windows Npcap, and a virtual Ethernet with seeded faults for tests. No dependencies outside the Go standard library |
 
 <Callout type="note" title="Early versions, interoperability tested">
-go-profinet v0.7.0 and profinetctl v0.8.0 are pre-1.0. The library is tested on a real Layer 2 network against four independent PROFINET implementations, packaged by [profinet-interop](https://github.com/otfabric/profinet-interop): rt-labs p-net (C) and pnio-rs (Rust) as IO-Devices, profinet-py (Python) as IO-Controller and pnio-dcp (Python) as DCP tool, plus two MRP ring implementations, Net-SNMP, and Wireshark and scapy decoding every capture. 248 checks pass and none fail. That is interoperability, not PI certification: OT Fabric is not a PI member, there is no IRT, PROFIsafe or PROFINET security class, and timing on a general-purpose OS is not a real-time claim. PROFINET has no security of its own, so run it on isolated networks.
+go-profinet v0.7.0 and profinetctl v0.8.0 are pre-1.0. The library is tested on a real Layer 2 network against four independent PROFINET implementations, packaged by [profinet-interop](https://github.com/otfabric/profinet-interop): rt-labs p-net (C) and pnio-rs (Rust) as IO-Devices, profinet-py (Python) as IO-Controller and pnio-dcp (Python) as DCP tool, plus two MRP ring implementations, Net-SNMP, and Wireshark and scapy decoding every capture. 248 checks pass and none fail. profinet-interop builds its GPL references from source, but publishes go-profinet as an image for others to test against. That is interoperability, not PI certification: OT Fabric is not a PI member, there is no IRT, PROFIsafe or PROFINET security class, and timing on a general-purpose OS is not a real-time claim. PROFINET has no security of its own, so run it on isolated networks.
 </Callout>

@@ -14,6 +14,7 @@ facts:
   - { label: 'Core library', value: 'go-sunspec' }
   - { label: 'Protocol library', value: 'go-modbus' }
   - { label: 'CLI', value: 'sunspecctl' }
+  - { label: 'Interop', value: 'sunspec-interop v0.3.0' }
   - { label: 'UI app', value: 'SunSpec Explorer' }
 icon: go-sunspec
 docs: /docs/models/sunspec/
@@ -123,12 +124,17 @@ The same model definitions work the other way round: `sunspec.NewServer` builds 
 | Changed devices | A model whose header no longer matches discovery is reported as `ErrModelChanged`, never decoded with a stale layout |
 | Serving | A SunSpec device in memory, built from point values by name, served through go-modbus over TCP or TLS; accepts client writes to writable points and live updates |
 | Encoding | `EncodeModel` builds a model's registers from point values, the inverse of `DecodeModel` |
+| Writing | `WritePoint` writes a top-level point of a device, scaled and checked against the model before anything is sent |
 | Transports | Every go-modbus transport: TCP, RTU, ASCII, TLS, UDP and serial bridges |
 | Go version | 1.26 or later, with go-modbus v1.11.1 or later |
 
 <Callout type="caution">
 SunSpec control models (settings, DER curves) change how an inverter or battery behaves on the grid. Read first, develop against a served device, and only write to equipment you are authorized to operate.
 </Callout>
+
+## Interoperability
+
+[sunspec-interop](/projects/sunspec-interop/) runs go-sunspec in both directions against two independent SunSpec implementations: the SunSpec Alliance's pysunspec2 (Python) and cB-Sigma's sunspec client and sunspec-sim device (Go), on fixtures from the common models to the IEEE 1547 DER curves of models 701 to 705. It also publishes go-sunspec as an image for others to test against. The [testing page](/docs/models/sunspec/testing/) has the evidence. That is interoperability, not SunSpec certification.
 
 ## Specifications
 

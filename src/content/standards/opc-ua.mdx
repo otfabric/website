@@ -10,7 +10,7 @@ facts:
   - { label: 'Default port', value: '4840' }
   - { label: 'Library', value: 'go-opcua' }
   - { label: 'CLI', value: 'opcuactl' }
-  - { label: 'Interop', value: 'opcua-interop v0.17.0' }
+  - { label: 'Interop', value: 'opcua-interop v0.19.0' }
 icon: go-opcua
 docs: /docs/protocols/opc-ua/
 ---
@@ -127,4 +127,4 @@ func main() {
 
 ## Interoperability
 
-[opcua-interop](https://github.com/otfabric/opcua-interop) runs go-opcua in every applicable client and server direction against six independent stacks: open62541 (C), Eclipse Milo (Java), async-opcua (Rust), the OPC Foundation's UA-.NETStandard (C#), node-opcua (TypeScript) and opcua-asyncio (Python). Every peer client also manages the go-opcua server's certificates (push model) and pulls from its Global Discovery Server, and reads, pages, filters and edits its event history. PubSub is tested against open62541 and UA-.NETStandard, and UA JSON over WebSockets and HTTPS against UA-.NETStandard, the only peer that has it. The [testing page](/docs/protocols/opc-ua/testing/) has the evidence and what is still open.
+[opcua-interop](https://github.com/otfabric/opcua-interop) runs go-opcua in every applicable client and server direction against six independent stacks: open62541 (C), Eclipse Milo (Java), async-opcua (Rust), the OPC Foundation's UA-.NETStandard (C#), node-opcua (TypeScript) and opcua-asyncio (Python). Every peer client also manages the go-opcua server's certificates (push model) and pulls from its Global Discovery Server, and reads, pages, filters and edits its event history. PubSub is tested against open62541 and UA-.NETStandard, and UA JSON over WebSockets and HTTPS against UA-.NETStandard, the only peer that has it. opcua-interop also publishes go-opcua as an image for others to test against. The [testing page](/docs/protocols/opc-ua/testing/) has the evidence and what is still open.

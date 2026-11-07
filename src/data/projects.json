@@ -737,7 +737,7 @@
 			"bacnet"
 		],
 		"status": "available",
-		"description": "BACnet/IP reference devices: BACnet Stack, BACpypes3, BACnet4J, System.IO.BACnet and Worldiety. BACnet Stack, BACnet4J and BACpypes3 also run as clients to test a BACnet server.",
+		"description": "BACnet/IP reference devices: BACnet Stack, BACpypes3, BACnet4J, System.IO.BACnet, Worldiety and cB-Sigma, with cB-Sigma's simulator for faults. BACnet Stack, BACnet4J and BACpypes3 also run as clients to test a BACnet server.",
 		"icon": "go-bacnet"
 	},
 	{
@@ -761,7 +761,7 @@
 			"iec-61850"
 		],
 		"status": "available",
-		"description": "IEC 61850 reference stacks as containers: libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust, for MMS, IED services, GOOSE and Sampled Values. Formerly mms-interop.",
+		"description": "IEC 61850 reference stacks as containers: libiec61850, IEC61850bean, dscsystems/go-iec61850, iec61850-rust and cB-Sigma, for MMS, IED services, GOOSE and Sampled Values. Formerly mms-interop.",
 		"icon": "go-iec61850"
 	},
 	{
@@ -785,7 +785,7 @@
 			"openadr"
 		],
 		"status": "available",
-		"description": "OpenADR 3 reference stacks: the OpenLEADR VTN and the ElaadNL client, plus a specification-driven conformance suite.",
+		"description": "OpenADR 3 reference stacks: the OpenLEADR VTN (3.1.0 and 3.0.1), the ElaadNL client and cB-Sigma openadr in both roles, plus a specification-driven conformance suite.",
 		"icon": "go-openadr"
 	},
 	{
@@ -797,7 +797,7 @@
 			"ocpp"
 		],
 		"status": "available",
-		"description": "OCPP reference stacks: The Mobility House ocpp, ChargeTimeEU Java-OCA-OCPP, ocpp-go, EVerest libocpp and CitrineOS, for 1.6J, 2.0.1 and 2.1.",
+		"description": "Eight OCPP reference stacks for 1.6J, 2.0.1 and 2.1: The Mobility House ocpp, ChargeTimeEU Java-OCA-OCPP, ocpp-go, EVerest libocpp, CitrineOS, cB-Sigma, ocpp-kit and seanlee0923/ocpp, with SEND, CALLRESULTERROR and a Local Controller.",
 		"icon": "go-ocpp"
 	},
 	{
@@ -809,7 +809,7 @@
 			"dnp3"
 		],
 		"status": "available",
-		"description": "DNP3 reference stacks: opendnp3, DSC go-dnp3 and dnp3py as masters and outstations, over TCP, TLS, UDP and serial.",
+		"description": "DNP3 reference stacks: opendnp3, DSC go-dnp3, dnp3py, cB-Sigma dnp3 and nfm-dnp3 as masters and outstations, over TCP, TLS, UDP and serial, with file transfer and Secure Authentication.",
 		"icon": "go-dnp3"
 	},
 	{
@@ -833,7 +833,7 @@
 			"ethernet-ip"
 		],
 		"status": "available",
-		"description": "Twelve EtherNet/IP reference stacks in eight languages, from OpENer and libplctag to pycomm3, gologix, eip-rs and EEIP.NET, as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
+		"description": "Thirteen EtherNet/IP reference stacks in eight languages, from OpENer and libplctag to pycomm3, gologix, eip-rs, EEIP.NET and cB-Sigma enip, as targets and originators, with Class 1 I/O, Class 3 and Logix fixtures.",
 		"icon": "go-ethernetip"
 	},
 	{
@@ -881,7 +881,7 @@
 			"knx"
 		],
 		"status": "available",
-		"description": "Four independent KNX implementations in containers behind one contract: Calimero server and tools, knxd, xknx and KNXUltimate, with a raw probe for negative tests, across tunnelling, routing, datapoint types, TCP, device management and KNX Secure.",
+		"description": "Five independent KNX implementations in containers behind one contract: Calimero server and tools, knxd, xknx, KNXUltimate and cB-Sigma knx with its simulator, and a raw probe for negative tests, across tunnelling, routing, datapoint types, TCP, device management and KNX Secure.",
 		"icon": "go-knx"
 	},
 	{
@@ -895,6 +895,18 @@
 		"status": "available",
 		"description": "Six Sparkplug B reference stacks in six languages, Eclipse Tahu (Java and JavaScript), pysparkplug, SparkplugNet, srad and sparkplughost, as edge nodes and host applications on Mosquitto, HiveMQ CE, EMQX and NanoMQ.",
 		"icon": "go-sparkplugb"
+	},
+	{
+		"id": "sunspec-interop",
+		"name": "sunspec-interop",
+		"repo": "sunspec-interop",
+		"category": "interop",
+		"standards": [
+			"sunspec"
+		],
+		"status": "available",
+		"description": "SunSpec reference stacks in containers behind one contract: the SunSpec Alliance's pysunspec2 and cB-Sigma's sunspec and sunspec-sim, as devices and clients, with fixtures from the common models to the IEEE 1547 DER curves.",
+		"icon": "go-sunspec"
 	},
 	{
 		"id": "sunspec-explorer",

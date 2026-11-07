@@ -9,7 +9,7 @@ facts:
   - { label: 'Network', value: 'Up to 127 nodes, one NMT master; node-IDs set by switches, software or LSS' }
   - { label: 'Library', value: 'go-canopen' }
   - { label: 'CLI', value: 'canopenctl' }
-  - { label: 'Interop', value: 'canopen-interop v0.2.0' }
+  - { label: 'Interop', value: 'canopen-interop v0.4.0' }
 icon: go-canopen
 docs: /docs/protocols/canopen/
 carriedBy: ['can-bus']
@@ -132,5 +132,5 @@ _ = m.WaitState(ctx, 5, canopen.StateOperational)
 | Platforms | Linux (amd64, arm64, armv7) for SocketCAN; slcan adapters and the virtual bus also on macOS and Windows. No cgo |
 
 <Callout type="note" title="Early versions, interoperability tested">
-go-canopen v0.4.1, canopenctl v0.4.0 and canopen-interop v0.2.0 are pre-1.0. go-canopen is tested on Linux virtual CAN against the three most used open stacks, packaged by [canopen-interop](https://github.com/otfabric/canopen-interop): **CANopenNode** (C), **Lely CANopen** (C and C++) and **python canopen**, each as master and as device, in both directions. 1,276 scenarios pass and none fail, with 57 documented differences and 287 skips where a stack lacks a feature such as block transfer, MPDOs or a boot master. That is interoperability, not CiA conformance: the CiA specifications are member documents, go-canopen is built from public material, and it has not been certified. Virtual CAN shows message encoding and protocol logic, not timing, and nothing has been tested on real CAN hardware yet. CANopen devices drive motors, valves and power electronics, so test on a virtual or isolated bench bus.
+go-canopen v0.4.1, canopenctl v0.5.0 and canopen-interop v0.4.0 are pre-1.0. go-canopen is tested on Linux virtual CAN against the three most used open stacks, packaged by [canopen-interop](https://github.com/otfabric/canopen-interop): **CANopenNode** (C), **Lely CANopen** (C and C++) and **python canopen**, each as master and as device, in both directions; canopen-interop also publishes go-canopen as an image for others to test against. 1,276 scenarios pass and none fail, with 57 documented differences and 287 skips where a stack lacks a feature such as block transfer, MPDOs or a boot master. That is interoperability, not CiA conformance: the CiA specifications are member documents, go-canopen is built from public material, and it has not been certified. Virtual CAN shows message encoding and protocol logic, not timing, and nothing has been tested on real CAN hardware yet. CANopen devices drive motors, valves and power electronics, so test on a virtual or isolated bench bus.
 </Callout>
