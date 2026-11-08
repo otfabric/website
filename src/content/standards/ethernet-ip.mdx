@@ -29,7 +29,7 @@ EtherNet/IP carries the **Common Industrial Protocol** (CIP) over standard Ether
 
 ### From the command line
 
-Download `ethernetipctl` from [GitHub Releases](https://github.com/otfabric/ethernetipctl/releases). No device at hand? Start the simulated adapter, with an emulated Logix tag database:
+Install `ethernetipctl` with `curl -fsSL https://get.otfabric.io/ethernetipctl | sh`, or on Windows `irm https://get.otfabric.io/ethernetipctl.ps1 | iex` ([all install options](/docs/install/)). No device at hand? Start the simulated adapter, with an emulated Logix tag database:
 
 ```sh
 ethernetipctl adapter --listen 127.0.0.1 --echo --logix

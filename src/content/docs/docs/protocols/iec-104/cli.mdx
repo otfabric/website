@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
 [iec104ctl](https://github.com/otfabric/iec104ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files, over TCP, TLS or the application-layer security of IEC 62351-5. As a controlled station it simulates an RTU from a YAML model. It is built on [go-iec104](/docs/protocols/iec-104/library/). This page describes v0.6.0, built on go-iec104 v0.2.0. IEC 62351-5 arrived in v0.2.0.
@@ -16,61 +17,7 @@ iec104ctl sends real telecontrol requests. Use it only on stations and networks 
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/iec104ctl/releases). Each release has `iec104ctl-<version>-checksums.txt` with SHA-256 sums.
-
-<Tabs>
-  <TabItem label="Linux">
-    ```sh
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/iec104ctl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      x86_64)         ARCH=amd64 ;;
-      aarch64|arm64)  ARCH=arm64 ;;
-      armv7l)         ARCH=armv7 ;;
-      *) echo "Unsupported architecture: $(uname -m)" ;;
-    esac
-
-    FILE="iec104ctl-${VERSION}-linux-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/iec104ctl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/iec104ctl-${VERSION}-checksums.txt"
-
-    # should print "OK"
-    grep "${FILE}" "iec104ctl-${VERSION}-checksums.txt" | sha256sum -c -
-
-    mkdir -p iec104ctl-dl && tar -xzf "${FILE}" -C iec104ctl-dl
-    sudo install -m 0755 "$(find iec104ctl-dl -type f -name 'iec104ctl*' | head -n1)" /usr/local/bin/iec104ctl
-    ```
-  </TabItem>
-  <TabItem label="macOS">
-    ```sh
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/iec104ctl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      arm64)   ARCH=arm64 ;;
-      x86_64)  ARCH=amd64 ;;
-    esac
-
-    FILE="iec104ctl-${VERSION}-darwin-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/iec104ctl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/iec104ctl-${VERSION}-checksums.txt"
-
-    # should print "OK"
-    grep "${FILE}" "iec104ctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
-
-    mkdir -p iec104ctl-dl && tar -xzf "${FILE}" -C iec104ctl-dl
-    sudo install -m 0755 "$(find iec104ctl-dl -type f -name 'iec104ctl*' | head -n1)" /usr/local/bin/iec104ctl
-    ```
-  </TabItem>
-  <TabItem label="Go">
-    Requires Go 1.26 or later:
-
-    ```sh
-    go install github.com/otfabric/iec104ctl@latest
-    ```
-  </TabItem>
-</Tabs>
-
-The README also has a PowerShell script for Windows. Check the install with `iec104ctl version`.
+<InstallTool tool="iec104ctl" />
 
 ## Try it without a station
 

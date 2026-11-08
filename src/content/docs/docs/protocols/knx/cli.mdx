@@ -6,23 +6,14 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 [knxctl](https://github.com/otfabric/knxctl) is a command-line tool for KNX over KNXnet/IP, built on [go-knx](/docs/protocols/knx/library/). It finds gateways and inspects them, monitors group telegrams, reads and switches group objects, encodes and decodes datapoint types and frames, and runs a simulated KNXnet/IP server. It is one static binary, and output is text, a table or JSON with stable exit codes. This page follows v0.9.0, built on go-knx v0.8.1; the full reference is [docs/cli.md](https://github.com/otfabric/knxctl/blob/main/docs/cli.md).
 
 ## Install
 
-<Tabs>
-  <TabItem label="Release binary">
-    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/knxctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
-  </TabItem>
-  <TabItem label="Go">
-    ```sh
-    go install github.com/otfabric/knxctl@latest
-    ```
-    Go 1.26 or later.
-  </TabItem>
-</Tabs>
+<InstallTool tool="knxctl" />
 
 Shell completion: `knxctl completion bash|zsh|fish|powershell`.
 

@@ -1,0 +1,39 @@
+---
+// The one-line install of an OT Fabric command-line tool, for Starlight docs pages.
+import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
+import { ciInstall, psInstall, shInstall, toolByName } from '../../data/install';
+
+interface Props {
+	/** Installer name, as in https://get.otfabric.io/<tool>. */
+	tool: string;
+}
+const t = toolByName(Astro.props.tool);
+if (!t) throw new Error(`InstallTool: ${Astro.props.tool} is not in src/data/install.ts`);
+const source = t.source.startsWith('go install') ? t.source : undefined;
+---
+
+<Tabs syncKey="otf-install">
+	<TabItem label="Linux and macOS">
+		<Code code={shInstall(t.tool)} lang="sh" />
+	</TabItem>
+	<TabItem label="Windows">
+		<Code code={psInstall(t.tool)} lang="powershell" />
+	</TabItem>
+	<TabItem label="CI and containers">
+		<Code code={ciInstall(t.tool)} lang="sh" />
+	</TabItem>
+	{source && (
+		<TabItem label="From source">
+			<Code code={source} lang="sh" />
+		</TabItem>
+	)}
+</Tabs>
+
+<p>
+	Binaries for Linux (x86-64, ARM64, ARMv7), macOS (Intel, Apple silicon) and Windows (x86-64, ARM64). The installer checks the release's SHA-256 checksum, installs
+	per user without <code>sudo</code> (<code>~/.local/bin</code>, on Windows <code>%LOCALAPPDATA%\OTFabric\bin</code>) and upgrades in place when you run it again.{' '}
+	{t.kind === 'embedded' && <>The version of {t.tool} is the version of {t.repo}, the repository it ships in.{' '}</>}
+	Pin a version with <code>OTF_VERSION</code>; the CI line installs into a fixed directory without touching <code>PATH</code> or shell profiles.{' '}
+	<a href="/docs/install/">All installer options</a>, <a href={`https://github.com/otfabric/${t.repo}/releases`}>release archives</a> for offline machines.{' '}
+	{!source && <>To build from source instead: {t.source}.{' '}</>}Check the install with <code>{t.tool} version</code>.
+</p>

@@ -6,23 +6,14 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 [canopenctl](https://github.com/otfabric/canopenctl) is a command-line toolkit for CANopen networks, built on [go-canopen](/docs/protocols/canopen/library/) and [go-canbus](/docs/protocols/can-bus/library/). It decodes live traffic and trace files, reads and writes object dictionaries, manages nodes, gives devices node-IDs, boots a network as a CiA 302 manager, maps and watches PDOs, validates and converts EDS and DCF files, downloads programs, operates CiA 402 drives and simulates complete devices. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.5.0, built on go-canopen v0.4.1 and go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canopenctl/blob/main/docs/cli.md).
 
 ## Install
 
-<Tabs>
-  <TabItem label="Release binary">
-    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/canopenctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
-  </TabItem>
-  <TabItem label="Go">
-    ```sh
-    go install github.com/otfabric/canopenctl@latest
-    ```
-    Go 1.26 or later.
-  </TabItem>
-</Tabs>
+<InstallTool tool="canopenctl" />
 
 To try it without hardware on Linux, create a virtual interface and simulate a device on it:
 

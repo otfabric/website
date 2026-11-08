@@ -6,46 +6,16 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
 [modbusctl](/projects/modbusctl/) is a command-line tool for Modbus over TCP, UDP and serial lines (RTU and ASCII). It is built on [go-modbus](/docs/protocols/modbus/library/) and covers the whole path from "what is this device?" to a hardware-free replay of it. Output is text, a table or JSON, with stable exit codes for scripts and CI. This page follows modbusctl v3.5.1, built on go-modbus v1.11.1.
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/modbusctl/releases). Each release has a `modbusctl-<version>-checksums.txt` file with SHA-256 sums. No Go toolchain is needed.
+<InstallTool tool="modbusctl" />
 
-<Tabs>
-  <TabItem label="Linux">
-    ```sh
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/modbusctl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      x86_64)         ARCH=amd64 ;;
-      aarch64|arm64)  ARCH=arm64 ;;
-      armv7l)         ARCH=armv7 ;;
-    esac
-    FILE="modbusctl-${VERSION}-linux-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/modbusctl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/modbusctl-${VERSION}-checksums.txt"
-    grep "${FILE}" "modbusctl-${VERSION}-checksums.txt" | sha256sum -c -
-    mkdir -p modbusctl-dl && tar -xzf "${FILE}" -C modbusctl-dl
-    sudo install -m 0755 "$(find modbusctl-dl -type f -name 'modbusctl*' | head -n1)" /usr/local/bin/modbusctl
-    ```
-  </TabItem>
-  <TabItem label="macOS">
-    Same steps with `darwin` in the file name and `shasum -a 256 -c -` to verify. If macOS refuses a binary downloaded with a browser, run `xattr -d com.apple.quarantine /usr/local/bin/modbusctl`.
-  </TabItem>
-  <TabItem label="From source">
-    Requires Go 1.26 or later.
-    ```sh
-    git clone https://github.com/otfabric/modbusctl.git
-    cd modbusctl
-    make build    # writes bin/modbusctl
-    ```
-  </TabItem>
-</Tabs>
-
-The README also has a PowerShell script for Windows that verifies the checksum and adds the binary to your `PATH`. Check the install with `modbusctl version`.
+For a serial port without `sudo` on Linux, add your user to the `dialout` group: `sudo usermod -aG dialout "$USER"`, then log out and back in.
 
 ## Connecting
 
@@ -321,7 +291,7 @@ modbusctl client sunspec probe --url tcp://192.168.1.10:502 --unit 1
 ```
 
 <Aside type="note" title="modbus-cli in go-modbus">
-The go-modbus repository also contains a minimal `modbus-cli` under `cmd/modbus-cli`, with a colon-separated operation syntax (`rh:uint16:100+4`). modbusctl is the full-featured tool documented here.
+The go-modbus repository also contains a minimal `modbus-cli` under `cmd/modbus-cli`, with a colon-separated operation syntax (`rh:uint16:100+4`). modbusctl is the full-featured tool documented here. Install it with `curl -fsSL https://get.otfabric.io/modbus-cli | sh` (Windows: `irm https://get.otfabric.io/modbus-cli.ps1 | iex`).
 </Aside>
 
 <LinkCard title="modbusctl on GitHub" href="https://github.com/otfabric/modbusctl" description="README, ALGOS.md, docs/exitcodes.md and release notes." />

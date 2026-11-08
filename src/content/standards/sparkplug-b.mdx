@@ -70,7 +70,7 @@ Two version numbers, one profile. **Sparkplug 3.0.0** is the specification versi
 
 ### From the command line
 
-Download `sparkplugbctl` from [GitHub Releases](https://github.com/otfabric/sparkplugbctl/releases), or `go install github.com/otfabric/sparkplugbctl@latest`. With an MQTT broker on `localhost:1883`, start a primary host application, an edge node that waits for it, and a listener, each in its own terminal:
+Install `sparkplugbctl` with `curl -fsSL https://get.otfabric.io/sparkplugbctl | sh`, or on Windows `irm https://get.otfabric.io/sparkplugbctl.ps1 | iex` ([all install options](/docs/install/)). With an MQTT broker on `localhost:1883`, start a primary host application, an edge node that waits for it, and a listener, each in its own terminal:
 
 ```sh
 sparkplugbctl host --host-id scada
