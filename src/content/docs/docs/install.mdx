@@ -3,7 +3,7 @@ title: Install the tools
 description: One line installs any OT Fabric command-line tool on Linux, macOS or Windows from get.otfabric.io, with checksum verification, version pinning and a mode for CI, containers and device images.
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { tools } from '../../../data/install';
 
 Every OT Fabric command-line tool installs with the same line. Replace `modbusctl` with the tool you want:
@@ -87,10 +87,6 @@ $env:OTF_TOOL = 'modbusctl'; irm https://raw.githubusercontent.com/otfabric/inst
 ```
 
 For machines without internet access, download the archive and the checksums file from the tool's GitHub Releases page on another machine, check the archive with `sha256sum -c`, and copy the binary across. To build from source, each tool's README has the steps; the tools with a repository of their own, apart from modbusctl and s7commctl, also install with `go install github.com/otfabric/<tool>@latest` and Go 1.26 or later.
-
-<Aside type="note" title="Privacy">
-Requests to get.otfabric.io are logged to understand where and how the tools are used: the tool, version and platform, the installer's User-Agent (installer version, platform, OS version, shell, install mode and CI system), whether the install succeeded, and the approximate location derived from the IP address. Full IP addresses are not stored. The direct-from-GitHub route above sends nothing to OT Fabric.
-</Aside>
 
 ## Security
 

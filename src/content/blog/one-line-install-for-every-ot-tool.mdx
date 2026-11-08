@@ -10,8 +10,6 @@ cover:
   image: ../../assets/blog/one-line-install-pipeline.svg
 ---
 
-import Callout from '../../components/Callout.astro';
-
 A field tool is only useful once it is on the machine where you need it. That machine is rarely a developer's laptop. It is a commissioning laptop in a substation, a jump host in a plant network, a Raspberry Pi in a cabinet, a CI runner that tests a gateway every night, or a container image that a test bench starts on demand.
 
 Until now, getting an OT Fabric tool onto any of those meant a block of shell: find the latest release, pick the right archive for the CPU, download it with its checksum file, verify, extract and install. Every protocol's documentation carried its own copy of that script. Today it is one line:
@@ -108,10 +106,6 @@ ENTRYPOINT ["iec104ctl"]
 ```
 
 That gives a test bench, a Kubernetes job or a jump host a pinned, checksum-verified tool in one layer.
-
-<Callout title="Privacy, and a route without get.otfabric.io">
-Requests to get.otfabric.io are logged to understand where the tools are used: tool, version, platform, the installer's User-Agent, whether the install succeeded and an approximate location. Full IP addresses are not stored. If you would rather send nothing, the same scripts run straight from the [otfabric/install](https://github.com/otfabric/install) repository and download from GitHub Releases directly.
-</Callout>
 
 ## Get started
 
