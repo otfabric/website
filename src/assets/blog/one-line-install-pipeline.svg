@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 336" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="A CI pipeline for OT tooling: one line installs a command-line tool from get.otfabric.io, a simulated station starts, the client tests it with JSON output, stable exit codes decide pass or fail, and version --json records which release and protocol stack ran. The same conventions apply to RTUs, PLCs, inverters, chargers, IEDs and drives.">
+<rect width="720" height="336" fill="#F4F6F8"/>
+<text x="40" y="42" font-size="15" font-weight="600" fill="#17212B">One line in, a green pipeline out</text>
+<text x="680" y="42" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">get.otfabric.io</text>
+<rect x="40" y="58" width="640" height="62" rx="6" fill="#17212B"/>
+<circle cx="56" cy="70" r="3.5" fill="#E08A4E"/>
+<circle cx="68" cy="70" r="3.5" fill="#3FC1C6"/>
+<circle cx="80" cy="70" r="3.5" fill="#8AB0E8"/>
+<g font-family="IBM Plex Mono, monospace" font-size="12">
+<text x="56" y="92" fill="#E6EAEE"><tspan fill="#3FC1C6">$</tspan> curl -fsSL https://get.otfabric.io/<tspan fill="#E08A4E">iec104ctl</tspan> | env OTF_VERSION=0.7.1 sh</text>
+<text x="56" y="110" fill="#E6EAEE"><tspan fill="#3FC1C6">$</tspan> iec104ctl client interrogate --ip 127.0.0.1 --ca 1 <tspan fill="#8AB0E8">--format json</tspan> | jq .points</text>
+</g>
+<rect x="40" y="148" width="112" height="58" rx="5" fill="#FFFFFF" stroke="#D9DFE4"/>
+<rect x="40" y="148" width="4" height="58" rx="2" fill="#2F5D9E"/>
+<text x="54" y="170" font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">STAGE 1</text>
+<text x="54" y="187" font-size="13" font-weight="600" fill="#17212B">install</text>
+<text x="54" y="200" font-size="9.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">sha256 checked</text>
+<circle cx="138" cy="162" r="7" fill="#E3EAF5"/><path d="M134.5 162l2.5 2.5l4.5-5" stroke="#2F5D9E" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M155 177H168" stroke="#5A6875" stroke-width="1.4"/><path d="M164 173l4 4l-4 4" stroke="#5A6875" stroke-width="1.4" fill="none"/>
+<rect x="172" y="148" width="112" height="58" rx="5" fill="#FFFFFF" stroke="#D9DFE4"/>
+<rect x="172" y="148" width="4" height="58" rx="2" fill="#0A7C80"/>
+<text x="186" y="170" font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">STAGE 2</text>
+<text x="186" y="187" font-size="13" font-weight="600" fill="#17212B">simulate</text>
+<text x="186" y="200" font-size="9.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">server start</text>
+<circle cx="270" cy="162" r="7" fill="#DCEFEF"/><path d="M266.5 162l2.5 2.5l4.5-5" stroke="#0A7C80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M287 177H300" stroke="#5A6875" stroke-width="1.4"/><path d="M296 173l4 4l-4 4" stroke="#5A6875" stroke-width="1.4" fill="none"/>
+<rect x="304" y="148" width="112" height="58" rx="5" fill="#FFFFFF" stroke="#D9DFE4"/>
+<rect x="304" y="148" width="4" height="58" rx="2" fill="#0A7C80"/>
+<text x="318" y="170" font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">STAGE 3</text>
+<text x="318" y="187" font-size="13" font-weight="600" fill="#17212B">test</text>
+<text x="318" y="200" font-size="9.5" fill="#0A7C80" font-family="IBM Plex Mono, monospace">--format json</text>
+<circle cx="402" cy="162" r="7" fill="#DCEFEF"/><path d="M398.5 162l2.5 2.5l4.5-5" stroke="#0A7C80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M419 177H432" stroke="#5A6875" stroke-width="1.4"/><path d="M428 173l4 4l-4 4" stroke="#5A6875" stroke-width="1.4" fill="none"/>
+<rect x="436" y="148" width="112" height="58" rx="5" fill="#FFFFFF" stroke="#D9DFE4"/>
+<rect x="436" y="148" width="4" height="58" rx="2" fill="#B35A1F"/>
+<text x="450" y="170" font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">STAGE 4</text>
+<text x="450" y="187" font-size="13" font-weight="600" fill="#17212B">assert</text>
+<text x="450" y="200" font-size="9.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">exit codes</text>
+<circle cx="534" cy="162" r="7" fill="#F6E6DA"/><path d="M530.5 162l2.5 2.5l4.5-5" stroke="#B35A1F" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M551 177H564" stroke="#5A6875" stroke-width="1.4"/><path d="M560 173l4 4l-4 4" stroke="#5A6875" stroke-width="1.4" fill="none"/>
+<rect x="568" y="148" width="112" height="58" rx="5" fill="#FFFFFF" stroke="#D9DFE4"/>
+<rect x="568" y="148" width="4" height="58" rx="2" fill="#2F5D9E"/>
+<text x="582" y="170" font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">STAGE 5</text>
+<text x="582" y="187" font-size="13" font-weight="600" fill="#17212B">record</text>
+<text x="582" y="200" font-size="9.5" fill="#2F5D9E" font-family="IBM Plex Mono, monospace">version --json</text>
+<circle cx="666" cy="162" r="7" fill="#E3EAF5"/><path d="M662.5 162l2.5 2.5l4.5-5" stroke="#2F5D9E" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="40" y="236" font-size="11" fill="#5A6875">Same flags, same JSON, same exit codes, whatever is on the other end</text>
+<path d="M75.5 256V250H644.5V256" stroke="#D9DFE4" stroke-width="1.2" fill="none"/>
+<rect x="40.0" y="256" width="71" height="46" rx="5" fill="#F6E6DA"/>
+<text x="75.5" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">RTU</text>
+<text x="75.5" y="292" font-size="9.5" fill="#B35A1F" text-anchor="middle" font-family="IBM Plex Mono, monospace">IEC 104</text>
+<rect x="121.3" y="256" width="71" height="46" rx="5" fill="#DCEFEF"/>
+<text x="156.8" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">PLC</text>
+<text x="156.8" y="292" font-size="9.5" fill="#0A7C80" text-anchor="middle" font-family="IBM Plex Mono, monospace">Modbus</text>
+<rect x="202.6" y="256" width="71" height="46" rx="5" fill="#F6E6DA"/>
+<text x="238.1" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">Inverter</text>
+<text x="238.1" y="292" font-size="9.5" fill="#B35A1F" text-anchor="middle" font-family="IBM Plex Mono, monospace">SunSpec</text>
+<rect x="283.9" y="256" width="71" height="46" rx="5" fill="#F6E6DA"/>
+<text x="319.4" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">Charger</text>
+<text x="319.4" y="292" font-size="9.5" fill="#B35A1F" text-anchor="middle" font-family="IBM Plex Mono, monospace">OCPP</text>
+<rect x="365.1" y="256" width="71" height="46" rx="5" fill="#F6E6DA"/>
+<text x="400.6" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">IED</text>
+<text x="400.6" y="292" font-size="9.5" fill="#B35A1F" text-anchor="middle" font-family="IBM Plex Mono, monospace">IEC 61850</text>
+<rect x="446.4" y="256" width="71" height="46" rx="5" fill="#DCEFEF"/>
+<text x="481.9" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">Drive</text>
+<text x="481.9" y="292" font-size="9.5" fill="#0A7C80" text-anchor="middle" font-family="IBM Plex Mono, monospace">CANopen</text>
+<rect x="527.7" y="256" width="71" height="46" rx="5" fill="#DCEFEF"/>
+<text x="563.2" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">Gateway</text>
+<text x="563.2" y="292" font-size="9.5" fill="#0A7C80" text-anchor="middle" font-family="IBM Plex Mono, monospace">OPC UA</text>
+<rect x="609.0" y="256" width="71" height="46" rx="5" fill="#DCEFEF"/>
+<text x="644.5" y="275" font-size="11.5" font-weight="600" fill="#17212B" text-anchor="middle">Controller</text>
+<text x="644.5" y="292" font-size="9.5" fill="#0A7C80" text-anchor="middle" font-family="IBM Plex Mono, monospace">BACnet</text>
+<text x="40" y="324" font-size="10" fill="#5A6875" font-family="IBM Plex Mono, monospace">Linux · macOS · Windows  ·  x86-64 · ARM64 · ARMv7  ·  laptop · CI runner · container · edge device</text>
+</svg>

@@ -6,23 +6,14 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Steps } from '@astrojs/starlight/components';
 
 [s7commctl](https://github.com/otfabric/s7commctl) is a command-line S7comm client for ISO-on-TCP (TCP port 102), built on [go-s7comm](/docs/protocols/s7/library/). It is meant for commissioning, troubleshooting and engineering work on PLCs you are responsible for. This page follows s7commctl v0.5.0, built on go-s7comm v0.12.0.
 
 ## Install
 
-Prebuilt binaries are attached to each [GitHub release](https://github.com/otfabric/s7commctl/releases): `.tar.gz` archives for Linux and macOS and `.zip` archives for Windows, for amd64 and arm64.
-
-To build from source you need Go 1.26:
-
-```sh
-git clone https://github.com/otfabric/s7commctl
-cd s7commctl
-make build        # writes bin/s7commctl
-```
-
-Check the build with `s7commctl version`, which prints the version, commit and build date.
+<InstallTool tool="s7commctl" />
 
 ## Connecting
 

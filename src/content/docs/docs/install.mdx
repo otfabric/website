@@ -1,0 +1,117 @@
+---
+title: Install the tools
+description: One line installs any OT Fabric command-line tool on Linux, macOS or Windows from get.otfabric.io, with checksum verification, version pinning and a mode for CI, containers and device images.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { tools } from '../../../data/install';
+
+Every OT Fabric command-line tool installs with the same line. Replace `modbusctl` with the tool you want:
+
+<Tabs syncKey="otf-install">
+  <TabItem label="Linux and macOS">
+    ```sh
+    curl -fsSL https://get.otfabric.io/modbusctl | sh
+    ```
+  </TabItem>
+  <TabItem label="Windows">
+    ```powershell
+    irm https://get.otfabric.io/modbusctl.ps1 | iex
+    ```
+
+    From `cmd.exe`: `powershell -NoProfile -Command "irm https://get.otfabric.io/modbusctl.ps1 | iex"`.
+  </TabItem>
+</Tabs>
+
+Run the same line again to upgrade. That works for the tools with a repository of their own, such as `iec104ctl` or `opcuactl`, and for the tools that ship inside a library repository, such as `otprobe` in go-otfp or `mbcapctl` in go-modbus-capture. The [list of tools](#tools) is below.
+
+## What the installer does
+
+1. It detects the platform: Linux on x86-64, ARM64 and ARMv7, macOS on Intel and Apple silicon, Windows on x86-64 and ARM64.
+2. It resolves the version once, the latest stable release or the one you pin, and uses exactly that release.
+3. It downloads the archive and the release's SHA-256 checksums file, and refuses to install when the checksum is missing, malformed or does not match.
+4. It extracts only the expected binary and runs `<tool> version` as a smoke test before it replaces an installed copy.
+5. It installs per user without `sudo`, in `~/.local/bin` (or `$XDG_BIN_HOME`) and on Windows in `%LOCALAPPDATA%\OTFabric\bin`, and adds that directory to `PATH` unless you tell it not to.
+
+The tools are single static binaries. There is no runtime, interpreter or package manager to install first.
+
+## Options
+
+All options are environment variables, and they are the same for every tool.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `OTF_VERSION` | `latest` | Install a specific version, `3.6.1` or `v3.6.1`. For a tool that ships inside a library repository, this is the library's version |
+| `OTF_INSTALL_DIR` | `~/.local/bin`; Windows `%LOCALAPPDATA%\OTFabric\bin` | Install directory. `PATH` may be updated |
+| `OTF_UNMANAGED_INSTALL` | unset | Install directory for CI, containers and device images. Never touches `PATH` or shell profiles. Cannot be combined with `OTF_INSTALL_DIR` |
+| `OTF_NO_MODIFY_PATH` | `0` | `1` leaves `PATH` and shell profiles alone |
+| `OTF_TARGET` | detected | Force a target, for example `linux-armv7` |
+
+<Tabs syncKey="otf-install">
+  <TabItem label="Linux and macOS">
+    ```sh
+    # A specific version
+    curl -fsSL https://get.otfabric.io/modbusctl | env OTF_VERSION=3.6.1 sh
+
+    # CI, a Dockerfile or a device image: a fixed directory, no profile changes
+    curl -fsSL https://get.otfabric.io/modbusctl | env OTF_UNMANAGED_INSTALL=/usr/local/bin sh
+    ```
+  </TabItem>
+  <TabItem label="Windows">
+    ```powershell
+    $env:OTF_VERSION = '3.6.1'; $env:OTF_INSTALL_DIR = 'C:\Tools'
+    irm https://get.otfabric.io/modbusctl.ps1 | iex
+    ```
+  </TabItem>
+</Tabs>
+
+The installer exits `0` when the tool is installed, `1` when the installation failed and `2` on invalid input, so a pipeline stops at the install step instead of failing later. Under `irm | iex` PowerShell never exits, so it cannot close your terminal. [Scripts, CI and containers](/docs/automation/) has complete examples for GitHub Actions, GitLab CI and Dockerfiles.
+
+## Requirements
+
+- **Linux and macOS:** a POSIX `sh` (dash, bash, zsh or BusyBox ash), `curl` or `wget` (BusyBox wget works), `tar`, and `sha256sum`, `shasum` or `openssl`.
+- **Windows:** Windows PowerShell 5.1 or PowerShell 7. Nothing else.
+
+32-bit x86 and ARMv6 are not supported. On a 64-bit ARM kernel with a 32-bit userland, common on Raspberry Pi OS, the installer picks the ARMv7 build.
+
+## Without get.otfabric.io
+
+The same scripts run straight from the [installer repository](https://github.com/otfabric/install) and then download from GitHub Releases directly:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/otfabric/install/main/install.sh | sh -s -- modbusctl
+```
+
+```powershell
+$env:OTF_TOOL = 'modbusctl'; irm https://raw.githubusercontent.com/otfabric/install/main/install.ps1 | iex
+```
+
+For machines without internet access, download the archive and the checksums file from the tool's GitHub Releases page on another machine, check the archive with `sha256sum -c`, and copy the binary across. To build from source, each tool's README has the steps; the tools with a repository of their own, apart from modbusctl and s7commctl, also install with `go install github.com/otfabric/<tool>@latest` and Go 1.26 or later.
+
+## Security
+
+The checksums file comes from the same GitHub release as the archive. It proves that the download is intact, not who published it. In a pipeline, pin the version with `OTF_VERSION` so that every run installs the release you reviewed. Report vulnerabilities privately to security@otfabric.io, as described in each repository's SECURITY.md.
+
+## Tools
+
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Protocol</th><th>Ships in</th><th>What it does</th></tr>
+  </thead>
+  <tbody>
+    {tools.map((t) => (
+      <tr>
+        <td><a href={`/projects/${t.project}/`}><code>{t.tool}</code></a></td>
+        <td>{t.protocol}</td>
+        <td><a href={`https://github.com/otfabric/${t.repo}`}>{t.repo}</a></td>
+        <td>{t.summary}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+The registry of tools lives in [otfabric/install](https://github.com/otfabric/install). The desktop apps, LAN Tracker and modbus-simulator are not on get.otfabric.io yet; download them from their GitHub Releases pages.
+
+## Uninstall
+
+Delete the binary: `rm ~/.local/bin/<tool>`, or on Windows `%LOCALAPPDATA%\OTFabric\bin\<tool>.exe`. If the installer added its directory to `PATH`, you can take that entry out again; the installer keeps no other state.

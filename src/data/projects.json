@@ -371,7 +371,34 @@
 		],
 		"status": "available",
 		"description": "Identify, fingerprint, scan, poll, decode and write Modbus devices over TCP, serial and TLS. Record them to MBCAP capture files and replay those as a simulated device.",
-		"icon": "go-modbus"
+		"icon": "go-modbus",
+		"commands": [
+			{
+				"note": "What is this device? Device identification and Report Server ID",
+				"run": "modbusctl client identify --ip 192.168.1.10 --server-id"
+			},
+			{
+				"note": "Which read function codes does each unit support?",
+				"run": "modbusctl client fingerprint --ip 192.168.1.10 --unit 1-10"
+			},
+			{
+				"note": "Which register blocks are readable? Saved to an MBCAP capture",
+				"run": "modbusctl client scan --ip 192.168.1.10 --algo smart --start 0 --end 5000 --output scan.mbcap"
+			},
+			{
+				"note": "Read and decode a 32-bit float, as JSON",
+				"run": "modbusctl client decode --ip 192.168.1.10 --start 40001 --codec float32/layout:4321 --format json"
+			},
+			{
+				"note": "Poll four holding registers every second, until Ctrl-C",
+				"run": "modbusctl client poll --ip 192.168.1.10 --start 100 --count 4"
+			},
+			{
+				"note": "Serve the scan as a simulated device on port 1502",
+				"run": "modbusctl server static --input scan.mbcap --port 1502"
+			}
+		],
+		"formatEnv": "MODBUSCTL_FORMAT"
 	},
 	{
 		"id": "modbus-simulator",
@@ -398,7 +425,30 @@
 		],
 		"status": "available",
 		"description": "Detect, list, read and poll SunSpec inverters, meters and batteries, and serve a simulated device from a JSON file or a capture of a real one.",
-		"icon": "go-sunspec"
+		"icon": "go-sunspec",
+		"commands": [
+			{
+				"note": "Is this a SunSpec device, and at which base address?",
+				"run": "sunspecctl detect --url tcp://192.168.1.100:502"
+			},
+			{
+				"note": "Which SunSpec models does it implement?",
+				"run": "sunspecctl models --url tcp://192.168.1.100:502"
+			},
+			{
+				"note": "Read and decode everything",
+				"run": "sunspecctl read --url tcp://192.168.1.100:502"
+			},
+			{
+				"note": "AC power from the inverter model every 5 seconds, as JSON",
+				"run": "sunspecctl poll-point --model 103 --point W --interval 5s --json --url tcp://192.168.1.100:502"
+			},
+			{
+				"note": "Copy the device into a file, and serve that copy",
+				"run": "sunspecctl capture --url tcp://192.168.1.100:502 -o device.json\nsunspecctl serve --file device.json --url tcp://127.0.0.1:1502"
+			}
+		],
+		"formatEnv": "SUNSPECCTL_FORMAT"
 	},
 	{
 		"id": "opcuactl",
@@ -410,7 +460,34 @@
 		],
 		"status": "available",
 		"description": "Discover, browse, read, write, call methods, monitor, handle alarms, manage certificates, read and edit history, work with OPC UA PubSub, and run a test server.",
-		"icon": "go-opcua"
+		"icon": "go-opcua",
+		"commands": [
+			{
+				"note": "Discover servers and list their endpoints",
+				"run": "opcuactl discover servers -e opc.tcp://localhost:4840\nopcuactl discover endpoints -e opc.tcp://localhost:4840"
+			},
+			{
+				"note": "Browse the address space",
+				"run": "opcuactl browse children -e opc.tcp://localhost:4840"
+			},
+			{
+				"note": "Read a value",
+				"run": "opcuactl get value -e opc.tcp://localhost:4840 -n i=2258"
+			},
+			{
+				"note": "Monitor live value changes",
+				"run": "opcuactl monitor value -e opc.tcp://localhost:4840 -n i=2258"
+			},
+			{
+				"note": "Listen to OPC UA PubSub on a UDP multicast group",
+				"run": "opcuactl pubsub subscribe --url opc.udp://224.0.0.22:4840"
+			},
+			{
+				"note": "No server at hand: a test server with a demo address space",
+				"run": "opcuactl serve"
+			}
+		],
+		"formatEnv": "OPCUACTL_FORMAT"
 	},
 	{
 		"id": "bacnetctl",
@@ -422,7 +499,34 @@
 		],
 		"status": "available",
 		"description": "Discover BACnet devices, list point lists, read, write at priority, monitor COV and inspect alarms, or serve a simulated device from a JSON file to test clients against.",
-		"icon": "go-bacnet"
+		"icon": "go-bacnet",
+		"commands": [
+			{
+				"note": "Which devices are on this network?",
+				"run": "bacnetctl discover"
+			},
+			{
+				"note": "Its point list: every object with value, unit, status and description",
+				"run": "bacnetctl objects --device 192.168.1.20 --values"
+			},
+			{
+				"note": "One value, as JSON for a script",
+				"run": "bacnetctl read --device 192.168.1.20 analog-input:1 present-value --format json"
+			},
+			{
+				"note": "Watch two points change, until Ctrl-C",
+				"run": "bacnetctl monitor --device 192.168.1.20 analog-input:1 binary-input:3"
+			},
+			{
+				"note": "Override a setpoint at operator priority, then hand it back",
+				"run": "bacnetctl write --device 192.168.1.20 analog-value:1 present-value 22.5 --priority 8\nbacnetctl release --device 192.168.1.20 analog-value:1 --priority 8"
+			},
+			{
+				"note": "No device at hand: serve the example device",
+				"run": "bacnetctl server run --listen 127.0.0.1"
+			}
+		],
+		"formatEnv": "BACNETCTL_FORMAT"
 	},
 	{
 		"id": "iec104ctl",
@@ -434,7 +538,38 @@
 		],
 		"status": "available",
 		"description": "Interrogate, monitor and command IEC 104 stations over TLS or IEC 62351-5, transfer files, or simulate an RTU from YAML.",
-		"icon": "go-iec104"
+		"icon": "go-iec104",
+		"commands": [
+			{
+				"note": "No station at hand: start the built-in demo station",
+				"run": "iec104ctl server start"
+			},
+			{
+				"note": "What does this station hold? General interrogation",
+				"run": "iec104ctl client interrogate --ip 127.0.0.1 --ca 1"
+			},
+			{
+				"note": "Watch events and measured values as they arrive",
+				"run": "iec104ctl client monitor --ip 127.0.0.1 --interrogate"
+			},
+			{
+				"note": "Operate a disconnector with select-before-operate",
+				"run": "iec104ctl client command --ip 127.0.0.1 --type double --ioa 5001 --value off --mode sbo"
+			},
+			{
+				"note": "Is the link alive, and how fast?",
+				"run": "iec104ctl client ping --ip 127.0.0.1"
+			},
+			{
+				"note": "Which stations are on this subnet?",
+				"run": "iec104ctl discover --subnets 192.168.1.0/24"
+			},
+			{
+				"note": "The same interrogation as JSON, for a script",
+				"run": "iec104ctl client interrogate --ip 127.0.0.1 --format json"
+			}
+		],
+		"formatEnv": "IEC104CTL_FORMAT"
 	},
 	{
 		"id": "iec61850ctl",
@@ -454,7 +589,30 @@
 			"Runs an MMS server from any ICD, CID or SCD file, and a read-only HTTP/JSON API in front of one device.",
 			"Stable exit codes and JSON or JSON Lines output for scripting, static binaries with no cgo for Linux, macOS and Windows.",
 			"Black-box end-to-end tests against the four iec61850-interop stacks, GOOSE and Sampled Values included."
-		]
+		],
+		"commands": [
+			{
+				"note": "List the logical devices of an IED, and the logical nodes in one",
+				"run": "iec61850ctl list lds --host 192.0.2.10\niec61850ctl list lns --host 192.0.2.10 --ld MNSREF615LD0"
+			},
+			{
+				"note": "Read a measurement (FC MX)",
+				"run": "iec61850ctl get object --host 192.0.2.10 --object MNSREF615LD0/FMMXU1.Hz.mag.f --fc MX"
+			},
+			{
+				"note": "Subscribe to a buffered report, until Ctrl-C",
+				"run": "iec61850ctl subscribe report --host 192.0.2.10 --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01 --type BR --show-values --interrogation"
+			},
+			{
+				"note": "Watch GOOSE and Sampled Values on the station bus",
+				"run": "iec61850ctl goose sniff --iface eth0 --count 5\niec61850ctl sv subscribe --iface eth0 --scl station.scd --svcb MSVCB01 --duration 10s"
+			},
+			{
+				"note": "Run a local MMS server from an SCL file",
+				"run": "iec61850ctl server start --scl device.cid --host 0.0.0.0 --port 102"
+			}
+		],
+		"formatEnv": "IEC61850CTL_FORMAT"
 	},
 	{
 		"id": "nsdctl",
@@ -466,7 +624,21 @@
 		],
 		"status": "available",
 		"description": "The CLI included with go-iec61850-model: look up what an IEC 61850 logical node holds, explain a reference, and inspect, validate, compare and generate from NSD packages.",
-		"icon": "go-iec61850"
+		"icon": "go-iec61850",
+		"commands": [
+			{
+				"note": "What a logical node holds, from the embedded catalog",
+				"run": "nsdctl model show DBAT"
+			},
+			{
+				"note": "What a reference means",
+				"run": "nsdctl model describe 'LD0/MMXU1.PhV.phsA.cVal.mag.f[MX]'"
+			},
+			{
+				"note": "Fetch the official NSD packages, digests verified, and validate them",
+				"run": "nsdctl sources fetch\nnsdctl validate .nsd-cache"
+			}
+		]
 	},
 	{
 		"id": "s7commctl",
@@ -478,7 +650,30 @@
 		],
 		"status": "available",
 		"description": "Siemens S7 command-line client for ISO-on-TCP (port 102).",
-		"icon": "go-s7comm"
+		"icon": "go-s7comm",
+		"commands": [
+			{
+				"note": "Find S7 devices on a subnet, as JSON",
+				"run": "s7commctl discover --cidr 192.168.1.0/24 --format json"
+			},
+			{
+				"note": "Which rack and slot values does the PLC accept?",
+				"run": "s7commctl probe rackslot --ip 192.168.1.10 --format table"
+			},
+			{
+				"note": "Read 16 bytes from data block 1",
+				"run": "s7commctl read --ip 192.168.1.10 --area DB --db 1 --offset 0 --size 16 --format hex"
+			},
+			{
+				"note": "List the blocks on the PLC",
+				"run": "s7commctl list blocks --ip 192.168.1.10 --format table"
+			},
+			{
+				"note": "Write an INT, which needs an explicit --dangerous",
+				"run": "s7commctl write --ip 192.168.1.10 --area DB --db 1 --offset 0 --type int --value 123 --dangerous"
+			}
+		],
+		"formatEnv": "S7COMMCTL_FORMAT"
 	},
 	{
 		"id": "openadrctl",
@@ -490,7 +685,30 @@
 		],
 		"status": "available",
 		"description": "Act as a VEN or as Business Logic against any OpenADR 3 VTN, publish prices and limits, listen for notifications by webhook, MQTT or WebSocket, or serve a test VTN from a seed file.",
-		"icon": "go-openadr"
+		"icon": "go-openadr",
+		"commands": [
+			{
+				"note": "No VTN at hand: start a test VTN with the example seed",
+				"run": "openadrctl vtn start --websocket"
+			},
+			{
+				"note": "Point the VEN at it",
+				"run": "export OPENADRCTL_URL=http://127.0.0.1:8080\nexport OPENADRCTL_CLIENT_ID=site-42 OPENADRCTL_CLIENT_SECRET=site-42-secret"
+			},
+			{
+				"note": "Check every step of the connection, timed",
+				"run": "openadrctl ping"
+			},
+			{
+				"note": "What the VTN asks, and one event interval by interval",
+				"run": "openadrctl ven events list\nopenadrctl ven events timeline price-2030-01-01"
+			},
+			{
+				"note": "Wait for new events over WebSocket",
+				"run": "openadrctl ven listen --via websocket --object EVENT"
+			}
+		],
+		"formatEnv": "OPENADRCTL_FORMAT"
 	},
 	{
 		"id": "ocppctl",
@@ -502,7 +720,30 @@
 		],
 		"status": "available",
 		"description": "Probe a CSMS, send any OCPP message, simulate hundreds of charging stations, run scenarios in CI, or serve a test CSMS for station development.",
-		"icon": "go-ocpp"
+		"icon": "go-ocpp",
+		"commands": [
+			{
+				"note": "No CSMS at hand: start one",
+				"run": "ocppctl server start --insecure-transport --no-auth"
+			},
+			{
+				"note": "Which OCPP version does the CSMS pick?",
+				"run": "ocppctl client probe --url ws://localhost:9000/CS001 --insecure-transport"
+			},
+			{
+				"note": "Register the station: Accepted, Pending or Rejected?",
+				"run": "ocppctl client boot --url ws://localhost:9000/CS001 --insecure-transport"
+			},
+			{
+				"note": "A simulated station that stays connected and charges by itself",
+				"run": "ocppctl client run --url ws://localhost:9000/CS002 --insecure-transport"
+			},
+			{
+				"note": "From the CSMS side: which stations are connected?",
+				"run": "ocppctl server stations"
+			}
+		],
+		"formatEnv": "OCPPCTL_FORMAT"
 	},
 	{
 		"id": "dnp3ctl",
@@ -514,7 +755,38 @@
 		],
 		"status": "available",
 		"description": "Poll, monitor and operate DNP3 outstations, synchronize their clocks, transfer files, find them on a subnet, or simulate one from a YAML model.",
-		"icon": "go-dnp3"
+		"icon": "go-dnp3",
+		"commands": [
+			{
+				"note": "No outstation at hand: start the built-in demo outstation",
+				"run": "dnp3ctl server start"
+			},
+			{
+				"note": "What does this outstation hold? Integrity poll",
+				"run": "dnp3ctl client poll --ip 127.0.0.1 --outstation 10"
+			},
+			{
+				"note": "Watch events as they arrive",
+				"run": "dnp3ctl client monitor --ip 127.0.0.1 --integrity"
+			},
+			{
+				"note": "Open a breaker with select-before-operate",
+				"run": "dnp3ctl client operate --ip 127.0.0.1 --type crob --index 0 --op latch-off"
+			},
+			{
+				"note": "Synchronize its clock",
+				"run": "dnp3ctl client time-sync --ip 127.0.0.1"
+			},
+			{
+				"note": "Which outstations are on this subnet?",
+				"run": "dnp3ctl discover --subnets 192.168.1.0/24"
+			},
+			{
+				"note": "The same poll as JSON, for a script",
+				"run": "dnp3ctl client poll --ip 127.0.0.1 --format json"
+			}
+		],
+		"formatEnv": "DNP3CTL_FORMAT"
 	},
 	{
 		"id": "ieee20305ctl",
@@ -526,7 +798,30 @@
 		],
 		"status": "available",
 		"description": "Act as an IEEE 2030.5 device, run a device agent, serve a seeded test server and operate it while it runs, and check certificates, with CSIP-AUS and CCM_8.",
-		"icon": "go-ieee20305"
+		"icon": "go-ieee20305",
+		"commands": [
+			{
+				"note": "A test PKI and an example seed",
+				"run": "ieee20305ctl cert generate --out pki --devices 1\nieee20305ctl server generate-config > seed.yaml"
+			},
+			{
+				"note": "A test server, with a control socket for the operator",
+				"run": "ieee20305ctl server start --listen 127.0.0.1:8443 --cert pki/server.pem --key pki/server.key \\\n    --ca pki/ca.pem --config seed.yaml --control-socket /tmp/ieee20305.sock"
+			},
+			{
+				"note": "Register as a device: the PIN must match",
+				"run": "ieee20305ctl client register --pin 111115"
+			},
+			{
+				"note": "What the server asks of the device",
+				"run": "ieee20305ctl client controls"
+			},
+			{
+				"note": "A device agent that applies the controls and answers them",
+				"run": "ieee20305ctl client run --pin 111115"
+			}
+		],
+		"formatEnv": "IEEE20305CTL_FORMAT"
 	},
 	{
 		"id": "ethernetipctl",
@@ -538,7 +833,34 @@
 		],
 		"status": "available",
 		"description": "Discover and identify EtherNet/IP devices, read and write attributes, stream I/O, diagnose, read and write Logix tags, check EDS files, or simulate an adapter.",
-		"icon": "go-ethernetip"
+		"icon": "go-ethernetip",
+		"commands": [
+			{
+				"note": "No device at hand: a simulated adapter with Logix tags",
+				"run": "ethernetipctl adapter --listen 127.0.0.1 --echo --logix"
+			},
+			{
+				"note": "Which devices answer on this segment?",
+				"run": "ethernetipctl discover --address 255.255.255.255"
+			},
+			{
+				"note": "Who is it, and which objects does it implement?",
+				"run": "ethernetipctl identify 127.0.0.1\nethernetipctl objects 127.0.0.1"
+			},
+			{
+				"note": "Check it step by step: TCP, session, identity, TCP/IP, link, connections",
+				"run": "ethernetipctl diagnose 127.0.0.1"
+			},
+			{
+				"note": "Watch input assembly 100 through an input-only connection",
+				"run": "ethernetipctl io 127.0.0.1 --config 151 --output 152 --input 100 --input-size 32 --rpi 50ms"
+			},
+			{
+				"note": "A Logix tag, as JSON for a script",
+				"run": "ethernetipctl tag read 127.0.0.1 Count --format json"
+			}
+		],
+		"formatEnv": "ETHERNETIPCTL_FORMAT"
 	},
 	{
 		"id": "profinetctl",
@@ -550,7 +872,34 @@
 		],
 		"status": "available",
 		"description": "Discover PROFINET devices, set station names and IP addresses, read I&M, records and diagnosis, map the cabling, check GSDML files, and connect as IO-Controller to watch cyclic IO and alarms.",
-		"icon": "go-profinet"
+		"icon": "go-profinet",
+		"commands": [
+			{
+				"note": "Which PROFINET devices are on eth0?",
+				"run": "sudo profinetctl -i eth0 discover"
+			},
+			{
+				"note": "Name a new device by its MAC and give it an address",
+				"run": "sudo profinetctl -i eth0 name set io-rack-1 --mac 00:0e:cf:12:34:56 --permanent\nsudo profinetctl -i eth0 ip set 192.168.0.10/24 -s io-rack-1 --permanent"
+			},
+			{
+				"note": "Flash its LED to find it in the cabinet",
+				"run": "sudo profinetctl -i eth0 signal -s io-rack-1"
+			},
+			{
+				"note": "Identification, diagnosis and status",
+				"run": "sudo profinetctl -i eth0 im read -s io-rack-1\nsudo profinetctl -i eth0 diagnostics -s io-rack-1"
+			},
+			{
+				"note": "Which device is plugged into which port?",
+				"run": "sudo profinetctl -i eth0 topology"
+			},
+			{
+				"note": "Connect as IO-Controller and watch its inputs",
+				"run": "sudo profinetctl -i eth0 io monitor -s io-rack-1 --gsdml GSDML-V2.35-Vendor-Device-20240101.xml"
+			}
+		],
+		"formatEnv": "PROFINETCTL_FORMAT"
 	},
 	{
 		"id": "canbusctl",
@@ -562,7 +911,34 @@
 		],
 		"status": "available",
 		"description": "Monitor, record, convert and replay CAN, CAN FD and CAN XL traffic, decode and encode with DBC, KCD or ARXML, run ISO-TP, simulate a database and test under faults. Passive by default; transmitting on a real bus needs --yes.",
-		"icon": "go-canbus"
+		"icon": "go-canbus",
+		"commands": [
+			{
+				"note": "Watch and decode, passively",
+				"run": "canbusctl monitor -i can0 --dbc vehicle.dbc"
+			},
+			{
+				"note": "Record ten minutes of traffic (.log, .jsonl, .pcap, .pcapng, .asc, .blf, .trc)",
+				"run": "canbusctl record -i can0 -o trip.blf --duration 10m"
+			},
+			{
+				"note": "Convert a trace, and replay it on a virtual bus",
+				"run": "canbusctl trace convert trip.blf trip.asc\ncanbusctl replay trip.blf -i vcan0 --speed 2"
+			},
+			{
+				"note": "Encode a message from a DBC database",
+				"run": "canbusctl dbc encode vehicle.dbc Engine Speed=1500 Gear=Second"
+			},
+			{
+				"note": "Test under faults: a bridge that drops and delays frames",
+				"run": "canbusctl bridge -a vcan0 -b vcan1 --drop 0.01 --delay-probability 0.1 --duration 1m"
+			},
+			{
+				"note": "Simulate a database on an in-process virtual bus",
+				"run": "canbusctl simulate --dbc vehicle.dbc --duration 5s"
+			}
+		],
+		"formatEnv": "CANBUSCTL_FORMAT"
 	},
 	{
 		"id": "canopenctl",
@@ -577,7 +953,34 @@
 		],
 		"status": "available",
 		"description": "Monitor and decode CANopen traffic, read and write object dictionaries over SDO or USDO, manage nodes with NMT, assign node-IDs with LSS, boot a network as a CiA 302 manager, configure PDOs and MPDOs, work with EDS, DCF and concise DCF files, drive CiA 402 axes and simulate devices. Read-only by default; changes on a real bus need --yes.",
-		"icon": "go-canopen"
+		"icon": "go-canopen",
+		"commands": [
+			{
+				"note": "Decode live traffic, passively",
+				"run": "canopenctl monitor -i can0"
+			},
+			{
+				"note": "Nodes 1 to 127: device type and identity",
+				"run": "canopenctl scan -i can0"
+			},
+			{
+				"note": "Every readable object of node 5, decoded",
+				"run": "canopenctl sdo dump 5 --eds device.eds -i can0 --format table"
+			},
+			{
+				"note": "Boot-ups, state changes and lost heartbeats",
+				"run": "canopenctl heartbeat watch -i can0 --supervise 1500ms"
+			},
+			{
+				"note": "Validate an EDS file",
+				"run": "canopenctl eds validate device.eds"
+			},
+			{
+				"note": "A complete simulated CANopen device",
+				"run": "canopenctl simulate -i vcan0 --eds device.eds --node-id 5"
+			}
+		],
+		"formatEnv": "CANOPENCTL_FORMAT"
 	},
 	{
 		"id": "knxctl",
@@ -589,7 +992,34 @@
 		],
 		"status": "available",
 		"description": "Discover and diagnose KNXnet/IP interfaces, monitor group telegrams, read and switch group objects, watch routing and busmonitor traffic, read interface properties, use KNX Secure with ETS keyrings, encode and decode datapoint types and frames, and run a simulated KNXnet/IP server. Passive by default.",
-		"icon": "go-knx"
+		"icon": "go-knx",
+		"commands": [
+			{
+				"note": "Who is on the network?",
+				"run": "knxctl discover"
+			},
+			{
+				"note": "Every group telegram, passively",
+				"run": "knxctl monitor -g 192.168.1.10 --map 1/2/4=9.001"
+			},
+			{
+				"note": "Read a temperature",
+				"run": "knxctl group read 1/2/4 --dpt 9.001 -g 192.168.1.10"
+			},
+			{
+				"note": "Switch a light",
+				"run": "knxctl group write 1/2/3 on -g 192.168.1.10"
+			},
+			{
+				"note": "A simulated gateway with two group objects",
+				"run": "knxctl serve --object 1/2/3:1.001=off --object 1/2/4:9.001:CRT=21.5"
+			},
+			{
+				"note": "Encode a datapoint value, offline",
+				"run": "knxctl dpt encode 9.001 21.5"
+			}
+		],
+		"formatEnv": "KNXCTL_FORMAT"
 	},
 	{
 		"id": "sparkplugbctl",
@@ -601,7 +1031,26 @@
 		],
 		"status": "available",
 		"description": "Watch and decode Sparkplug B traffic on a broker, publish typed metrics, encode and decode payloads, or simulate an edge node, a primary host application or an application.",
-		"icon": "go-sparkplugb"
+		"icon": "go-sparkplugb",
+		"commands": [
+			{
+				"note": "Listen to all Sparkplug B traffic on a broker",
+				"run": "sparkplugbctl listen --broker tcp://localhost:1883"
+			},
+			{
+				"note": "Simulate an edge node publishing a temperature every 2 seconds",
+				"run": "sparkplugbctl edge --group plant --node gw1 --metric \"temperature:Double=22.5\" --interval 2s"
+			},
+			{
+				"note": "Run a host application that tracks every edge node",
+				"run": "sparkplugbctl host --host-id scada --broker tcp://localhost:1883"
+			},
+			{
+				"note": "Decode a base64-encoded payload",
+				"run": "base64 -d < payload.b64 | sparkplugbctl decode"
+			}
+		],
+		"formatEnv": "SPARKPLUGBCTL_FORMAT"
 	},
 	{
 		"id": "go-cotp",
@@ -682,8 +1131,31 @@
 			"Stable exit codes for automation: 0 detected, 1 no match, 2 usage, 3 invalid input, 4 unreachable, 5 timeout, 7 matched below high confidence, 10 interrupted or internal error.",
 			"--trace shows the raw probe and response bytes; shell completion for bash, zsh, fish and PowerShell.",
 			"--canopen-node picks the CANopen node whose identity is read through a CiA 309-3 gateway in --identify mode.",
-			"Prebuilt binaries on the go-otfp releases page, or make build in a go-otfp checkout: otprobe is a nested module, so go install does not work."
-		]
+			"One-line install on Linux, macOS and Windows from get.otfabric.io. otprobe is a nested module, so building from source is make build in a go-otfp checkout rather than go install."
+		],
+		"commands": [
+			{
+				"note": "One TCP port, with the device identity",
+				"run": "otprobe detect 10.0.0.5:502 --identify"
+			},
+			{
+				"note": "BACnet, PROFINET or EtherNet/IP over UDP",
+				"run": "otprobe detect udp://10.0.0.5:47808"
+			},
+			{
+				"note": "Sweep the well-known OT ports, with OT-safe pacing",
+				"run": "otprobe detect 10.0.0.5 --safe"
+			},
+			{
+				"note": "One row per probe; -o json for machines",
+				"run": "otprobe detect 10.0.0.5:4840 -o table"
+			},
+			{
+				"note": "The protocols and their probes",
+				"run": "otprobe list"
+			}
+		],
+		"formatEnv": "OTPROBE_OUTPUT_FORMAT"
 	},
 	{
 		"id": "lan-tracker",

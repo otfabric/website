@@ -6,29 +6,14 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 [profinetctl](https://github.com/otfabric/profinetctl) is a command-line tool for PROFINET IO, built on [go-profinet](/docs/protocols/profinet/library/) for commissioning, troubleshooting and test benches. It finds the devices on a network and assigns their station names and IP addresses with DCP, reads their identification (I&M0 to I&M4), records and diagnosis over DCE/RPC, lists LLDP neighbours and maps the cabling, inspects, validates and generates GSDML files, and connects to a device as IO-Controller to watch its cyclic IO data and alarms. Output is text, a table or JSON, with stable exit codes. This page follows v0.8.0, built on go-profinet v0.7.0; every example below is real output from [docs/EXAMPLES.md](https://github.com/otfabric/profinetctl/blob/main/docs/EXAMPLES.md), against rt-labs p-net and go-profinet devices on a Docker network.
 
 ## Install
 
-<Tabs>
-  <TabItem label="Release binary">
-    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/profinetctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
-  </TabItem>
-  <TabItem label="Go">
-    ```sh
-    go install github.com/otfabric/profinetctl@latest
-    ```
-    Go 1.26 or later.
-  </TabItem>
-  <TabItem label="From source">
-    ```sh
-    git clone https://github.com/otfabric/profinetctl && cd profinetctl
-    make build-nocheck   # bin/profinetctl
-    ```
-  </TabItem>
-</Tabs>
+<InstallTool tool="profinetctl" />
 
 ### Privileges
 

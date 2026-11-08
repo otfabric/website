@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/site/PageHeader.astro';
 import ProjectGrid from '../../components/ProjectGrid.astro';
 import Video from '../../components/Video.astro';
+import ToolDetails from '../../components/ToolDetails.astro';
 import { Image, getImage } from 'astro:assets';
 import { categories, getProjects, repoUrl, type Project } from '../../data/projects';
 import { getStandards, kindOf, standardPath } from '../../data/standards';
@@ -161,6 +162,7 @@ const schema = [
 				<pre><code>{data.install}</code></pre>
 			</>
 		)}
+		<ToolDetails project={project} />
 		{implemented.length > 0 && (
 			<>
 				<h2>{implemented.every((s) => s.data.kind === 'protocol') ? 'Protocols' : 'Standards'}</h2>

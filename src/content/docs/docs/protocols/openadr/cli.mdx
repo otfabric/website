@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 [openadrctl](https://github.com/otfabric/openadrctl) is a command-line tool for OpenADR 3 in every role, built on [go-openadr](/docs/protocols/openadr/library/). As a **VEN** it reads the programs and events meant for a site, lays out an event's intervals in time, sends reports and manages its VEN object and resources. As **Business Logic** it creates programs and events, such as price signals and load limits, reads what VENs report, and manages VENs, resources and resource groups. `listen` prints notifications as they arrive by webhook, MQTT or WebSocket, and `vtn start` serves a **test VTN** from a YAML seed. It speaks OpenADR 3.1.0, and as a VEN and as Business Logic also 3.0.1 with `--spec 3.0.1`. Output is text, a table or JSON, with stable exit codes. This page follows v0.5.2, built on go-openadr v0.6.0.
@@ -18,41 +19,9 @@ It is meant for developing a VEN or a VTN, regression tests in CI, commissioning
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/openadrctl/releases), with SHA-256 checksums. One static binary, no runtime dependencies.
+<InstallTool tool="openadrctl" />
 
-<Tabs>
-  <TabItem label="Linux">
-```sh
-VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/openadrctl/releases/latest | sed 's|.*/v||')
-case "$(uname -m)" in x86_64) ARCH=amd64 ;; aarch64|arm64) ARCH=arm64 ;; armv7l) ARCH=armv7 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
-FILE="openadrctl-${VERSION}-linux-${ARCH}.tar.gz"
-BASE="https://github.com/otfabric/openadrctl/releases/download/v${VERSION}"
-curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/openadrctl-${VERSION}-checksums.txt"
-grep "${FILE}" "openadrctl-${VERSION}-checksums.txt" | sha256sum -c -
-mkdir -p openadrctl-dl && tar -xzf "${FILE}" -C openadrctl-dl
-sudo install -m 0755 "$(find openadrctl-dl -type f -name 'openadrctl*' | head -n1)" /usr/local/bin/openadrctl
-```
-  </TabItem>
-  <TabItem label="macOS">
-```sh
-VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/openadrctl/releases/latest | sed 's|.*/v||')
-case "$(uname -m)" in arm64) ARCH=arm64 ;; x86_64) ARCH=amd64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
-FILE="openadrctl-${VERSION}-darwin-${ARCH}.tar.gz"
-BASE="https://github.com/otfabric/openadrctl/releases/download/v${VERSION}"
-curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/openadrctl-${VERSION}-checksums.txt"
-grep "${FILE}" "openadrctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
-mkdir -p openadrctl-dl && tar -xzf "${FILE}" -C openadrctl-dl
-sudo install -m 0755 "$(find openadrctl-dl -type f -name 'openadrctl*' | head -n1)" /usr/local/bin/openadrctl
-```
-  </TabItem>
-  <TabItem label="Go">
-```sh
-go install github.com/otfabric/openadrctl@latest
-```
-  </TabItem>
-</Tabs>
-
-Building from source needs Go 1.26.8 or later. The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/openadrctl#windows-powershell). Check the install with `openadrctl version`, which also names the go-openadr version inside.
+Building from source needs Go 1.26.8 or later. `openadrctl version` also names the go-openadr version inside.
 
 ## Command tree
 

@@ -6,6 +6,7 @@ sidebar:
   order: 3
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Steps, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Two kinds of files describe what happened on a Modbus link, and OT Fabric has tools for both:
@@ -73,11 +74,9 @@ MBCAP is at draft 0.1: implemented, tested and pinned by golden files, but not f
 
 ### mbcapctl
 
-```sh
-go install github.com/otfabric/go-modbus-capture/cmd/mbcapctl@latest
-```
+<InstallTool tool="mbcapctl" />
 
-Binaries are also on the [releases page](https://github.com/otfabric/go-modbus-capture/releases). `mbcapctl` never opens a Modbus connection; it works on files:
+`mbcapctl` never opens a Modbus connection; it works on files:
 
 ```sh
 mbcapctl info capture.mbcap                              # targets, streams, samples, functions, span
@@ -138,13 +137,9 @@ Modbus/TCP Security (TLS, usually port 802) is encrypted and cannot be decoded; 
 
 ### mbtracectl
 
-Download a static binary for Linux (amd64, arm64, armv7), macOS or Windows from the [releases page](https://github.com/otfabric/go-modbus-trace/releases), or build it from a checkout with Go 1.26 or later. The CLI is a nested module, so the library does not depend on a CLI framework:
+<InstallTool tool="mbtracectl" />
 
-```sh
-git clone https://github.com/otfabric/go-modbus-trace.git
-cd go-modbus-trace
-make build   # writes bin/mbtracectl
-```
+The CLI is a nested module, so the library does not depend on a CLI framework; from a checkout with Go 1.26 or later, `make build` writes `bin/mbtracectl`.
 
 | Command | What it tells you |
 |---|---|
