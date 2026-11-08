@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
 [sunspecctl](/projects/sunspecctl/) reads and simulates SunSpec devices over Modbus. As a client it detects a SunSpec device, lists its models, and reads or polls decoded points with scale factors and units applied; it never writes to a device. As a server, `sunspecctl serve` runs a simulated SunSpec device from a JSON device file, which `sunspecctl capture` writes from a real device and `sunspecctl template` starts for you. It is built on [go-sunspec](/projects/go-sunspec/), with the official SunSpec Alliance model definitions compiled in.
@@ -14,40 +15,9 @@ For transport-level SunSpec work (marker, base address, model headers), [modbusc
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on the [sunspecctl releases page](https://github.com/otfabric/sunspecctl/releases), with a `sunspecctl-<version>-checksums.txt` file of SHA-256 sums. No Go toolchain is needed.
+<InstallTool tool="sunspecctl" />
 
-<Tabs>
-  <TabItem label="Linux">
-    ```sh
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/sunspecctl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      x86_64)         ARCH=amd64 ;;
-      aarch64|arm64)  ARCH=arm64 ;;
-      armv7l)         ARCH=armv7 ;;
-    esac
-    FILE="sunspecctl-${VERSION}-linux-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/sunspecctl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/sunspecctl-${VERSION}-checksums.txt"
-    grep "${FILE}" "sunspecctl-${VERSION}-checksums.txt" | sha256sum -c -
-    mkdir -p sunspecctl-dl && tar -xzf "${FILE}" -C sunspecctl-dl
-    sudo install -m 0755 "$(find sunspecctl-dl -type f -name 'sunspecctl*' | head -n1)" /usr/local/bin/sunspecctl
-    ```
-    For a serial port without `sudo`, add your user to the `dialout` group: `sudo usermod -aG dialout "$USER"`, then log out and back in.
-  </TabItem>
-  <TabItem label="macOS">
-    Same steps with `darwin` in the file name and `shasum -a 256 -c -` to verify. If macOS refuses a binary downloaded with a browser, run `xattr -d com.apple.quarantine /usr/local/bin/sunspecctl`.
-  </TabItem>
-  <TabItem label="With Go">
-    Requires Go 1.26 or later:
-    ```sh
-    go install github.com/otfabric/sunspecctl@latest
-    ```
-    From a checkout, `make build` writes `./bin/sunspecctl`, and `make build-all` cross-compiles every release platform.
-  </TabItem>
-</Tabs>
-
-The README also has a PowerShell script for Windows that verifies the checksum and adds the binary to your `PATH`. Check the install with `sunspecctl version`. To update, run the same commands again: they always fetch the latest release.
+For a serial port without `sudo` on Linux, add your user to the `dialout` group: `sudo usermod -aG dialout "$USER"`, then log out and back in.
 
 <Aside type="note" title="Coming from go-sunspec">
 Up to go-sunspec v0.4.2, sunspecctl was released from the [go-sunspec](https://github.com/otfabric/go-sunspec) repository. It now has its own repository, and **its version numbering starts again at v0.1.0**: sunspecctl v0.1.0 is the successor of the one in go-sunspec v0.4.2, although its number is lower. `go install github.com/otfabric/go-sunspec/cmd/sunspecctl@latest` stays at v0.4.2 for good, and a script that only upgrades to a higher version number will not move from 0.4.2 to 0.1.0 by itself: point it at the new repository once. The commands, flags and output of v0.4.2 are unchanged. This page follows sunspecctl v0.5.1, built on go-sunspec v0.10.0 and go-modbus v1.11.1. The client commands still only read: they do not use `WritePoint`.

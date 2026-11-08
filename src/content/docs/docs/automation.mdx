@@ -1,0 +1,134 @@
+---
+title: Scripts, CI and containers
+description: How the OT Fabric command-line tools behave in scripts, CI/CD pipelines and Docker images, with JSON output, stable exit codes, aligned version reporting and complete pipeline examples.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { exitCodes } from '../../../data/install';
+
+The OT Fabric command-line tools are written for two readers at once. A person at a terminal gets readable text, tables and clear errors. A script, a CI job or a container gets JSON, stable exit codes and a version it can check. The same rules apply to every tool, from `modbusctl` and `iec104ctl` to `canopenctl` and `otprobe`, so what you learn for one carries over to the next.
+
+## Install in a pipeline
+
+[Install the tools](/docs/install/) covers every option. In automation, two of them matter: pin the version with `OTF_VERSION`, so that every run uses the release you tested, and set `OTF_UNMANAGED_INSTALL` to a directory, so that the installer never edits `PATH` or a shell profile.
+
+<Tabs>
+  <TabItem label="GitHub Actions">
+    ```yaml
+    jobs:
+      field-test:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Install iec104ctl
+            run: |
+              curl -fsSL https://get.otfabric.io/iec104ctl \
+                | env OTF_VERSION=0.7.1 OTF_UNMANAGED_INSTALL="$RUNNER_TEMP/bin" sh
+              echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          - run: iec104ctl version
+    ```
+  </TabItem>
+  <TabItem label="GitLab CI">
+    ```yaml
+    field-test:
+      image: debian:bookworm-slim
+      before_script:
+        - apt-get update && apt-get install -y --no-install-recommends ca-certificates curl jq
+        - curl -fsSL https://get.otfabric.io/iec104ctl | env OTF_VERSION=0.7.1 OTF_UNMANAGED_INSTALL=/usr/local/bin sh
+      script:
+        - iec104ctl version --json
+    ```
+  </TabItem>
+  <TabItem label="Dockerfile">
+    ```dockerfile
+    FROM debian:bookworm-slim
+    RUN apt-get update \
+     && apt-get install -y --no-install-recommends ca-certificates curl \
+     && curl -fsSL https://get.otfabric.io/iec104ctl \
+        | env OTF_VERSION=0.7.1 OTF_UNMANAGED_INSTALL=/usr/local/bin sh \
+     && rm -rf /var/lib/apt/lists/*
+    ENTRYPOINT ["iec104ctl"]
+    ```
+
+    `docker run --rm my-iec104ctl client interrogate --ip 10.0.0.20 --ca 1 --format json` then runs the tool against a station. Tools that use raw Ethernet or a CAN interface, such as `profinetctl`, `iec61850ctl` for GOOSE and Sampled Values, `canbusctl` and `canopenctl`, need `--network host` and the matching capability, for example `--cap-add NET_RAW`.
+  </TabItem>
+</Tabs>
+
+The installer itself exits `0` when the tool is installed, `1` when the installation failed and `2` on invalid input, so a pipeline stops at the install step.
+
+## JSON output
+
+Every tool takes `--format`, with at least `text`, `json` and `table`; a few add more, such as `jsonl`, `yaml` or `csv` in `opcuactl`. An environment variable named after the tool sets the default, so a whole job can switch to JSON at once: `IEC104CTL_FORMAT=json`, `MODBUSCTL_FORMAT=json`, `CANOPENCTL_FORMAT=json` and so on. The older `<TOOL>_OUTPUT_FORMAT` name is still accepted.
+
+The rules that make the output safe to parse:
+
+- **stdout holds the result and nothing else.** Progress, connection state, summaries and debug traces go to stderr, in every format.
+- **A one-shot command writes one JSON document.** A streaming command, such as a monitor, a poll loop or a simulated server, writes JSON Lines: one compact object per record, as it happens.
+- **A failure is one JSON object** with `--format json`: `{"error": {"kind", "code", "message"}}` on stdout. `kind` decides the exit code, and `code` is a stable, machine-readable name such as `request_timeout` or `transport_connect_failed`. Do not parse `message`; it is written for people.
+- **Field names are a contract.** They are snake_case and documented per tool in its `docs/json-output.md`, and a change to a name or shape is called out in the release notes.
+
+```sh
+# Every point of an IEC 104 station whose quality is not good
+iec104ctl client interrogate --ip 10.0.0.20 --ca 1 --format json \
+  | jq -r '.points[] | select(.quality != "good") | "\(.ioa) \(.type) \(.quality)"'
+```
+
+## Exit codes
+
+All tools share one exit-code table. Each tool uses the codes that apply to it, and a code never changes its meaning from one tool to the next, so a wrapper script can tell "the device did not answer" from "the device said no" without knowing the protocol.
+
+<table>
+  <thead>
+    <tr><th>Code</th><th>Meaning</th></tr>
+  </thead>
+  <tbody>
+    {exitCodes.map((e) => (
+      <tr><td><code>{e.code}</code></td><td>{e.meaning}</td></tr>
+    ))}
+  </tbody>
+</table>
+
+Partial success, `7`, is only used after a valid result was written: a poll where some requests failed, or a scan where some units did not answer. A failure to connect, to validate or to write the output is fatal and uses its own code. Each tool's CLI page in these docs, and `docs/exitcodes.md` in its repository, says which command returns what.
+
+```sh
+iec104ctl client interrogate --ip 10.0.0.20 --ca 1 --format json > snapshot.json
+case $? in
+  0) echo "station answered" ;;
+  4) echo "no connection to the station"; exit 1 ;;
+  5) echo "station did not answer in time"; exit 1 ;;
+  6) echo "station refused the interrogation"; exit 1 ;;
+  *) echo "failed"; exit 1 ;;
+esac
+```
+
+## Version reporting
+
+`<tool> version` prints one line with the version, the release tag, the commit, the build time, the OT Fabric libraries the binary is built on, the Go version and the platform. `<tool> version --json` prints the same as one JSON object with the same keys in every tool:
+
+```json
+{"name":"canopenctl","version":"0.6.0","tag":"v0.6.0","commit":"1802d0f9afe8642d1e278120b76fcdfac967cb9e","built":"2026-11-05T15:41:49Z","libraries":[{"name":"go-canbus","version":"0.8.0"},{"name":"go-canopen","version":"0.4.1"},{"name":"go-serial","version":"0.2.1"}],"go":"go1.26.0","platform":"linux/amd64"}
+```
+
+`version` has no leading `v`, every key is always present, and `libraries` lists the protocol stacks inside the binary. A pipeline can check that it runs the release it expects, and which library version a test result came from:
+
+```sh
+canopenctl version --json | jq -r '.libraries[] | select(.name == "go-canopen") | .version'
+```
+
+## A simulator as a test fixture
+
+Most tools can play the other side of the protocol: a simulated RTU, outstation, BACnet device, CSMS, VTN, test server or CANopen node. In CI that gives a client under test something to talk to without hardware, and gives a gateway a known peer on both sides.
+
+```sh
+# A simulated IEC 104 station for 60 seconds, in the background
+iec104ctl server start --listen 127.0.0.1 --duration 60 &
+sleep 1
+
+# The system under test talks to 127.0.0.1:2404; iec104ctl checks what the station holds
+iec104ctl client interrogate --ip 127.0.0.1 --ca 1 --format json > station.json
+```
+
+Other examples: `dnp3ctl server start`, `bacnetctl server run --listen 127.0.0.1`, `ocppctl server start`, `openadrctl vtn start`, `ieee20305ctl server start`, `ethernetipctl adapter`, `knxctl serve`, `opcuactl serve`, `sunspecctl serve`, `canopenctl simulate` and `modbusctl server replay` for a recorded Modbus device. For Modbus test suites with fault injection and assertions, [modbus-simulator](/projects/modbus-simulator/) is built for exactly that. For testing against independent implementations rather than our own, each protocol's [interop suite](/projects/#interop) runs reference stacks in containers.
+
+<Aside type="caution" title="Use on equipment you are authorized to test">
+A pipeline that talks to real equipment sends real requests. Keep automated jobs on simulators and test benches, and keep commands that change a device behind the confirmation flags the tools require, such as `--yes` or `--dangerous`.
+</Aside>

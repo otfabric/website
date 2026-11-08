@@ -6,23 +6,14 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 [canbusctl](https://github.com/otfabric/canbusctl) is a command-line toolkit for CAN, CAN FD, CAN XL, ISO-TP and CAN databases, built on [go-canbus](/docs/protocols/can-bus/library/). It watches and records traffic, converts and replays traces, decodes and encodes frames with a DBC, KCD or ARXML database and generates Go from it, sends and receives ISO-TP messages, simulates a database's traffic and puts a fault-injecting bridge between two interfaces. It is one static binary, and output is text, a table or versioned JSON with stable exit codes. This page follows v0.9.0, built on go-canbus v0.8.0; the full reference is [docs/cli.md](https://github.com/otfabric/canbusctl/blob/main/docs/cli.md).
 
 ## Install
 
-<Tabs>
-  <TabItem label="Release binary">
-    Download the archive for your platform from [GitHub Releases](https://github.com/otfabric/canbusctl/releases): Linux (x86-64, ARM64, ARMv7), macOS (x86-64, ARM64) and Windows (x86-64, ARM64).
-  </TabItem>
-  <TabItem label="Go">
-    ```sh
-    go install github.com/otfabric/canbusctl@latest
-    ```
-    Go 1.26 or later.
-  </TabItem>
-</Tabs>
+<InstallTool tool="canbusctl" />
 
 To try it without hardware on Linux, create a CAN FD capable virtual interface:
 

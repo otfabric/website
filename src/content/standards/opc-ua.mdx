@@ -32,7 +32,7 @@ OPC Unified Architecture (OPC UA) is the interoperability standard of industrial
 
 ### From the command line
 
-Download `opcuactl` from [GitHub Releases](https://github.com/otfabric/opcuactl/releases). No server at hand? `opcuactl serve` starts one with a demo address space (changing values, a writable level with an alarm, a method and history), so every command below works against `opc.tcp://localhost:4840`:
+Install `opcuactl` with `curl -fsSL https://get.otfabric.io/opcuactl | sh`, or on Windows `irm https://get.otfabric.io/opcuactl.ps1 | iex` ([all install options](/docs/install/)). No server at hand? `opcuactl serve` starts one with a demo address space (changing values, a writable level with an alarm, a method and history), so every command below works against `opc.tcp://localhost:4840`:
 
 ```sh
 # A test server, in a second terminal

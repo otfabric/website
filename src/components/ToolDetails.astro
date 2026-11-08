@@ -1,0 +1,151 @@
+---
+// Install, first commands and automation notes for a project page of a command-line tool,
+// and the tools that ship inside a library repository.
+import { ciInstall, exitCodes, psInstall, shInstall, toolsFor, type Tool } from '../data/install';
+import { repoUrl, type Project } from '../data/projects';
+
+interface Props {
+	project: Project;
+}
+const { project } = Astro.props;
+const { data } = project;
+const shipped = toolsFor(project.id);
+// A tool's own page: the project is the tool. A library page lists the tools it ships.
+const self = shipped.find((t) => t.tool === project.id);
+const included = self ? [] : shipped;
+const embeddedDocs = (t: Tool, file: string) =>
+	t.kind === 'cli' ? `${repoUrl(t.repo)}/blob/main/docs/${file}` : `${repoUrl(t.repo)}/blob/main/cmd/${t.tool}/docs/${file}`;
+const script = data.commands?.map((c) => `# ${c.note}\n${c.run}`).join('\n\n');
+const dockerfile = self
+	? `FROM debian:bookworm-slim
+RUN apt-get update \\
+ && apt-get install -y --no-install-recommends ca-certificates curl \\
+ && curl -fsSL https://get.otfabric.io/${self.tool} \\
+    | env OTF_UNMANAGED_INSTALL=/usr/local/bin sh \\
+ && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["${self.tool}"]`
+	: '';
+---
+
+{self && (
+	<>
+		<h2>Install</h2>
+		<p class="label">Linux and macOS</p>
+		<pre><code>{shInstall(self.tool)}</code></pre>
+		<p class="label">Windows (PowerShell)</p>
+		<pre><code>{psInstall(self.tool)}</code></pre>
+		<p class="label">CI, containers and device images</p>
+		<pre><code>{ciInstall(self.tool)}</code></pre>
+		<p>
+			One static binary for Linux (x86-64, ARM64, ARMv7), macOS (Intel, Apple silicon) and Windows (x86-64, ARM64), with no runtime to install. The installer
+			checks the release's SHA-256 checksum, installs per user without <code>sudo</code>, and upgrades in place when you run it again. Pin a release with
+			<code>OTF_VERSION</code>.{' '}
+			{self.kind === 'embedded' && <>{self.tool} ships inside <a href={repoUrl(self.repo)}>{self.repo}</a>, so its version is the version of {self.repo}. </>}{' '}
+			<a href="/docs/install/">All install options</a>. To build from source: {self.source.startsWith('go install') ? <code>{self.source}</code> : self.source}.
+		</p>
+	</>
+)}
+
+{included.length > 0 && (
+	<>
+		<h2>Command-line {included.length > 1 ? 'tools' : 'tool'} included</h2>
+		{included.map((t) => (
+			<>
+				<p><strong><code>{t.tool}</code></strong>: {t.summary} Its version is the version of {t.repo}.</p>
+				<pre><code>{`# Linux and macOS\n${shInstall(t.tool)}\n\n# Windows (PowerShell)\n${psInstall(t.tool)}`}</code></pre>
+			</>
+		))}
+		<p><a href="/docs/install/">All install options</a>, including pinned versions and installs for CI and containers.</p>
+	</>
+)}
+
+{self && script && (
+	<>
+		<h2>First commands</h2>
+		<pre><code>{script}</code></pre>
+		{self.docs && <p>The <a href={self.docs}>{self.tool} guide</a> walks through every command group, connection option and safety rule.</p>}
+	</>
+)}
+
+{self && (
+	<>
+		<h2>For scripts, CI and containers</h2>
+		<p>
+			{self.tool} is as easy to read for a pipeline as for a person. It follows the same conventions as every OT Fabric tool, so a script written for one
+			protocol carries over to the next.
+		</p>
+		<ul>
+			{data.formatEnv && (
+				<li>
+					<strong>JSON output.</strong> <code>--format json</code>, or <code>{data.formatEnv}=json</code> for a whole job. One JSON document per command,
+					JSON Lines for streams, and a single <code>{'{"error": {"kind", "code", "message"}}'}</code> object on failure. Field names are a documented
+					contract: <a href={embeddedDocs(self, 'json-output.md')}>json-output.md</a>.
+				</li>
+			)}
+			<li><strong>Clean streams.</strong> The result goes to stdout; progress, connection state and debug traces go to stderr.</li>
+			<li>
+				<strong>Stable exit codes</strong> from the shared OT Fabric table, so a script can tell a missing connection (4) from a timeout (5) or a refusal by
+				the device (6). Which command returns what: <a href={embeddedDocs(self, 'exitcodes.md')}>exitcodes.md</a>.
+			</li>
+			<li>
+				<strong>Aligned version reporting.</strong> <code>{self.tool} version --json</code> prints <code>name</code>, <code>version</code>,
+				<code>tag</code>, <code>commit</code>, <code>built</code>, <code>libraries</code> (the OT Fabric stacks inside the binary), <code>go</code> and
+				<code>platform</code>, with the same keys in every tool.
+			</li>
+			<li><strong>Pinned installs</strong> with <code>OTF_VERSION</code>, and <code>OTF_UNMANAGED_INSTALL</code> for images that must not touch <code>PATH</code> or shell profiles.</li>
+		</ul>
+		<details>
+			<summary>The exit-code table</summary>
+			<table>
+				<thead>
+					<tr><th>Code</th><th>Meaning</th></tr>
+				</thead>
+				<tbody>
+					{exitCodes.map((e) => (
+						<tr><td><code>{e.code}</code></td><td>{e.meaning}</td></tr>
+					))}
+				</tbody>
+			</table>
+			<p>Each tool uses the codes that apply to it; a code never changes meaning between tools.</p>
+		</details>
+		<p class="label">In a Dockerfile</p>
+		<pre><code>{dockerfile}</code></pre>
+		<p><a href="/docs/automation/">Scripts, CI and containers</a> has GitHub Actions and GitLab CI examples and shows how to use a simulator as a test fixture.</p>
+	</>
+)}
+
+<style>
+	pre {
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--ot-line);
+		border-radius: 0.25rem;
+		background: var(--ot-surface);
+		overflow-x: auto;
+	}
+	.label {
+		margin: 1.25rem 0 0.4rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--ot-muted);
+	}
+	details {
+		margin: 1rem 0 1.5rem;
+	}
+	summary {
+		cursor: pointer;
+		font-weight: 600;
+	}
+	table {
+		width: 100%;
+		margin-top: 0.75rem;
+		border-collapse: collapse;
+		font-size: 0.925rem;
+	}
+	th,
+	td {
+		padding: 0.4rem 0.6rem;
+		border-bottom: 1px solid var(--ot-line);
+		text-align: left;
+		vertical-align: top;
+	}
+</style>

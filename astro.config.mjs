@@ -79,6 +79,8 @@ export default defineConfig({
           items: [
             { label: 'Documentation', slug: 'docs' },
             { label: 'Getting started', slug: 'docs/getting-started' },
+            { label: 'Install the tools', slug: 'docs/install' },
+            { label: 'Scripts, CI and containers', slug: 'docs/automation' },
           ],
         },
         {

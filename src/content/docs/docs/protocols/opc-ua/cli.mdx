@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
 [opcuactl](https://github.com/otfabric/opcuactl) is a single-binary OPC UA client for the terminal, built on [go-opcua](https://github.com/otfabric/go-opcua). It discovers servers and endpoints, browses and searches the address space, reads and writes values, calls methods, monitors data changes, events and alarms, acknowledges and shelves alarms, reads server diagnostics, manages certificates and trust lists (GDS push and pull), reads and edits data and event history, exports subtrees, and listens to, publishes and configures OPC UA PubSub. It connects over `opc.tcp`, and over `opc.wss` and `opc.https` in UA Binary or UA JSON. `opcuactl serve` runs a test server, so all of this can be tried without a PLC. Every command prints a table, JSON, YAML, CSV or JSON Lines and reports failures through stable exit codes. This page describes v0.14.1, which is built on go-opcua v1.31.0.
@@ -16,43 +17,7 @@ opcuactl talks to real control systems. Use it only on servers and networks you 
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/opcuactl/releases). Each release has an `opcuactl-<version>-checksums.txt` file with SHA-256 sums.
-
-<Tabs>
-  <TabItem label="Linux">
-    ```sh
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/opcuactl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      x86_64)         ARCH=amd64 ;;
-      aarch64|arm64)  ARCH=arm64 ;;
-      armv7l)         ARCH=armv7 ;;
-      *) echo "Unsupported architecture: $(uname -m)" ;;
-    esac
-
-    FILE="opcuactl-${VERSION}-linux-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/opcuactl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/opcuactl-${VERSION}-checksums.txt"
-
-    # Should print "OK"
-    grep "${FILE}" "opcuactl-${VERSION}-checksums.txt" | sha256sum -c -
-
-    mkdir -p opcuactl-dl && tar -xzf "${FILE}" -C opcuactl-dl
-    sudo install -m 0755 "$(find opcuactl-dl -type f -name 'opcuactl*' | head -n1)" /usr/local/bin/opcuactl
-    ```
-  </TabItem>
-  <TabItem label="macOS">
-    Use the Linux commands with `darwin` in the file name, `arm64` or `amd64` as the architecture, and `shasum -a 256 -c -` to verify. If the binary was downloaded with a browser and macOS refuses to run it, remove the quarantine flag with `xattr -d com.apple.quarantine /usr/local/bin/opcuactl`.
-  </TabItem>
-  <TabItem label="Go install">
-    ```sh
-    go install github.com/otfabric/opcuactl@latest
-    ```
-    Requires Go 1.26 or later. `opcuactl version` reports `dev` for builds made this way.
-  </TabItem>
-</Tabs>
-
-Windows users download the `.zip` for their architecture, compare its `Get-FileHash -Algorithm SHA256` with the checksum file and put `opcuactl.exe` on the `PATH`; the opcuactl README has a complete PowerShell script. Check the install with `opcuactl version`. `opcuactl completion bash|zsh|fish|powershell` prints a shell completion script.
+<InstallTool tool="opcuactl" />
 
 ## Command tree
 

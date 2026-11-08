@@ -27,6 +27,8 @@ S7 communication is the protocol Siemens PLCs speak on port 102. It runs on a st
 
 ### From the command line
 
+Install `s7commctl` with `curl -fsSL https://get.otfabric.io/s7commctl | sh`, or on Windows `irm https://get.otfabric.io/s7commctl.ps1 | iex` ([all install options](/docs/install/)), then:
+
 ```sh
 # Find S7 devices on a subnet
 s7commctl discover --cidr 192.168.1.0/24 --format json

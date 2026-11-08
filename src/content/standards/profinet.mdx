@@ -29,7 +29,7 @@ PROFINET IO is the industrial Ethernet that PROFIBUS & PROFINET International (P
 
 ### From the command line
 
-Download `profinetctl` from [GitHub Releases](https://github.com/otfabric/profinetctl/releases), or `go install github.com/otfabric/profinetctl@latest`. DCP and cyclic data are raw Ethernet, so most commands need root or `CAP_NET_RAW` on Linux, BPF access on macOS or Npcap on Windows:
+Install `profinetctl` with `curl -fsSL https://get.otfabric.io/profinetctl | sh`, or on Windows `irm https://get.otfabric.io/profinetctl.ps1 | iex` ([all install options](/docs/install/)). DCP and cyclic data are raw Ethernet, so most commands need root or `CAP_NET_RAW` on Linux, BPF access on macOS or Npcap on Windows:
 
 ```sh
 # Which PROFINET devices are on eth0?

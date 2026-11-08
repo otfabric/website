@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 [ocppctl](https://github.com/otfabric/ocppctl) is a command-line tool for OCPP 1.6J, 2.0.1 and 2.1, in both roles, built on [go-ocpp](/docs/protocols/ocpp/library/). As a **Charging Station** it probes a CSMS, sends any message, runs one or thousands of simulated stations and runs scenarios with expectations. As a **CSMS** it accepts real or simulated stations, answers them from a model, streams everything they send and sends them CALLs on request. Offline, it validates payloads, decodes frames and computes certificate hashes. Output is text, a table or JSON, with stable exit codes. This page follows ocppctl v0.3.0, built on go-ocpp v0.2.0.
@@ -18,42 +19,7 @@ It is meant for CSMS development and QA, station and firmware development, commi
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on [GitHub Releases](https://github.com/otfabric/ocppctl/releases), with SHA-256 checksums.
-
-<Tabs>
-  <TabItem label="Linux">
-```sh
-VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/ocppctl/releases/latest | sed 's|.*/v||')
-case "$(uname -m)" in x86_64) ARCH=amd64 ;; aarch64|arm64) ARCH=arm64 ;; armv7l) ARCH=armv7 ;; esac
-FILE="ocppctl-${VERSION}-linux-${ARCH}.tar.gz"
-BASE="https://github.com/otfabric/ocppctl/releases/download/v${VERSION}"
-curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/ocppctl-${VERSION}-checksums.txt"
-grep "${FILE}" "ocppctl-${VERSION}-checksums.txt" | sha256sum -c -
-mkdir -p ocppctl-dl && tar -xzf "${FILE}" -C ocppctl-dl
-sudo install -m 0755 "$(find ocppctl-dl -type f -name 'ocppctl*' | head -n1)" /usr/local/bin/ocppctl
-```
-  </TabItem>
-  <TabItem label="macOS">
-```sh
-VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/ocppctl/releases/latest | sed 's|.*/v||')
-case "$(uname -m)" in arm64) ARCH=arm64 ;; x86_64) ARCH=amd64 ;; esac
-FILE="ocppctl-${VERSION}-darwin-${ARCH}.tar.gz"
-BASE="https://github.com/otfabric/ocppctl/releases/download/v${VERSION}"
-curl -fsSLO "${BASE}/${FILE}" && curl -fsSLO "${BASE}/ocppctl-${VERSION}-checksums.txt"
-grep "${FILE}" "ocppctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
-mkdir -p ocppctl-dl && tar -xzf "${FILE}" -C ocppctl-dl
-sudo install -m 0755 "$(find ocppctl-dl -type f -name 'ocppctl*' | head -n1)" /usr/local/bin/ocppctl
-```
-  </TabItem>
-  <TabItem label="Go">
-Requires Go 1.26 or later.
-```sh
-go install github.com/otfabric/ocppctl@latest
-```
-  </TabItem>
-</Tabs>
-
-The Windows commands (PowerShell) are in the [README](https://github.com/otfabric/ocppctl#windows-powershell). Check the install with `ocppctl version`.
+<InstallTool tool="ocppctl" />
 
 ## Command tree
 

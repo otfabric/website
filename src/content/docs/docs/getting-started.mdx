@@ -33,12 +33,16 @@ The roadmap is full coverage of the OT protocols that matter, **IT-to-OT gateway
 
 <Tabs>
   <TabItem label="I want to look at a device">
-    Download the CLI for your protocol from its GitHub Releases page. Binaries are available for Linux (x86-64, ARM64, ARMv7), macOS and Windows, with SHA-256 checksums. No Go toolchain is needed.
+    Install the CLI for your protocol with one line. Binaries are available for Linux (x86-64, ARM64, ARMv7), macOS and Windows, the installer checks their SHA-256 checksums, and no Go toolchain is needed. On Windows, use `irm https://get.otfabric.io/modbusctl.ps1 | iex`.
 
     ```sh
+    curl -fsSL https://get.otfabric.io/modbusctl | sh
+
     # Example: what is this Modbus device?
     modbusctl client identify --ip 192.168.1.10 --server-id
     ```
+
+    Replace `modbusctl` with any tool from [Install the tools](/docs/install/). For pipelines and containers, see [Scripts, CI and containers](/docs/automation/).
   </TabItem>
   <TabItem label="I want to write code">
     Add the library to a Go module. The protocol libraries need Go 1.26 or later:

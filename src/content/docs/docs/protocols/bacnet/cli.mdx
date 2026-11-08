@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
 [bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. With `server run` it also serves a simulated BACnet/IP device, on go-bacnet's server, for developing and testing clients without hardware. Output is text, a table or JSON, with stable exit codes. This page follows bacnetctl v0.4.0, built on go-bacnet v0.6.0.
@@ -16,63 +17,7 @@ bacnetctl is a BACnet/IP client and, with `server run`, one simulated device for
 
 ## Install
 
-Pre-built binaries for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) and Windows (x86-64, ARM64) are on the [GitHub Releases page](https://github.com/otfabric/bacnetctl/releases). Each release has a `bacnetctl-<version>-checksums.txt` with SHA-256 sums. No Go toolchain is needed.
-
-<Tabs>
-  <TabItem label="Linux">
-    ```sh
-    # 1. Find the latest version and your CPU architecture
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/bacnetctl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      x86_64)         ARCH=amd64 ;;
-      aarch64|arm64)  ARCH=arm64 ;;
-      armv7l)         ARCH=armv7 ;;
-      *) echo "Unsupported architecture: $(uname -m)" ;;
-    esac
-
-    # 2. Download the archive and the checksum file
-    FILE="bacnetctl-${VERSION}-linux-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/bacnetctl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/bacnetctl-${VERSION}-checksums.txt"
-
-    # 3. Verify the download (should print "OK")
-    grep "${FILE}" "bacnetctl-${VERSION}-checksums.txt" | sha256sum -c -
-
-    # 4. Extract and install
-    mkdir -p bacnetctl-dl && tar -xzf "${FILE}" -C bacnetctl-dl
-    sudo install -m 0755 "$(find bacnetctl-dl -type f -name 'bacnetctl*' | head -n1)" /usr/local/bin/bacnetctl
-    ```
-  </TabItem>
-  <TabItem label="macOS">
-    ```sh
-    VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/bacnetctl/releases/latest | sed 's|.*/v||')
-    case "$(uname -m)" in
-      arm64)   ARCH=arm64 ;;
-      x86_64)  ARCH=amd64 ;;
-    esac
-
-    FILE="bacnetctl-${VERSION}-darwin-${ARCH}.tar.gz"
-    BASE="https://github.com/otfabric/bacnetctl/releases/download/v${VERSION}"
-    curl -fsSLO "${BASE}/${FILE}"
-    curl -fsSLO "${BASE}/bacnetctl-${VERSION}-checksums.txt"
-
-    grep "${FILE}" "bacnetctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
-
-    mkdir -p bacnetctl-dl && tar -xzf "${FILE}" -C bacnetctl-dl
-    sudo install -m 0755 "$(find bacnetctl-dl -type f -name 'bacnetctl*' | head -n1)" /usr/local/bin/bacnetctl
-    ```
-  </TabItem>
-  <TabItem label="Go toolchain">
-    Requires Go 1.26 or later.
-
-    ```sh
-    go install github.com/otfabric/bacnetctl@latest
-    ```
-  </TabItem>
-</Tabs>
-
-The Windows PowerShell steps are in the bacnetctl README. Check the install with `bacnetctl version`. bacnetctl is one file and keeps no configuration or state.
+<InstallTool tool="bacnetctl" />
 
 Shell completion covers commands, object types, property names and flag values:
 

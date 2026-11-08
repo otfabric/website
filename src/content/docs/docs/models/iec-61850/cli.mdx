@@ -5,20 +5,14 @@ sidebar:
   label: nsdctl
   order: 2
 ---
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
+
 
 `nsdctl` is the command-line tool included with [go-iec61850-model](/projects/go-iec61850-model/). It answers integration questions from the official IEC 61850 information model embedded in it, with no download or setup, and works on NSD packages you obtained yourself. It does not talk to devices: for that, use [iec61850ctl](/docs/protocols/iec-61850/cli/).
 
 ## Install
 
-Download a binary for Linux (x86-64, ARM64, ARMv7), macOS (Apple Silicon, Intel) or Windows (x86-64, ARM64) from the [go-iec61850-model releases](https://github.com/otfabric/go-iec61850-model/releases); each release carries a SHA-256 checksum file, and the [README](https://github.com/otfabric/go-iec61850-model#install-nsdctl) has the commands that fetch, verify and install the latest one. No Go toolchain is needed.
-
-Since v0.2.0, nsdctl is a nested module, so `go install …/cmd/nsdctl@latest` no longer works. To build it from source, with Go 1.24 or later:
-
-```sh
-git clone https://github.com/otfabric/go-iec61850-model
-cd go-iec61850-model && make build    # writes bin/nsdctl
-bin/nsdctl version
-```
+<InstallTool tool="nsdctl" />
 
 `nsdctl completion bash|zsh|fish|powershell` prints a shell completion script.
 

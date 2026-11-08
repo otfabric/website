@@ -6,6 +6,7 @@ sidebar:
   order: 2
 ---
 
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
 [iec61850ctl](https://github.com/otfabric/iec61850ctl) is a command-line tool for IEC 61850. It is built on [go-iec61850](https://github.com/otfabric/go-iec61850) and [go-mms](https://github.com/otfabric/go-mms) and ships as a static Go binary with no CGO and no libiec61850 at runtime. Over MMS it browses and reads IEDs, subscribes to reports, operates controls, writes scalar settings, transfers files and reads journals. On the station bus it sniffs, subscribes to and publishes GOOSE and Sampled Values, and reads and writes their control blocks. It also parses SCL offline, runs a local MMS server from SCL, and can expose a small read-only HTTP/JSON API.
@@ -14,28 +15,7 @@ This page follows v0.10.0, built on go-iec61850 v1.7.0 and go-mms v1.4.0.
 
 ## Install
 
-<Tabs>
-  <TabItem label="Release binary">
-    Download a binary for your platform from [GitHub Releases](https://github.com/otfabric/iec61850ctl/releases). Builds exist for Linux, macOS and Windows on amd64 and arm64, plus Linux arm/v7.
-  </TabItem>
-  <TabItem label="go install">
-    Requires Go 1.26 or later.
-
-    ```sh
-    go install github.com/otfabric/iec61850ctl@latest
-    ```
-  </TabItem>
-  <TabItem label="From source">
-    ```sh
-    git clone https://github.com/otfabric/iec61850ctl.git
-    cd iec61850ctl
-    make build-nocheck
-    # binary: ./bin/iec61850ctl
-    ```
-
-    `make build-all` cross-compiles into `release/`.
-  </TabItem>
-</Tabs>
+<InstallTool tool="iec61850ctl" />
 
 ## Connecting
 
@@ -266,11 +246,9 @@ The guard rails are the same for both: an explicit `--iface` and `--yes`, and ev
 iec61850ctl scl parse --input device.cid --flatten
 ```
 
-`scl parse` and `scl convert` (SCL to CSV) need no device. go-iec61850 also ships a separate SCL tool, `sclparse`, with `summary`, `validate`, `detect`, `inspect`, `dump-json` and `list-*` subcommands:
+`scl parse` and `scl convert` (SCL to CSV) need no device. go-iec61850 also ships a separate SCL tool, `sclparse`, with `summary`, `validate`, `detect`, `inspect`, `dump-json` and `list-*` subcommands. It installs like iec61850ctl, with `curl -fsSL https://get.otfabric.io/sclparse | sh` (Windows: `irm https://get.otfabric.io/sclparse.ps1 | iex`); its version is the go-iec61850 version. go-iec61850 also ships `sclgen`, which generates Go types from SCL schema bundles, at `https://get.otfabric.io/sclgen`.
 
 ```sh
-# Release binaries are on https://github.com/otfabric/go-iec61850/releases, or from a checkout:
-# make build   (sclparse is a nested module since go-iec61850 v1.3.0)
 sclparse summary station.scd
 sclparse validate --strict station.scd
 sclparse list-reports --json station.scd

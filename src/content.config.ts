@@ -95,6 +95,10 @@ export const collections = {
 			icon: z.string().optional(),
 			// Short feature list shown on the project page.
 			highlights: z.array(z.string()).optional(),
+			// Command-line tools: a few commands to start with, shown on the project page.
+			commands: z.array(z.object({ note: z.string(), run: z.string() })).optional(),
+			// The environment variable that sets the default of --format.
+			formatEnv: z.string().optional(),
 		}),
 	}),
 
