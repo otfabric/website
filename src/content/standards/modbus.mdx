@@ -115,4 +115,4 @@ UDP framing is not part of the official Modbus specification. It is provided bec
 
 ## Interoperability
 
-[modbus-interop](https://github.com/otfabric/modbus-interop) runs go-modbus against libmodbus (C), PyModbus (Python), digitalpetri/modbus (Java), NModbus (C#) and tokio-modbus (Rust), as both client and server, and publishes go-modbus as an image for others to test against.
+[modbus-interop](https://github.com/otfabric/modbus-interop) runs go-modbus against nine independent stacks, as both client and server: libmodbus (C), PyModbus (Python), digitalpetri/modbus (Java), NModbus (C#), tokio-modbus (Rust), and since v0.4.0 j2mod (Java), jsmodbus (JavaScript), modbus-esp8266 (C++) and modbus4j (Java). The newer four also bring Modbus over UDP and RTU framing over TCP to the suite. modbus4j is GPL-3.0, so its image is built locally and not published. The suite also publishes go-modbus as an image for others to test against.

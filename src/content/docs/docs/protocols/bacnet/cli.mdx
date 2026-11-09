@@ -9,7 +9,7 @@ sidebar:
 import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps, LinkCard } from '@astrojs/starlight/components';
 
-[bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. With `server run` it also serves a simulated BACnet/IP device, on go-bacnet's server, for developing and testing clients without hardware. Output is text, a table or JSON, with stable exit codes. This page follows bacnetctl v0.4.0, built on go-bacnet v0.6.0.
+[bacnetctl](https://github.com/otfabric/bacnetctl) is a standalone BACnet/IP command-line client built on [go-bacnet](/docs/protocols/bacnet/library/). It discovers devices, reads and writes properties, lists objects, watches values with change of value (COV), reads alarms, trend logs and files, shows routers and BBMDs, and decodes captured frames offline. With `server run` it also serves a simulated BACnet/IP device, on go-bacnet's server, for developing and testing clients without hardware. Output is text, a table or JSON, with stable exit codes. This page follows bacnetctl v0.7.0, built on go-bacnet v0.8.0. Since v0.6.0 `trend` also reads Trend Log Multiple objects (one value per logged property) and Event Logs (each record an event notification), and since v0.7.0 it receives the oversized segments legacy BACpypes sends.
 
 <Aside type="caution" title="Status and scope">
 bacnetctl is a BACnet/IP client and, with `server run`, one simulated device for development and testing. The simulated device keeps its state in memory and does not model a process: values change when clients write them. It is not meant to stand in for a controller on a plant network. The client commands are tested automatically against a simulated device and were run by hand against five open-source BACnet stacks in containers; `server run` was run against the clients of three of them. Neither has **been run against physical devices**.
@@ -250,7 +250,7 @@ bacnetctl server run --listen 192.168.1.10 --bbmd --bdt 10.0.20.1
 bacnetctl server example > device.json
 ```
 
-The state is in memory: writes, created and deleted objects and file content last as long as the process, and the device file is never changed. A ReinitializeDevice is acknowledged and printed as a record; the process does not restart. Text messages and private transfers are not served (the confirmed ones get Reject unrecognized-service).
+The state is in memory: writes, created and deleted objects and file content last as long as the process, and the device file is never changed. A ReinitializeDevice COLDSTART, WARMSTART or ACTIVATE_CHANGES is acknowledged and printed as a record (`allowed`); the process does not restart. Since v0.6.0 the backup and restore states are refused with services/service-request-denied and recorded as `refused`, because the simulated device has no backup procedure. Text messages and private transfers are not served (the confirmed ones get Reject unrecognized-service).
 
 | Flag | Environment | Meaning |
 |---|---|---|

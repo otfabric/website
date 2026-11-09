@@ -1,6 +1,6 @@
 {
  "title": "Industrial Protocol Stack Landscape",
- "verified": "2026-11-07",
+ "verified": "2026-11-09",
  "notes": [
   "Stars and forks are snapshots taken on the verified date and cover the whole repository; where an entry has starsAsOf, its stars and forks are from that earlier date.",
   "repoCreated is the GitHub repository creation date; historySince is the year of the first commit in its history, which can be older.",
@@ -350,12 +350,13 @@
     "RTU",
     "ASCII"
    ],
+   "interop": "modbus-interop",
    "maintenance": "slowing",
-   "notes": "Commercial licences are offered by Radix IoT. The newest tag is v3.1.0 (2022) and the main branch is at 3.1.1-SNAPSHOT, ahead of the old 2.x GitHub Release. Artifacts are published to the Mango Automation Maven repository, not Maven Central.",
+   "notes": "Commercial licences are offered by Radix IoT. The newest tag is v3.1.0 (2022) and the main branch is at 3.1.1-SNAPSHOT, ahead of the old 2.x GitHub Release. Artifacts are published to the Mango Automation Maven repository, not Maven Central. modbus-interop builds it from the v3.1.0 source archive but does not publish the image, because it is GPL-3.0.",
    "sources": [
     "https://github.com/MangoAutomation/modbus4j"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-09"
   },
   {
    "id": "node-modbus-serial",
@@ -465,12 +466,13 @@
     "TLS",
     "RTU"
    ],
+   "interop": "modbus-interop",
    "maintenance": "slowing",
    "notes": "ESP8266, ESP32 and other Arduino targets.",
    "sources": [
     "https://github.com/emelianov/modbus-esp8266"
    ],
-   "verified": "2026-10-18"
+   "verified": "2026-11-09"
   },
   {
    "id": "jsmodbus",
@@ -502,13 +504,14 @@
     "TCP",
     "RTU"
    ],
+   "interop": "modbus-interop",
    "maintenance": "active",
    "package": "https://www.npmjs.com/package/jsmodbus",
    "notes": "Published on npm as jsmodbus. The newest git tag is v4.0.9 (2022) and the old GitHub Release is v2.0.1, so npm is the place to check. No LICENSE file in the repository; the licence comes from package.json.",
    "sources": [
     "https://github.com/Cloud-Automation/node-modbus"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-10-18"
   },
   {
@@ -586,13 +589,14 @@
     "ASCII",
     "RTU over TCP"
    ],
+   "interop": "modbus-interop",
    "maintenance": "active",
    "package": "https://central.sonatype.com/artifact/com.ghgande/j2mod",
    "notes": "Fork and continuation of jamod.",
    "sources": [
     "https://github.com/steveohara/j2mod"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-10-18"
   },
   {
@@ -693,10 +697,10 @@
    "historySince": "2026",
    "lastCommit": "2026-11-07",
    "release": {
-    "version": "v1.12.0",
-    "date": "2026-11-07",
+    "version": "v1.13.3",
+    "date": "2026-11-08",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-modbus/@v/v1.12.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-modbus/@v/v1.13.3.info"
    },
    "roles": [
     "client",
@@ -716,7 +720,7 @@
    "sources": [
     "https://github.com/otfabric/go-modbus"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-11-05"
   },
   {
@@ -1359,13 +1363,14 @@
     "BACnet/IP"
    ],
    "relation": "Succeeded by BACpypes3",
+   "interop": "bacnet-interop",
    "maintenance": "active",
    "package": "https://pypi.org/project/bacpypes/",
-   "notes": "PyPI has 0.19.0, newer than the last GitHub Release (v0.18.6). New work happens in BACpypes3.",
+   "notes": "PyPI has 0.19.0, newer than the last GitHub Release (v0.18.6). New work happens in BACpypes3. bacnet-interop runs the PyPI 0.19.0 wheel as a device, a BBMD and a client.",
    "sources": [
     "https://github.com/JoelBender/bacpypes"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-10-18"
   },
   {
@@ -1483,13 +1488,14 @@
    "capabilities": [
     "BACnet/IP"
    ],
+   "interop": "bacnet-interop",
    "maintenance": "quiet",
    "package": "https://pkg.go.dev/github.com/ulbios/bacnet",
-   "notes": "No tags or releases; consumed as a Go pseudo-version. BACnet/IP only. Builds on kazukiigeta/bacnet.",
+   "notes": "No tags or releases; consumed as a Go pseudo-version. BACnet/IP only. Builds on kazukiigeta/bacnet. A small codec library: Who-Is, I-Am, ReadProperty and WriteProperty and their answers. bacnet-interop pins commit 227d6227 and runs it as a device, with an adapter object model, and as a client.",
    "sources": [
     "https://github.com/ulbios/bacnet"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-10-18"
   },
   {
@@ -1520,13 +1526,14 @@
    "capabilities": [
     "BACnet/IP"
    ],
+   "interop": "bacnet-interop",
    "maintenance": "active",
    "package": "https://www.npmjs.com/package/@bacnet-js/client",
-   "notes": "Carries the Node.js BACnet lineage forward (git history from 2017, PLUS for Node-RED); maintained by Innovation-System.",
+   "notes": "Carries the Node.js BACnet lineage forward (git history from 2017, PLUS for Node-RED); maintained by Innovation-System. bacnet-interop runs 3.3.2 as a device, with an adapter object model, and as a client.",
    "sources": [
     "https://github.com/bacnet-js/client"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-10-18"
   },
   {
@@ -1663,10 +1670,10 @@
    "historySince": "2026",
    "lastCommit": "2026-11-07",
    "release": {
-    "version": "v0.6.0",
-    "date": "2026-11-06",
+    "version": "v0.8.0",
+    "date": "2026-11-08",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-bacnet/@v/v0.6.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-bacnet/@v/v0.8.0.info"
    },
    "roles": [
     "client",
@@ -1682,7 +1689,7 @@
    "sources": [
     "https://github.com/otfabric/go-bacnet"
    ],
-   "verified": "2026-11-07",
+   "verified": "2026-11-09",
    "starsAsOf": "2026-11-06"
   },
   {

@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Sixteen interop suites package 76 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Sixteen interop suites package 84 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
-updated: 2026-10-30
+updated: 2026-11-09
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Sixteen OT Fabric interop suites and their 76 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
+  alt: Sixteen OT Fabric interop suites and their 84 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,13 +14,13 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Sixteen suites, 76 reference stacks
+## Sixteen suites, 84 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
-| [Modbus](/protocols/modbus/) | [modbus-interop](/projects/modbus-interop/) | libmodbus (C), PyModbus (Python), digitalpetri/modbus (Java), NModbus (C#), tokio-modbus (Rust) |
+| [Modbus](/protocols/modbus/) | [modbus-interop](/projects/modbus-interop/) | libmodbus (C), PyModbus (Python), digitalpetri/modbus (Java), NModbus (C#), tokio-modbus (Rust), j2mod (Java), jsmodbus (JavaScript), modbus-esp8266 (C++), modbus4j (Java, built locally, GPL-3.0); over TCP, and over UDP and RTU over TCP where a stack has them |
 | [OPC UA](/protocols/opc-ua/) | [opcua-interop](/projects/opcua-interop/) | open62541 (C), Eclipse Milo (Java), async-opcua (Rust), UA-.NETStandard (C#), node-opcua (TypeScript), opcua-asyncio (Python) |
-| [BACnet/IP](/protocols/bacnet/) | [bacnet-interop](/projects/bacnet-interop/) | BACnet Stack (C), BACpypes3 (Python), BACnet4J (Java), System.IO.BACnet (C#), worldiety/bacnet (Go) |
+| [BACnet/IP](/protocols/bacnet/) | [bacnet-interop](/projects/bacnet-interop/) | BACnet Stack (C), BACpypes3 (Python), legacy BACpypes (Python), BACnet4J (Java), System.IO.BACnet (C#), worldiety/bacnet (Go), cB-Sigma bacnet (Go), ulbios/bacnet (Go), @bacnet-js/client (TypeScript), as devices, and six of them also as clients to test a server |
 | [Siemens S7](/protocols/s7/) | [snap7-interop](/projects/snap7-interop/) | Snap7 (C++), python-snap7 (Python) |
 | [IEC 60870-5-104](/protocols/iec-104/) | [iec104-interop](/projects/iec104-interop/) | lib60870 (C), OpenMUC j60870 (Java), wendy512/iec104 (Go), cB-Sigma iec60870 (Go) |
 | [IEC 61850](/protocols/iec-61850/) (MMS, GOOSE, Sampled Values) | [iec61850-interop](/projects/iec61850-interop/) | libiec61850 (C), IEC61850bean (Java), dscsystems/go-iec61850 (Go), iec61850-rust (Rust) |
@@ -69,7 +69,8 @@ That run also had 31 known issues. A defect in a reference is not hidden and not
 A library runs its own scenarios against the images, in both roles: our client against every reference server, and every reference client against our server. Some recent results:
 
 - **go-ocpp**: 1458 scenarios pass against five stacks in both roles, none fail, with security profiles 1 to 3, compression and OCPP 2.1 against three independent implementations.
-- **go-bacnet**: 206 scenarios pass and 11 skip for features a stack does not have.
+- **go-bacnet**: its client against nine reference devices and the clients of six stacks against its server, none fail; the skips are services a stack does not have.
+- **go-modbus**: client and server against nine Modbus stacks in both directions, none fail, and the client over UDP and RTU over TCP against the four stacks that have those transports.
 - **go-openadr**: 24 of 24 scenarios of the openadr-interop conformance suite.
 - **go-dnp3**: master against every reference outstation and every reference master against its outstation, over TCP, TLS, UDP and serial.
 - **go-opcua**: client and server against all six OPC UA stacks in both directions, with 1280 verified ledger rows, plus PubSub against open62541 and UA-.NETStandard, UA JSON over HTTPS and WebSockets against UA-.NETStandard, the GDS pull model against the UA-.NETStandard Global Discovery Server, and event history and certificate management from every peer client.
@@ -88,9 +89,9 @@ Each protocol's *Testing and interop* page in the [documentation](/docs/protocol
 
 The suites earn their keep by finding things nobody was looking for, on both sides.
 
-In our own code: go-mms encoded and read MMS file directory listings with the wrong tag, so it could not list files on conforming servers, and fifteen more MMS bugs surfaced when the suite grew to every public method. The go-iec61850 server did not send the CommandTermination that the dscsystems controller waits for. The go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. go-ocpp lost frames on close and refused `20000.0` for an integer field. go-canbus rejected the CAN FD notation that can-utils has written since 2023. go-canopen's `AssignAll` failed when the last device took node-ID 127. go-knx numbered its extended search parameters one too high, so its server did not answer xknx's describe. Each was fixed in a release.
+In our own code: go-mms encoded and read MMS file directory listings with the wrong tag, so it could not list files on conforming servers, and fifteen more MMS bugs surfaced when the suite grew to every public method. The go-iec61850 server did not send the CommandTermination that the dscsystems controller waits for. The go-modbus server closed the connection on a write whose byte count did not match its quantity, where the specification asks for exception 3. go-bacnet only broadcast to 255.255.255.255 and stopped `ReadRange` after one page. The go-bacnet client dropped the segments legacy BACpypes sends, five octets longer than the Max APDU it advertised. go-ocpp lost frames on close and refused `20000.0` for an integer field. go-canbus rejected the CAN FD notation that can-utils has written since 2023. go-canopen's `AssignAll` failed when the last device took node-ID 127. go-knx numbered its extended search parameters one too high, so its server did not answer xknx's describe. Each was fixed in a release.
 
-In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. pycomm3 sends each Logix Write Tag twice in one message. OpenMUC j60870 1.8.0 closes the connection when it receives a read command. libiec61850's Sampled Values subscriber drops samples whose `smpMod` is encoded in two octets, the form its own publisher sends. p-net plugs any module a controller expects instead of reporting the difference, and ties an AR to the RPC activity of its Connect. cantools and canmatrix place an ARXML PDU at the start of its frame, ignoring the offset AUTOSAR gives it. Lely CANopen's LSS slave answers Fastscan even when it already has a node-ID, and CANopenNode v4.1's does not answer the identify services. knxd 0.14.73's tunnel client never sends its disconnect request, and KNXUltimate's description request names a port it does not listen on. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
+In the references: CitrineOS accepts TLS only from stations that send SNI. opendnp3's master synchronizes time only when the outstation asks. OpenLEADR answers a forged token with 403 instead of 401. The ElaadNL client names subscription operations as OpenADR 3.0.1 did. The EPRI IEEE 2030.5 client writes its documents in the namespace of a 2.0.4 draft schema. pycomm3 sends each Logix Write Tag twice in one message. The j2mod server answers the second of two file-record sub-requests with the wrong records, and modbus4j writes part of an FC15 or FC16 it then refuses. ulbios/bacnet stays silent where the standard asks for a Reject or an Abort. OpenMUC j60870 1.8.0 closes the connection when it receives a read command. libiec61850's Sampled Values subscriber drops samples whose `smpMod` is encoded in two octets, the form its own publisher sends. p-net plugs any module a controller expects instead of reporting the difference, and ties an AR to the RPC activity of its Connect. cantools and canmatrix place an ARXML PDU at the start of its frame, ignoring the offset AUTOSAR gives it. Lely CANopen's LSS slave answers Fastscan even when it already has a node-ID, and CANopenNode v4.1's does not answer the identify services. knxd 0.14.73's tunnel client never sends its disconnect request, and KNXUltimate's description request names a port it does not listen on. Each suite lists them with their evidence, so anyone building on those stacks can see them too.
 
 ## What interop is not
 

@@ -2,7 +2,7 @@
 title: The industrial protocol stack landscape
 description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX and the Sparkplug B profile? 268 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
-updated: 2026-10-30
+updated: 2026-11-09
 authors: [OT Fabric]
 tags: [ecosystem, research, open-source]
 featured: true
@@ -56,7 +56,7 @@ The registry now names the source of every version: GitHub, PyPI, npm, crates.io
 
 <LandscapeTable protocol="modbus" />
 
-libmodbus, PyModbus, NModbus, digitalpetri/modbus and tokio-modbus are the reference implementations in our [modbus-interop](https://github.com/otfabric/modbus-interop) suite. goburrow/modbus and ModbusMaster are still widely used but have not changed since 2016 to 2018. On the commercial side, Triangle MicroWorks sells Modbus source libraries, and Modbus4J is dual-licensed by Radix IoT.
+libmodbus, PyModbus, NModbus, digitalpetri/modbus and tokio-modbus are the reference implementations in our [modbus-interop](https://github.com/otfabric/modbus-interop) suite, joined in November 2026 by j2mod, jsmodbus, modbus-esp8266 and Modbus4J. goburrow/modbus and ModbusMaster are still widely used but have not changed since 2016 to 2018. On the commercial side, Triangle MicroWorks sells Modbus source libraries, and Modbus4J is dual-licensed by Radix IoT.
 
 ## OPC UA
 
@@ -74,7 +74,7 @@ open62541, Eclipse Milo, the OPC Foundation .NET stack, node-opcua and the FreeO
 
 <LandscapeTable protocol="bacnet" />
 
-BACnet Stack stands out: extensive service coverage, embedded targets, and a GPL linking exception that lets proprietary products link it. BACpypes3, BACnet4J and System.IO.BACnet (the stack behind YABE) complete the reference set, and all four run in [bacnet-interop](https://github.com/otfabric/bacnet-interop). BACpypes3 now also ships an MCP server, so AI agents can talk BACnet. Cimetrics, PolarSoft and SoftDEL lead the commercial SDK market.
+BACnet Stack stands out: extensive service coverage, embedded targets, and a GPL linking exception that lets proprietary products link it. BACpypes3, BACnet4J and System.IO.BACnet (the stack behind YABE) complete the reference set, and all four run in [bacnet-interop](https://github.com/otfabric/bacnet-interop), together with worldiety/bacnet, cB-Sigma's bacnet, ulbios/bacnet, @bacnet-js/client and the legacy BACpypes. BACpypes3 now also ships an MCP server, so AI agents can talk BACnet. Cimetrics, PolarSoft and SoftDEL lead the commercial SDK market.
 
 ## IEC 60870-5-104
 

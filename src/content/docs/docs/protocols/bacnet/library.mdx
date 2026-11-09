@@ -11,7 +11,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 [go-bacnet](https://github.com/otfabric/go-bacnet) is a pure-Go BACnet/IP library with a **client** and a **server**. The client discovers devices, reads and writes properties, subscribes to change-of-value (COV) and alarm notifications, transfers files and manages objects on BACnet/IP (Annex J) over IPv4, including routed networks, foreign-device registration and segmentation. The server (packages `server`, `server/object` and `bbmd`, new in v0.6.0) serves a BACnet device of your own, with its objects, on the same codecs, and can also be the BBMD of its subnet. There are no dependencies outside the Go standard library.
 
 <Aside type="caution" title="Status">
-The client is tested on every change against five open-source BACnet stacks in containers. The server is tested against the go-bacnet client and against the clients of three independent stacks (the bacnet-stack command-line tools, BACnet4J and BACpypes3) in bacnet-interop client-mode containers. Client requests and server replies are checked against Wireshark's dissector. Neither side has **been validated against physical controllers yet**. The API is v0 and can still change between minor versions; the release notes in `RELEASE.md` list every change.
+The client is tested on every change against nine open-source BACnet stacks in containers. The server is tested against the go-bacnet client and against the clients of six independent stacks (the bacnet-stack command-line tools, BACnet4J, BACpypes3, legacy BACpypes, @bacnet-js/client and ulbios/bacnet) in bacnet-interop client-mode containers. Client requests and server replies are checked against Wireshark's dissector, and since v0.7.0 both are replayed against recorded traffic of physical controllers. Neither side has **been tested against a live controller yet**. The API is v0 and can still change between minor versions; the release notes in `RELEASE.md` list every change.
 </Aside>
 
 **Not in scope:** a BACnet router, MS/TP, BACnet/IPv6, BACnet/SC and BTL certification. BACnet/IP has no authentication or encryption and the library adds none.
@@ -22,7 +22,7 @@ The client is tested on every change against five open-source BACnet stacks in c
 go get github.com/otfabric/go-bacnet@latest
 ```
 
-Requires **Go 1.26** or newer; CI tests Go 1.26 and 1.27. This page follows go-bacnet v0.6.0.
+Requires **Go 1.26** or newer; CI tests Go 1.26 and 1.27. This page follows go-bacnet v0.8.0. v0.7.0 reads the logs of Trend Log Multiple and Event Log objects and is tested against 234 recorded captures of physical BACnet devices; v0.8.0 moves the interop pin to bacnet-interop v0.14.0 and lets the client receive segments longer than the Max APDU it advertises, as legacy BACpypes sends them.
 
 The module is split by protocol layer:
 
@@ -177,7 +177,7 @@ Confirmed calls take a `client.Target`:
 - `ReadPropertyMultiple` returns `[]service.ReadAccessResult`. A top-level error means the whole transaction failed. Per-property BACnet errors are in `PropertyResult.Err`, and other properties in the same reply may still have succeeded, so always inspect the results even when `err == nil`.
 - `ReadPropertyMultipleBatched` splits a read into as many transactions as the device's Max APDU requires and returns one result per input specification, in order. When the device aborts because the reply did not fit, it halves the batch and retries.
 - `ReadObjectList` reads the whole `object-list` and falls back to element-by-element reads when the device cannot return it in one reply.
-- `ReadRange` and `ReadRangeAll` read trend logs. `ReadRangeAll` pages until the device reports LAST_ITEM or a limit (`MaxItems`, `MaxBytes`, `MaxPages`) is reached. Do not treat a clear MORE_ITEMS flag as the end of a log.
+- `ReadRange` and `ReadRangeAll` read trend logs, and since v0.7.0 Trend Log Multiple (`LogMultipleRecords`) and Event Log (`EventLogRecords`) objects too, chosen by the object type of the answer. `ReadRangeAll` pages until the device reports LAST_ITEM or a limit (`MaxItems`, `MaxBytes`, `MaxPages`) is reached. Do not treat a clear MORE_ITEMS flag as the end of a log.
 
 ## Write with a priority
 
@@ -388,7 +388,7 @@ The server answers ReadProperty, ReadPropertyMultiple, WriteProperty, WritePrope
 | `WithBBMD` | none | A `bbmd.BBMD` sharing the endpoint |
 | `WithHooks` | none | The application's part of device-level services |
 
-`Hooks` run on a worker with the request's context. `BeforeWrite` and `BeforeDelete` can refuse with a BACnet error made with `object.Err`, and `Reinitialize` performs a ReinitializeDevice (without it the request is acknowledged). `TimeSync`, `PrivateTransfer`, `TextMessage` and `WriteGroup` are the whole service: without the hook the service is not advertised and a confirmed request gets Reject unrecognized-service.
+`Hooks` run on a worker with the request's context. `BeforeWrite` and `BeforeDelete` can refuse with a BACnet error made with `object.Err`, and `Reinitialize` performs a ReinitializeDevice. Without it, COLDSTART, WARMSTART and ACTIVATE_CHANGES are acknowledged and the backup and restore states are refused with services/service-request-denied (since v0.7.0; they were acknowledged before). `TimeSync`, `PrivateTransfer`, `TextMessage` and `WriteGroup` are the whole service: without the hook the service is not advertised and a confirmed request gets Reject unrecognized-service.
 
 `bbmd.New(bbmd.Config{Self, BDT, MaxForeignDevices, RejectRegistrations})` returns a BBMD for `server.WithBBMD`. It registers foreign devices, keeps the BDT and FDT and forwards broadcasts; Write-BDT is refused with a NAK. Without a BBMD the server answers every BBMD function with its NAK.
 
@@ -449,6 +449,6 @@ c, err := client.New(client.WithLogger(logger.With("component", "bacnet")))
 - Server: state in memory only; intrinsic reporting covers out-of-range, change-of-state and change-of-reliability (a Multi-state Output does not report); the router table holds at most 64 networks. Calendar, Schedule, Structured View and the value types are verified against the go-bacnet client only.
 - BACnet/IP over IPv4 only. No MS/TP, BACnet/IPv6 or BACnet/SC.
 - Some services have codec evidence only, because no open-source stack executes them: SubscribeCOVPropertyMultiple, COVNotificationMultiple, audit services and VT services. AuthRequest and the VT services are partial.
-- Client and server are tested against open-source stacks in containers; no physical controller results are recorded yet. See [Testing and interop](/docs/protocols/bacnet/testing/).
+- Client and server are tested against open-source stacks in containers and replayed against recorded traffic of physical controllers; no live controller has been tested yet. See [Testing and interop](/docs/protocols/bacnet/testing/).
 
 <LinkCard title="go-bacnet on GitHub" description="README, API.md, ERRORS.md, OBSERVABILITY.md, docs/CLIENT_SUPPORT.md and docs/SERVER_SUPPORT.md" href="https://github.com/otfabric/go-bacnet" />
