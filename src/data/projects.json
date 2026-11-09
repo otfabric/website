@@ -1209,7 +1209,7 @@
 			"bacnet"
 		],
 		"status": "available",
-		"description": "BACnet/IP reference devices: BACnet Stack, BACpypes3, legacy BACpypes, BACnet4J, System.IO.BACnet, Worldiety, cB-Sigma, ulbios and bacnet-js, with cB-Sigma's simulator for faults. Six of them also run as clients to test a BACnet server.",
+		"description": "BACnet/IP reference devices: BACnet Stack, BACpypes3, legacy BACpypes, BACnet4J, System.IO.BACnet, Worldiety, cB-Sigma, ulbios and bacnet-js, with cB-Sigma's simulator for faults. Six of them also run as clients to test a BACnet server, and go-bacnet is published as an image for others to test against.",
 		"icon": "go-bacnet"
 	},
 	{

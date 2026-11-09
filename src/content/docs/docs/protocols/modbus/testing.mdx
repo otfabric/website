@@ -257,7 +257,7 @@ Its tags are go-modbus versions, such as `v1.10.5`, and `latest`; a rebuild of a
 
 ## What go-modbus has been validated against
 
-go-modbus runs its interop suite on every push (`make interop` in the go-modbus repository, about five minutes, Docker required). Its suite on `main` pins modbus-interop v0.4.1 by digest and runs against all nine stacks; go-modbus's release notes list this as v1.13.4, with the library unchanged from v1.13.3. modbus4j runs when a local build is named, not in CI.
+go-modbus runs its interop suite on every push (`make interop` in the go-modbus repository, about five minutes, Docker required). Since v1.13.4 it pins modbus-interop v0.4.1 by digest and runs against all nine stacks; the library itself is unchanged from v1.13.3. modbus4j runs when a local build is named, not in CI.
 
 | Reference | go-modbus client to reference server | Reference client to go-modbus server |
 |---|---|---|

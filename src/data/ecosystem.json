@@ -697,10 +697,10 @@
    "historySince": "2026",
    "lastCommit": "2026-11-07",
    "release": {
-    "version": "v1.13.3",
-    "date": "2026-11-08",
+    "version": "v1.13.4",
+    "date": "2026-11-09",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-modbus/@v/v1.13.3.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-modbus/@v/v1.13.4.info"
    },
    "roles": [
     "client",
