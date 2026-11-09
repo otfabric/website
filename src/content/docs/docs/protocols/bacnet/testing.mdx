@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: How the go-bacnet client and server and bacnetctl are tested against independent open-source BACnet stacks with bacnet-interop, and what has not been validated.
+description: How the go-bacnet client and server and bacnetctl are tested against independent open-source BACnet stacks with bacnet-interop, how to test your own stack against OT Fabric's go-bacnet image, and what has not been validated.
 sidebar:
   label: Testing and interop
   order: 3
@@ -18,7 +18,7 @@ go-bacnet (client and server) and bacnetctl have **not been tested against a liv
 
 [bacnet-interop](https://github.com/otfabric/bacnet-interop) provides Dockerized BACnet/IP devices built from independent implementations, deterministic device fixtures, BBMD and routed-network scenarios and codec test vectors. It is maintained independently of go-bacnet and can be used by any BACnet client, and since v0.12.0 by any BACnet server too. The adapters never patch an upstream stack: they load a fixture, start the stack's own server, and supply an object or service in adapter code only where the stack has none, which the capability matrix marks.
 
-Latest images: **v0.14.0** (container contract 1.1). go-bacnet v0.8.0 pins all eleven by digest. v0.13.0 added cB-Sigma; v0.14.0 added ulbios/bacnet, legacy BACpypes and @bacnet-js/client, each as a device and as a client. bacnet-interop has no image of OT Fabric's own stack yet: unlike the other harnesses, it publishes reference stacks only.
+Latest release: **v0.15.0** (container contract 1.1). go-bacnet v0.8.0 pins the eleven images of v0.14.0 by digest; v0.15.0 rebuilds them from the same pins and adds an image of OT Fabric's own stack ([below](#test-your-stack-against-ot-fabrics)). v0.13.0 added cB-Sigma; v0.14.0 added ulbios/bacnet, legacy BACpypes and @bacnet-js/client, each as a device and as a client.
 
 | Image | Upstream | Role |
 |---|---|---|
@@ -57,14 +57,14 @@ Device models live under `fixtures/device/` and are selected with `DEVICE_FIXTUR
 Every image writes JSON Lines to stdout. The first line is the ready event, written once the BACnet/IP socket is bound:
 
 ```json
-{"event":"ready","adapter":"bacnet-stack","version":"0.14.0","fixture":"device-baseline-v2","address":"0.0.0.0:47808","peer_version":"bacnet-stack-1.6.1"}
+{"event":"ready","adapter":"bacnet-stack","version":"0.15.0","fixture":"device-baseline-v2","address":"0.0.0.0:47808","peer_version":"bacnet-stack-1.6.1"}
 ```
 
 Some adapters then write `operation` events for requests that have no observable reply (for example time synchronization). Diagnostics go to stderr. A consumer pins images by digest from the release's `manifest.json`:
 
 ```sh
 # by tag, for a quick local run
-BACNET_STACK_IMAGE=ghcr.io/otfabric/bacnet-interop-bacnet-stack:v0.14.0
+BACNET_STACK_IMAGE=ghcr.io/otfabric/bacnet-interop-bacnet-stack:0.15.0
 # by digest, for CI
 BACNET_STACK_IMAGE=ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:<digest>
 ```
@@ -99,6 +99,22 @@ client --target HOST:PORT --device N --scenarios FILE   # one client-result-line
 | `server-extended-v1` (23) | Segmented requests and replies, SubscribeCOVProperty and SubscribeCOVPropertyMultiple, GetAlarmSummary, GetEnrollmentSummary, text messages, ConfirmedPrivateTransfer |
 
 A result is `pass`, `fail`, `infra-error`, `unsupported` (the client stack does not send that service) or `known-difference` (a recorded behaviour of the client stack, in PEER_SUPPORT.md). `make client-matrix` runs every client image against the bacnet-stack device in CI, and the three new clients against the three new devices; `EXPECTED_DIFFERENCES` lists the scenarios each new pair answers differently, with the reason.
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/bacnet-interop-otfabric` is go-bacnet behind the same container and client-driver contracts as the reference images (adapter name `otfabric`), new with bacnet-interop v0.15.0. It runs as a device, as a BBMD (`BACNET_BBMD=1`) and as a client, so you can test your BACnet client or server against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run --rm -p 47808:47808/udp ghcr.io/otfabric/bacnet-interop-otfabric:<tag>
+docker run --rm --network host ghcr.io/otfabric/bacnet-interop-otfabric:<tag> \
+  client --target 192.0.2.10:47808 --device 1234 --scenarios /scenarios/server-baseline-v1.json
+```
+
+As a device it serves `device-baseline-v1`, `-v2`, `-v4`, `-v5`, `-v6`, `-v9` and `device-server-v1`. The fixtures with Event Enrollment (v3), Audit Log (v7) and life safety objects (v8) are refused at start, because go-bacnet's server has no constructor for those object types, so the image never serves part of a fixture. In client mode it runs every scenario file.
+
+Its tags are go-bacnet versions, such as `v0.8.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a bacnet-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. It is an unauthenticated device that answers WriteProperty, DeviceCommunicationControl and ReinitializeDevice, so it is for testing only and has no place on a network you do not control.
+
+go-bacnet also runs its current code against the image of its latest release, in both roles, in a manual self-interop workflow. That catches regressions between releases; it is not independent evidence either.
 
 ## Running the go-bacnet interop tests
 
