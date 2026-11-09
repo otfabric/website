@@ -145,9 +145,9 @@ The imports are `github.com/otfabric/go-bacnet`, `github.com/otfabric/go-bacnet/
 | Go version | 1.26 or later |
 
 <Callout type="note" title="Status">
-The client is tested on every change against five independent open-source BACnet stacks. The server, new in go-bacnet v0.6.0, is driven by the clients of three of them: the bacnet-stack command-line tools, BACnet4J and BACpypes3. Both sides are checked against Wireshark's dissector. Neither has been validated against physical controllers yet, and the API is v0.
+The client is tested on every change against nine independent open-source BACnet stacks. The server, new in go-bacnet v0.6.0, is driven by the clients of six of them: the bacnet-stack command-line tools, BACnet4J, BACpypes3, legacy BACpypes, @bacnet-js/client and ulbios/bacnet. Both sides are checked against Wireshark's dissector, and since v0.7.0 against recorded traffic of physical controllers. Neither has been tested against a live controller yet, and the API is v0.
 </Callout>
 
 ## Interoperability
 
-[bacnet-interop](https://github.com/otfabric/bacnet-interop) provides Dockerized devices from BACnet Stack (C), BACpypes3 (Python), BACnet4J (Java), System.IO.BACnet (C#), and Worldiety and cB-Sigma (Go), including BBMD and routed-network scenarios and cB-Sigma's simulator with fault switches. Since v0.12.0 the BACnet Stack, BACnet4J and BACpypes3 images also run as **clients**, with scenario files for testing a BACnet server: discovery, reads and writes, COV, files, alarms, device management, segmentation and the BBMD.
+[bacnet-interop](https://github.com/otfabric/bacnet-interop) provides Dockerized devices from BACnet Stack (C), BACpypes3 and legacy BACpypes (Python), BACnet4J (Java), System.IO.BACnet (C#), Worldiety, cB-Sigma and ulbios (Go) and @bacnet-js/client (TypeScript), including BBMD and routed-network scenarios and cB-Sigma's simulator with fault switches. Since v0.12.0 the BACnet Stack, BACnet4J and BACpypes3 images also run as **clients**, and v0.14.0 added legacy BACpypes, bacnet-js and ulbios in both roles, with scenario files for testing a BACnet server: discovery, reads and writes, COV, files, alarms, device management, segmentation and the BBMD.

@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: Simulate Modbus devices with modbus-simulator and modbusctl, run go-modbus against five reference stacks with modbus-interop, test your own stack against go-modbus in a container, and see what has and has not been validated.
+description: Simulate Modbus devices with modbus-simulator and modbusctl, run go-modbus against nine reference stacks with modbus-interop, test your own stack against go-modbus in a container, and see what has and has not been validated.
 sidebar:
   label: Testing and interop
   order: 4
@@ -14,7 +14,7 @@ Test against something that is not live equipment first. OT Fabric gives you thr
 |---|---|---|
 | [modbus-simulator](/projects/modbus-simulator/) | One or more devices described in a JSON fixture, with deterministic exceptions, injected faults and a request trace, over TCP or TLS | Integration tests and CI assertions for a gateway or client |
 | `modbusctl server static` / `replay` | A real device, from an MBCAP recording or a packet trace of its traffic | Developing against realistic data without hardware |
-| [modbus-interop](/projects/modbus-interop/) | Five independent Modbus TCP stacks in Docker | Proving a library interoperates |
+| [modbus-interop](/projects/modbus-interop/) | Nine independent Modbus stacks in Docker, over TCP, UDP and RTU over TCP | Proving a library interoperates |
 
 ## modbus-simulator
 
@@ -201,15 +201,21 @@ No access to the device, but a packet trace of its traffic? `mbtracectl export m
 
 ## modbus-interop
 
-[modbus-interop](https://github.com/otfabric/modbus-interop) packages five independent Modbus TCP implementations as container images with the same command interface. Its current release is v0.3.3 (container contract 1.1). It contains no library under test: a library pulls the images and owns its own scenarios and assertions.
+[modbus-interop](https://github.com/otfabric/modbus-interop) packages nine independent Modbus implementations as container images with the same command interface. Its current release is v0.4.1 (container contract 1.2). It contains no library under test: a library pulls the images and owns its own scenarios and assertions.
 
-| Adapter | Implementation | Version | Language |
-|---|---|---|---|
-| `libmodbus` | libmodbus | v3.2.0 | C |
-| `pymodbus` | PyModbus | 3.16.1 | Python |
-| `digitalpetri` | digitalpetri/modbus | 2.1.6 | Java |
-| `nmodbus` | NModbus | 3.0.83 | C# |
-| `tokiomodbus` | tokio-modbus | 0.17.0 | Rust |
+| Adapter | Implementation | Version | Language | Transports |
+|---|---|---|---|---|
+| `libmodbus` | libmodbus | v3.2.0 | C | TCP |
+| `pymodbus` | PyModbus | 3.16.1 | Python | TCP |
+| `digitalpetri` | digitalpetri/modbus | 2.1.6 | Java | TCP |
+| `nmodbus` | NModbus | 3.0.83 | C# | TCP |
+| `tokiomodbus` | tokio-modbus | 0.17.0 | Rust | TCP |
+| `j2mod` | j2mod | 3.4.0 | Java | TCP, UDP, RTU over TCP |
+| `jsmodbus` | jsmodbus | 5.0.0 | JavaScript | TCP, RTU over TCP |
+| `modbusesp` | modbus-esp8266 | 4.1.1 | C++, compiled for Linux | TCP, RTU over TCP |
+| `modbus4j` | modbus4j | 3.1.0 | Java | TCP, UDP, RTU over TCP |
+
+v0.4.0 added the last four, `--transport` (`tcp`, `udp`, `rtu-over-tcp`) on `server` and `client`, and five features that gate behaviour some stacks get wrong (an unknown function code, a refused write that must change nothing, the highest address, the largest register writes). v0.4.1 stopped declaring file records for the j2mod server. modbus4j is GPL-3.0-or-later, so its image is not published: `make image-modbus4j` builds it from the pinned source archive, and the self-tests include it wherever it is built.
 
 Each image (`ghcr.io/otfabric/modbus-interop-<adapter>`) offers `server`, `client <operation>`, `print-capabilities` and `print-fixture`. Expected values come from the image's own fixture, and a test skips (does not fail) a scenario that needs a feature the image declares false.
 
@@ -223,12 +229,14 @@ make run-libmodbus   # a reference server on 127.0.0.1:1502
 
 The stacks differ. Not every one has FC22 or FC43, and they differ in what they check:
 
-| | libmodbus | PyModbus | digitalpetri | NModbus | tokio-modbus |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Server FC22 | yes | yes | yes | no | yes |
-| Server FC43/14 | no | yes | no | no | yes |
-| Client FC43/14 | no | yes | no | yes | yes |
-| Server quantity check | yes | no | yes | yes | yes |
+| | libmodbus | PyModbus | digitalpetri | NModbus | tokio-modbus | j2mod | jsmodbus | modbus-esp8266 | modbus4j |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Server FC22 | yes | yes | yes | no | yes | yes | no | yes | no |
+| Server FC43/14 | no | yes | no | no | yes | no | yes | no | no |
+| Client FC43/14 | no | yes | no | yes | yes | yes | yes | no | no |
+| Server quantity check | yes | no | yes | yes | yes | yes | no | yes | no |
+| Server answers an unknown function | yes | yes | yes | yes | yes | no | no | yes | no |
+| Refused write changes nothing | yes | yes | yes | yes | yes | yes | yes | yes | no |
 
 The reference servers are unauthenticated and accept writes from anyone. They publish on loopback only and must never be attached to a plant network.
 
@@ -249,7 +257,7 @@ Its tags are go-modbus versions, such as `v1.10.5`, and `latest`; a rebuild of a
 
 ## What go-modbus has been validated against
 
-go-modbus runs its interop suite on every push (`make interop` in the go-modbus repository, about five minutes, Docker required). It is qualified against modbus-interop v0.3.3, with the images pinned by digest.
+go-modbus runs its interop suite on every push (`make interop` in the go-modbus repository, about five minutes, Docker required). Its suite on `main` pins modbus-interop v0.4.1 by digest and runs against all nine stacks; go-modbus's release notes list this as v1.13.4, with the library unchanged from v1.13.3. modbus4j runs when a local build is named, not in CI.
 
 | Reference | go-modbus client to reference server | Reference client to go-modbus server |
 |---|---|---|
@@ -258,18 +266,26 @@ go-modbus runs its interop suite on every push (`make interop` in the go-modbus 
 | digitalpetri/modbus 2.1.6 | <Badge text="pass" variant="success" /> without FC43 | <Badge text="pass" variant="success" /> FC43 via raw PDU only |
 | NModbus 3.0.83 | <Badge text="pass" variant="success" /> without FC43 and FC22 | <Badge text="pass" variant="success" /> without FC22 |
 | tokio-modbus 0.17.0 | <Badge text="pass" variant="success" /> | <Badge text="pass" variant="success" /> |
+| j2mod 3.4.0 | <Badge text="pass" variant="success" /> without FC08, FC17, FC20, FC21, FC43 | <Badge text="pass" variant="success" /> without raw PDUs |
+| jsmodbus 5.0.0 | <Badge text="pass" variant="success" /> without FC08, FC17, FC20 to FC24 | <Badge text="pass" variant="success" /> without FC08, FC17, FC20 to FC24, raw PDUs |
+| modbus-esp8266 4.1.1 | <Badge text="pass" variant="success" /> without FC08, FC17, FC20, FC21, FC24, FC43 | <Badge text="pass" variant="success" /> without FC17 |
+| modbus4j 3.1.0, local build | <Badge text="pass" variant="success" /> without FC08, FC20 to FC24, FC43 | <Badge text="pass" variant="success" /> without FC08, FC20, FC21, FC23, FC24, FC43, raw PDUs |
+
+The client also runs over the other transports (`TestClientTransports`): every table read in full, exceptions, and every write read back. It passes against j2mod and modbus4j over UDP and RTU over TCP, and against jsmodbus and modbus-esp8266 over RTU over TCP.
+
+The four newer stacks also skip the behaviour their images declare they lack, such as exception 1 for an unknown function, the reads that end at address 65535 on modbus-esp8266, or FC16 above 120 registers on jsmodbus. go-modbus's [INTEROPERABILITY.md](https://github.com/otfabric/go-modbus/blob/main/INTEROPERABILITY.md) lists them per stack and direction.
 
 The suite covers FC01 to FC06, FC08, FC15, FC16, FC17, FC20 to FC24 and FC43/14. FC08, FC17, FC20, FC21 and FC24 are tested against the references that have them (PyModbus has all five) and through raw PDUs from every reference client that can receive the answer. As a client, go-modbus reads every table at block boundaries and with the largest request of each function, reads writes back on a second connection, checks exceptions 1, 2 and 11, sends two thousand requests on one connection, and runs sixteen connections at once plus a pooled client. As a server, it answers up to 120 operations per reference client, including raw PDUs and exceptions 1, 2, 3 and 11, and each result must match what the client gets from a reference server.
 
 To pin other builds, set `MODBUS_INTEROP_<ADAPTER>_IMAGE`; to run a subset, set `MODBUS_INTEROP_ADAPTERS=libmodbus,pymodbus`.
 
 <Aside type="note" title="What is not validated">
-- The interop suite covers **Modbus TCP only**. RTU, ASCII, TLS, UDP and the tunnelled transports are covered by the go-modbus repository's own tests, not by independent stacks.
+- The interop suite covers the go-modbus **server over Modbus TCP only**, and the client over TCP, UDP and RTU over TCP. Serial RTU and ASCII, TLS and ASCII over TCP are covered by the go-modbus repository's own tests, not by independent stacks.
 - go-modbus has **not** been run against certified test equipment.
 - modbus-simulator and the modbusctl servers listen on TCP only, plain or with TLS. There is no OT Fabric RTU server simulator.
 </Aside>
 
-The suite also found a bug in go-modbus, fixed in v1.3.0: the server closed the connection on an FC15, FC16 or FC23 request whose byte count did not match its quantity, where the specification asks for exception 3. The findings about the reference stacks themselves are in [COMPATIBILITY.md](https://github.com/otfabric/modbus-interop/blob/main/docs/COMPATIBILITY.md).
+The suite also found a bug in go-modbus, fixed in v1.3.0: the server closed the connection on an FC15, FC16 or FC23 request whose byte count did not match its quantity, where the specification asks for exception 3. The newer stacks brought findings of their own: the j2mod server answers the second of two FC20 sub-requests with the wrong records, so modbus-interop v0.4.1 no longer declares file records for it, and the modbus4j server writes the in-range part of an FC15 or FC16 it then refuses. The findings about the reference stacks themselves are in [COMPATIBILITY.md](https://github.com/otfabric/modbus-interop/blob/main/docs/COMPATIBILITY.md).
 
 ## Serial tests without hardware
 
