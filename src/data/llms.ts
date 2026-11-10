@@ -6,7 +6,9 @@ import { categories, getProjects, projectsFor, repoUrl, type Project } from './p
 import { getStandards, kindOf, kinds, standardPath, type Standard } from './standards';
 import { longDescription } from './seo';
 import { site } from './site';
-import { byProtocol, ecosystem, typeLabels } from './ecosystem';
+import { byProtocol, ecosystem, otfabricRelease, typeLabels } from './ecosystem';
+import { installHost, psInstall, shInstall, toolsFor } from './install';
+import { protocolSeries } from './series';
 import { formatFee, getOrganizations, kindLabels, organizationsFor, orgPath, questions, answerLabels, type Organization } from './organizations';
 
 /** The registry rows for one protocol as a Markdown table, standing in for <LandscapeTable />. */
@@ -52,9 +54,9 @@ export const docsUrl = (id: string) => `${site.url}/${id}/`;
 
 type Doc = Awaited<ReturnType<typeof getDocs>>[number];
 
-/** Protocol and model subpages share short titles ("Go library"), so name the standard too: "Modbus: Go library". */
+/** Protocol, model and profile subpages share short titles ("Go library"), so name the standard too: "Modbus: Go library". */
 export function docTitle(doc: Doc, docs: Doc[]) {
-	if (!/^docs\/(protocols|models)\/[^/]+\/[^/]+$/.test(doc.id)) return doc.data.title;
+	if (!/^docs\/(protocols|models|profiles)\/[^/]+\/[^/]+$/.test(doc.id)) return doc.data.title;
 	const parent = docs.find((d) => d.id === doc.id.split('/').slice(0, 3).join('/'));
 	return parent && !doc.data.title.includes(parent.data.title) ? `${parent.data.title}: ${doc.data.title}` : doc.data.title;
 }
@@ -78,15 +80,34 @@ export const docSection = (d: Doc, docs: Doc[]) => section(docTitle(d, docs), do
 export const postSection = (p: Awaited<ReturnType<typeof getPosts>>[number]) =>
 	section(p.data.title, `${site.url}/blog/${p.id}/`, p.data.description, `Published: ${p.data.date.toISOString().slice(0, 10)}\n\n${mdxToMarkdown(p.body ?? '')}`);
 
-/** A project page as Markdown: what it is, what it does, how to get it. */
-export function projectSection(p: Project) {
-	const category = categories.find((c) => c.id === p.data.category)!;
+/** A project page as Markdown: what it is, what it does, its latest release and how to get it. */
+export function projectSection(p: Project, standards: Standard[] = []) {
+	const d = p.data;
+	const category = categories.find((c) => c.id === d.category)!;
+	const named = (ids: string[]) => ids.map((id) => standards.find((s) => s.id === id)).filter(Boolean).map((s) => s!.data.name);
+	const release = otfabricRelease(d.repo!);
+	const tools = toolsFor(p.id);
+	const facts = [
+		`Category: ${category.label}`,
+		named(d.standards).length && `Implements: ${named(d.standards).join(', ')}`,
+		named(d.related).length && `Works with: ${named(d.related).join(', ')}`,
+		release && `Latest release: ${release.version}${release.date ? ` (${release.date})` : ''}`,
+		`Source: ${repoUrl(d.repo!)}`,
+	].filter(Boolean);
+	const install = tools.length
+		? `Install (Linux and macOS, then Windows PowerShell):\n\n\`\`\`\n${tools.map((t) => `${shInstall(t.tool)}\n${psInstall(t.tool)}`).join('\n')}\n\`\`\`\n\nDocumentation: ${tools.map((t) => t.docs).filter(Boolean).map((path) => `${site.url}${path}`).filter((v, i, a) => a.indexOf(v) === i).join(', ') || `${site.url}/docs/install/`}`
+		: d.install
+			? `Install:\n\n\`\`\`\n${d.install}\n\`\`\``
+			: ['cli', 'ui', 'discovery'].includes(d.category)
+				? `Download: ${repoUrl(d.repo!)}/releases/latest`
+				: undefined;
 	const body = [
-		`Category: ${category.label}. Source: ${repoUrl(p.data.repo!)}`,
-		p.data.highlights?.map((h) => `- ${h}`).join('\n'),
-		p.data.install && `Install:\n\n\`\`\`\n${p.data.install}\n\`\`\``,
+		facts.join('. ') + '.',
+		d.highlights?.map((h) => `- ${h}`).join('\n'),
+		install,
+		d.commands?.length && `First commands:\n\n\`\`\`\n${d.commands.map((c) => `# ${c.note}\n${c.run}`).join('\n')}\n\`\`\``,
 	];
-	return section(p.data.name, `${site.url}/projects/${p.id}/`, p.data.description, body.filter(Boolean).join('\n\n'));
+	return section(d.name, `${site.url}/projects/${p.id}/`, d.description, body.filter(Boolean).join('\n\n'));
 }
 
 /** One organization as Markdown: what it does, the access answers with sources, and its tiers. */
@@ -110,6 +131,7 @@ export async function protocolBundle(p: Standard) {
 	const docs = await getDocs();
 	const own = p.data.docs ? docs.filter((d) => `/${d.id}/`.startsWith(p.data.docs!)) : [];
 	const projects = await projectsFor(p.id);
+	const standards = await getStandards();
 	const posts = (await getPosts()).filter((post) => post.data.tags.includes(p.id));
 	const landscape = byProtocol(p.id).length
 		? [section(`Other ${p.data.name} implementations`, `${site.url}/ecosystem/implementations/?protocol=${p.id}`, `Open-source ${p.data.name} stacks from the OT Fabric ecosystem map, verified at their publishing source.`, landscapeTable(p.id))]
@@ -122,7 +144,7 @@ export async function protocolBundle(p: Standard) {
 		`# ${p.data.name} with OT Fabric\n\n> Everything otfabric.io says about ${p.data.name}: the ${kindOf(p.data.kind).label.toLowerCase()} overview, the documentation, the OT Fabric projects and the wider ecosystem. Index of the whole site: ${site.url}/llms.txt`,
 		await protocolSection(p),
 		...own.map((d) => docSection(d, docs)),
-		...projects.map(projectSection),
+		...projects.map((x) => projectSection(x, standards)),
 		...landscape,
 		...orgs,
 		...posts.map(postSection),
@@ -144,6 +166,10 @@ export async function llmsIndex() {
 	const [standards, projects, docs, posts, organizations] = await Promise.all([getStandards(), getProjects(), getDocs(), getPosts(), getOrganizations()]);
 	const available = projects.filter((p) => p.data.status === 'available');
 	const planned = projects.filter((p) => p.data.status === 'planned');
+	// The architecture series in reading order, then every other post newest first.
+	const seriesIds: string[] = protocolSeries.parts.map((part) => part.id);
+	const seriesPosts = seriesIds.map((id) => posts.find((p) => p.id === id)).filter((p) => p !== undefined);
+	const otherPosts = posts.filter((p) => !seriesIds.includes(p.id));
 	const line = (title: string, url: string, description?: string) =>
 		`- [${title}](${url})${description ? `: ${description}` : ''}`;
 
@@ -152,6 +178,7 @@ export async function llmsIndex() {
 		`> ${longDescription}`,
 		[
 			'OT Fabric is an open-source organization on GitHub (https://github.com/otfabric). For each operational technology (OT) communication protocol it publishes a library with client and server support, a command-line tool where field work needs one, and a Dockerized interoperability suite that tests the implementation against independent stacks. For standard information models, which define what device data means and are carried over a protocol (SunSpec Modbus over Modbus, the IEC 61850 information model), it publishes model libraries and tools on top of the protocol libraries. For application and messaging profiles, which define how applications use a transport (Sparkplug B over MQTT), it publishes the same library, CLI and interop suite. Everything is MIT-licensed unless a repository says otherwise.',
+			`Next to the libraries it ships tools for people in the field: ${new Intl.ListFormat('en').format(available.filter((p) => p.data.category === 'ui').map((p) => p.data.name))} as desktop apps; LAN Tracker for OT network visibility; otprobe to find out which OT protocol an endpoint speaks and which device answers; simulators; and capture and trace readers. Every command-line tool installs with one line, \`curl -fsSL ${installHost}/<tool> | sh\` on Linux and macOS or \`irm ${installHost}/<tool>.ps1 | iex\` in Windows PowerShell, and they share the same conventions: \`--format json\`, one exit-code table and \`<tool> version --json\` (${site.url}/docs/install/, ${site.url}/docs/automation/).`,
 			'The roadmap covers every relevant OT protocol, IT-to-OT gateways and data connectors, and MCP servers so AI agents can work with industrial devices safely. The project is built by people and AI agents together: engineers set direction and own every decision, and public tests and interop suites hold every change to the same bar.',
 		].join('\n\n'),
 		...kinds
@@ -173,8 +200,15 @@ export async function llmsIndex() {
 			.filter(({ items }) => items.length)
 			.map(({ c, items }) => `### ${c.label}\n\n${items.map((p) => line(p.data.name, `${site.url}/projects/${p.id}/`, `${p.data.description} Source: ${repoUrl(p.data.repo!)}`)).join('\n')}`)
 			.join('\n\n'),
-		...(posts.length
-			? ['## Blog', posts.map((p) => line(p.data.title, `${site.url}/blog/${p.id}/`, p.data.description)).join('\n')]
+		...(seriesPosts.length
+			? [
+					`## Guide series: ${protocolSeries.title}`,
+					'Software architecture for OT, protocol by protocol: how 14 industrial protocols read, write, raise events, assign roles, run in real time, recover sessions and handle time, and how to build a gateway across them. Start with the first post.',
+					seriesPosts.map((p, i) => line(`${i + 1}. ${p.data.title}`, `${site.url}/blog/${p.id}/`, p.data.description)).join('\n'),
+				]
+			: []),
+		...(otherPosts.length
+			? ['## Blog', otherPosts.map((p) => line(p.data.title, `${site.url}/blog/${p.id}/`, p.data.description)).join('\n')]
 			: []),
 		'## Ecosystem map',
 		line(ecosystem.title, `${site.url}/ecosystem/implementations/`, `Interactive map of ${ecosystem.implementations.length} open-source and commercial implementations of the protocols and profiles above, with language, licence, roles and latest release. Data: https://github.com/otfabric/website/blob/main/src/data/ecosystem.json`),

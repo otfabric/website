@@ -5,6 +5,7 @@ import PostList from '../../../components/blog/PostList.astro';
 import TagList from '../../../components/blog/TagList.astro';
 import { getPosts, getTags } from '../../../data/blog';
 import { breadcrumbs } from '../../../data/seo';
+import { getStandards } from '../../../data/standards';
 
 export async function getStaticPaths() {
 	return (await getTags()).map(([tag]) => ({ params: { tag } }));
@@ -12,11 +13,14 @@ export async function getStaticPaths() {
 
 const { tag } = Astro.params;
 const posts = (await getPosts()).filter((post) => post.data.tags.includes(tag));
+// Tags that name a protocol, model or profile read better by its name: "posts about KNX", not "tagged knx".
+const subject = (await getStandards()).find((s) => s.id === tag)?.data.name ?? tag.replace(/-/g, ' ');
+const description = `${posts.length} OT Fabric blog post${posts.length === 1 ? '' : 's'} about ${subject}: ${posts.map((p) => p.data.title).join('; ')}.`;
 ---
 
 <BaseLayout
 	title={`#${tag}`}
-	description={`OT Fabric blog posts tagged ${tag}.`}
+	description={description}
 	pageType="CollectionPage"
 	schema={[breadcrumbs([{ name: 'Blog', path: '/blog/' }, { name: `#${tag}`, path: `/blog/tags/${tag}/` }])]}
 >

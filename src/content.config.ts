@@ -181,7 +181,8 @@ export const collections = {
 				updated: z.coerce.date().optional(),
 				authors: z.array(z.string()).default(['OT Fabric']),
 				tags: z.array(z.string()).default([]),
-				cover: z.object({ image: image(), alt: z.string() }).optional(),
+				// `social`: a PNG of an SVG cover for link previews (scripts/render-social-covers.cjs).
+				cover: z.object({ image: image(), alt: z.string(), social: image().optional() }).optional(),
 				featured: z.boolean().default(false),
 				draft: z.boolean().default(false),
 			}),

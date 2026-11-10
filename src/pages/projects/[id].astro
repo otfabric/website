@@ -9,6 +9,8 @@ import { categories, getProjects, repoUrl, type Project } from '../../data/proje
 import { getStandards, kindOf, standardPath } from '../../data/standards';
 import { projectMedia } from '../../data/project-media';
 import { absolute, breadcrumbs, orgRef } from '../../data/seo';
+import { otfabricRelease } from '../../data/ecosystem';
+import { installHost, toolsFor } from '../../data/install';
 
 export async function getStaticPaths() {
 	const projects = (await getProjects()).filter((p) => p.data.status === 'available');
@@ -38,6 +40,9 @@ const releases =
 const media = projectMedia[project.id];
 const screenshotUrl = media?.screenshot && (await getImage({ src: media.screenshot.src, width: 1200, format: 'png' })).src;
 const url = absolute(`/projects/${project.id}/`);
+// Machine-readable facts that are not on the page as such: the latest release and the one-line installer.
+const release = otfabricRelease(data.repo!);
+const installer = toolsFor(project.id).find((t) => t.tool === project.id) ?? toolsFor(project.id)[0];
 // Search terms for each kind of project, next to the protocol names.
 const categoryKeywords: Record<typeof data.category, string[]> = {
 	protocol: ['protocol library', 'client', 'server'],
@@ -91,6 +96,7 @@ const schema = [
 		author: orgRef,
 		publisher: orgRef,
 		isAccessibleForFree: true,
+		...(release && { version: release.version.replace(/^v/, ''), ...(release.date && { dateModified: release.date }) }),
 		keywords: ['OT', 'industrial automation', ...categoryKeywords[data.category], ...implemented.map((s) => s.data.name)].join(', '),
 		...(implemented.length && {
 			about: implemented.map((s) => ({ '@type': 'Thing', name: s.data.name, url: absolute(standardPath(s)) })),
@@ -112,6 +118,8 @@ const schema = [
 					applicationCategory: data.category === 'discovery' ? 'NetworkingApplication' : 'DeveloperApplication',
 					...(data.category === 'ui' && { operatingSystem: 'macOS, Windows, Linux' }),
 					downloadUrl: `${releases}/latest`,
+					...(installer && { installUrl: `${installHost}/${installer.tool}` }),
+					...(release && { softwareVersion: release.version.replace(/^v/, '') }),
 					offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' },
 					isAccessibleForFree: true,
 					...(screenshotUrl && { screenshot: absolute(screenshotUrl) }),
