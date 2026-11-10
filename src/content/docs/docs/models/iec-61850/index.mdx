@@ -31,12 +31,15 @@ IEC 61850-7-7 defines **NSD**, the XML format in which IEC publishes each namesp
 
 go-iec61850-model never picks a "latest" release. A catalog can hold several releases; a **profile** selects at most one release per standard and adds dependencies when exactly one loaded release satisfies them. A name that two namespaces define is never merged: IEC 61850-7-420 and IEC TR 61850-90-9 both define `DBAT`, differently, so a lookup in a profile with both fails as ambiguous until you name the namespace.
 
-The library embeds a catalog of the 12 official NSD namespaces, generated from the official packages:
+The library embeds every NSD release IEC publishes, 28 namespaces generated from the official packages and gzip-compressed to about 0.3 MB (since v0.8.0; earlier releases embedded 12):
 
 | Profile | Namespaces |
 |---|---|
 | `default` | IEC 61850-7-2, 7-3, 7-4, 7-410 and 7-420 |
 | `extended` | The default namespaces plus the technical reports 90-3, 90-4, 90-6, 90-9, 90-11, 90-14 and 90-21 |
+| `edition2` | IEC 61850-7-2, 7-3 and 7-4 at release 2007A3, for devices that declare `IEC 61850-7-4:2007` or `2007A` |
+
+The earlier releases of 7-2, 7-3 and 7-4 (2007A2 to 2007B5) are embedded too and can be selected by their release ID, for example `IEC 61850-7-4:2007B4`. `official.ForNamespace` returns the embedded profile for the release a device declares in `LLN0.NamPlt.ldNs` or `lnNs`. IEC publishes no NSD for Edition 1 (2003) of 7-4, so an Edition 1 device has no exact match.
 
 You can also load NSD packages you obtained yourself, as ZIP archives, directories or files. The importer treats them as untrusted: it bounds size, depth and token count, rejects DTDs, and checks archives for traversal and compression bombs. The service namespace of IEC 61850-8-1 is recognized but not modeled.
 
@@ -56,7 +59,7 @@ Semantic descriptors carry the rule, source and confidence they came from and ar
 go get github.com/otfabric/go-iec61850-model
 ```
 
-Go 1.24 or later. The library packages use only the standard library and need no network access at run time.
+Go 1.26 or later. The library packages use only the standard library and need no network access at run time.
 
 ## Look up and resolve
 
@@ -130,9 +133,9 @@ The module imports neither go-iec61850 nor go-mms, nor any other transport.
 
 ## Status and scope
 
-go-iec61850-model is pre-release (v0.2.2 at the time of writing). Its README and PROGRESS.md track the state of each part.
+go-iec61850-model is pre-release (v0.8.2 at the time of writing). Its README and PROGRESS.md track the state of each part.
 
-- **Supported:** the NSD importer, catalog and profiles, references, type resolution, semantic mapping for metering classes, ontology helpers, the embedded catalog, generated names and the nsdctl CLI. The importer is tested against the 14 tracked official packages, and 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages.
+- **Supported:** the NSD importer, catalog and profiles, references, type resolution, semantic mapping for metering classes, ontology helpers, the embedded catalog, generated names and the nsdctl CLI. The importer is tested against the 33 tracked official packages, every NSD release IEC publishes, and 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages.
 - **Not supported:** MMS, GOOSE, Sampled Values or any other communication; an SCL runtime; the IEC 61850-8-1 service namespace. An NSD update monitor is planned.
 
 <Aside type="note" title="IEC content and licensing">

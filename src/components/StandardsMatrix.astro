@@ -16,6 +16,10 @@ const standards = all.filter((s) => s.data.kind === kind);
 // A project belongs to the row of its primary (first) standard.
 const of = (id: string, category: string) => projects.filter((p) => p.data.category === category && p.data.standards[0] === id);
 const projectCell = (category: string) => (id: string) => ({ projects: of(id, category) });
+// A UI app also shows in the row of a model it works with (IEC 61850 Explorer and the IEC 61850 model).
+const uiCell = (id: string) => ({
+	projects: projects.filter((p) => p.data.category === 'ui' && (p.data.standards[0] === id || p.data.related.includes(id))),
+});
 // A standard that is a transport for others (CAN bus) has its library among the building blocks.
 const libraryCell = (id: string) => {
 	const libs = of(id, 'protocol');
@@ -32,7 +36,7 @@ const columns: { label: string; cell: (id: string) => { projects?: Project[]; li
 				{ label: kind === 'application-profile' ? 'Built on' : 'Carried over', cell: (id) => ({ links: carriedBy[id] }) },
 				{ label: 'Library', cell: projectCell(kind) },
 				{ label: 'CLI', cell: projectCell('cli') },
-				kind === 'application-profile' ? { label: 'Interop suite', cell: projectCell('interop') } : { label: 'UI app', cell: projectCell('ui') },
+				kind === 'application-profile' ? { label: 'Interop suite', cell: projectCell('interop') } : { label: 'UI app', cell: uiCell },
 			];
 const carriedBy = Object.fromEntries(await Promise.all(standards.map(async (s) => [s.id, await carriers(s)] as const)));
 const rows = standards.map((standard) => ({ standard, cells: columns.map((c) => c.cell(standard.id)) }));

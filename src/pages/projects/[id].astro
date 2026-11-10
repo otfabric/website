@@ -56,6 +56,7 @@ const what: Record<string, string> = {
 	'go-modbus-capture': 'Modbus capture format (MBCAP)',
 	'go-modbus-trace': 'Modbus/TCP packet trace reader',
 	'go-mms': 'MMS (ISO 9506) library',
+	'go-mms-trace': 'IEC 61850 packet capture reader',
 	'go-iec61850-model': 'IEC 61850 information model and NSD library',
 	nsdctl: 'IEC 61850 NSD and information model CLI',
 	'go-sunspec': 'SunSpec Modbus information model library',
@@ -67,6 +68,7 @@ const what: Record<string, string> = {
 	otprobe: 'OT protocol detection and device identification CLI',
 	'lan-tracker': 'OT network visibility',
 	'modbus-trace-explorer': 'Modbus/TCP trace viewer',
+	'iec61850-explorer': 'IEC 61850 IED, SCL and capture workbench',
 };
 const kind = { protocol: 'library', 'information-model': 'library', 'application-profile': 'library', cli: 'command-line tool', interop: 'interop test suite', ui: 'desktop app' } as Record<string, string>;
 const topic = implemented[0]?.data.name;
