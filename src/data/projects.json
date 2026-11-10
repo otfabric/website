@@ -123,6 +123,28 @@
 		]
 	},
 	{
+		"id": "go-mms-trace",
+		"name": "go-mms-trace",
+		"repo": "go-mms-trace",
+		"category": "protocol",
+		"standards": [
+			"iec-61850"
+		],
+		"status": "available",
+		"install": "go get github.com/otfabric/go-mms-trace",
+		"description": "Read pcap and pcapng captures of IEC 61850 traffic offline: MMS associations, every confirmed service with its status and latency, reports, GOOSE and Sampled Values streams, and what the capture lost. Library and mmstracectl.",
+		"icon": "go-mms",
+		"highlights": [
+			"MMS associations over ISO-on-TCP, with how each was opened and closed, whether it was accepted and which authentication mechanism the request named.",
+			"Every confirmed service with request and response paired by invoke ID, a status (ok, error, reject, unanswered, orphan, pending) and its latency.",
+			"IEC 61850 reports as captured, and the GOOSE and Sampled Values streams on the Ethernet with state changes, rates, gaps, restarts and lost or repeated samples.",
+			"TCP gaps reported per association, counters for everything that could not be used, and a damaged file still returns what was read before the damage.",
+			"Tested on captures recorded between five independent IEC 61850 stacks and on public captures, with its MMS decoding checked by hand against Wireshark's dissector.",
+			"Offline only: it never captures live and never sends anything. Pure Go, no cgo and no libpcap.",
+			"Includes mmstracectl, which prints a capture's associations, timeline, reports and GOOSE and SV streams as text, JSON or CSV. Binaries for Linux, macOS and Windows are on GitHub Releases."
+		]
+	},
+	{
 		"id": "go-s7comm",
 		"name": "go-s7comm",
 		"repo": "go-s7comm",
@@ -164,11 +186,11 @@
 		],
 		"status": "available",
 		"install": "go get github.com/otfabric/go-iec61850-model",
-		"description": "The IEC 61850 information model without a transport: an edition-aware catalog of logical nodes, data objects, CDCs and data attributes from the official NSD files, with reference validation, type resolution and semantic mapping.",
+		"description": "The IEC 61850 information model without a transport: an edition-aware catalog of logical nodes, data objects, CDCs and data attributes from every official NSD release, with reference validation, type resolution and semantic mapping.",
 		"icon": "go-iec61850",
 		"highlights": [
-			"Imports the official machine-readable namespace definitions (NSD, IEC 61850-7-7) and embeds a catalog of the 12 official namespaces, so lookups need no files.",
-			"Edition-aware: several releases of a namespace side by side, explicit profiles, and an ambiguity error instead of a silent merge when two namespaces define the same name (IEC 61850-7-420 and IEC TR 61850-90-9 both define DBAT).",
+			"Imports the official machine-readable namespace definitions (NSD, IEC 61850-7-7) and embeds every NSD release IEC publishes, 28 namespaces in about 0.3 MB, so lookups need no files.",
+			"Edition-aware: several releases of a namespace side by side, the default, extended and edition2 profiles, any embedded release by its ID (IEC 61850-7-4:2007B4), and the profile that matches the release a device declares in its nameplate. Two namespaces that define the same name give an ambiguity error instead of a silent merge (IEC 61850-7-420 and IEC TR 61850-90-9 both define DBAT).",
 			"Parses and validates references such as LD0/MMXU1.Hz.mag.f[MX] and resolves them down to their basic type, with functional constraints and presence conditions.",
 			"Semantic hints (quantity, phase, unit) from explicit rules for MMXU, MMXN and MMTR, always marked as OT Fabric interpretation and never changing the normative model.",
 			"Ontology helpers: a typed concept graph with traversal and JSON export.",
@@ -1422,6 +1444,31 @@
 			"Export one device, the current filter or everything as an MBCAP capture, with a preview of what goes in and why the rest stays out, ready for modbusctl server replay. Also CSV, JSON Lines and a pcapng sub-trace.",
 			"Reads pcap and pcapng from tcpdump, Wireshark, dumpcap or tshark, ring buffers and gzip files as they are, and MBCAP captures. A million rows page, filter and sort in milliseconds.",
 			"Read-only and offline: it never talks to devices, never writes to Modbus and does not capture live. A desktop application for macOS, Windows and Linux."
+		]
+	},
+	{
+		"id": "iec61850-explorer",
+		"name": "IEC 61850 Explorer",
+		"repo": "iec61850-explorer",
+		"category": "ui",
+		"standards": [
+			"iec-61850"
+		],
+		"related": [
+			"iec-61850-model"
+		],
+		"status": "available",
+		"description": "Connect to an IEC 61850 IED, open its SCL file or a packet capture of the station bus, and see the model, the values with quality and time, and what happened on the wire. Read-only by default; controls and writes only in a granted, audited Commission mode.",
+		"icon": "go-iec61850",
+		"highlights": [
+			"Live, in Observe mode: browse an IED's logical devices, nodes and attributes, read values with their quality, time stamp and MMS item, and watch and poll points of several IEDs in one table. The client is built so that it cannot send a write, a control or a file change.",
+			"Offline, from SCL: browse an IED of an SCD, CID, ICD or IID before the device exists, and search its data by quantity (frequency, voltage, current, power, energy, impedance) without knowing the logical node classes by heart.",
+			"Conformance: check each logical device against the IEC 61850 namespace it declares, with Edition 1 files marked and vendor namespaces loaded as NSD packages.",
+			"Compare an IED with its SCL file, a snapshot or another IED, configured values included, to find the firmware update or the setting changed on the front panel.",
+			"Commission mode on request: a grant with a reason and a duration, then writes verified by reading them back, report subscriptions, data sets, setting groups and controls of every control model, with the select, the operate, the CommandTermination and the IED's reason for a refusal. Everything goes into an audit trail.",
+			"Captures: open a pcap or pcapng of MMS, GOOSE and Sampled Values and get the timeline with status and latency, the reports decoded against a linked model, the GOOSE and SV streams, and findings such as TCP gaps, unanswered requests and lost samples. Exports as CSV and JSON.",
+			"Point lists for SCADA and gateway engineering, with FC, CDC, type, presence, quantity, unit and the data sets and reports that carry each attribute.",
+			"A desktop application for macOS, Windows and Linux, or a daemon on a gateway with the same interface in any browser over an SSH tunnel, also through a SOCKS5 or HTTP proxy."
 		]
 	},
 	{

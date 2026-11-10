@@ -207,6 +207,8 @@ IEC 61850 is the station-bus standard in modern substations. A station computer,
   <LinkCard title="go-mms" description="MMS (ISO 9506) client and server, with the ISO upper-layer stack." href="/projects/go-mms/" />
   <LinkCard title="iec61850ctl" description="Command-line MMS client, GOOSE and Sampled Values tools, SCL tools and a local MMS server." href="/projects/iec61850ctl/" />
   <LinkCard title="iec61850-interop" description="Container images of libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust for MMS, GOOSE and SV interop tests. Formerly mms-interop." href="/projects/iec61850-interop/" />
+  <LinkCard title="IEC 61850 Explorer" description="Desktop app and gateway daemon: inspect IEDs in Observe mode, browse SCL offline, compare, commission with an audit trail and analyse station bus captures." href="/projects/iec61850-explorer/" />
+  <LinkCard title="go-mms-trace" description="Read pcap and pcapng captures of MMS, GOOSE and Sampled Values offline, with the mmstracectl CLI." href="/projects/go-mms-trace/" />
   <LinkCard title="go-iec61850-model" description="The IEC 61850 information model from the official NSD files, with nsdctl. No transport; used next to the libraries above." href="/models/iec-61850/" />
 </CardGrid>
 
@@ -217,6 +219,8 @@ IEC 61850 is the station-bus standard in modern substations. A station computer,
 | go-cotp | COTP class 0 transport | [github.com/otfabric/go-cotp](https://github.com/otfabric/go-cotp) |
 | go-tpkt | RFC 1006 TPKT framing | [github.com/otfabric/go-tpkt](https://github.com/otfabric/go-tpkt) |
 | iec61850ctl | CLI on top of go-iec61850 and go-mms | [github.com/otfabric/iec61850ctl](https://github.com/otfabric/iec61850ctl) |
+| go-mms-trace | Offline analysis of MMS, GOOSE and Sampled Values packet captures, with `mmstracectl` | [github.com/otfabric/go-mms-trace](https://github.com/otfabric/go-mms-trace) |
+| IEC 61850 Explorer | Desktop app and gateway daemon on go-iec61850, go-mms, go-mms-trace and go-iec61850-model | [github.com/otfabric/iec61850-explorer](https://github.com/otfabric/iec61850-explorer) |
 | iec61850-interop | Reference stack images and fixtures for MMS, IED services, GOOSE and SV | [github.com/otfabric/iec61850-interop](https://github.com/otfabric/iec61850-interop) |
 
 Start with the [Go library](/docs/protocols/iec-61850/library/) page or the [iec61850ctl](/docs/protocols/iec-61850/cli/) page, and see [Testing and interop](/docs/protocols/iec-61850/testing/) for what has been validated.

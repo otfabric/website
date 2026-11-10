@@ -63,6 +63,16 @@ nsdctl catalog overlaps --left IEC_61850-7-420 --right IEC_TR_61850-90-9
 
 Without `--ns`, a name that two namespaces of the profile define fails as ambiguous. `catalog overlaps` classifies every shared name as identical, a compatible extension or conflicting.
 
+## The release a device declares
+
+```sh
+nsdctl catalog select "IEC 61850-7-4:2007A"       # the embedded profile for a device's LLN0.NamPlt.ldNs
+nsdctl -p edition2 model show MMXU
+nsdctl -p "IEC 61850-7-4:2007B4" model show XCBR   # any embedded release, by its ID
+```
+
+The embedded catalog holds every NSD release IEC publishes (28 namespaces since go-iec61850-model v0.8.0; nsdctl uses it since v0.8.1), so an older device is looked up against the release it was configured for, not the newest one. IEC publishes no NSD for Edition 1 (2003) of 7-4.
+
 ## Work with NSD packages
 
 ```sh
@@ -74,7 +84,7 @@ nsdctl diff --exit-code ./old/ ./new/
 nsdctl -s .nsd-cache generate go -o .generated/go --package iec61850names
 ```
 
-Without `--source` (`-s`), the `model` and `catalog` commands use the embedded catalog; `-p` selects a named profile (`default`, `extended`) or a namespace release. Apart from `sources fetch`, nsdctl never downloads anything. Output generated from NSD packages stays local unless the lock file permits publishing it.
+Without `--source` (`-s`), the `model` and `catalog` commands use the embedded catalog; `-p` selects a named profile (`default`, `extended`, `edition2`) or any embedded namespace release. Apart from `sources fetch`, nsdctl never downloads anything. Output generated from NSD packages stays local unless the lock file permits publishing it.
 
 ## Output and exit codes
 

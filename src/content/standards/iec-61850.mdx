@@ -10,6 +10,7 @@ facts:
   - { label: 'Libraries', value: 'go-iec61850, go-mms' }
   - { label: 'CLI', value: 'iec61850ctl' }
   - { label: 'Interop suite', value: 'iec61850-interop' }
+  - { label: 'UI app', value: 'IEC 61850 Explorer' }
 icon: go-iec61850
 docs: /docs/protocols/iec-61850/
 layers:
@@ -71,6 +72,10 @@ iec61850ctl sv subscribe --iface eth0 --scl station.scd --svcb MSVCB01 --duratio
 # Run a local MMS server from SCL
 iec61850ctl server start --scl device.cid --host 0.0.0.0 --port 102
 ```
+
+### In a desktop app
+
+[IEC 61850 Explorer](/projects/iec61850-explorer/) is the graphical workbench for the same work. Connect to an IED and read its values with quality and time, without being able to change anything on it; open an SCD or CID to browse a device before it exists and search it by quantity; compare an IED with its SCL file to find a changed setting; and open a packet capture of the station bus to see the MMS timeline, reports, GOOSE and Sampled Values streams and what went wrong. Writes and controls happen only in a Commission mode you grant with a reason and a time limit, and every action is recorded. Download it from [GitHub Releases](https://github.com/otfabric/iec61850-explorer/releases/latest) for macOS, Windows or Linux, or run its daemon on a gateway and use it in a browser. The capture analysis is also a library and CLI on its own, [go-mms-trace](/projects/go-mms-trace/) with `mmstracectl`.
 
 ### From Go
 

@@ -14,6 +14,7 @@ facts:
   - { label: 'Library', value: 'go-iec61850-model' }
   - { label: 'CLI', value: 'nsdctl' }
   - { label: 'Communication', value: 'go-iec61850, go-mms' }
+  - { label: 'UI app', value: 'IEC 61850 Explorer' }
 icon: go-iec61850
 docs: /docs/models/iec-61850/
 carriedBy: [iec-61850]
@@ -106,13 +107,13 @@ fmt.Println(d.Quantity, d.Phase, d.Reference, d.UnitHint) // voltage A line-neut
 
 ## What go-iec61850-model supports
 
-The library is pre-release (v0.1.x). Its own status table is the reference; this is a summary.
+The library is pre-release (v0.8.2 at the time of writing). Its own status table is the reference; this is a summary.
 
 | | |
 |---|---|
-| NSD importer | Reads NSD and NSDoc XML and ZIP packages, treated as untrusted input; tested against the 14 tracked official packages with no validation errors |
-| Embedded catalog | The 12 official NSD namespaces (7-2, 7-3, 7-4, 7-410, 7-420 and the technical reports 90-3, 90-4, 90-6, 90-9, 90-11, 90-14, 90-21), with a `default` and an `extended` profile |
-| Editions | Several releases of a namespace in one catalog, explicit profiles, never a silent "latest"; names defined by two namespaces fail as ambiguous until you choose |
+| NSD importer | Reads NSD and NSDoc XML and ZIP packages, treated as untrusted input; tested against the 33 tracked official packages, every NSD release IEC publishes, with no validation errors |
+| Embedded catalog | Every published NSD release, 28 namespaces: 7-2, 7-3 and 7-4 from 2007A2 to 2007B6 (Edition 2 and 2.1), 7-410, 7-420 and the technical reports 90-3, 90-4, 90-6, 90-9, 90-11, 90-14 and 90-21, gzip-compressed to about 0.3 MB, with the `default`, `extended` and `edition2` profiles |
+| Editions | Several releases of a namespace in one catalog, explicit profiles, never a silent "latest"; any embedded release selectable by its ID, and the profile for the release a device declares in `LLN0.NamPlt.ldNs` picked for you; names defined by two namespaces fail as ambiguous until you choose. IEC publishes no NSD for Edition 1 (2003) of 7-4 |
 | References | Parsing compatible with go-iec61850's `ParseRef`, and validation against the model |
 | Type resolution | Paths down to basic types, with inheritance, parameterized CDCs, multi-instance data objects and FC checks |
 | Semantic mapping | Quantity, phase, reference, component and unit hints from explicit rules for `MMXU`, `MMXN` and `MMTR`, with overrides |
@@ -120,7 +121,7 @@ The library is pre-release (v0.1.x). Its own status table is the reference; this
 | Generated code | Typed Go constants for every class, data object, CDC and enumeration of the default profile |
 | Coverage | 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages |
 | Not covered | MMS, GOOSE, Sampled Values and any other communication; an SCL runtime; the service namespace of IEC 61850-8-1, which is recognized but not modeled; an NSD update monitor (planned) |
-| Go version | 1.24 or later, standard library only (nsdctl adds cobra) |
+| Go version | 1.26 or later, standard library only (nsdctl adds cobra) |
 
 ## Communication is a separate layer
 
@@ -131,8 +132,9 @@ Using the information model does not mean speaking every IEC 61850 communication
 | [go-iec61850-model](/projects/go-iec61850-model/) | Information model | The normative catalog from NSD: lookups, validation, resolution, semantics. No transport. |
 | [go-iec61850](/projects/go-iec61850/) | Communication: MMS, GOOSE and Sampled Values | IEC 61850 client and SCL-driven server over MMS: browse, read, write, datasets, reports, controls, files; GOOSE and Sampled Values publishers and subscribers. |
 | [go-mms](/projects/go-mms/) | Protocol | MMS (ISO 9506) client and server, the transport underneath go-iec61850. |
+| [IEC 61850 Explorer](/projects/iec61850-explorer/) | Desktop app | Uses the model next to the communication stack: search an IED by quantity, check it against the namespace it declares, and export point lists with CDC, presence, quantity and unit. |
 
-go-iec61850-model imports neither go-iec61850 nor go-mms, and go-iec61850 does not depend on it today. See [IEC 61850](/protocols/iec-61850/) for the communication side.
+go-iec61850-model imports neither go-iec61850 nor go-mms, and go-iec61850 does not depend on it today; IEC 61850 Explorer is where the two meet. See [IEC 61850](/protocols/iec-61850/) for the communication side.
 
 ## Standards and licensing
 
