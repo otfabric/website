@@ -10,15 +10,42 @@ export const ogImage = {
 	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CANopen on CAN bus and KNX, the SunSpec Modbus and IEC 61850 information models, and the Sparkplug B profile.',
 };
 
-/** Meta description for the homepage: what OT Fabric is, with the protocols and models people search for. */
+/** Meta description for the homepage: what OT Fabric is and the protocols people search for, in what a search result shows. */
 export const homeDescription =
-	'Open-source protocol libraries, CLIs and interoperability suites for Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CANopen on CAN bus and KNX, plus SunSpec Modbus and IEC 61850 information models and the Sparkplug B profile for MQTT.';
+	'Open-source libraries, CLIs, desktop apps and interop suites for OT protocols: Modbus, OPC UA, BACnet, IEC 61850, DNP3, OCPP, EtherNet/IP, KNX and more.';
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
-	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 (MMS, GOOSE and Sampled Values), Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS), EtherNet/IP (CIP), PROFINET IO, CANopen (CiA 301, CiA 302, LSS, CiA 402, CANopen FD) the CAN bus it runs on (CAN FD, CAN XL, ISO-TP) and KNX (KNXnet/IP, KNX IP Secure, KNX Data Secure), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. Built by people and AI agents together.';
+	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 (MMS, GOOSE and Sampled Values), Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS), EtherNet/IP (CIP), PROFINET IO, CANopen (CiA 301, CiA 302, LSS, CiA 402, CANopen FD) the CAN bus it runs on (CAN FD, CAN XL, ISO-TP) and KNX (KNXnet/IP, KNX IP Secure, KNX Data Secure), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. It also ships desktop apps (SunSpec Explorer, Modbus Trace Explorer, IEC 61850 Explorer), OT network visibility (LAN Tracker) and protocol detection (otprobe), and every CLI installs with one line from get.otfabric.io. Built by people and AI agents together.';
 
 export const absolute = (path: string) => new URL(path, site.url).href;
+
+/**
+ * The <title> text: "Page | OT Fabric", but without the site name when that would push the title past
+ * what search results show (about 60 characters), so long post titles are not cut off mid-phrase.
+ */
+export const withSiteName = (title: string, max = 65) => {
+	const full = `${title} | ${site.name}`;
+	return full.length <= max ? full : title;
+};
+
+/**
+ * The meta description search engines show: whole sentences up to about 160 characters. Pages keep
+ * their longer description for social cards, JSON-LD and the visible lead.
+ */
+export function searchSnippet(text: string, max = 160) {
+	const clean = text.replace(/\s+/g, ' ').trim();
+	if (clean.length <= max) return clean;
+	let out = '';
+	for (const sentence of clean.split(/(?<=[.!?])\s+(?=[A-Z0-9"“(])/)) {
+		const next = out ? `${out} ${sentence}` : sentence;
+		if (next.length > max) break;
+		out = next;
+	}
+	if (out.length >= 80) return out;
+	const cut = clean.slice(0, max - 1);
+	return `${cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s,;:–—-]+$/, '')}…`;
+}
 
 const orgId = `${site.url}/#organization`;
 const websiteId = `${site.url}/#website`;
@@ -57,6 +84,7 @@ export const organization = {
 		'MMS (ISO 9506)',
 		'IEC 61850 information model',
 		'IEC 61850 NSD (IEC 61850-7-7)',
+		'IEC 61850 SCL (IEC 61850-6)',
 		'Siemens S7',
 		'OpenADR',
 		'OCPP',
@@ -67,6 +95,7 @@ export const organization = {
 		'Common Industrial Protocol (CIP)',
 		'PROFINET IO',
 		'Media Redundancy Protocol (MRP)',
+		'GSDML',
 		'CAN bus',
 		'CAN FD',
 		'CAN XL',
@@ -95,6 +124,8 @@ export const organization = {
 		'Factory automation',
 		'PLC tag access',
 		'OT network visibility',
+		'OT protocol fingerprinting',
+		'Industrial device simulation',
 		'Packet capture analysis',
 		'Protocol interoperability testing',
 		'Model Context Protocol',

@@ -75,6 +75,9 @@ export const isProfile = (p: ProtocolSummary) => p.kind === 'profile';
 
 export const byProtocol = (protocol: string) => implementations.filter((i) => i.protocol === protocol);
 export const byId = (id: string) => implementations.find((i) => i.id === id);
+/** The latest release of an OT Fabric repository, where the ecosystem map tracks it (the libraries). */
+export const otfabricRelease = (repo: string) =>
+	implementations.find((i) => i.otfabric && i.repo === `otfabric/${repo}` && i.release)?.release ?? undefined;
 
 export const typeLabels: Record<ImplType, string> = {
 	independent: 'Independent stacks',

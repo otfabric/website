@@ -24,6 +24,23 @@ draft: false             # true keeps it out of the build
 ---
 ```
 
+Search results show about 160 characters of the description, so put the point in the first sentence.
+
+### SVG covers
+
+LinkedIn, X and Slack can't show an SVG in a link preview. When the cover is an SVG diagram, render a PNG of it and add it as `social`:
+
+```sh
+node scripts/render-social-covers.cjs
+```
+
+```yaml
+cover:
+  alt: go-knx tested against independent KNX stacks
+  image: ../../assets/blog/knx-interop-matrix.svg
+  social: ../../assets/blog/social/knx-interop-matrix.png
+```
+
 ## Images
 
 Put images in `src/assets/blog/` and use relative paths. Astro optimizes them at build time.

@@ -3,7 +3,7 @@ import '../styles/site.css';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import { site } from '../data/site';
-import { jsonLd, ogImage, organization, orgRef, website, websiteRef } from '../data/seo';
+import { jsonLd, ogImage, organization, orgRef, searchSnippet, website, websiteRef, withSiteName } from '../data/seo';
 
 interface Props {
 	title?: string;
@@ -31,7 +31,7 @@ const {
 	noindex = false,
 	pageType = 'WebPage',
 } = Astro.props;
-const fullTitle = title ? `${title} | ${site.name}` : `${site.name}: unified data for industrial operations`;
+const fullTitle = title ? withSiteName(title) : `${site.name}: unified data for industrial operations`;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url);
 const socialImage = new URL(image ?? ogImage.src, Astro.site ?? site.url);
 const socialAlt = image ? (imageAlt ?? fullTitle) : ogImage.alt;
@@ -55,7 +55,7 @@ const webPage = {
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{fullTitle}</title>
-		<meta name="description" content={description} />
+		<meta name="description" content={searchSnippet(description)} />
 		<link rel="canonical" href={canonical} />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="sitemap" href="/sitemap-index.xml" />

@@ -25,14 +25,14 @@ interface Props {
 const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
 const { data } = post;
-// Social cards need a raster image; SVG covers fall back to the site image.
-const cover =
-	data.cover && data.cover.image.format !== 'svg'
-		? (await getImage({ src: data.cover.image, width: 1200, format: 'png' })).src
-		: undefined;
+// Social cards need a raster image: an SVG cover uses its rendered PNG, else the site image.
+const socialSource = data.cover && (data.cover.image.format !== 'svg' ? data.cover.image : data.cover.social);
+const cover = socialSource ? (await getImage({ src: socialSource, width: 1200, format: 'png' })).src : undefined;
 const url = absolute(`/blog/${post.id}/`);
 // Tags that name a protocol or model tie the post to that standard's page.
 const standards = (await getStandards()).filter((s) => data.tags.includes(s.id));
+// Posts of the architecture series name the series and their place in it.
+const seriesPosition = protocolSeries.parts.findIndex((part) => part.id === post.id);
 const schema = [
 	breadcrumbs([
 		{ name: 'Blog', path: '/blog/' },
@@ -53,6 +53,10 @@ const schema = [
 		keywords: data.tags.join(', '),
 		...(standards.length && {
 			about: standards.map((s) => ({ '@type': 'Thing', name: s.data.name, url: absolute(standardPath(s)) })),
+		}),
+		...(seriesPosition >= 0 && {
+			position: seriesPosition + 1,
+			isPartOf: { '@type': 'CreativeWorkSeries', name: protocolSeries.title, url: absolute(`/blog/${protocolSeries.hub}/`) },
 		}),
 		wordCount: (post.body ?? '').split(/\s+/).length,
 		inLanguage: 'en',

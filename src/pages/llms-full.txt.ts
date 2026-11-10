@@ -9,9 +9,10 @@ import about from './about.mdx?raw';
 
 // Every page's text in one file, each section headed by its title and canonical URL.
 export async function GET() {
-	const protocols = await Promise.all((await getStandards()).map(protocolSection));
+	const standards = await getStandards();
+	const protocols = await Promise.all(standards.map(protocolSection));
 	const docs = await getDocs();
-	const projects = (await getProjects()).filter((p) => p.data.status === 'available').map(projectSection);
+	const projects = (await getProjects()).filter((p) => p.data.status === 'available').map((p) => projectSection(p, standards));
 	const posts = (await getPosts()).map(postSection);
 	const organizations = (await getOrganizations()).filter((o) => o.data.detail).map(organizationSection);
 	const aboutPage = [`# About OT Fabric`, `URL: ${site.url}/about/`, mdxToMarkdown(about)].join('\n\n');
