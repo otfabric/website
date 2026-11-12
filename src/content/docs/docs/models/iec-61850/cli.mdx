@@ -37,6 +37,15 @@ MMXU.TotW.q          Quality    BASIC       MX
 MMXU.TotW.t          Timestamp  BASIC       MX
 ```
 
+## Does an instance satisfy the model
+
+```sh
+nsdctl model check XCBR --present Beh,Loc,OpCnt,Pos,BlkOpn,BlkCls,CBOpCap --value Pos.ctlModel=sbo-with-normal-security
+nsdctl model check --scl device.cid --ln LD0/XCBR1
+```
+
+`model check` evaluates the presence conditions of one logical node instance, given as a list of data objects, a JSON instance or a logical node of an SCL file. Each element is required, optional or forbidden, and satisfied, violated or undetermined, with the reason; a condition that needs a fact the instance does not give stays undetermined and names it (`--fact`). It exits with code 1 when a condition is violated, so it fits a CI check of SCL files. `nsdctl validate --presence` checks the conditions of a namespace itself.
+
 ## What a reference means
 
 ```sh

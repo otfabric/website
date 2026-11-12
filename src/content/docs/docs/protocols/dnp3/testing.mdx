@@ -21,10 +21,10 @@ Interoperability between two implementations does not establish conformance: bot
 | `opendnp3` | [opendnp3](https://github.com/dnp3/opendnp3) 3.1.2 (archived) | C++ | Apache-2.0 | master and outstation |
 | `dscsystems` | [DSC Systems go-dnp3](https://github.com/dscsystems/go-dnp3) v0.8.2 (experimental) | Go | GPL-3.0-or-later | master and outstation |
 | `dnp3py` | [dnp3py](https://github.com/craigpnnl/dnp3py) 0.6.0 | Python | MIT | master and outstation (its own fixture only) |
-| `cbsigma` | [cB-Sigma dnp3](https://github.com/cB-Sigma/dnp3) v0.3.0 | Go | Apache-2.0 | master and outstation |
+| `cbsigma` | [cB-Sigma dnp3](https://github.com/cB-Sigma/dnp3) v0.3.1 | Go | Apache-2.0 | master and outstation |
 | `nfmdnp3` | [nfm-dnp3](https://github.com/fxodell/dnp3py) 1.0.1 | Python | MIT | master over TCP only |
 
-dnp3-interop's current release is **v0.11.2** (container contract 1.5). v0.11.0 added cB-Sigma dnp3 and nfm-dnp3; v0.9.0 removed the Step Function I/O adapter at its maintainer's request.
+dnp3-interop's current release is **v0.12.1** (container contract 1.5). v0.12.0 moved cB-Sigma dnp3 to v0.3.1, which fixed four behaviours the self-tests had reported, and added fault checks to the smoke test: every outstation gets line noise, a frame with a bad header CRC, a frame cut off in its user data and a connection reset, and must still answer an integrity poll afterwards. v0.11.0 added cB-Sigma dnp3 and nfm-dnp3; v0.9.0 removed the Step Function I/O adapter at its maintainer's request.
 
 The stacks do not all do the same, and the images say so: `print-capabilities` lists what each adapter supports, and a consumer skips, not fails, a scenario an image declares unsupported. Container contract 1.0 covers DNP3 over TCP; 1.1 adds TLS, UDP, serial, file transfer and Secure Authentication; 1.2 frozen analog inputs, command events, time and interval objects, the dual end point and security statistics; 1.3 device attributes, several controls in one request, freeze at time and analog freeze, deadbands, file append and authentication, event buffer overflow, link confirms and keep-alive, broadcast, management functions and several outstations on one port; 1.4 counters that change (`counter-increment`, frozen event policies); 1.5, the current one, timers a master can provoke (operate delays, OPERATE without SELECT, withheld confirms), ACTIVATE CONFIG and pulse outputs. Every self-test writes `results.json` in the organisation's interop-result-v1 format.
 
@@ -80,11 +80,11 @@ A known upstream defect is recorded in `tests/known-bugs.tsv` and reported as a 
 
 ## go-dnp3 against the references
 
-`make interop` in go-dnp3 runs go-dnp3 as master against each reference outstation, and each reference master against go-dnp3's outstation (Docker needed). Both directions cover the integrity poll against the fixture's values and flags, reads of ranges and variations, every control case of the fixture, events and their confirmation, unsolicited responses, both time synchronization procedures, restarts, freezes and assign class, and every feature of contracts 1.1 to 1.5 that a reference has. go-dnp3 v1.9.0 is qualified against dnp3-interop v0.11.2, all five references.
+`make interop` in go-dnp3 runs go-dnp3 as master against each reference outstation, and each reference master against go-dnp3's outstation (Docker needed). Both directions cover the integrity poll against the fixture's values and flags, reads of ranges and variations, every control case of the fixture, events and their confirmation, unsolicited responses, both time synchronization procedures, restarts, freezes and assign class, and every feature of contracts 1.1 to 1.5 that a reference has. go-dnp3 v1.13.0 is qualified against dnp3-interop v0.12.0, all five references.
 
 M is go-dnp3 as master against the reference's outstation, O is go-dnp3 as outstation against the reference's master. A blank cell is a feature the reference does not have or its adapter does not expose.
 
-| Feature | opendnp3 3.1.2 | DSC go-dnp3 v0.8.2 | dnp3py 0.6.0 | cB-Sigma dnp3 v0.3.0 | nfm-dnp3 1.0.1 |
+| Feature | opendnp3 3.1.2 | DSC go-dnp3 v0.8.2 | dnp3py 0.6.0 | cB-Sigma dnp3 v0.3.1 | nfm-dnp3 1.0.1 |
 |---|:---:|:---:|:---:|:---:|:---:|
 | Integrity poll, controls, events, unsolicited responses | M O | M O | O | M O | |
 | Reads of ranges and variations, time, restarts, freezes, assign class | M O | M O | O | M O | O |
@@ -115,7 +115,7 @@ until docker exec go-dnp3 test -f /run/dnp3-interop/ready; do sleep 0.1; done
 
 The outstation serves the same fixtures as the references, and `client <operation>` runs go-dnp3's master against your outstation. It declares every feature of contract 1.5; its permitted differences from the references are listed in `own/go-dnp3/README.md`, and `version` prints the versions inside the image.
 
-Its tags are go-dnp3 versions, such as `v1.8.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a dnp3-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+Its tags are go-dnp3 versions, such as `v1.12.0`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a dnp3-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## Beyond interop
 
@@ -127,6 +127,8 @@ go-dnp3's own tests need nothing but Go:
 | `e2e/chaos_test.go` | A line that corrupts, splits, duplicates and drops octets and kills connections under load, with and without Secure Authentication |
 | `make fuzz` | The link frame decoder, stream reader, transport reassembly, application fragment decoder, the outstation's request handling and the splitting of responses into fragments |
 | Outstation conformance | The outstation against a scripted master, procedure by procedure, including the link layer frame by frame |
+| `make conformance` | The DNP Users Group's IED certification procedures (Step Function I/O's dnp3c 0.2.0: 3.1 rev 1 at subset levels 2 and 3, 2.7 at level 2) against a test outstation built on the library, through dnp3-interop's dnp3c runner; CI runs it on every push. Not a certification |
+| Recorded traffic | 182 captures of other DNP3 software (ITI ICS-Security-Tools, Zeek and the igbe data set): every frame decoded, encoded back octet for octet and compared with Wireshark's dissector, and the master and outstation replayed against the recorded peers. Software-generated, so no evidence about any RTU or IED |
 
 A weekly upstream watch compares go-dnp3's object catalog with the object definitions of Step Function I/O dnp3 and DSC go-dnp3, and opens an issue when they change or a new dnp3-interop release appears. It found that g86v2 is one octet, which go-dnp3 v1.3.0 corrected.
 
@@ -137,7 +139,7 @@ A weekly upstream watch compares go-dnp3's object catalog with the object defini
 **Not covered yet**:
 
 - Aggressive mode against an independent implementation: no reference in dnp3-interop has it, so it is verified between go-dnp3's own ends.
-- The DNP Users Group's IED conformance procedures, which DSC go-dnp3 and Step Function I/O run and go-dnp3 does not; go-dnp3 declares no subset level.
+- Certification. go-dnp3's outstation runs the DNP Users Group's IED conformance procedures in CI, but that is not a certification, and go-dnp3 declares no subset level. The run leaves out double-bit inputs in 3.1 rev 1, serial and UDP, multi-drop and the network tests of section 9.
 - Triangle MicroWorks, the most widely licensed commercial stack, while its adapter is on hold.
 - Real RTUs and IEDs. The references are stacks in containers.
 
@@ -150,7 +152,7 @@ Running the stacks against each other and against go-dnp3 turned up behaviour wo
 | opendnp3 3.1.2 | Its master synchronizes time only when the outstation asks for it, and sends neither DIRECT OPERATE NO ACK nor the freezes without acknowledgement. Its UDP outstation answers only the one peer it is configured with |
 | DSC go-dnp3 v0.8.2 | FREEZE AND CLEAR leaves a counter without a frozen counter uncleared, and a freeze raises events for frozen values that did not change. FREEZE AT TIME with time 0 is refused. Link addresses are not filtered: a master with a wrong address reads an IIN instead of timing out |
 | dnp3py 0.6.0 | Its outstation cannot serve the baseline fixture, ignores ranges and specific variations in a read, and answers a control of a point that does not exist with NOT_SUPPORTED but without PARAMETER_ERROR |
-| cB-Sigma dnp3 v0.3.0 | Sends a cached answer to a repeated request, and answers AUTHENTICATE_FILE with an empty user name and password at offset 0 (go-dnp3's master accepts that since v1.7.0) |
+| cB-Sigma dnp3 v0.3.1 | Answers AUTHENTICATE_FILE with an empty user name and password at offset 0 (go-dnp3's master accepts that since v1.7.0), does a FREEZE AT TIME with a time already past at once, and includes the g121 security statistics in a class 0 response with Secure Authentication. v0.3.1 fixed what v0.3.0 got wrong: FREEZE AND CLEAR without counter events, a cached answer to a repeated READ, and keep-alives off their interval (cB-Sigma/dnp3#2 to #5) |
 | nfm-dnp3 1.0.1 | Sends the application confirm as CONFIRMED_USER_DATA, cannot decode g3v2 or g110, swaps CROB codes and sends a one-octet 0x28 count (fxodell/dnp3py#5, #7, #10) |
 
 Each is recorded, with its reproduction, in dnp3-interop's [COMPATIBILITY.md](https://github.com/otfabric/dnp3-interop/blob/main/docs/COMPATIBILITY.md).

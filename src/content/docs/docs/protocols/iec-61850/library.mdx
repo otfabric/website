@@ -12,8 +12,8 @@ OT Fabric splits IEC 61850 over two Go libraries. Both are pure Go with no CGO, 
 
 | | [go-iec61850](https://github.com/otfabric/go-iec61850) | [go-mms](https://github.com/otfabric/go-mms) |
 |---|---|---|
-| Speaks | IEC 61850 over MMS, GOOSE and Sampled Values (LD, LN, DO, DA, FC, datasets, RCBs, GoCBs, MSVCBs, controls, SCL) | Generic MMS, ISO 9506 (domains, item IDs, named variable lists) |
-| Version described here | v1.6.0 | v1.4.0 |
+| Speaks | IEC 61850 over MMS, GOOSE and Sampled Values, on Ethernet and routable over UDP (LD, LN, DO, DA, FC, datasets, RCBs, GoCBs, MSVCBs, controls, SCL) | Generic MMS, ISO 9506 (domains, item IDs, named variable lists) |
+| Version described here | v1.19.4 | v1.9.2 |
 | Go version | 1.26 or later | 1.26 or later |
 | Client | Yes | Yes |
 | Server | SCL-driven, with reports, controls, setting groups, journals, GOOSE and SV | Yes, you register domains and variables |
@@ -27,6 +27,7 @@ go-iec61850 is one module with these packages:
 | `goose` | GOOSE frame codec, publisher, subscriber, SCL binding |
 | `sv` | Sampled Values frame codec, 9-2LE layout, publisher, subscriber, SCL binding |
 | `l2` | Raw Ethernet shared by `goose` and `sv`: `AF_PACKET`, BPF, EtherType demultiplexing and an in-memory hub |
+| `rsession` | R-GOOSE and R-SV: the session protocol of IEC TR 61850-90-5 over UDP, with HMAC-SHA256 authentication, as a transport for `goose` and `sv` |
 | `scl`, `scl/index`, `scl/validate` | SCL parsing, cross-reference index and semantic validation |
 
 The MMS side is built on go-mms, and go-mms uses [go-cotp](https://github.com/otfabric/go-cotp) (v1.3.0; separate read and write deadlines since v1.1.0) and [go-tpkt](https://github.com/otfabric/go-tpkt) for the transport. You can always reach the lower layer: `Client.MMS()` returns the underlying `*mms.Client`.
@@ -38,7 +39,7 @@ go get github.com/otfabric/go-iec61850   # Go 1.26+
 go get github.com/otfabric/go-mms        # Go 1.26+, pulled in automatically by go-iec61850
 ```
 
-This page follows go-iec61850 v1.8.1 and go-mms v1.4.0.
+This page follows go-iec61850 v1.19.4 and go-mms v1.9.2.
 
 ## Connecting
 
@@ -97,6 +98,8 @@ func main() {
 | `Strictness` | `RejectUnknownFC`, `VerifyReportCandidates`. |
 | `Retry` | `mms.RetryPolicy` for TCP connect, COTP and association, with exponential backoff and jitter. The zero value tries once; `mms.DefaultRetryPolicy()` is a sensible reconnect policy. Errors a retry cannot fix return at once. |
 | `Metrics` | An `mms.Metrics` that observes every request and connection event. |
+| `Dialer` | Opens the TCP connection, for a destination allowlist checked against the resolved IP, a proxy, socket options or an in-memory transport. Nil keeps the default `net.Dialer`. TLS goes through go-mms `iso.Dial` (below). |
+| `Clock` | Stamps the `T` of Operate, SelectWithValue and Cancel, with its TimeQuality (see [Time and TimeQuality](#time-and-timequality)). |
 
 **ISO addressing.** Since go-iec61850 v1.6.0 (go-mms v1.4.0) a client sends the addressing libiec61850 sends, which IEDs that require transport selectors expect: T-selector `0001` and TPDU size 1024 in the COTP CR, S-selector `0001`, P-selector `00000001`, AP-titles `1.1.1.999` and `1.1.1.999.1`, AE-qualifier 12. Before, every selector was left out and such an IED refused the connection ("cotp: connection refused (reason 3)"). For an IED configured otherwise, take the values from its SCL ConnectedAP with `ApplySCLAddress(&opts.MMS, ap)`, or parse them with `ParseSelector` and `ParseAPTitle`. A non-nil empty value omits a parameter again, and a T-selector longer than 4 octets is refused before dialing.
 
@@ -284,7 +287,9 @@ if err != nil {
 }
 ```
 
-`OperateParams` also takes `Origin` (`OrCat`, `OrIdent`), `CtlNum`, `OperTm`, `Test` and `Check` (synchrocheck, interlock check). Use the same `CtlNum` for `SelectWithValue` and `Operate`. `Cancel` releases a selection. Value helpers: `BoolCtlVal`, `IntCtlVal`, `FloatCtlVal`, `EnumCtlVal`, `StringCtlVal`, `BspCtlVal`, `DpCtlVal`. The client does not wait for the CommandTermination of an enhanced-security operate, and time-activated operate is not implemented.
+`OperateParams` also takes `Origin` (`OrCat`, `OrIdent`), `CtlNum`, `OperTm` (a time-activated operate), `Test` and `Check` (synchrocheck, interlock check). Use the same `CtlNum` for `SelectWithValue` and `Operate`. `Cancel` releases a selection. Value helpers: `BoolCtlVal`, `IntCtlVal`, `FloatCtlVal`, `EnumCtlVal`, `StringCtlVal`, `BspCtlVal`, `DpCtlVal`.
+
+With enhanced security, `OperateWait` operates and waits for the CommandTermination; a negative termination returns a `ControlError` wrapping `ErrCommandTerminationNegative`, with the AddCause and LastApplError the server reported. A refused `Operate`, `SelectWithValue` or `Cancel` carries the LastApplError the server sent in its `ControlError`, so `ReadLastApplError` is deprecated.
 
 ## Setting groups, journals, files
 
@@ -385,9 +390,13 @@ func main() {
 
 Since v1.7.0 a server built from SCL names its logical devices as IEC 61850-8-1 does, like the other IEC 61850 stacks: the MMS domain is `LDevice@ldName` when the SCL gives one, otherwise the IED name followed by `LDevice@inst` (`IED1InteropLD` here; it was the bare `InteropLD`). Data set members, report control block `DatSet`, GoCB and MSVCB references and the keys of `SetValue` and `RegisterControl` follow. A client that finds the logical devices with `ListLogicalDevices` is not affected; one that addresses `InteropLD/...` directly sets `DialOptions.IEDName`. `NewServerModelFromSCLWithOptions(..., iec61850.ServerModelOptions{InstanceDomainNames: true})` keeps the old names. v1.7.0 also fixed reports with the data-reference bit of `OptFlds` set, which left the references out; cB-Sigma's client found it in iec61850-interop.
 
-Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s). After an enhanced-security operate the server sends a positive CommandTermination. Interlocking and synchrocheck are your handler's job. Since v1.5.0 the server refuses client writes to the read-only functional constraints ST, MX, SG, SR, OR and EX with object-access-denied, so no MMS client can overwrite a breaker's `Pos.stVal`; the application changes them with `SetValue`. A simulator whose peers drive status over MMS sets `ServerOptions.AllowReadOnlyFCWrites`. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. `EnableSettingGroups` and `EnableJournals` start the other engines, `ServerOptions.Authenticate` checks the association, and `Server.Shutdown(ctx)` stops accepting associations and drains the active ones.
+Control handlers get `OnSelect`, `OnOperate` and `OnCancel`. Selection is owned by the connection that made it and times out after `DefaultSelectTimeout` (30 s), and a time-activated operate waits for its operTm. After an enhanced-security operate the server sends the CommandTermination. When a request asks for the check conditions, the server runs them: an interlocking check (`ControlHandler.CheckInterlock`, or a CILO bound with `Interlocking`, whose `EnaCls` and `EnaOpn` must allow the move) at select and operate, and a synchrocheck (`CheckSynchro`, or an RSYN bound with `Synchrocheck`, waiting up to `SynchroTimeout` for `Rel`) at operate; refusals carry AddCause blocked-by-interlocking or blocked-by-synchrocheck. The algorithm behind the CILO and RSYN values stays your application's. An opt-in `ProcessResponse` models a DPC's travel through the intermediate state, an operation counter and position-reached. Since v1.5.0 the server refuses client writes to the read-only functional constraints ST, MX, SG, SR, OR and EX with object-access-denied, so no MMS client can overwrite a breaker's `Pos.stVal`; the application changes them with `SetValue`. A simulator whose peers drive status over MMS sets `ServerOptions.AllowReadOnlyFCWrites`. File services need a `ServerOptions.FileProvider`; there is no built-in filesystem provider. `EnableSettingGroups` and `EnableJournals` start the other engines; the setting group engine keeps a value bank per group, filled from SCL `Val sGroup`, so SelectActiveSG, SelectEditSG, SetEditSGValue and ConfirmEditSGValues work without handler code. The banks are in memory: persist them in `OnConfirmEdit` and restore them with `SetSettingGroupValue`. `ServerOptions.Authenticate` checks the association, and `Server.Shutdown(ctx)` stops accepting associations and drains the active ones.
 
-One `SetValue` call updates the model and drives everything that depends on it: reports, journals, GOOSE states and the next Sampled Values. Known gaps: no dynamic datasets, no per-group SE/SG value banks, in-memory BRCB buffers and journals only, no segmented report generation, and the model is immutable after construction.
+One `SetValue` call updates the model and drives everything that depends on it: reports, journals, GOOSE states and the next Sampled Values. Reports follow BufTm: changes within the buffer time join one report. A BRCB buffer is bounded by entries (1000 by default) and optionally by size, sets BufOvfl when it discards, and can be replaced through `ServerOptions.NewReportBuffer`, for example by a persistent one. Register a report handler before enabling an RCB: a BRCB sends its buffered entries right after the RptEna response. Known gaps: no dynamic datasets, in-memory setting groups, BRCB buffers and journals by default, and the model is immutable after construction.
+
+### Time and TimeQuality
+
+`ServerOptions.Clock`, `ClientOptions.Clock`, `DialOptions.Clock` and the `Clock` of the GOOSE and SV publishers stamp every protocol time: the `t` of a control, report TimeStamp and TimeOfEntry, journal entries, LActTm, GOOSE `T` and SV `refrTm`. `ClockWithQuality` takes the synchronisation status from wherever the host has it (chrony, ptp4l, the kernel NTP state). Without a `Clock`, times carry the quality "clock not synchronised" (0x2a), so set one that reports synchronised when the host is. Timers such as sboTimeout, operTm, IntgPd and BufTm stay on the monotonic clock, so a wall-clock step does not fire or stretch them.
 
 ## GOOSE
 
@@ -549,6 +558,12 @@ err = client.SetMSVCB(ctx, "MU01", "LLN0$MS$MSVCB01", iec61850.MSVCBUpdate{SmpRa
 
 Both setters write the enable attribute last.
 
+## R-GOOSE and R-SV
+
+The `rsession` package carries GOOSE and SV over UDP/IP, unicast or multicast, on port 102 by default, with the session protocol of IEC TR 61850-90-5. `rsession.Transport` implements the transport of `goose` and `sv`, so their publishers and subscribers run over it unchanged. Every SPDU is signed with HMAC-SHA256 truncated to 80, 128 or 256 bits, with keys from a `KeyProvider` (`KeyRing` is a static one that supports key changes). It is secured by default: `Open` needs a key provider unless `Insecure` is set, and a receiver refuses unsecured, unknown-key, tampered and replayed SPDUs, counting them in `Stats`. Protocol versions 1 and 2 are received; 2 is sent.
+
+Not implemented: AES-GMAC and AES-GCM encryption, tunnelled and management SPDUs, IEC 62351-9 key distribution, and the SCL `IP` addresses of R-GOOSE and R-SV control blocks. A restarted publisher's SPDUs are refused as replays until the key changes, unless `ReplayResetAfter` or `InitialSPDUNumber` is used.
+
 ## Raw Ethernet transports
 
 | Platform | Transport | Privilege |
@@ -579,7 +594,9 @@ fmt.Println(id.Vendor, id.Model, id.Revision)
 res, err := client.Read(ctx, mms.ReadRequest{DomainID: "MyDomain", ItemID: "MyVariable"})
 ```
 
-go-mms does not implement semaphore, event management, program invocation or client-side MMS Cancel services, and supports COTP class 0 over TCP only. Since v1.1.0 every exported method is exercised between its own client and server in an end-to-end suite. That release fixed sixteen wire and behaviour bugs found this way and by the wider interop suite, among them FileDirectory against conforming servers and FileDelete; v1.2.0 fixed codec bugs found by its 57 fuzz targets, such as the Cancel PDU tags and BinaryTime. v1.3.0 added the extended length form of session SPDUs (an AARQ with a long ACSE password was unparseable before) and refuses out-of-range values instead of wrapping them: a UtcTime outside 1970 to 2106, negative or oversized invoke IDs, file sizes beyond Unsigned32. It has 60 fuzz targets.
+`DialOptions.AllowedServices` limits a client to an allow-list of confirmed services: anything else is refused before it is sent, with `ErrServiceNotAllowed`, and the association stays usable. `DecodeTSDU` and `DecodePDU` decode captured traffic passively, through the session, presentation and ACSE layers to the MMS PDU, naming every ISO 9506 service; [go-mms-trace](/projects/go-mms-trace/) builds on them. `iso.WithDialer` takes a dialer with the contract of `net.Dialer`, and the server advertises only the services it can serve (file services only with a `FileProvider`, journals only with a journal provider).
+
+go-mms does not implement semaphore, event management, program invocation or client-side MMS Cancel services, and supports COTP class 0 over TCP only. Since v1.1.0 every exported method is exercised between its own client and server in an end-to-end suite. That release fixed sixteen wire and behaviour bugs found this way and by the wider interop suite, among them FileDirectory against conforming servers and FileDelete; v1.2.0 fixed codec bugs found by its 57 fuzz targets, such as the Cancel PDU tags and BinaryTime. v1.3.0 added the extended length form of session SPDUs (an AARQ with a long ACSE password was unparseable before) and refuses out-of-range values instead of wrapping them: a UtcTime outside 1970 to 2106, negative or oversized invoke IDs, file sizes beyond Unsigned32. It has 70 fuzz targets.
 
 ## Errors
 
@@ -616,7 +633,7 @@ go-mms classifies every failure the same way: `ErrAssociationFailed`, `ErrNegoti
 - A request whose context ends before any byte moved returns the context error and leaves the association usable. Once bytes have moved, the connection is aborted rather than left half-written.
 - `DialOptions.Retry` retries the connection with backoff and jitter. There is no automatic reconnect of a live association: on `ErrClosed`, dial again and re-subscribe. The go-iec61850 server releases a URCB reservation when its connection drops.
 - On the server, `AssociationTimeout` (30 s by default) aborts an association that never completes its handshake, and the listener runs TLS and COTP handshakes concurrently, so a silent peer cannot block others.
-- `*iec61850.Client` is safe for concurrent use. go-mms correlates responses by invoke ID and serialises writes. The negotiated max-outstanding value is not enforced on the client, so bound concurrency yourself.
+- `*iec61850.Client` is safe for concurrent use. go-mms correlates responses by invoke ID and serialises writes. Since go-mms v1.9.0 the client keeps to what Initiate negotiated: a request made at the limit of outstanding requests waits for a free slot (`MMSOptions.FailFastOutstanding` returns `ErrMaxOutstanding` instead), and data deeper than the negotiated nesting level is refused.
 - A go-mms server handles confirmed requests on one connection serially.
 - InformationReport handlers in go-mms run on the reader goroutine and must return quickly.
 
@@ -628,9 +645,8 @@ For metrics, implement `mms.Metrics` (`ObserveRequest`, `ObserveConnection`) and
 
 ## Limitations
 
-- No R-GOOSE or R-SV (IEC 61850-90-5), no IEC 62351-6 security for GOOSE and SV, no unicast SV, no GOOSE management or fixed-offset encoding.
+- No IEC 62351-6 security for layer-2 GOOSE and SV (protect the process bus at the network layer, or use R-GOOSE and R-SV), no encryption on R-GOOSE and R-SV, no unicast SV, no GOOSE management. The fixed-offset GOOSE encoding is not verified against an independent implementation.
 - Received GOOSE values are not mapped into a server model (`ExtRef` binding); map them from the subscriber events.
-- The server's MMS domain is the bare LD instance, so its `gocbRef` and `datSet` are `LD/LLN0$...` rather than the IED-prefixed form many IEDs use. Subscribers that validate against IED-prefixed SCL references must relax that check.
 - Primary baseline is IEC 61850 Edition 2 (2007B). Edition 2.1 features are partially validated.
-- Not every ACSI service is mapped. The client does not wait for CommandTermination, and TimeActivatedOperate is missing.
-- Tested in both directions against four independent software stacks; not certified, and interoperability with physical IEDs has not been formally established. See [Testing and interop](/docs/protocols/iec-61850/testing/).
+- Not every ACSI service is mapped. BRCB ResvTms and Owner are not modelled, and the operative tests other than interlocking and synchrocheck (behaviour, blocking, local/remote) are left to `OnSelect` and `OnOperate`.
+- Tested in both directions against five independent software stacks; not certified, and interoperability with physical IEDs has not been formally established. See [Testing and interop](/docs/protocols/iec-61850/testing/).

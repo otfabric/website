@@ -107,7 +107,7 @@ fmt.Println(d.Quantity, d.Phase, d.Reference, d.UnitHint) // voltage A line-neut
 
 ## What go-iec61850-model supports
 
-The library is pre-release (v0.8.2 at the time of writing). Its own status table is the reference; this is a summary.
+The library is pre-release (v0.10.1 at the time of writing). Its own status table is the reference; this is a summary.
 
 | | |
 |---|---|
@@ -116,7 +116,9 @@ The library is pre-release (v0.8.2 at the time of writing). Its own status table
 | Editions | Several releases of a namespace in one catalog, explicit profiles, never a silent "latest"; any embedded release selectable by its ID, and the profile for the release a device declares in `LLN0.NamPlt.ldNs` picked for you; names defined by two namespaces fail as ambiguous until you choose. IEC publishes no NSD for Edition 1 (2003) of 7-4 |
 | References | Parsing compatible with go-iec61850's `ParseRef`, and validation against the model |
 | Type resolution | Paths down to basic types, with inheritance, parameterized CDCs, multi-instance data objects and FC checks |
-| Semantic mapping | Quantity, phase, reference, component and unit hints from explicit rules for `MMXU`, `MMXN` and `MMTR`, with overrides |
+| Semantic mapping | Quantity, phase, reference, component and unit hints from explicit rules for the measurement, supervision, process and DER classes of 7-4 and 7-420 (MMXU, MMXN and MMTR among them), with overrides; what the standard leaves open is excluded with a reason, not guessed |
+| Presence conditions | Every condition the catalog uses evaluated on an instance (from JSON or SCL): required, optional or forbidden, and satisfied, violated or undetermined, with the reason and the missing fact |
+| Descriptions | A title and description for every element of every embedded namespace, in OT Fabric's own wording (the repository ships no IEC text), and your own doc set on top |
 | Ontology helpers | A typed concept graph with traversal and JSON export |
 | Generated code | Typed Go constants for every class, data object, CDC and enumeration of the default profile |
 | Coverage | 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages |

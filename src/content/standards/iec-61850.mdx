@@ -25,6 +25,7 @@ layers:
       - { name: 'MMS, client/server (8-1)', id: iec-61850, note: 'go-iec61850, go-mms' }
       - { name: 'GOOSE (8-1)', note: 'go-iec61850' }
       - { name: 'Sampled Values (9-2, 9-2LE)', note: 'go-iec61850' }
+      - { name: 'R-GOOSE and R-SV over UDP (TR 61850-90-5)', note: 'go-iec61850 rsession' }
   - label: 'Transport'
     items:
       - { name: 'ISO-on-TCP: COTP over TPKT (RFC 1006), for MMS', note: 'go-cotp, go-tpkt' }
@@ -131,13 +132,14 @@ GOOSE and Sampled Values publishers and subscribers are built from the SCL contr
 
 | | |
 |---|---|
-| MMS client | Browse, typed reads and writes, datasets, URCB and BRCB reports with EntryID resume, direct, SBO and SBOw controls, setting groups, journals, files, GoCB and MSVCB access |
-| MMS server | Built from SCL: reports, controls with CommandTermination, setting groups, journals, file services through a provider, Identify and Status, graceful shutdown |
+| MMS client | Browse, typed reads and writes, datasets, URCB and BRCB reports with EntryID resume, direct, SBO and SBOw controls with CommandTermination wait and time-activated operate, setting groups, journals, files, GoCB and MSVCB access |
+| MMS server | Built from SCL: reports with BufTm and a pluggable BRCB buffer, controls with CommandTermination, interlocking and synchrocheck checks (CILO, RSYN), setting groups with a value bank per group, journals, file services through a provider, Identify and Status, graceful shutdown |
 | GOOSE | Publisher with stNum, sqNum and retransmission; subscriber with SCL validation and supervision; server GoCBs published on data change |
+| R-GOOSE and R-SV | GOOSE and SV over UDP, unicast or multicast, with the session protocol of IEC TR 61850-90-5 and HMAC-SHA256 authentication |
 | Sampled Values | 9-2LE and generic datasets; paced publisher with `noASDU` batching; subscriber with loss, duplicate and reorder accounting; server MSVCBs |
 | SCL | SCD, ICD, CID and IID, schema editions 1.7 to 2007C5, semantic validation, flattening and export |
 | go-mms | MMS client and server: variable access, named variable lists, file and journal services, information reports, typed errors, metrics, retry and timeouts. The v1 API is stable. |
-| Not covered | R-GOOSE and R-SV (IEC 61850-90-5), IEC 62351-6 security for GOOSE and SV, unicast SV, GOOSE fixed-offset encoding, MMS semaphore, event and program invocation services |
+| Not covered | IEC 62351-6 security for layer-2 GOOSE and SV, encryption on R-GOOSE and R-SV, unicast SV, MMS semaphore, event and program invocation services |
 | Platforms | MMS and SCL everywhere Go runs; GOOSE and SV on Linux (`AF_PACKET`) and macOS and the BSDs (BPF) |
 | Go version | 1.26 or later for go-iec61850 |
 
