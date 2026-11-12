@@ -13,8 +13,13 @@ const projects = (await getProjects()).filter((p) => p.data.status === 'availabl
 const all = await getStandards();
 const standards = all.filter((s) => s.data.kind === kind);
 
-// A project belongs to the row of its primary (first) standard.
-const of = (id: string, category: string) => projects.filter((p) => p.data.category === category && p.data.standards[0] === id);
+// A project belongs to the row of its primary (first) standard. A library or interop suite
+// that covers a family of protocols (go-iec60870-5 for IEC 101 to 104) shows in each of them.
+const shared = new Set(['protocol', 'interop']);
+const of = (id: string, category: string) =>
+	projects.filter(
+		(p) => p.data.category === category && (shared.has(category) ? p.data.standards.includes(id as never) : p.data.standards[0] === id),
+	);
 const projectCell = (category: string) => (id: string) => ({ projects: of(id, category) });
 // A UI app also shows in the row of a model it works with (IEC 61850 Explorer and the IEC 61850 model).
 const uiCell = (id: string) => ({
