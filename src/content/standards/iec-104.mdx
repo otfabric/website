@@ -1,24 +1,39 @@
 ---
 kind: protocol
 name: "IEC 60870-5-104"
+short: "IEC 104"
 standard: "IEC 60870-5-104"
 summary: "Telecontrol between grid control centres, substations and generation or storage assets."
-order: 4
+order: 4.3
 facts:
   - { label: 'Transport', value: 'TCP, optional TLS' }
   - { label: 'Security', value: 'TLS (IEC 62351-3), IEC 62351-5' }
   - { label: 'Default port', value: '2404' }
-  - { label: 'Library', value: 'go-iec104' }
+  - { label: 'Library', value: 'go-iec60870-5 (iec104)' }
   - { label: 'CLI', value: 'iec104ctl' }
-icon: go-iec104
+  - { label: 'Interop', value: 'iec60870-5-interop v0.4.0' }
+icon: go-iec60870-5
 docs: /docs/protocols/iec-104/
+layers:
+  - label: 'Application layer'
+    items:
+      - { name: 'IEC 60870-5-104 ASDUs: the telecontrol model of IEC 101 on TCP/IP', id: 'iec-104', note: 'go-iec60870-5 asdu, iec104' }
+      - { name: 'File transfer, redundancy groups', note: 'go-iec60870-5 iec104' }
+  - label: 'Security'
+    items:
+      - { name: 'IEC 62351-5 application-layer security (IEC TS 60870-5-7)', note: 'go-iec60870-5 sec' }
+      - { name: 'TLS (IEC 62351-3)', note: 'go-iec60870-5 iec104' }
+  - label: 'Transport'
+    items:
+      - { name: 'APCI: I, S and U frames, k and w windows, t0 to t3 timers', note: 'go-iec60870-5 iec104/apci' }
+      - { name: 'TCP/IP, port 2404' }
 ---
 
 import Callout from '../../components/Callout.astro';
 
 
 
-IEC 60870-5-104 (IEC 104) is the TCP/IP telecontrol protocol of power system SCADA. A **controlling station** (the control centre) talks to **controlled stations** (substations, RTUs, generation and storage assets) on TCP port 2404. Each station has a **common address**, and each data point an **information object address**. The control centre runs interrogations, receives spontaneous events, and sends commands, often with select-before-operate.
+IEC 60870-5-104 (IEC 104) is the TCP/IP telecontrol protocol of power system SCADA, and the most widely deployed member of the IEC 60870-5 family. It carries the data model of [IEC 101](/protocols/iec-101/) over TCP instead of a serial link. A **controlling station** (the control centre) talks to **controlled stations** (substations, RTUs, generation and storage assets) on TCP port 2404. Each station has a **common address**, and each data point an **information object address**. The control centre runs interrogations, receives spontaneous events, and sends commands, often with select-before-operate.
 
 ## Where you meet it
 
@@ -65,7 +80,7 @@ iec104ctl client interrogate --ip 127.0.0.1 --secure --security-cert scada.pem \
 ### From Go
 
 ```sh
-go get github.com/otfabric/go-iec104
+go get github.com/otfabric/go-iec60870-5
 ```
 
 Connect, interrogate and synchronize the clock:
@@ -79,8 +94,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/otfabric/go-iec104/asdu"
-	"github.com/otfabric/go-iec104/client"
+	"github.com/otfabric/go-iec60870-5/asdu"
+	"github.com/otfabric/go-iec60870-5/iec104/client"
 )
 
 func main() {
@@ -116,7 +131,7 @@ func main() {
 ```
 
 
-## What go-iec104 supports
+## What go-iec60870-5 and iec104ctl support
 
 | | |
 |---|---|
@@ -134,4 +149,4 @@ func main() {
 
 ## Interoperability
 
-[iec104-interop](https://github.com/otfabric/iec104-interop) tests go-iec104 against four independent stacks, as both client and server: MZ Automation lib60870-C, OpenMUC j60870, wendy512/iec104 and cB-Sigma/iec60870. cB-Sigma is the only open-source implementation of IEC 62351-5 in its 2023 edition, and the application-layer security is tested against it in both directions. Mutual TLS (IEC 62351-3), file upload and the directory, interrogation groups and redundancy groups are tested against lib60870-C, j60870 and cB-Sigma (iec104-interop v0.5.0), and iec104-interop also publishes go-iec104 as an image for others to test against. That makes it interoperable with cB-Sigma, not conformance-tested: no certified test equipment or third implementation has been used, so keep TLS with client certificates where both ends support it.
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) runs five independent IEC 104 stacks in containers: MZ Automation lib60870-C, OpenMUC j60870, wendy512/iec104, cB-Sigma/iec60870 and pascaldekloe/part5. go-iec60870-5's IEC 104 client and server pass independent runs against all five. cB-Sigma is the only open-source implementation of IEC 62351-5 in its 2023 edition, and the application-layer security is tested against it in both directions; mutual TLS (IEC 62351-3), file transfer, interrogation groups and redundancy groups are tested against several of the stacks. That makes IEC 62351-5 interoperable with cB-Sigma, not conformance-tested: no certified test equipment has been used, so keep TLS with client certificates where both ends support it.

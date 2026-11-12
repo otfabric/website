@@ -1,0 +1,80 @@
+---
+title: Go library
+description: Use the iec102 packages of go-iec60870-5 to read integrated totals from IEC 60870-5-102 meters, or to build a simulated meter, with the Spanish REE profile as an opt-in package.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The `iec102` packages of [go-iec60870-5](https://github.com/otfabric/go-iec60870-5) implement IEC 60870-5-102: a **client** (controlling station) and a **server** (integrated total station) with a store of records, on the FT 1.2 and link layers the module shares with [IEC 101](/docs/protocols/iec-101/library/) and [IEC 103](/docs/protocols/iec-103/library/). The Spanish REE profile is a package of its own. No cgo, no dependencies outside the standard library. This page follows v0.5.0. The license is MIT.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-iec60870-5
+```
+
+| Package | Import path | Contents |
+|---|---|---|
+| `iec102` | `github.com/otfabric/go-iec60870-5/iec102` | ASDU model and codec, time a and time b, `Params`, errors and link state |
+| `client` | `.../iec102/client` | The controlling station (link primary) |
+| `server` | `.../iec102/server` | The integrated total station (link secondary) with a `Store` of records |
+| `ree` | `.../iec102/ree` | The Spanish REE profile: its type identifications, quality bits and session helpers |
+
+## The ASDU model
+
+`iec102.Decode` returns an `*iec102.ASDU` whose `Body` is one of `IntegratedTotals` (types 2 to 13), `SinglePoints` (1), `ProductSpec` (71), `SystemTime` (72), `Read` (100 to 123), or `Raw` for everything else. A raw body keeps every octet, and every body encodes back to the same octets; the 749 frames of the recorded meter traffic do.
+
+```go
+a, err := iec102.Decode(frame.Data, iec102.Params{})
+if b, ok := a.Body.(iec102.IntegratedTotals); ok {
+	for _, t := range b.Totals {
+		fmt.Println(t.Addr, t.Value, t.Quality.IV(), b.Time)
+	}
+}
+```
+
+`iec102.Params` sets the common address size (two octets by default), the time zone of conversions and an optional `Profile`. `iec102.TimeA` and `iec102.TimeB` hold the octets as received; `Time(loc)` converts and uses SU to resolve the repeated hour.
+
+## Controlling station
+
+`client.New(rw, cfg)` takes the transport (serial port, modem or terminal server stream) and a `Config`: the link address and its size (two octets by default, `iec102.NoLinkAddr` for none), the common address, timing, codec parameters, a `Handler` for ASDUs of another common address, and a logger. The link is initialized by `Init` or the first request.
+
+```go
+p := iec102.Params{Profile: ree.Profile} // decode REE bodies
+c, err := client.New(conn, client.Config{LinkAddr: 1, CommonAddr: 1, Params: p})
+if err := ree.Login(ctx, c, key); err != nil {
+	return err
+}
+periods, err := c.ReadTotals(ctx, ree.RecordLoadProfile, iec102.Read{
+	T: iec102.C_CI_NU_2, First: 1, Last: 6, From: from, To: to,
+})
+_ = ree.Logout(ctx, c)
+```
+
+`Request(ctx, a, until)` sends an ASDU and polls until the answer is complete: the first reply, the activation confirmation or the activation termination. A refusal (cause 13 to 18, or the P/N bit) returns `*iec102.RefusedError`. The typed helpers are `ReadProductSpec`, `ReadTime`, `ReadTotals` (any of the 20 read commands C_CI_NA_2 to C_CI_NU_2) and `ReadSinglePoints`.
+
+## Integrated total station
+
+```go
+store := server.NewStore()
+store.AddPeriod(ree.RecordLoadProfile, iec102.IntegratedTotals{
+	T:      iec102.M_IT_TK_2,
+	Totals: []iec102.IntegratedTotal{{Addr: ree.AddrActiveImport, Value: 101}},
+	Time:   iec102.TimeAOf(end, nil),
+})
+srv, err := server.New(port, server.Config{
+	LinkAddr: 1, CommonAddr: 1, Params: p,
+	ProductSpec: iec102.ProductSpec{Manufacturer: 0x42, Product: 1001},
+	Store:       store,
+	Handler:     &ree.Session{Key: 7}, // REE sessions and clock; everything else passes on
+})
+```
+
+The server answers the link, serves C_RD_NA_2 and C_TI_NA_2 itself, and runs the C_CI and C_SP reads from the `Store` with confirmation, data and termination, splitting periods over several frames where needed. Other requests go to the `Handler`, which answers with `Send` and `Mirror`. All answers are class 2 data.
+
+<Aside type="note">
+Not implemented: M_EI_NA_2 and many REE types stay raw, signatures are not checked, no class 1 or spontaneous data, and no shared-line polling of several meters.
+</Aside>

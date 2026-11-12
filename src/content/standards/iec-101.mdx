@@ -1,0 +1,149 @@
+---
+kind: protocol
+name: "IEC 60870-5-101"
+short: "IEC 101"
+standard: "IEC 60870-5-101"
+summary: "Serial telecontrol between control centres and RTUs: the same data model as IEC 104, on point-to-point and multidrop lines, radio and modem links."
+order: 4
+facts:
+  - { label: 'Transport', value: 'FT 1.2 on a serial line (9600 8E1 by default), modem or radio; or a terminal server that passes the line through' }
+  - { label: 'Link', value: 'Unbalanced (polled, multidrop) or balanced (point to point)' }
+  - { label: 'Library', value: 'go-iec60870-5 (iec101)' }
+  - { label: 'CLI', value: 'iec101ctl' }
+  - { label: 'Interop', value: 'iec60870-5-interop v0.4.0' }
+icon: go-iec60870-5
+docs: /docs/protocols/iec-101/
+layers:
+  - label: 'Application layer'
+    items:
+      - { name: 'IEC 60870-5-101 ASDUs: interrogation, events, commands, clock, delay acquisition', id: 'iec-101', note: 'go-iec60870-5 iec101' }
+      - { name: 'Telecontrol ASDU model shared with IEC 104', id: 'iec-104', note: 'go-iec60870-5 asdu' }
+  - label: 'Link layer'
+    items:
+      - { name: 'IEC 60870-5-2 link procedures: unbalanced and balanced, FCB/FCV, classes 1 and 2', note: 'go-iec60870-5 link' }
+  - label: 'Frames'
+    items:
+      - { name: 'FT 1.2 frames (IEC 60870-5-1): fixed, variable and single character', note: 'go-iec60870-5 ft12' }
+  - label: 'Physical'
+    items:
+      - { name: 'RS-232, RS-485, modems, radio; or TCP to a terminal server' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+IEC 60870-5-101 (IEC 101) is the serial companion standard of the IEC 60870-5 telecontrol family. A **controlling station** in a control centre talks to **controlled stations** (RTUs in substations, pumping stations, wind and solar parks) over a serial line, a leased line, a modem or a radio link. Its data model is the one [IEC 104](/protocols/iec-104/) took over: stations with a **common address**, data points with an **information object address**, general interrogation, spontaneous events with time tags and commands with select-before-operate. What differs is underneath: FT 1.2 frames with checksums (IEC 60870-5-1) and the link procedures of IEC 60870-5-2, which either poll stations one by one (**unbalanced**, one line can serve many stations) or let both ends send (**balanced**, point to point).
+
+IEC 101 is also flexible where IEC 104 is fixed: the link address, the cause of transmission, the common address and the information object address each have a size of one to three octets, chosen per project. Nothing on the wire says which sizes a station uses, so the controlling station has to be told.
+
+## Where you meet it
+
+- Distribution grids and older transmission networks, where RTUs hang on serial or radio links that were never replaced by IP
+- Multidrop lines and radio networks that poll many stations from one port
+- Pipelines, water and district heating SCADA, and remote substations on leased lines or modems
+- Behind a terminal server or a 101-to-104 gateway, when the control centre is already on IEC 104
+
+## Quickstart
+
+### From the command line
+
+Install `iec101ctl` with `curl -fsSL https://get.otfabric.io/iec101ctl | sh`, or on Windows `irm https://get.otfabric.io/iec101ctl.ps1 | iex` ([all install options](/docs/install/)). No station at hand? Start a simulated one, on TCP port 2401 as a terminal server would offer it:
+
+```sh
+iec101ctl server start
+```
+
+and talk to it from another terminal:
+
+```sh
+# What does this station hold? (general interrogation)
+iec101ctl client interrogate --url tcp://127.0.0.1:2401
+
+# Watch events and measured values as they arrive, until Ctrl-C
+iec101ctl client monitor --url tcp://127.0.0.1:2401 --interrogate
+
+# Operate a disconnector with select-before-operate
+iec101ctl client command --url tcp://127.0.0.1:2401 --type double --ioa 5001 --value off --mode sbo
+```
+
+On a real line, give the serial port and the station's addresses and field sizes:
+
+```sh
+iec101ctl client interrogate --url serial:///dev/ttyUSB0 --link-address 3 --ca 3
+iec101ctl client interrogate --url tcp://10.0.0.5:2401 --link-mode balanced --ioa-size 3
+```
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-iec60870-5
+```
+
+The transport is any `io.ReadWriter`: a serial port (for example [go-serial](/projects/go-serial/)), a TCP connection to a terminal server, or a pipe in tests. For a balanced link, set `p.Mode = iec101.ModeBalanced`.
+
+```go title="main.go"
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"github.com/otfabric/go-iec60870-5/asdu"
+	"github.com/otfabric/go-iec60870-5/iec101"
+	"github.com/otfabric/go-iec60870-5/iec101/client"
+)
+
+func main() {
+	// A terminal server that passes the serial line through; a serial port works the same way.
+	conn, err := net.DialTimeout("tcp", "10.0.0.5:4001", 5*time.Second)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Unbalanced, 1-octet link address, COT 1, CA 1, IOA 2: the most common sizes.
+	p := iec101.DefaultParams()
+	c, err := client.New(conn, client.Config{
+		Params:   p,
+		LinkAddr: 3, // link address of the controlled station
+		Handler:  func(a *asdu.ASDU) { fmt.Println(a) }, // spontaneous and polled data
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := c.WaitUp(ctx); err != nil { // link initialized
+		log.Fatal(err)
+	}
+	data, err := c.Interrogate(ctx, 3, asdu.QOIStation)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("interrogation returned %d ASDUs\n", len(data))
+}
+```
+
+## What go-iec60870-5 and iec101ctl support
+
+| | |
+|---|---|
+| Roles | Controlling station (client) and controlled station (server) |
+| Link | Unbalanced and balanced; request status and reset of remote link, FCB/FCV repetition, class 1 and class 2 polling driven by ACD, DFC flow control, single character E5h |
+| Field sizes | Link address 0, 1 or 2 octets (0 in balanced mode only), cause 1 or 2, common address 1 or 2, object address 1, 2 or 3 |
+| Client | General, group and counter interrogation, read, clock synchronization, test command, reset process, delay acquisition (C_CD_NA_1), direct and select-before-operate commands |
+| Profile checks | Optional strict mode that rejects what IEC 60870-5-101:2003 does not allow on a 101 link, such as the CP56Time2a commands of IEC 104 |
+| CLI | Interrogate, counters, read, command, clock, reset, delay, monitor, ping, scan a line for stations, discover terminal servers, simulate a station from YAML |
+| Not yet | File transfer, IEC 62351-5 on 101, one client polling several stations of a multidrop line |
+| Dependencies | Go standard library only |
+
+<Callout type="caution">
+`iec101ctl client command` operates switchgear and changes set points, and a serial line has one controlling station: what iec101ctl receives, the regular SCADA master does not. Only use it on stations and lines you own or are authorized to test, and rehearse against `iec101ctl server start` first.
+</Callout>
+
+## Interoperability
+
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) runs three independent IEC 101 stacks in containers: MZ Automation lib60870-C, cB-Sigma/iec60870 and digitalpetri/iec60870. The serial byte stream crosses one TCP connection unchanged, as through a terminal server. go-iec60870-5 passes as client and server against all three, unbalanced and balanced, with the default field sizes and four other sets. The one gap is digitalpetri's balanced station, which sends data before it has reset its own link direction, as the standard requires it to; that is a known upstream bug. cB-Sigma's IEC 101 was debugged against lib60870-C, which is why digitalpetri, the third stack, matters. Interoperability is not conformance: nothing here is certified.

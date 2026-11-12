@@ -1,0 +1,56 @@
+---
+title: IEC 60870-5-102
+description: How IEC 60870-5-102 works (integrated totals and integration periods, record addresses, the request, confirmation, data and termination sequence, time a and time b, the Spanish REE profile) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+IEC 60870-5-102 (IEC 102) is the companion standard of IEC 60870-5 for the **transmission of integrated totals in electric power systems**: reading the energy counters of electricity meters, period by period. A **controlling station** (a metering front end or data collector) reads an **integrated total station** (a meter or data concentrator) over a serial line, a modem or a terminal server. This page explains what matters for using the IEC 102 packages of [go-iec60870-5](/projects/go-iec60870-5/) and [iec102ctl](/projects/iec102ctl/).
+
+## Link and frames
+
+IEC 102 uses the FT 1.2 frames of IEC 60870-5-1 and the **unbalanced** link procedures of IEC 60870-5-2, like [IEC 101](/docs/protocols/iec-101/): the controlling station starts the link (request status of link, reset of remote link), sends a request with *send/confirm*, and polls class 2 data until the answer is complete. IEC 102 has **no spontaneous data**: a meter only answers what it is asked, so there is nothing to monitor between requests. Link address and common address are usually two octets.
+
+## Records, totals and periods
+
+IEC 102 has an application layer of its own, not the telecontrol ASDU of IEC 101 and 104. After the data unit identifier comes a **record address**, then the information objects; a list of integrated totals ends with one common time tag.
+
+| Record address | Holds (as REE meters use them) |
+|---|---|
+| 11, 12 | Integration periods 1 and 2: the hourly (or quarter-hourly) load profile |
+| 21 | Daily values |
+| 1 | The accounting (billing) period |
+| 50 to 55 | Lists of single-point events |
+
+A request names a record, a range of **integrated total addresses** (in the REE profile: 1 active import, 2 active export, 3 to 6 the reactive quadrants) and a time window. The meter **confirms** the request (cause 7), sends one ASDU per integration period (cause 5) and **terminates** it (cause 10), or refuses it with a cause of refusal (13 to 18: no record, unknown type, unknown record number, unknown record address, no object, no period). Each total has a quality octet: overflow, adjusted, invalid.
+
+## Time a and time b
+
+IEC 102 has its own time formats, not the time tags of IEC 60870-5-4. **Time a** (minute to year, with tariff flags and the summer time bit SU) stamps the end of an integration period; **time b** adds seconds and milliseconds for the meter's clock. Meters keep local time, and the SU bit tells the repeated hour at the end of summer time apart.
+
+## The Spanish REE profile
+
+Spanish fiscal metering, run by Red Eléctrica (REE), uses IEC 102 with additions in the private range of type identifications: a **session** opened with an access key (C_AC_NA_2) and closed again (C_FS_NA_2), clock setting, tariff information of the contracts, contracted powers and special days, and other meanings for some quality bits. None of it is IEC 102 itself. go-iec60870-5 keeps it in a separate package and applies it only when asked.
+
+<Aside type="note">
+We do not hold the text of IEC 60870-5-102 or of the REE specification. The implementation is traced to vendor documentation of a commercial IEC 102 master, recorded meter traffic and independent implementations read for comparison, and the library classifies every type, cause and field as standard, REE profile, vendor-specific or unresolved.
+</Aside>
+
+## Where it is used
+
+- Spanish fiscal metering of generation, transmission and large consumers
+- Energy meters and data concentrators in substations and power plants
+- Meter data collection for billing and settlement
+
+## OT Fabric for IEC 60870-5-102
+
+<CardGrid>
+  <LinkCard title="Go library" description="Controlling station, integrated total station and the opt-in REE profile in go-iec60870-5." href="/docs/protocols/iec-102/library/" />
+  <LinkCard title="iec102ctl" description="Read product information, the clock, integrated totals and events, the REE requests, or simulate a meter." href="/docs/protocols/iec-102/cli/" />
+  <LinkCard title="Testing and interop" description="What has been validated against gisce/iec870ree, and why the client has no independent peer." href="/docs/protocols/iec-102/testing/" />
+</CardGrid>
+
+Source code: [go-iec60870-5](https://github.com/otfabric/go-iec60870-5), [iec60870ctl](https://github.com/otfabric/iec60870ctl), [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop).

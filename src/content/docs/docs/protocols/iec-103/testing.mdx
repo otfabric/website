@@ -1,0 +1,53 @@
+---
+title: Testing and interop
+description: How the OT Fabric IEC 60870-5-103 code is tested, the IEC 103 reference images of iec60870-5-interop (vitusdong, ARIEC103, Open103, go-iecp5 cs103), and what has and has not been validated.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The open IEC 103 ecosystem is lopsided: there are several controlling systems, and only one open relay that serves test data, which deviates from the standard. So the protection equipment side of go-iec60870-5 has strong independent evidence and the controlling side has little.
+
+## Tests inside the repositories
+
+**go-iec60870-5** tests every ASDU against the examples of the standard's annex B, round trips and fuzzing, runs the client against the server over in-memory and lossy lines, and adds hostile-peer and chaos tests. Recorded traffic of an SEL RTAC polling several relays decodes and encodes back unchanged. The code was checked clause by clause against IEC 60870-5-103:1997.
+
+**iec103ctl** runs every command against go-iec60870-5's own relay and controlling system (`make e2e` in iec60870ctl), and against the reference images below.
+
+## The interop suite
+
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 packages four independent IEC 103 implementations, unbalanced, over the FT 1.2 byte stream on one TCP connection:
+
+| Adapter | Implementation | Language | Roles |
+|---|---|---|---|
+| `vitusdong` | vitusdong/iec103-dotnet v0.1.0 | C# | server, client |
+| `ariec103` | masarray/ARIEC103 | C# | client |
+| `open103` | XVincentX/Open103 | C++ | client |
+| `goiecp5` | riclolsen/go-iecp5 v0.4.7, package cs103 | Go | client |
+
+Images are `ghcr.io/otfabric/iec60870-5-interop-iec103-<adapter>`. Every reference server deviates from the standard in ways listed in the suite's `known-bugs.tsv`: vitusdong answers an interrogation with cause 11 and a shortened ASDU 1, confirms commands with cause 11 and identifies itself without a compatibility level. go-iecp5 cs103 is the most standard-conforming controlling system of the survey.
+
+<Aside type="caution">
+The reference images accept and send commands without authentication. Never attach them to a plant network or point them at a real relay.
+</Aside>
+
+## What go-iec60870-5 is validated against
+
+`make interop-iec103` runs against the pinned v0.4.0 images. The last recorded run (2026-11-12): 75 subtests passed, 38 skipped as known bugs or undeclared features, none failed.
+
+| Direction | Result |
+|---|---|
+| Reference clients against the go-iec60870-5 relay | goiecp5 15 of 15, Open103 15 of 15, vitusdong 14 (one feature it does not declare), ARIEC103 9 (six known client differences: commands without RII, clock synchronization with CP32Time2a) |
+| Disturbance data transfer against the go-iec60870-5 relay | Open103's control system runs the whole procedure; its value decoding is a known upstream bug |
+| go-iec60870-5 client against vitusdong | Link start-up, clock synchronization, GI termination and an idle line pass; identification, GI answers and command confirmations are known server bugs |
+
+**iec103ctl** v0.9.0 passes 73 checks against the same four stacks; the skips are known upstream bugs and features an image does not declare.
+
+## What has not been validated
+
+- **A standard-conforming relay.** No open stack offers one, so the client has one deviating peer. Reports from real relays, with the `--debug` trace, are welcome.
+- **Generic services against an independent peer.** vitusdong is the only stack with them, and it uses INF 0 in every generic ASDU; ARIEC103, Open103 and go-iecp5 cs103 have none.
+- **Independence.** vitusdong's tests use a copy of the ARIEC103 slave simulator as their oracle, so those two are not fully independent.
+- **Shared lines with several relays** polled by one client: not implemented.

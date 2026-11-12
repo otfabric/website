@@ -1,0 +1,79 @@
+---
+title: IEC 60870-5-101
+description: How IEC 60870-5-101 works (FT 1.2 frames, unbalanced and balanced link procedures, link and field sizes, the telecontrol ASDU it shares with IEC 104, interrogation, events, commands, clock and delay acquisition) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+IEC 60870-5-101 (IEC 101) is the serial telecontrol companion standard of IEC 60870-5: a control centre (the **controlling station**) exchanges process data with RTUs (the **controlled stations**) over serial lines, leased lines, modems and radio. Its application messages are the ones [IEC 104](/docs/protocols/iec-104/) carries over TCP; underneath, it has the frames and link procedures of IEC 60870-5-1 and -2. This page explains what matters for using the IEC 101 packages of [go-iec60870-5](/projects/go-iec60870-5/) and [iec101ctl](/projects/iec101ctl/).
+
+## Frames: FT 1.2
+
+IEC 101 uses the **FT 1.2** frame format of IEC 60870-5-1, at 8 data bits, even parity and one stop bit:
+
+| Frame | Layout | Used for |
+|---|---|---|
+| Single character | `E5` | A short acknowledgement, or "no data" |
+| Fixed length | `10` control, address, checksum, `16` | Link services without user data: status, reset, polls |
+| Variable length | `68` L L `68` control, address, ASDU, checksum, `16` | User data: one ASDU per frame |
+
+The checksum and the doubled length make a broken frame easy to detect, and the receiver resynchronizes on the next start character.
+
+## Link procedures: unbalanced and balanced
+
+IEC 60870-5-2 defines how the two ends use those frames. IEC 101 allows two modes:
+
+- **Unbalanced.** The controlling station is the only **primary** station. It brings up each station's link (request status of link, reset of remote link), sends commands with *send/confirm*, and **polls** for data: class 1 (events, answers) while the station sets the ACD bit, class 2 (cyclic data) otherwise. Because only the master speaks first, many stations can share one line (**multidrop**), each with its own link address.
+- **Balanced.** Both ends are primary and send when they have something, on a full-duplex point-to-point line. Each direction is initialized on its own.
+
+The **frame count bit** (FCB, with FCV) lets a station recognize a repeated frame, so a command that was answered but whose answer was lost is not executed twice. The **DFC** bit tells the primary that the station's buffer is full.
+
+## Field sizes
+
+Where IEC 104 fixes its field sizes, IEC 101 leaves them to the project:
+
+| Field | Octets | Common |
+|---|---|---|
+| Link address | 0 (balanced only), 1 or 2 | 1 |
+| Cause of transmission | 1, or 2 with the originator address | 1 |
+| Common address of ASDU | 1 or 2 | 1 |
+| Information object address | 1, 2 or 3 | 2 |
+
+Nothing on the wire says which sizes a station uses. A wrong setting shows as scrambled addresses or a station that ignores every request, so check the station's interoperability list first.
+
+## The application layer
+
+The ASDU is the telecontrol ASDU of the family: a **type identification**, a variable structure qualifier, a **cause of transmission**, the **common address** of the station and one or more information objects, each with its **information object address**. The services are those of IEC 104:
+
+- **General and group interrogation** (C_IC_NA_1) for the state of every point; **counter interrogation** (C_CI_NA_1) for integrated totals; **read** (C_RD_NA_1) of one address.
+- **Spontaneous events** with CP24Time2a or CP56Time2a time tags, and cyclic measured values.
+- **Commands** (single, double, regulating step, set points, bitstrings), direct or **select-before-operate**, with confirmation and termination.
+- **Clock synchronization** (C_CS_NA_1), the **test command** (C_TS_NA_1, without time tag in IEC 101), **reset process** (C_RP_NA_1) and **delay acquisition** (C_CD_NA_1), which measures the transmission delay of a slow line so that the station can correct the time it was given.
+
+<Aside type="note">
+The CP56Time2a command types that IEC 104 added (58 to 64) and C_TS_TA_1 are reserved in IEC 101 and must not be sent on a 101 link. go-iec60870-5's strict mode refuses them.
+</Aside>
+
+## IEC 101 and IEC 104
+
+A 101 network often sits behind a gateway that speaks IEC 104 to the control centre, or behind a **terminal server** that carries the serial byte stream over TCP unchanged. Over such a TCP connection it is still IEC 101: FT 1.2 frames and link procedures, not the APCI of IEC 104. iec101ctl and the interop images talk to a terminal server on TCP port 2401 by default.
+
+## Where it is used
+
+- Distribution and older transmission networks with RTUs on serial, radio or leased lines
+- Multidrop lines and radio networks polled from one control centre port
+- Pipelines, water and district heating SCADA
+- Behind 101-to-104 gateways and terminal servers
+
+## OT Fabric for IEC 60870-5-101
+
+<CardGrid>
+  <LinkCard title="Go library" description="Controlling and controlled station, unbalanced and balanced, every field size, in go-iec60870-5." href="/docs/protocols/iec-101/library/" />
+  <LinkCard title="iec101ctl" description="Interrogate, monitor, command, measure the delay, scan a line, or simulate a station." href="/docs/protocols/iec-101/cli/" />
+  <LinkCard title="Testing and interop" description="iec60870-5-interop and what has been validated against lib60870-C, cB-Sigma and digitalpetri." href="/docs/protocols/iec-101/testing/" />
+</CardGrid>
+
+Source code: [go-iec60870-5](https://github.com/otfabric/go-iec60870-5), [iec60870ctl](https://github.com/otfabric/iec60870ctl), [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop).

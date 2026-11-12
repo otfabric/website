@@ -1,0 +1,110 @@
+---
+title: iec101ctl
+description: Interrogate, monitor and command IEC 60870-5-101 stations on a serial port or behind a terminal server, unbalanced or balanced, measure the line delay, scan a line, or simulate a station, from the command line.
+sidebar:
+  label: iec101ctl
+  order: 2
+---
+
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+[iec101ctl](https://github.com/otfabric/iec60870ctl) is a command-line tool for IEC 60870-5-101 in both roles. As a controlling station it brings up the link to an RTU, interrogates it, watches what it sends, issues commands and set points (direct or select-before-operate), synchronizes its clock and measures the transmission delay. As a controlled station it simulates an RTU from a model of points and commands. It is one of the four tools of [iec60870ctl](https://github.com/otfabric/iec60870ctl), with [iec102ctl](/docs/protocols/iec-102/cli/), [iec103ctl](/docs/protocols/iec-103/cli/) and [iec104ctl](/docs/protocols/iec-104/cli/), and is built on [go-iec60870-5](/docs/protocols/iec-101/library/). This page follows v0.9.0; the full reference is [docs/iec101ctl/usage.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/iec101ctl/usage.md).
+
+<Aside type="caution" title="Responsible use">
+iec101ctl sends real telecontrol requests. Use it only on stations and lines you own or are authorized to test. `client command` operates switchgear and changes set points; `client clock`, `client reset` and `client delay --set` change the station itself. A line has one controlling station: what iec101ctl receives, the station's regular controlling station does not.
+</Aside>
+
+## Install
+
+<InstallTool tool="iec101ctl" />
+
+## Try it without a station
+
+<Steps>
+1. Start the built-in demo station in one terminal (TCP port 2401, as a terminal server would offer it):
+
+   ```sh
+   iec101ctl server start
+   ```
+
+2. Talk to it from another:
+
+   ```sh
+   # What does this station hold? (general interrogation)
+   iec101ctl client interrogate --url tcp://127.0.0.1:2401
+
+   # Watch events and measured values as they arrive, until Ctrl-C
+   iec101ctl client monitor --url tcp://127.0.0.1:2401 --interrogate
+
+   # Open a breaker: single command, direct execute
+   iec101ctl client command --url tcp://127.0.0.1:2401 --type single --ioa 5000 --value off
+   ```
+</Steps>
+
+## The line and the link
+
+Every client command opens the line, brings up the link (request status of link, then reset of remote link) and closes the line again when it is done.
+
+| Flag | Meaning |
+|---|---|
+| `--url tcp://host[:port]` | A terminal server; port 2401 by default |
+| `--url serial:///dev/ttyUSB0` (`serial://COM3`) | A serial port, with `--baud` (9600), `--data-bits` (8), `--parity` (`even`) and `--stop-bits` (1) |
+| `--link-mode` | `unbalanced` (default: iec101ctl polls the station for class 1 and class 2 data) or `balanced` (both ends send, full-duplex point to point) |
+| `--link-address` | Link address of the controlled station (default 1) |
+| `--remote-link-address` | Balanced only: the link address of the controlling station |
+| `--link-address-size` | 1 (default) or 2 octets; 0 in balanced mode only |
+| `--cot-size`, `--ca-size`, `--ioa-size` | Cause of transmission (1 or 2), common address (1 or 2), object address (1, 2 or 3); defaults 1, 1 and 2 |
+| `--link-timeout`, `--link-retries` | How long to wait for an answer before repeating a frame (1000 ms) and how often (3). Raise the time-out on slow lines |
+| `--poll-interval` | Unbalanced: pause between class 2 polls when the station has nothing to send (100 ms) |
+| `--strict` | Apply the IEC 101 profile checks to every ASDU sent and received |
+| `--ca` | Common address of the station (default 1); broadcast is 255, or 65535 with `--ca-size 2` |
+
+Nothing on the wire says which field sizes a station uses: they must match the station. A link that does not come up ends with exit code 5 and the error code `link_init_failed`. `--debug` traces every frame, decoded, to stderr.
+
+```sh
+iec101ctl client interrogate --url serial:///dev/ttyUSB0 --link-address 3 --ca 3 --format table
+iec101ctl client interrogate --url tcp://10.0.0.5:2401 --link-mode balanced --ioa-size 3 --group 2
+```
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `client interrogate` (`gi`) | General or group interrogation (`--group 1-16`), C_IC_NA_1 |
+| `client counters` | Counter interrogation, C_CI_NA_1; `--freeze freeze\|freeze-reset\|reset` sends a freeze command, which the station only confirms |
+| `client read` | Read command per address of `--ioa` (lists and ranges); a refused address is reported in its row, exit code 7 |
+| `client command` (`cmd`) | A process command: `--type single\|double\|step\|setpoint-normalized\|setpoint-scaled\|setpoint-float\|bitstring`, `--value`, `--mode execute\|select\|sbo\|cancel`, `--wait-termination` |
+| `client clock` | Clock synchronization, C_CS_NA_1, with `--time` in `--timezone` |
+| `client reset` | Reset process, C_RP_NA_1: `--qualifier process` or `events` |
+| `client delay` | Delay acquisition, C_CD_NA_1: measure the transmission delay; `--set auto` measures and sends it, `--set <ms>` sends a value |
+| `client monitor` | Stay on the line and print every value as it arrives, until Ctrl-C, `--duration` or `--count`; reconnects unless `--no-reconnect` |
+| `client ping` | Test a station: `--method command` (C_TS_NA_1), `link-status` or `link-test` (balanced) |
+| `client scan` | Find stations: `--method broadcast`, `ca` (one interrogation per common address) or `link` (request status per link address on a multidrop line) |
+| `client types` | The type identifications of IEC 101, with direction and description |
+| `server start` | Serve a station from `--config` (YAML or JSON) or the built-in demo, on TCP or a serial port (`--serial`) |
+| `server generate-config` | Write the demo model as commented YAML or JSON |
+| `discover` | Probe `--subnets` on `--ports` (2401) for an FT 1.2 station behind a terminal server |
+
+```sh
+# A command on a slow line, with the delay corrected first
+iec101ctl client delay --url serial:///dev/ttyUSB0 --baud 1200 --set auto
+iec101ctl client clock --url serial:///dev/ttyUSB0 --baud 1200
+
+# Select-before-operate, waiting for the activation termination
+iec101ctl client command --url tcp://10.0.0.5:2401 --type double --ioa 5001 --value off --mode sbo --wait-termination 5000
+
+# Which stations answer on this multidrop line?
+iec101ctl client scan --url serial:///dev/ttyUSB0 --method link --start 1 --end 30 --link-timeout 300
+
+# A simulated station on a serial port
+iec101ctl server start --config station.yaml --serial /dev/ttyUSB0 --baud 9600 --link-address 3
+```
+
+A command that changes the process is validated before anything is sent and sent once: the link layer repeats an unanswered frame with the same frame count bit, which the station recognizes as a repetition.
+
+## Output and exit codes
+
+`--format text` (default), `json` or `table`, or `IEC101CTL_FORMAT`. Only the result goes to stdout; progress and traces go to stderr. The JSON shapes are a stable contract ([json-output.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/iec101ctl/json-output.md)), and the exit codes are those shared by the four tools ([exitcodes.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/exitcodes.md)). Every flag has an environment variable, `IEC101CTL_<FLAG>`, such as `IEC101CTL_URL` or `IEC101CTL_LINK_MODE`.
+
+`iec101ctl version --json` prints the version, commit, build date and the OT Fabric libraries inside the binary.

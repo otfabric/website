@@ -179,7 +179,7 @@ IEC 62351-5 protects each ASDU end to end, inside the IEC 104 connection, and au
 - **Secure data.** Every application ASDU then travels inside `S_SD_NA_1` with a sequence number against replay, authenticated with HMAC-SHA-256 or HMAC-SHA3-256, or encrypted and authenticated with AES-256-GCM. An unprotected ASDU is discarded.
 - **Roles.** The station grants each controlling station roles from IEC TS 60870-5-7 (viewer, operator, engineer, installer and the security roles) and refuses a request no role permits with cause 17, *not authorized*.
 
-The 2023 edition differs from the 2013 one, and the security type identifications 81..91 mean different things in each. The standards are not freely available: go-iec104 was derived from [cB-Sigma/iec60870](https://github.com/cB-Sigma/iec60870), the only open-source implementation of the 2023 edition, and is tested for interoperability with it, not for conformance. See [Testing and interop](/docs/protocols/iec-104/testing/).
+The 2023 edition differs from the 2013 one, and the security type identifications 81..91 mean different things in each. The standards are not freely available: the IEC 62351-5 code of go-iec60870-5 was derived from [cB-Sigma/iec60870](https://github.com/cB-Sigma/iec60870), the only open-source implementation of the 2023 edition, and is tested for interoperability with it, not for conformance. See [Testing and interop](/docs/protocols/iec-104/testing/).
 
 ## Where it is used
 
@@ -192,9 +192,9 @@ IEC 104 is the telecontrol protocol of power system SCADA:
 ## OT Fabric for IEC 60870-5-104
 
 <CardGrid>
-  <LinkCard title="go-iec104" description="Pure Go client and server: the full APCI machine, 67 type identifications, file transfer, redundancy groups, TLS and IEC 62351-5." href="/projects/go-iec104/" />
+  <LinkCard title="go-iec60870-5" description="Pure Go IEC 101, 102, 103 and 104. For IEC 104: the full APCI machine, 67 type identifications, file transfer, redundancy groups, TLS and IEC 62351-5." href="/projects/go-iec60870-5/" />
   <LinkCard title="iec104ctl" description="Command-line tool: interrogate, monitor, command, transfer files, or simulate a station from YAML, with TLS or IEC 62351-5." href="/projects/iec104ctl/" />
-  <LinkCard title="iec104-interop" description="Reference stations in containers: lib60870-C, OpenMUC j60870, wendy512/iec104 and cB-Sigma/iec60870." href="/projects/iec104-interop/" />
+  <LinkCard title="iec60870-5-interop" description="Reference stations in containers for the whole family; for IEC 104: lib60870-C, OpenMUC j60870, wendy512/iec104, cB-Sigma/iec60870 and part5." href="/projects/iec60870-5-interop/" />
 </CardGrid>
 
-Source code: [go-iec104](https://github.com/otfabric/go-iec104), [iec104ctl](https://github.com/otfabric/iec104ctl), [iec104-interop](https://github.com/otfabric/iec104-interop). Read on in the [Go library](/docs/protocols/iec-104/library/), [iec104ctl](/docs/protocols/iec-104/cli/) and [testing and interop](/docs/protocols/iec-104/testing/) pages.
+Source code: [go-iec60870-5](https://github.com/otfabric/go-iec60870-5), [iec60870ctl](https://github.com/otfabric/iec60870ctl), [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop). Read on in the [Go library](/docs/protocols/iec-104/library/), [iec104ctl](/docs/protocols/iec-104/cli/) and [testing and interop](/docs/protocols/iec-104/testing/) pages. The serial members of the family are [IEC 101](/docs/protocols/iec-101/), [IEC 102](/docs/protocols/iec-102/) and [IEC 103](/docs/protocols/iec-103/).

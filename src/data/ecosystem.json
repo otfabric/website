@@ -37,13 +37,40 @@
    "summary": "Support differs widely by data link and by service, so one \"BACnet supported\" badge says very little."
   },
   {
+   "id": "iec-101",
+   "name": "IEC 60870-5-101",
+   "standard": "IEC 60870-5-101, with FT 1.2 frames (IEC 60870-5-1) and link procedures (IEC 60870-5-2)",
+   "focus": "Serial telecontrol: unbalanced (polled, multidrop) and balanced links, field sizes chosen per project",
+   "maturity": "Mature, few complete open stacks",
+   "commercial": "Established",
+   "summary": "The serial sibling of IEC 104, still on many distribution and radio networks. Open implementations are few: lib60870 in C and .NET carries most of the field, cB-Sigma and digitalpetri are recent independent stacks in Go and Java, and the go-iecp5 lineage has a 101 package. Vendors such as Triangle MicroWorks cover the rest."
+  },
+  {
+   "id": "iec-102",
+   "name": "IEC 60870-5-102",
+   "standard": "IEC 60870-5-102 (transmission of integrated totals), with the Spanish REE profile",
+   "focus": "Reading integrated totals, the energy values of electricity meters, over serial lines and modems",
+   "maturity": "Niche",
+   "commercial": "Specialized",
+   "summary": "Best known as the basis of Spanish fiscal metering. Every open implementation is a controlling station for the REE profile, from one Python lineage; there is no open, licensed meter (controlled station). Commercial libraries and meter vendors' own software carry the rest."
+  },
+  {
+   "id": "iec-103",
+   "name": "IEC 60870-5-103",
+   "standard": "IEC 60870-5-103 (informative interface of protection equipment)",
+   "focus": "Polling protection relays: events, measurands, general commands, generic services and disturbance data",
+   "maturity": "Mature in products, thin in open source",
+   "commercial": "Established",
+   "summary": "Built into protection relays from every major vendor and read by substation controllers and gateways. Open stacks are young or partial, mostly controlling systems; none offers a standard-conforming relay to test against."
+  },
+  {
    "id": "iec-104",
    "name": "IEC 60870-5-104",
    "standard": "IEC 60870-5-104",
    "focus": "SCADA telecontrol over TCP",
    "maturity": "Specialized",
    "commercial": "Established",
-   "summary": "A handful of credible engines, with bindings and forks built on top of them."
+   "summary": "The most widely deployed member of the IEC 60870-5 family. A handful of credible engines, with bindings and forks built on top of them."
   },
   {
    "id": "iec-61850",
@@ -1794,7 +1821,7 @@
     "IEC 101",
     "TLS"
    ],
-   "interop": "iec104-interop",
+   "interop": "iec60870-5-interop",
    "maintenance": "active",
    "notes": "Commercial licences and support from MZ Automation. Also implements IEC 60870-5-101.",
    "sources": [
@@ -1828,7 +1855,7 @@
    "capabilities": [
     "IEC 104"
    ],
-   "interop": "iec104-interop",
+   "interop": "iec60870-5-interop",
    "maintenance": "active",
    "package": "https://central.sonatype.com/artifact/org.openmuc/j60870",
    "notes": "Distributed through OpenMUC and Maven Central rather than a public GitHub repository, so stars, forks and creation date do not apply. Proprietary licences are offered too.",
@@ -1987,7 +2014,7 @@
     "wendy512-go-iecp5"
    ],
    "relation": "Higher-level API on wendy512/go-iecp5",
-   "interop": "iec104-interop",
+   "interop": "iec60870-5-interop",
    "maintenance": "active",
    "notes": "Apache-2.0 itself, but it depends on LGPL-3.0 go-iecp5.",
    "sources": [
@@ -2071,11 +2098,11 @@
     "File transfer",
     "Redundancy"
    ],
-   "interop": "iec104-interop",
+   "interop": "iec60870-5-interop",
    "maintenance": "active",
    "emerging": true,
    "package": "https://pkg.go.dev/github.com/cB-Sigma/iec60870",
-   "notes": "Pure Go IEC 104 and IEC 101 stations written for the SigmaM2M oneM2M platform, with a 101-to-104 gateway and the A-Profile of IEC 62351-5 (IEC TS 60870-5-7), the only open-source implementation of that edition. TLS comes in through its companion module iotsec. The iec104-interop reference for application-layer security.",
+   "notes": "Pure Go IEC 104 and IEC 101 stations written for the SigmaM2M oneM2M platform, with a 101-to-104 gateway and the A-Profile of IEC 62351-5 (IEC TS 60870-5-7), the only open-source implementation of that edition. TLS comes in through its companion module iotsec. The iec60870-5-interop reference for application-layer security.",
    "sources": [
     "https://github.com/cB-Sigma/iec60870",
     "https://proxy.golang.org/github.com/!c!b-!sigma/iec60870/@latest"
@@ -2083,25 +2110,25 @@
    "verified": "2026-11-07"
   },
   {
-   "id": "otfabric-go-iec104",
-   "name": "go-iec104",
+   "id": "otfabric-go-iec60870-5-104",
+   "name": "go-iec60870-5",
    "protocol": "iec-104",
    "type": "independent",
    "languages": [
     "Go"
    ],
    "license": "MIT",
-   "url": "https://github.com/otfabric/go-iec104",
-   "repo": "otfabric/go-iec104",
-   "stars": 1,
-   "repoCreated": "2026-10-09",
+   "url": "https://github.com/otfabric/go-iec60870-5",
+   "repo": "otfabric/go-iec60870-5",
+   "stars": 0,
+   "repoCreated": "2026-11-11",
    "historySince": "2026",
-   "lastCommit": "2026-11-07",
+   "lastCommit": "2026-11-12",
    "release": {
-    "version": "v0.2.0",
-    "date": "2026-11-04",
+    "version": "v0.5.0",
+    "date": "2026-11-12",
     "source": "Go module proxy",
-    "url": "https://proxy.golang.org/github.com/otfabric/go-iec104/@v/v0.2.0.info"
+    "url": "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@v/v0.5.0.info"
    },
    "roles": [
     "client",
@@ -2114,16 +2141,17 @@
     "File transfer",
     "Redundancy"
    ],
-   "interop": "iec104-interop",
+   "interop": "iec60870-5-interop",
    "maintenance": "active",
    "emerging": true,
    "otfabric": true,
    "sources": [
-    "https://github.com/otfabric/go-iec104",
-    "https://proxy.golang.org/github.com/otfabric/go-iec104/@latest"
+    "https://github.com/otfabric/go-iec60870-5",
+    "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@latest"
    ],
-   "verified": "2026-11-07",
-   "starsAsOf": "2026-11-05"
+   "verified": "2026-11-12",
+   "forks": 0,
+   "notes": "The iec104 packages of OT Fabric's IEC 60870-5 module, which also implements IEC 101, 102 and 103."
   },
   {
    "id": "tmw-iec60870",
@@ -2146,6 +2174,922 @@
     "https://www.trianglemicroworks.com/products/"
    ],
    "verified": "2026-10-18"
+  },
+  {
+   "id": "lib60870-iec101",
+   "name": "lib60870",
+   "protocol": "iec-101",
+   "type": "independent",
+   "languages": [
+    "C"
+   ],
+   "license": "GPL-3.0",
+   "commercialLicense": true,
+   "url": "https://github.com/mz-automation/lib60870",
+   "repo": "mz-automation/lib60870",
+   "stars": 606,
+   "forks": 304,
+   "repoCreated": "2017-03-16",
+   "historySince": "2016",
+   "lastCommit": "2026-08-31",
+   "release": {
+    "version": "v2.4.1",
+    "date": "2026-07-15",
+    "source": "GitHub release",
+    "url": "https://github.com/mz-automation/lib60870/releases/tag/v2.4.1"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "Unbalanced",
+    "Balanced",
+    "Multidrop"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "notes": "CS101 master and slave of MZ Automation, the most used open IEC 101 stack; the same library implements IEC 104. Commercial licences and support from MZ Automation.",
+   "sources": [
+    "https://github.com/mz-automation/lib60870"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "lib60870-net-iec101",
+   "name": "lib60870.NET",
+   "protocol": "iec-101",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "GPL-3.0",
+   "commercialLicense": true,
+   "url": "https://github.com/mz-automation/lib60870.NET",
+   "repo": "mz-automation/lib60870.NET",
+   "stars": 168,
+   "forks": 80,
+   "repoCreated": "2017-11-16",
+   "historySince": "2016",
+   "lastCommit": "2025-03-25",
+   "release": {
+    "version": "2.3.0",
+    "date": "2025-03-25",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/lib60870.NET/2.3.0"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "IEC 104"
+   ],
+   "maintenance": "active",
+   "package": "https://www.nuget.org/packages/lib60870.NET",
+   "notes": "The C# implementation of MZ Automation, with the same design as lib60870-C.",
+   "sources": [
+    "https://github.com/mz-automation/lib60870.NET",
+    "https://www.nuget.org/packages/lib60870.NET"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "cb-sigma-iec60870-iec101",
+   "name": "iec60870 (cB-Sigma)",
+   "protocol": "iec-101",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/cB-Sigma/iec60870",
+   "repo": "cB-Sigma/iec60870",
+   "stars": 0,
+   "forks": 0,
+   "repoCreated": "2026-10-11",
+   "historySince": "2026",
+   "lastCommit": "2026-10-11",
+   "release": {
+    "version": "v0.3.0",
+    "date": "2026-10-11",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/!c!b-!sigma/iec60870/@v/v0.3.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "Unbalanced",
+    "Balanced",
+    "101-to-104 gateway"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "package": "https://pkg.go.dev/github.com/cB-Sigma/iec60870",
+   "notes": "Controlling and controlled stations on any io.ReadWriteCloser, balanced and unbalanced. Its IEC 101 link was debugged against lib60870-C.",
+   "sources": [
+    "https://github.com/cB-Sigma/iec60870",
+    "https://proxy.golang.org/github.com/!c!b-!sigma/iec60870/@latest"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "digitalpetri-iec60870-iec101",
+   "name": "digitalpetri iec60870",
+   "protocol": "iec-101",
+   "type": "independent",
+   "languages": [
+    "Java"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/digitalpetri/iec60870",
+   "repo": "digitalpetri/iec60870",
+   "stars": 4,
+   "forks": 1,
+   "repoCreated": "2026-06-24",
+   "historySince": "2026",
+   "lastCommit": "2026-11-09",
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "Unbalanced",
+    "Balanced",
+    "101 over TCP"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "Java IEC 101 and IEC 104 with its own FT 1.2 link on serial ports or TCP; no release yet (0.1.0-SNAPSHOT). The third IEC 101 reference of iec60870-5-interop, and the one not debugged against lib60870-C.",
+   "sources": [
+    "https://github.com/digitalpetri/iec60870"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "riclolsen-go-iecp5-iec101",
+   "name": "go-iecp5 (riclolsen)",
+   "protocol": "iec-101",
+   "type": "derived",
+   "languages": [
+    "Go"
+   ],
+   "license": "LGPL-3.0",
+   "url": "https://github.com/riclolsen/go-iecp5",
+   "repo": "riclolsen/go-iecp5",
+   "stars": 3,
+   "repoCreated": "2023-03-24",
+   "historySince": "2019",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.4.7",
+    "date": "2026-10-29",
+    "source": "Git tag",
+    "url": "https://pkg.go.dev/github.com/riclolsen/go-iecp5"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "Unbalanced",
+    "Balanced",
+    "Multidrop",
+    "File transfer"
+   ],
+   "relation": "Maintained continuation of thinkgos/go-iecp5, with a cs101 package added",
+   "maintenance": "active",
+   "sources": [
+    "https://github.com/riclolsen/go-iecp5"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "dsc-rs-iec60870-5-iec101",
+   "name": "rs-iec60870-5",
+   "protocol": "iec-101",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "DSC Systems Source-Available 1.0 (non-commercial; production use needs a commercial licence)",
+   "commercialLicense": true,
+   "url": "https://github.com/dscsystems/rs-iec60870-5",
+   "repo": "dscsystems/rs-iec60870-5",
+   "stars": 1,
+   "forks": 0,
+   "repoCreated": "2026-08-17",
+   "historySince": "2026",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.4.0",
+    "date": "2026-10-29",
+    "source": "Git tag",
+    "url": "https://github.com/dscsystems/rs-iec60870-5/releases/tag/v0.4.0"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "Unbalanced",
+    "Balanced",
+    "Multidrop"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "Pure Rust IEC 101, 103 and 104 from DSC Systems. Source is published, but production use and binary redistribution need a commercial licence.",
+   "sources": [
+    "https://github.com/dscsystems/rs-iec60870-5"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "tmw-iec101",
+   "name": "Triangle MicroWorks SCL",
+   "protocol": "iec-101",
+   "type": "commercial",
+   "languages": [
+    "C / C++ / .NET"
+   ],
+   "license": "Commercial",
+   "url": "https://products.trianglemicroworks.com/products/source-code-libraries/iec-60870-scl-pages/overview",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "maintenance": "n/a",
+   "sources": [
+    "https://products.trianglemicroworks.com/products/source-code-libraries/iec-60870-scl-pages/overview"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "otfabric-go-iec60870-5-101",
+   "name": "go-iec60870-5",
+   "protocol": "iec-101",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-iec60870-5",
+   "repo": "otfabric/go-iec60870-5",
+   "stars": 0,
+   "forks": 0,
+   "repoCreated": "2026-11-11",
+   "historySince": "2026",
+   "lastCommit": "2026-11-12",
+   "release": {
+    "version": "v0.5.0",
+    "date": "2026-11-12",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@v/v0.5.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 101",
+    "Unbalanced",
+    "Balanced",
+    "Every field size"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "sources": [
+    "https://github.com/otfabric/go-iec60870-5",
+    "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@latest"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "gisce-iec870ree",
+   "name": "iec870ree (gisce)",
+   "protocol": "iec-102",
+   "type": "derived",
+   "languages": [
+    "Python"
+   ],
+   "license": "AGPL-3.0",
+   "url": "https://github.com/gisce/iec870ree",
+   "repo": "gisce/iec870ree",
+   "stars": 18,
+   "forks": 15,
+   "repoCreated": "2018-08-22",
+   "historySince": "2017",
+   "lastCommit": "2025-10-13",
+   "release": {
+    "version": "0.14.1",
+    "date": "2025-10-13",
+    "source": "PyPI",
+    "url": "https://pypi.org/project/iec870ree/0.14.1/"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 102",
+    "REE profile"
+   ],
+   "upstream": [
+    "reeprotocol"
+   ],
+   "relation": "Continuation of javierdelapuente/reeprotocol",
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "package": "https://pypi.org/project/iec870ree/",
+   "notes": "Controlling station for Spanish REE electricity meters, used by GISCE. The only IEC 102 reference of iec60870-5-interop.",
+   "sources": [
+    "https://github.com/gisce/iec870ree",
+    "https://pypi.org/project/iec870ree/"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "reeprotocol",
+   "name": "reeprotocol",
+   "protocol": "iec-102",
+   "type": "independent",
+   "languages": [
+    "Python"
+   ],
+   "license": "AGPL-3.0",
+   "url": "https://github.com/javierdelapuente/reeprotocol",
+   "repo": "javierdelapuente/reeprotocol",
+   "stars": 10,
+   "forks": 7,
+   "repoCreated": "2017-10-22",
+   "historySince": "2017",
+   "lastCommit": "2021-11-26",
+   "release": null,
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 102",
+    "REE profile"
+   ],
+   "maintenance": "archived",
+   "notes": "The original Python REE controlling station, archived; gisce/iec870ree carries it on.",
+   "sources": [
+    "https://github.com/javierdelapuente/reeprotocol"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "tmw-iec102",
+   "name": "Triangle MicroWorks SCL",
+   "protocol": "iec-102",
+   "type": "commercial",
+   "languages": [
+    "C / C++ / .NET"
+   ],
+   "license": "Commercial",
+   "url": "https://products.trianglemicroworks.com/products/source-code-libraries/iec-60870-scl-pages/overview",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "maintenance": "n/a",
+   "sources": [
+    "https://products.trianglemicroworks.com/products/source-code-libraries/iec-60870-scl-pages/overview"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "otfabric-go-iec60870-5-102",
+   "name": "go-iec60870-5",
+   "protocol": "iec-102",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-iec60870-5",
+   "repo": "otfabric/go-iec60870-5",
+   "stars": 0,
+   "forks": 0,
+   "repoCreated": "2026-11-11",
+   "historySince": "2026",
+   "lastCommit": "2026-11-12",
+   "release": {
+    "version": "v0.5.0",
+    "date": "2026-11-12",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@v/v0.5.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 102",
+    "REE profile",
+    "Meter (controlled station)"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "sources": [
+    "https://github.com/otfabric/go-iec60870-5",
+    "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@latest"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "vitusdong-iec103-dotnet",
+   "name": "vitusdong iec103-dotnet",
+   "protocol": "iec-103",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/vitusdong/iec103-dotnet",
+   "repo": "vitusdong/iec103-dotnet",
+   "stars": 0,
+   "forks": 1,
+   "repoCreated": "2026-10-26",
+   "historySince": "2026",
+   "lastCommit": "2026-10-26",
+   "release": {
+    "version": "v0.1.0",
+    "date": "2026-10-26",
+    "source": "Git tag",
+    "url": "https://github.com/vitusdong/iec103-dotnet/releases/tag/v0.1.0"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 103",
+    "Generic services",
+    "Disturbance data"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": ".NET 8 master and slave. The only open IEC 103 relay that serves test data, with documented deviations from the standard; its tests use a copy of the ARIEC103 simulator as their oracle.",
+   "sources": [
+    "https://github.com/vitusdong/iec103-dotnet"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "ariec103",
+   "name": "ARIEC103",
+   "protocol": "iec-103",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/masarray/ARIEC103",
+   "repo": "masarray/ARIEC103",
+   "stars": 2,
+   "forks": 3,
+   "repoCreated": "2026-06-04",
+   "historySince": "2026",
+   "lastCommit": "2026-11-08",
+   "release": {
+    "version": "v1.2.31",
+    "date": "2026-06-05",
+    "source": "Git tag",
+    "url": "https://github.com/masarray/ARIEC103/releases/tag/v1.2.31"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 103"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "IEC 103 master tester and analyzer for protection relay FAT and SAT, with a slave simulator of its own.",
+   "sources": [
+    "https://github.com/masarray/ARIEC103"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "arsee-ariec60870",
+   "name": "ArSee (ARIEC60870)",
+   "protocol": "iec-103",
+   "type": "derived",
+   "languages": [
+    "C#"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/masarray/ARIEC60870",
+   "repo": "masarray/ARIEC60870",
+   "stars": 15,
+   "forks": 4,
+   "repoCreated": "2026-06-11",
+   "historySince": "2026",
+   "lastCommit": "2026-11-12",
+   "release": {
+    "version": "v3.6.8",
+    "date": "2026-11-12",
+    "source": "Git tag",
+    "url": "https://github.com/masarray/ARIEC60870/releases/tag/v3.6.8"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 103",
+    "IEC 101",
+    "IEC 104"
+   ],
+   "upstream": [
+    "ariec103"
+   ],
+   "relation": "Carries the IEC 103 code of ARIEC103",
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "A free Windows tester and analyzer for IEC 101, 103 and 104.",
+   "sources": [
+    "https://github.com/masarray/ARIEC60870"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "open103",
+   "name": "Open103",
+   "protocol": "iec-103",
+   "type": "independent",
+   "languages": [
+    "C++"
+   ],
+   "license": "Apache-2.0",
+   "url": "https://github.com/XVincentX/Open103",
+   "repo": "XVincentX/Open103",
+   "stars": 18,
+   "forks": 9,
+   "repoCreated": "2014-07-23",
+   "historySince": "2013",
+   "lastCommit": "2022-12-12",
+   "release": null,
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 103",
+    "Disturbance data"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "quiet",
+   "notes": "Header-only Windows C++ master. iec60870-5-interop compiles it for Linux with a small shim.",
+   "sources": [
+    "https://github.com/XVincentX/Open103"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "riclolsen-go-iecp5-iec103",
+   "name": "go-iecp5 cs103",
+   "protocol": "iec-103",
+   "type": "derived",
+   "languages": [
+    "Go"
+   ],
+   "license": "LGPL-3.0",
+   "url": "https://github.com/riclolsen/go-iecp5",
+   "repo": "riclolsen/go-iecp5",
+   "stars": 3,
+   "repoCreated": "2023-03-24",
+   "historySince": "2019",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.4.7",
+    "date": "2026-10-29",
+    "source": "Git tag",
+    "url": "https://pkg.go.dev/github.com/riclolsen/go-iecp5"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 103"
+   ],
+   "relation": "The cs103 package of the maintained go-iecp5 continuation",
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "notes": "The most standard-conforming open IEC 103 master in the iec60870-5-interop survey. The LICENSE file says LGPL-3.0, the cs103 file headers GPL-3.0.",
+   "sources": [
+    "https://github.com/riclolsen/go-iecp5"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "iobroker-iec103",
+   "name": "ioBroker.iec103",
+   "protocol": "iec-103",
+   "type": "independent",
+   "languages": [
+    "JavaScript"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/TheBam1990/ioBroker.iec103",
+   "repo": "TheBam1990/ioBroker.iec103",
+   "stars": 1,
+   "forks": 0,
+   "repoCreated": "2026-07-01",
+   "historySince": "2026",
+   "lastCommit": "2026-07-27",
+   "release": {
+    "version": "0.1.6",
+    "date": "2026-07-27",
+    "source": "npm",
+    "url": "https://www.npmjs.com/package/iobroker.iec103"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 103"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "ioBroker adapter. Not a complete IEC 103 link layer: no link reset and a constant frame count bit.",
+   "sources": [
+    "https://github.com/TheBam1990/ioBroker.iec103",
+    "https://www.npmjs.com/package/iobroker.iec103"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "dsc-rs-iec60870-5-iec103",
+   "name": "rs-iec60870-5",
+   "protocol": "iec-103",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "DSC Systems Source-Available 1.0 (non-commercial; production use needs a commercial licence)",
+   "commercialLicense": true,
+   "url": "https://github.com/dscsystems/rs-iec60870-5",
+   "repo": "dscsystems/rs-iec60870-5",
+   "stars": 1,
+   "forks": 0,
+   "repoCreated": "2026-08-17",
+   "historySince": "2026",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.4.0",
+    "date": "2026-10-29",
+    "source": "Git tag",
+    "url": "https://github.com/dscsystems/rs-iec60870-5/releases/tag/v0.4.0"
+   },
+   "roles": [
+    "client"
+   ],
+   "capabilities": [
+    "IEC 103"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "IEC 103 master of DSC Systems' Rust IEC 60870-5 library.",
+   "sources": [
+    "https://github.com/dscsystems/rs-iec60870-5"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "tmw-iec103",
+   "name": "Triangle MicroWorks SCL",
+   "protocol": "iec-103",
+   "type": "commercial",
+   "languages": [
+    "C / C++ / .NET"
+   ],
+   "license": "Commercial",
+   "url": "https://products.trianglemicroworks.com/products/source-code-libraries/iec-60870-scl-pages/overview",
+   "stars": null,
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "maintenance": "n/a",
+   "sources": [
+    "https://products.trianglemicroworks.com/products/source-code-libraries/iec-60870-scl-pages/overview"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "otfabric-go-iec60870-5-103",
+   "name": "go-iec60870-5",
+   "protocol": "iec-103",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "MIT",
+   "url": "https://github.com/otfabric/go-iec60870-5",
+   "repo": "otfabric/go-iec60870-5",
+   "stars": 0,
+   "forks": 0,
+   "repoCreated": "2026-11-11",
+   "historySince": "2026",
+   "lastCommit": "2026-11-12",
+   "release": {
+    "version": "v0.5.0",
+    "date": "2026-11-12",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@v/v0.5.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 103",
+    "Generic services",
+    "Disturbance data"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "emerging": true,
+   "otfabric": true,
+   "sources": [
+    "https://github.com/otfabric/go-iec60870-5",
+    "https://proxy.golang.org/github.com/otfabric/go-iec60870-5/@latest"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "part5",
+   "name": "part5",
+   "protocol": "iec-104",
+   "type": "independent",
+   "languages": [
+    "Go"
+   ],
+   "license": "CC0-1.0",
+   "url": "https://github.com/pascaldekloe/part5",
+   "repo": "pascaldekloe/part5",
+   "stars": 59,
+   "forks": 17,
+   "repoCreated": "2017-09-29",
+   "historySince": "2017",
+   "lastCommit": "2026-11-10",
+   "release": {
+    "version": "v0.3.0",
+    "date": "2024-08-11",
+    "source": "Go module proxy",
+    "url": "https://proxy.golang.org/github.com/pascaldekloe/part5/@v/v0.3.0.info"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 104"
+   ],
+   "interop": "iec60870-5-interop",
+   "maintenance": "active",
+   "package": "https://pkg.go.dev/github.com/pascaldekloe/part5",
+   "notes": "A public-domain IEC 60870-5 toolkit in Go: a session engine for IEC 104 and the information elements; FT 1.2 framing for 101 but no 101 link layer.",
+   "sources": [
+    "https://github.com/pascaldekloe/part5",
+    "https://proxy.golang.org/github.com/pascaldekloe/part5/@latest"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "digitalpetri-iec60870-iec104",
+   "name": "digitalpetri iec60870",
+   "protocol": "iec-104",
+   "type": "independent",
+   "languages": [
+    "Java"
+   ],
+   "license": "EPL-2.0",
+   "url": "https://github.com/digitalpetri/iec60870",
+   "repo": "digitalpetri/iec60870",
+   "stars": 4,
+   "forks": 1,
+   "repoCreated": "2026-06-24",
+   "historySince": "2026",
+   "lastCommit": "2026-11-09",
+   "release": null,
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 104"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "Java IEC 104 and IEC 101; no release yet (0.1.0-SNAPSHOT).",
+   "sources": [
+    "https://github.com/digitalpetri/iec60870"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "lib60870-net",
+   "name": "lib60870.NET",
+   "protocol": "iec-104",
+   "type": "independent",
+   "languages": [
+    "C#"
+   ],
+   "license": "GPL-3.0",
+   "commercialLicense": true,
+   "url": "https://github.com/mz-automation/lib60870.NET",
+   "repo": "mz-automation/lib60870.NET",
+   "stars": 168,
+   "forks": 80,
+   "repoCreated": "2017-11-16",
+   "historySince": "2016",
+   "lastCommit": "2025-03-25",
+   "release": {
+    "version": "2.3.0",
+    "date": "2025-03-25",
+    "source": "NuGet",
+    "url": "https://www.nuget.org/packages/lib60870.NET/2.3.0"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 104",
+    "IEC 101",
+    "TLS"
+   ],
+   "maintenance": "active",
+   "package": "https://www.nuget.org/packages/lib60870.NET",
+   "notes": "The C# implementation of MZ Automation, with the same design as lib60870-C.",
+   "sources": [
+    "https://github.com/mz-automation/lib60870.NET",
+    "https://www.nuget.org/packages/lib60870.NET"
+   ],
+   "verified": "2026-11-12"
+  },
+  {
+   "id": "dsc-rs-iec60870-5",
+   "name": "rs-iec60870-5",
+   "protocol": "iec-104",
+   "type": "independent",
+   "languages": [
+    "Rust"
+   ],
+   "license": "DSC Systems Source-Available 1.0 (non-commercial; production use needs a commercial licence)",
+   "commercialLicense": true,
+   "url": "https://github.com/dscsystems/rs-iec60870-5",
+   "repo": "dscsystems/rs-iec60870-5",
+   "stars": 1,
+   "forks": 0,
+   "repoCreated": "2026-08-17",
+   "historySince": "2026",
+   "lastCommit": "2026-10-29",
+   "release": {
+    "version": "v0.4.0",
+    "date": "2026-10-29",
+    "source": "Git tag",
+    "url": "https://github.com/dscsystems/rs-iec60870-5/releases/tag/v0.4.0"
+   },
+   "roles": [
+    "client",
+    "server"
+   ],
+   "capabilities": [
+    "IEC 104",
+    "TLS"
+   ],
+   "maintenance": "active",
+   "emerging": true,
+   "notes": "Pure Rust IEC 104, 101 and 103 from DSC Systems. Source is published, but production use and binary redistribution need a commercial licence.",
+   "sources": [
+    "https://github.com/dscsystems/rs-iec60870-5"
+   ],
+   "verified": "2026-11-12"
   },
   {
    "id": "libiec61850",

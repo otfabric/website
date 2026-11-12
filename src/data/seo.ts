@@ -7,7 +7,7 @@ export const ogImage = {
 	src: '/og-image.png',
 	width: 1200,
 	height: 630,
-	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, OPC UA, BACnet/IP, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CANopen on CAN bus and KNX, the SunSpec Modbus and IEC 61850 information models, and the Sparkplug B profile.',
+	alt: 'OT Fabric: unified data for industrial operations. Open-source protocol libraries and tools for Modbus, OPC UA, BACnet/IP, IEC 60870-5, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CANopen on CAN bus and KNX, the SunSpec Modbus and IEC 61850 information models, and the Sparkplug B profile.',
 };
 
 /** Meta description for the homepage: what OT Fabric is and the protocols people search for, in what a search result shows. */
@@ -16,7 +16,7 @@ export const homeDescription =
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
-	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5-104, IEC 61850 (MMS, GOOSE and Sampled Values), Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS), EtherNet/IP (CIP), PROFINET IO, CANopen (CiA 301, CiA 302, LSS, CiA 402, CANopen FD) the CAN bus it runs on (CAN FD, CAN XL, ISO-TP) and KNX (KNXnet/IP, KNX IP Secure, KNX Data Secure), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. It also ships desktop apps (SunSpec Explorer, Modbus Trace Explorer, IEC 61850 Explorer), OT network visibility (LAN Tracker) and protocol detection (otprobe), and every CLI installs with one line from get.otfabric.io. Built by people and AI agents together.';
+	'OT Fabric builds open-source, MIT-licensed protocol libraries, command-line tools and interoperability test suites for industrial (OT) devices: Modbus, OPC UA, BACnet/IP, IEC 60870-5 (IEC 101 serial telecontrol, IEC 102 integrated totals, IEC 103 protection equipment, IEC 104 over TCP/IP), IEC 61850 (MMS, GOOSE and Sampled Values), Siemens S7, OpenADR, OCPP, DNP3 (IEEE 1815), IEEE 2030.5 (CSIP, CSIP-AUS), EtherNet/IP (CIP), PROFINET IO, CANopen (CiA 301, CiA 302, LSS, CiA 402, CANopen FD) the CAN bus it runs on (CAN FD, CAN XL, ISO-TP) and KNX (KNXnet/IP, KNX IP Secure, KNX Data Secure), plus libraries for the information models carried over them: SunSpec Modbus and the IEC 61850 information model (NSD), and for Sparkplug B, the application profile for industrial data over MQTT. It also ships desktop apps (SunSpec Explorer, Modbus Trace Explorer, IEC 61850 Explorer), OT network visibility (LAN Tracker) and protocol detection (otprobe), and every CLI installs with one line from get.otfabric.io. Built by people and AI agents together.';
 
 export const absolute = (path: string) => new URL(path, site.url).href;
 
@@ -77,6 +77,9 @@ export const organization = {
 		'SunSpec Modbus',
 		'OPC UA',
 		'BACnet',
+		'IEC 60870-5-101',
+		'IEC 60870-5-102',
+		'IEC 60870-5-103',
 		'IEC 60870-5-104',
 		'IEC 61850',
 		'IEC 61850 GOOSE',

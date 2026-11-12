@@ -22,7 +22,7 @@ The OT Fabric command-line tools are written for two readers at once. A person a
           - name: Install iec104ctl
             run: |
               curl -fsSL https://get.otfabric.io/iec104ctl \
-                | env OTF_VERSION=0.7.1 OTF_UNMANAGED_INSTALL="$RUNNER_TEMP/bin" sh
+                | env OTF_VERSION=0.9.0 OTF_UNMANAGED_INSTALL="$RUNNER_TEMP/bin" sh
               echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
           - run: iec104ctl version
     ```

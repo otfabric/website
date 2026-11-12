@@ -68,17 +68,29 @@
 		"icon": "go-bacnet"
 	},
 	{
-		"id": "go-iec104",
-		"name": "go-iec104",
-		"repo": "go-iec104",
+		"id": "go-iec60870-5",
+		"name": "go-iec60870-5",
+		"repo": "go-iec60870-5",
 		"category": "protocol",
 		"standards": [
+			"iec-101",
+			"iec-102",
+			"iec-103",
 			"iec-104"
 		],
 		"status": "available",
-		"install": "go get github.com/otfabric/go-iec104",
-		"description": "IEC 60870-5-104 controlling and controlled station, with the full APCI state machine, redundancy groups, TLS and IEC 62351-5 application-layer security.",
-		"icon": "go-iec104"
+		"install": "go get github.com/otfabric/go-iec60870-5",
+		"description": "The IEC 60870-5 telecontrol family in one module: IEC 101 on serial lines, IEC 102 for meter readings, IEC 103 for protection relays and IEC 104 over TCP/IP, each as controlling and controlled station, on shared FT 1.2, link-layer and time-tag packages. IEC 104 keeps TLS, IEC 62351-5, file transfer and redundancy groups. Pure Go, standard library only.",
+		"icon": "go-iec60870-5",
+		"highlights": [
+			"IEC 60870-5-101: controlling and controlled station over any serial port or terminal server, unbalanced and balanced links, every field size (link address 0 to 2, cause 1 or 2, common address 1 or 2, object address 1 to 3), delay acquisition and an optional strict 101 profile check.",
+			"IEC 60870-5-102: controlling station and integrated total station for energy meters, every read command for integrated totals, events and the meter clock, with the Spanish REE profile (sessions, clock setting, tariffs) as an opt-in package.",
+			"IEC 60870-5-103: controlling system and protection equipment addressed by function type and information number, with general interrogation, general commands, time synchronization, generic services for settings and the full disturbance data transfer.",
+			"IEC 60870-5-104: the APCI state machine with k and w windows and t0 to t3 timers, interrogations, select-before-operate, file transfer, redundancy groups, TLS (IEC 62351-3) and the IEC 62351-5 A-Profile of IEC TS 60870-5-7.",
+			"Shared layers as the standard draws them: FT 1.2 frames (IEC 60870-5-1), link procedures (IEC 60870-5-2), time tags (IEC 60870-5-4) and the telecontrol ASDU codec used by 101 and 104.",
+			"Interop tested against iec60870-5-interop: IEC 101 against lib60870-C, cB-Sigma and digitalpetri; IEC 104 against lib60870-C, OpenMUC j60870, wendy512, cB-Sigma and part5; the IEC 103 server against four independent clients; the IEC 102 server against gisce/iec870ree.",
+			"Not certified and no conformance claim. The IEC 102 and IEC 103 clients have little or no independent peer, because no open IEC 102 meter or standard-conforming IEC 103 relay exists to test against."
+		]
 	},
 	{
 		"id": "go-iec61850",
@@ -551,16 +563,125 @@
 		"formatEnv": "BACNETCTL_FORMAT"
 	},
 	{
+		"id": "iec101ctl",
+		"name": "iec101ctl",
+		"repo": "iec60870ctl",
+		"category": "cli",
+		"standards": [
+			"iec-101"
+		],
+		"status": "available",
+		"description": "Interrogate, monitor and command IEC 101 stations on a serial port or behind a terminal server, unbalanced or balanced, with any field sizes; measure the line delay, scan a line for stations, or simulate an RTU. Part of iec60870ctl.",
+		"icon": "go-iec60870-5",
+		"commands": [
+			{
+				"note": "No station at hand: start the built-in demo station on port 2401",
+				"run": "iec101ctl server start"
+			},
+			{
+				"note": "What does this station hold? General interrogation over a terminal server",
+				"run": "iec101ctl client interrogate --url tcp://127.0.0.1:2401"
+			},
+			{
+				"note": "The same on a serial port, 9600 8E1",
+				"run": "iec101ctl client interrogate --url serial:///dev/ttyUSB0 --link-address 3 --ca 3"
+			},
+			{
+				"note": "Watch events and measured values as they arrive",
+				"run": "iec101ctl client monitor --url tcp://127.0.0.1:2401 --interrogate"
+			},
+			{
+				"note": "Operate a disconnector with select-before-operate",
+				"run": "iec101ctl client command --url tcp://127.0.0.1:2401 --type double --ioa 5001 --value off --mode sbo"
+			},
+			{
+				"note": "Which stations answer on this multidrop line?",
+				"run": "iec101ctl client scan --url serial:///dev/ttyUSB0 --method link --start 1 --end 30"
+			}
+		],
+		"formatEnv": "IEC101CTL_FORMAT"
+	},
+	{
+		"id": "iec102ctl",
+		"name": "iec102ctl",
+		"repo": "iec60870ctl",
+		"category": "cli",
+		"standards": [
+			"iec-102"
+		],
+		"status": "available",
+		"description": "Read electricity meters and data concentrators over IEC 102: product information, the clock, integrated totals by period window, events, and the requests of the Spanish REE profile, or simulate a meter for a metering front end. Part of iec60870ctl.",
+		"icon": "go-iec60870-5",
+		"commands": [
+			{
+				"note": "No meter at hand: start the built-in demo meter",
+				"run": "iec102ctl server start"
+			},
+			{
+				"note": "Who is it, and what time does it have?",
+				"run": "iec102ctl client info --url tcp://127.0.0.1:2401\niec102ctl client time --url tcp://127.0.0.1:2401"
+			},
+			{
+				"note": "The hourly load profile of one day, in an REE session",
+				"run": "iec102ctl client totals --url tcp://127.0.0.1:2401 --record 11 --from 2026-01-01T01:00 --to 2026-01-02T00:00 --access-key 7"
+			},
+			{
+				"note": "Events of list 52",
+				"run": "iec102ctl client events --url tcp://127.0.0.1:2401 --record 52"
+			},
+			{
+				"note": "REE tariff information of contract I",
+				"run": "iec102ctl client ree tariffs --url tcp://127.0.0.1:2401 --access-key 7"
+			}
+		],
+		"formatEnv": "IEC102CTL_FORMAT"
+	},
+	{
+		"id": "iec103ctl",
+		"name": "iec103ctl",
+		"repo": "iec60870ctl",
+		"category": "cli",
+		"standards": [
+			"iec-103"
+		],
+		"status": "available",
+		"description": "Poll IEC 103 protection relays: general interrogation, general commands, clock, identification, settings through the generic services, recorded faults with their disturbance data as JSON or CSV, monitoring and line scans, or simulate a relay. Part of iec60870ctl.",
+		"icon": "go-iec60870-5",
+		"commands": [
+			{
+				"note": "No relay at hand: start the built-in demo device",
+				"run": "iec103ctl server start"
+			},
+			{
+				"note": "Who is it?",
+				"run": "iec103ctl client identify --url tcp://127.0.0.1:2401"
+			},
+			{
+				"note": "The state of every indication: general interrogation",
+				"run": "iec103ctl client interrogate --url tcp://127.0.0.1:2401"
+			},
+			{
+				"note": "Settings of group 1, through the generic services",
+				"run": "iec103ctl client generic group --url tcp://127.0.0.1:2401 --group 1 --format table"
+			},
+			{
+				"note": "Recorded faults, and one fault's disturbance data as CSV",
+				"run": "iec103ctl client disturbance list --url tcp://127.0.0.1:2401\niec103ctl client disturbance get --url tcp://127.0.0.1:2401 --fan 1 --csv fault1.csv"
+			}
+		],
+		"formatEnv": "IEC103CTL_FORMAT"
+	},
+	{
 		"id": "iec104ctl",
 		"name": "iec104ctl",
-		"repo": "iec104ctl",
+		"repo": "iec60870ctl",
 		"category": "cli",
 		"standards": [
 			"iec-104"
 		],
 		"status": "available",
-		"description": "Interrogate, monitor and command IEC 104 stations over TLS or IEC 62351-5, transfer files, or simulate an RTU from YAML.",
-		"icon": "go-iec104",
+		"description": "Interrogate, monitor and command IEC 104 stations over TLS or IEC 62351-5, transfer files, discover stations, or simulate an RTU from YAML. Part of iec60870ctl.",
+		"icon": "go-iec60870-5",
 		"commands": [
 			{
 				"note": "No station at hand: start the built-in demo station",
@@ -1235,16 +1356,19 @@
 		"icon": "go-bacnet"
 	},
 	{
-		"id": "iec104-interop",
-		"name": "iec104-interop",
-		"repo": "iec104-interop",
+		"id": "iec60870-5-interop",
+		"name": "iec60870-5-interop",
+		"repo": "iec60870-5-interop",
 		"category": "interop",
 		"standards": [
+			"iec-101",
+			"iec-102",
+			"iec-103",
 			"iec-104"
 		],
 		"status": "available",
-		"description": "IEC 104 reference stations: lib60870, OpenMUC j60870, wendy512 and cB-Sigma, the last with IEC 62351-5.",
-		"icon": "go-iec104"
+		"description": "Independent IEC 60870-5 implementations in containers behind one contract, per companion standard: IEC 101 (lib60870-C, cB-Sigma, digitalpetri), IEC 102 (gisce/iec870ree, REE profile), IEC 103 (vitusdong, ARIEC103, Open103, go-iecp5 cs103) and IEC 104 (lib60870-C, OpenMUC j60870, wendy512, cB-Sigma, part5).",
+		"icon": "go-iec60870-5"
 	},
 	{
 		"id": "iec61850-interop",

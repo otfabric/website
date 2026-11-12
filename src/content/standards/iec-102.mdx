@@ -1,0 +1,151 @@
+---
+kind: protocol
+name: "IEC 60870-5-102"
+short: "IEC 102"
+standard: "IEC 60870-5-102"
+summary: "Reading integrated totals, the energy values of electricity meters, from meters and data concentrators over serial lines and modems; in Spain the basis of fiscal metering."
+order: 4.1
+facts:
+  - { label: 'Transport', value: 'FT 1.2 on a serial line or modem; or a terminal server that passes the line through' }
+  - { label: 'Link', value: 'Unbalanced: the controlling station polls, the meter only answers' }
+  - { label: 'Profile', value: 'Spanish REE profile: sessions with an access key, clock setting, tariffs' }
+  - { label: 'Library', value: 'go-iec60870-5 (iec102)' }
+  - { label: 'CLI', value: 'iec102ctl' }
+  - { label: 'Interop', value: 'iec60870-5-interop v0.4.0' }
+icon: go-iec60870-5
+docs: /docs/protocols/iec-102/
+layers:
+  - label: 'Profile'
+    items:
+      - { name: 'Spanish REE profile: sessions, clock setting, tariffs, contracted powers', note: 'go-iec60870-5 iec102/ree' }
+  - label: 'Application layer'
+    items:
+      - { name: 'IEC 60870-5-102 ASDUs: records of integrated totals, events, time a and time b', id: 'iec-102', note: 'go-iec60870-5 iec102' }
+  - label: 'Link layer'
+    items:
+      - { name: 'IEC 60870-5-2 link procedures, unbalanced', note: 'go-iec60870-5 link' }
+  - label: 'Frames'
+    items:
+      - { name: 'FT 1.2 frames (IEC 60870-5-1)', note: 'go-iec60870-5 ft12' }
+  - label: 'Physical'
+    items:
+      - { name: 'RS-232, RS-485, PSTN or GSM modems; or TCP to a terminal server' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+IEC 60870-5-102 (IEC 102) is the companion standard for the **transmission of integrated totals**: the energy counters of electricity meters, read per integration period. A **controlling station** (a metering front end or data collector) reads an **integrated total station** (a meter or a data concentrator) over a serial line or a modem, on the same FT 1.2 frames and link procedures as [IEC 101](/protocols/iec-101/).
+
+It has an application layer of its own. A request names a **record address** (the hourly load profile, daily values, the billing period, a list of events), a range of counters and a time window; the meter confirms the request, sends one ASDU per integration period with a common time tag, and terminates it. IEC 102 has no spontaneous data: a meter only answers what it is asked. Its time formats are its own too, **time a** for the period and **time b** for the meter's clock.
+
+IEC 102 is best known in Spain, where Red Eléctrica (REE) built its fiscal metering on it and added a profile with sessions and an access key, clock setting, tariff information and contracted powers. Nearly every open IEC 102 implementation is an REE controlling station.
+
+## Where you meet it
+
+- Spanish fiscal metering of generation, transmission and large consumers, under the REE profile
+- Energy meters and data concentrators in substations and power plants, read by a metering front end over serial lines or modems
+- Meter data collection for billing and settlement, where readings must come with their integration period and quality
+
+## Quickstart
+
+### From the command line
+
+Install `iec102ctl` with `curl -fsSL https://get.otfabric.io/iec102ctl | sh`, or on Windows `irm https://get.otfabric.io/iec102ctl.ps1 | iex` ([all install options](/docs/install/)). No meter at hand? Start a simulated one:
+
+```sh
+iec102ctl server start
+```
+
+and read it from another terminal:
+
+```sh
+# Who is it, and what time does it have?
+iec102ctl client info --url tcp://127.0.0.1:2401
+iec102ctl client time --url tcp://127.0.0.1:2401
+
+# The hourly load profile of one day, in an REE session
+iec102ctl client totals --url tcp://127.0.0.1:2401 --record 11 \
+  --from 2026-01-01T01:00 --to 2026-01-02T00:00 --access-key 7
+
+# The same as increments, as a table
+iec102ctl client totals --url tcp://127.0.0.1:2401 --kind incremental \
+  --from 2026-01-01 --to 2026-01-02 --format table
+```
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-iec60870-5
+```
+
+Read one day of the hourly load profile from a meter of the REE profile:
+
+```go title="main.go"
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"github.com/otfabric/go-iec60870-5/iec102"
+	"github.com/otfabric/go-iec60870-5/iec102/client"
+	"github.com/otfabric/go-iec60870-5/iec102/ree"
+)
+
+func main() {
+	// A terminal server in front of the meter's serial port.
+	conn, err := net.DialTimeout("tcp", "10.0.0.20:2401", 5*time.Second)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p := iec102.Params{Profile: ree.Profile} // decode REE bodies
+	c, err := client.New(conn, client.Config{LinkAddr: 1, CommonAddr: 1, Params: p})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	if err := ree.Login(ctx, c, 7); err != nil { // the meter's access key
+		log.Fatal(err)
+	}
+	day := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	periods, err := c.ReadTotals(ctx, ree.RecordLoadProfile, iec102.Read{
+		T: iec102.C_CI_NU_2, First: ree.AddrActiveImport, Last: ree.AddrActiveImport,
+		From: iec102.TimeAOf(day.Add(time.Hour), nil), To: iec102.TimeAOf(day.Add(24*time.Hour), nil),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, period := range periods {
+		fmt.Printf("%v  %d kWh\n", period.Time, period.Totals[0].Value)
+	}
+	if err := ree.Logout(ctx, c); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+## What go-iec60870-5 and iec102ctl support
+
+| | |
+|---|---|
+| Roles | Controlling station (client) and integrated total station (server) with a store of records |
+| Reads | Every read command for integrated totals (C_CI_NA_2 to C_CI_NU_2): absolute or incremental, operational or accounting, by time window, period or oldest record; single-point events; product information; the meter clock |
+| REE profile | Sessions with an access key, clock setting, tariff information (current and stored), contracted powers and special days, in the opt-in package `iec102/ree` |
+| Data | Time a and time b with summer time, quality bits, refusals with their cause (no record, no period, unknown address) |
+| CLI | info, time, totals, events, a raw request, the REE commands, and a simulated meter from YAML |
+| Not yet | Spontaneous or class 1 data, signature checks, one client polling several meters on a shared line |
+| Dependencies | Go standard library only |
+
+<Callout type="note">
+We do not hold the text of IEC 60870-5-102. The codec is built from vendor documentation of a commercial IEC 102 master, recorded meter traffic and independent implementations, and every type and field is classified by source and confidence in the library's IEC 102 interoperability notes.
+</Callout>
+
+## Interoperability
+
+IEC 102 is the thinnest corner of the family. There is no open, licensed implementation of a meter (the controlled station), and every open controlling station implements the REE profile. [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) runs the one usable stack, gisce/iec870ree, an REE controlling station in Python, and go-iec60870-5's meter passes its checks. The go-iec60870-5 client has no independent peer, so it is tested against its own server and recorded meter traffic only. That is a fact about the open ecosystem, and why a simulated meter in `iec102ctl` is useful to anyone building a metering front end.
