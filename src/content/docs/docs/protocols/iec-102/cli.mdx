@@ -1,0 +1,84 @@
+---
+title: iec102ctl
+description: Read IEC 60870-5-102 electricity meters from the command line (product information, the clock, integrated totals by period, events, the Spanish REE profile), or simulate a meter for a metering front end.
+sidebar:
+  label: iec102ctl
+  order: 2
+---
+
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+[iec102ctl](https://github.com/otfabric/iec60870ctl) reads and simulates integrated total stations: electricity meters and data concentrators that speak IEC 60870-5-102. As a controlling station it reads a meter's product specification, its clock, the integrated totals of a record for a period window, its events, and the requests of the Spanish REE profile. As an integrated total station it simulates a meter from a model of records, so that a metering front end or data collector has something to read. It is one of the four tools of [iec60870ctl](https://github.com/otfabric/iec60870ctl) and is built on [go-iec60870-5](/docs/protocols/iec-102/library/). This page follows v0.9.0; the full reference is [docs/iec102ctl/usage.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/iec102ctl/usage.md).
+
+<Aside type="caution" title="Responsible use">
+iec102ctl sends real requests to meters. Use it only on meters and lines you own or are authorized to test. `client ree set-time` changes the meter's clock, and with it the integration periods it records; `client request` sends whatever ASDU you give it. While iec102ctl holds a meter's line, the regular data collector cannot read.
+</Aside>
+
+## Install
+
+<InstallTool tool="iec102ctl" />
+
+## Try it without a meter
+
+<Steps>
+1. Start the built-in demo meter (TCP port 2401):
+
+   ```sh
+   iec102ctl server start
+   ```
+
+2. Read it from another terminal:
+
+   ```sh
+   iec102ctl client info --url tcp://127.0.0.1:2401
+   iec102ctl client time --url tcp://127.0.0.1:2401
+   iec102ctl client totals --url tcp://127.0.0.1:2401 --record 11 \
+     --from 2026-01-01T01:00 --to 2026-01-02T00:00 --access-key 7
+   iec102ctl client events --url tcp://127.0.0.1:2401 --record 52
+   ```
+</Steps>
+
+## Connecting to a meter
+
+| Flag | Meaning |
+|---|---|
+| `--url` | `tcp://host[:port]` (terminal server, port 2401) or `serial:///dev/ttyUSB0` (`serial://COM3`) |
+| `--baud`, `--data-bits`, `--parity`, `--stop-bits` | The serial line (FT 1.2: 9600 8E1) |
+| `--link-address`, `--link-address-size` | The meter's link address, and the octets of the address field (1, 2, or 0 for none); default 1 with two octets |
+| `--common-address`, `--ca-size` | The measuring point address and its octets; default 1 with two octets |
+| `--timezone` | The zone of the meter's clock (`utc` by default; Spanish meters keep `Europe/Madrid`) |
+| `--profile` | `standard`, or `ree` to decode the types of the REE profile |
+| `--access-key`, `--access-key-file` | The REE access key: the command runs in a session; implies `--profile ree`. Prefer `IEC102CTL_ACCESS_KEY` or the file, since a flag shows in the process list |
+| `--timeout` | Connecting, starting the link and each request (30 s) |
+
+The access key is never printed, not even with `--debug`.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `client info` | Manufacturer and product specification (C_RD_NA_2) |
+| `client time` | The meter's clock (C_TI_NA_2), and how far it is from this computer's |
+| `client totals` | Integrated totals of `--record`: `--kind operational\|reset-operational\|accounting\|reset-accounting`, by `--from`/`--to`, `--period` or `--oldest`, for `--first`..`--last` |
+| `client events` | Single-point events of a list (`--record`, 51 by default), all or in a time range |
+| `client request` | One raw ASDU of any type, with every answer printed; for types iec102ctl has no command for |
+| `client types` | The type identifications iec102ctl knows, standard and REE |
+| `client ree login` | Open and close an REE session, nothing else |
+| `client ree set-time` | Set the meter's clock (C_CS_TA_2) |
+| `client ree tariffs` | Tariff information of a contract register, current or stored |
+| `client ree contracted-powers`, `special-days` | Contracted powers per tariff period, and the special days of the calendar |
+| `server start` | Serve a simulated meter from `--config` (YAML or JSON) or the demo, on TCP or a serial port |
+| `server generate-config` | Write the demo meter's model |
+
+```sh
+iec102ctl client totals --url tcp://10.0.0.20 --kind incremental --first 1 --last 1 \
+  --from 2026-01-31 --to 2026-02-01 --access-key 7 --format table
+iec102ctl client totals --url tcp://10.0.0.20 --record 1 --kind accounting --oldest
+iec102ctl client ree tariffs --url tcp://10.0.0.20 --access-key 7 --from 2025-11-01 --to 2026-01-01 --format json
+iec102ctl server start --config meter.yaml --serial /dev/ttyUSB0 --baud 9600 --link-address 5 --timezone Europe/Madrid
+```
+
+## Output and exit codes
+
+`--format text`, `json` or `table`, or `IEC102CTL_FORMAT`. A refusal by the meter ends with exit code 6 and the cause as the error code (`no_period`, `no_object`, `unknown_record_address`, `unknown_record_number`, `unknown_type`, `no_record`, `login_refused`); exit code 7 means the operation succeeded but the REE session did not end with a confirmed logout. The rest are the codes shared by the four tools ([exitcodes.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/exitcodes.md)).

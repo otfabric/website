@@ -1,0 +1,40 @@
+---
+title: Testing and interop
+description: How the OT Fabric IEC 60870-5-102 code is tested, what has been validated against gisce/iec870ree, and why no open IEC 102 meter exists to test a controlling station against.
+sidebar:
+  label: Testing and interop
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+IEC 102 has the thinnest open ecosystem of the IEC 60870-5 family. Every open implementation is a controlling station for the Spanish REE profile, and there is no open, licensed meter to test against. That shapes what can be shown.
+
+## Tests inside the repositories
+
+**go-iec60870-5** tests the IEC 102 codec against byte strings from recorded meter traffic (749 frames, every one decoded and encoded back octet for octet) and from public test vectors, fuzzes the decoder, runs the client against the server end to end over an in-memory line, and adds hostile-peer and chaos tests on the shared link layer.
+
+**iec102ctl** runs every command against go-iec60870-5's own meter (`make e2e` in iec60870ctl) and its simulated meter against the reference client below.
+
+## The reference image
+
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 has one IEC 102 image, `ghcr.io/otfabric/iec60870-5-interop-iec102-gisce`: the controlling station of [gisce/iec870ree](https://github.com/gisce/iec870ree) v0.14.1 (Python, AGPL-3.0), client only, with a TCP transport of its own. It reads product information, the clock and integrated totals, sets the clock and reads tariffs, inside an REE session. Its status is experimental: there is no cross-stack run, because there is no second IEC 102 stack with a meter.
+
+<Aside type="note">
+The harness's own self-test runs the gisce image against a scripted meter of the repository, which is not an implementation of IEC 102. A pass there shows that the image keeps the contract, not that either side is right about IEC 102.
+</Aside>
+
+## What has been validated
+
+| Direction | Evidence |
+|---|---|
+| gisce/iec870ree against the go-iec60870-5 meter (REE profile) | 18 checks pass, every result compared with the fixture (`make interop-iec102`) |
+| gisce/iec870ree against the iec102ctl simulated meter | 19 checks pass |
+| go-iec60870-5 and iec102ctl as controlling station | Against their own meter and recorded traffic only: no independent peer exists |
+
+## What has not been validated
+
+- **The controlling station against an independent meter.** None is available under an open licence; reports from real meters, with the `--debug` trace, are welcome.
+- **One-octet link and common addresses, and the single character E5h:** gisce uses two octets and cannot parse E5h.
+- **The text of the standard.** We do not hold IEC 60870-5-102 or the REE specification; see the library's IEC 102 interoperability notes for the source of every field.
+- **Signatures, class 1 data and shared lines:** not implemented.

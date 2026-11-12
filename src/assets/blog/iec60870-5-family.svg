@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" font-family="IBM Plex Sans, Segoe UI, sans-serif" role="img" aria-label="One library, go-iec60870-5, for the four companion standards of IEC 60870-5. IEC 101: telecontrol over serial lines, CLI iec101ctl, tested against lib60870-C, cB-Sigma and digitalpetri, 490 subtests pass. IEC 102: integrated totals from meters, CLI iec102ctl, tested against gisce iec870ree, 18 checks pass. IEC 103: protection relays, CLI iec103ctl, tested against four stacks, 75 subtests pass. IEC 104: telecontrol over TCP/IP, CLI iec104ctl, tested against five stacks, 519 subtests pass. None fail.">
+  <rect width="720" height="400" fill="#F4F6F8"/>
+  <text x="40" y="44" font-size="15" font-weight="600" fill="#17212B">IEC 60870-5: four companion standards, one library</text>
+  <text x="680" y="44" font-size="12" fill="#5A6875" text-anchor="end" font-family="IBM Plex Mono, monospace">iec60870-5-interop v0.4.0</text>
+  <g font-size="11" fill="#5A6875" font-family="IBM Plex Mono, monospace"><text x="40" y="76">STANDARD</text><text x="292" y="76">CLI</text><text x="374" y="76">REFERENCE STACKS</text><text x="680" y="76" text-anchor="end">PASS</text></g>
+  <g><rect x="40" y="88" width="640" height="48" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <rect x="52" y="100" width="62" height="24" rx="4" fill="#F6E6DA"/><text x="83" y="116" font-size="12" font-weight="600" fill="#B35A1F" text-anchor="middle">IEC 101</text>
+    <text x="126" y="108" font-size="12.5" font-weight="600" fill="#17212B">Telecontrol, serial</text>
+    <text x="126" y="124" font-size="10.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">FT 1.2 · polled, balanced</text>
+    <text x="292" y="116" font-size="11.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">iec101ctl</text>
+    <text x="374" y="116" font-size="11" fill="#17212B">lib60870-C · cB-Sigma · digitalpetri</text>
+    <text x="668" y="116" font-size="12.5" font-weight="600" fill="#17212B" text-anchor="end">490</text></g>
+  <g><rect x="40" y="144" width="640" height="48" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <rect x="52" y="156" width="62" height="24" rx="4" fill="#F6E6DA"/><text x="83" y="172" font-size="12" font-weight="600" fill="#B35A1F" text-anchor="middle">IEC 102</text>
+    <text x="126" y="164" font-size="12.5" font-weight="600" fill="#17212B">Energy meter totals</text>
+    <text x="126" y="180" font-size="10.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">FT 1.2 · REE profile</text>
+    <text x="292" y="172" font-size="11.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">iec102ctl</text>
+    <text x="374" y="172" font-size="11" fill="#17212B">gisce iec870ree</text>
+    <text x="668" y="172" font-size="12.5" font-weight="600" fill="#17212B" text-anchor="end">18</text></g>
+  <g><rect x="40" y="200" width="640" height="48" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <rect x="52" y="212" width="62" height="24" rx="4" fill="#F6E6DA"/><text x="83" y="228" font-size="12" font-weight="600" fill="#B35A1F" text-anchor="middle">IEC 103</text>
+    <text x="126" y="220" font-size="12.5" font-weight="600" fill="#17212B">Protection relays</text>
+    <text x="126" y="236" font-size="10.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">FT 1.2 · FUN and INF</text>
+    <text x="292" y="228" font-size="11.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">iec103ctl</text>
+    <text x="374" y="228" font-size="11" fill="#17212B">vitusdong · ARIEC103 · Open103 · cs103</text>
+    <text x="668" y="228" font-size="12.5" font-weight="600" fill="#17212B" text-anchor="end">75</text></g>
+  <g><rect x="40" y="256" width="640" height="48" rx="6" fill="#FFFFFF" stroke="#D9DFE4"/>
+    <rect x="52" y="268" width="62" height="24" rx="4" fill="#F6E6DA"/><text x="83" y="284" font-size="12" font-weight="600" fill="#B35A1F" text-anchor="middle">IEC 104</text>
+    <text x="126" y="276" font-size="12.5" font-weight="600" fill="#17212B">Telecontrol, TCP/IP</text>
+    <text x="126" y="292" font-size="10.5" fill="#5A6875" font-family="IBM Plex Mono, monospace">APCI · port 2404</text>
+    <text x="292" y="284" font-size="11.5" fill="#B35A1F" font-family="IBM Plex Mono, monospace">iec104ctl</text>
+    <text x="374" y="284" font-size="11" fill="#17212B">lib60870 · j60870 · wendy512 · cB-Sigma · part5</text>
+    <text x="668" y="284" font-size="12.5" font-weight="600" fill="#17212B" text-anchor="end">519</text></g>
+  <g><rect x="40" y="316" width="640" height="40" rx="6" fill="#B35A1F"/>
+    <text x="56" y="341" font-size="13.5" font-weight="600" fill="#FFFFFF">go-iec60870-5</text>
+    <text x="664" y="341" font-size="10.5" fill="#F6E6DA" text-anchor="end" font-family="IBM Plex Mono, monospace">ft12 · link · asdu · iec101 · iec102 · iec103 · iec104 · sec</text></g>
+  <text x="40" y="384" font-size="11" fill="#5A6875">Subtests and checks of the library against independent stacks; none fail. Interoperability, not conformance.</text>
+</svg>

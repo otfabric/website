@@ -1,8 +1,8 @@
 ---
 title: The industrial protocol stack landscape
-description: Who implements Modbus, OPC UA, BACnet, IEC 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX and the Sparkplug B profile? 276 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
+description: Who implements Modbus, OPC UA, BACnet, IEC 101, 102, 103 and 104, IEC 61850, Siemens S7, OpenADR, OCPP, DNP3, IEEE 2030.5, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX and the Sparkplug B profile? 301 open-source and commercial stacks, verified against their own release channels, and an interactive map to explore them.
 date: 2026-10-18
-updated: 2026-11-09
+updated: 2026-11-12
 authors: [OT Fabric]
 tags: [ecosystem, research, open-source]
 featured: true
@@ -17,7 +17,7 @@ import Callout from '../../components/Callout.astro';
 
 Nobody connects a plant, a substation or a building with one library. Every integration leans on stacks written by other people: a C library in a gateway, a Python tool on a laptop, a Java server in a SCADA system, a vendor SDK inside a controller. OT Fabric only makes sense as part of that ecosystem, which is why each of our protocols ships with an interop suite that tests against the established implementations.
 
-So we mapped the ecosystem. This post is the research: fifteen protocol families, one application profile on top of MQTT, 276 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
+So we mapped the ecosystem. This post is the research: eighteen protocols, one application profile on top of MQTT, 301 implementations, and what we learned checking every one of them against its own release channel. The interactive version lets you pick a protocol or a profile, filter by language, licence and activity, and jump straight to the source.
 
 <MapLink />
 
@@ -76,13 +76,37 @@ open62541, Eclipse Milo, the OPC Foundation .NET stack, node-opcua and the FreeO
 
 BACnet Stack stands out: extensive service coverage, embedded targets, and a GPL linking exception that lets proprietary products link it. BACpypes3, BACnet4J and System.IO.BACnet (the stack behind YABE) complete the reference set, and all four run in [bacnet-interop](https://github.com/otfabric/bacnet-interop), together with worldiety/bacnet, cB-Sigma's bacnet, ulbios/bacnet, @bacnet-js/client and the legacy BACpypes. BACpypes3 now also ships an MCP server, so AI agents can talk BACnet. Cimetrics, PolarSoft and SoftDEL lead the commercial SDK market.
 
+## IEC 60870-5-101
+
+**Mature, few complete open stacks.** The serial sibling of IEC 104 shares its data model but adds a link layer, two link modes and field sizes chosen per project, and far fewer open stacks handle all of that.
+
+<LandscapeTable protocol="iec-101" />
+
+lib60870 carries the open field, in C and in .NET. cB-Sigma's iec60870 (Go) and digitalpetri's iec60870 (Java, no release yet) are young independent stacks, and the maintained go-iecp5 fork added a cs101 package. All three independent engines run in [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop); cB-Sigma's link was debugged against lib60870, so digitalpetri is the peer that keeps the evidence honest. DSC Systems publishes a Rust stack whose licence needs a commercial agreement for production use.
+
+## IEC 60870-5-102
+
+**Niche.** IEC 102 reads integrated totals from electricity meters, and in open source it means one thing: the Spanish REE profile.
+
+<LandscapeTable protocol="iec-102" />
+
+Every open implementation is a controlling station from one Python lineage: javierdelapuente's reeprotocol, archived, and gisce/iec870ree, which carries it on and runs in iec60870-5-interop. There is no open, licensed meter to test a controlling station against. Triangle MicroWorks covers IEC 102 commercially.
+
+## IEC 60870-5-103
+
+**In every relay, thin in open source.** IEC 103 is the interface of protection relays from every major vendor, but its open stacks are young or partial, and almost all of them are controlling systems.
+
+<LandscapeTable protocol="iec-103" />
+
+Four run in iec60870-5-interop: vitusdong's iec103-dotnet (the only open relay that serves test data, with documented deviations from the standard), ARIEC103, Open103 and the cs103 package of go-iecp5, the most standard-conforming controlling system of the four. ArSee carries ARIEC103's code into a Windows tester for 101, 103 and 104. No open stack offers a standard-conforming relay.
+
 ## IEC 60870-5-104
 
 **Specialized.** A handful of credible engines, with bindings and forks built on top of them, which is exactly where the relationships matter.
 
 <LandscapeTable protocol="iec-104" />
 
-The independent engines are lib60870, OpenMUC j60870 and go-iecp5. The Python package c104 binds lib60870; wendy512/iec104 builds on a go-iecp5 fork. The original go-iecp5 was archived in March 2023 and lives on in two maintained forks. cB-Sigma's iec60870 is a young pure Go stack (Apache-2.0) with IEC 101, a 101-to-104 gateway and the only open-source implementation of the 2023 edition of IEC 62351-5 application-layer security. Four of them run in [iec104-interop](https://github.com/otfabric/iec104-interop): lib60870, j60870, wendy512/iec104 and cB-Sigma iec60870. j60870 is distributed through OpenMUC and Maven Central (1.8.0) rather than a GitHub repository. MZ Automation, OpenMUC and Triangle MicroWorks offer commercial licences.
+The independent engines are lib60870 (C and .NET), OpenMUC j60870, go-iecp5 and part5. The Python package c104 binds lib60870; wendy512/iec104 builds on a go-iecp5 fork. The original go-iecp5 was archived in March 2023 and lives on in two maintained forks. cB-Sigma's iec60870 is a young pure Go stack (Apache-2.0) with IEC 101, a 101-to-104 gateway and the only open-source implementation of the 2023 edition of IEC 62351-5 application-layer security. Five of them run in [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop): lib60870, j60870, wendy512/iec104, cB-Sigma iec60870 and part5. j60870 is distributed through OpenMUC and Maven Central (1.8.0) rather than a GitHub repository. MZ Automation, OpenMUC and Triangle MicroWorks offer commercial licences.
 
 ## IEC 61850
 
@@ -189,7 +213,10 @@ The commercial side looks different from the other protocols: few SDKs, and most
 | Modbus | Very mature | Established | libmodbus, PyModbus, NModbus, Modbus4J, tokio-modbus |
 | OPC UA | Very mature | Very established | open62541, OPC Foundation .NET, Eclipse Milo, node-opcua, FreeOpcUa |
 | BACnet | Mature, fragmented | Very established | BACnet Stack, BACpypes3, BACnet4J, System.IO.BACnet |
-| IEC 60870-5-104 | Specialized | Established | lib60870, OpenMUC j60870, go-iecp5 |
+| IEC 60870-5-101 | Mature, few complete open stacks | Established | lib60870, cB-Sigma iec60870, digitalpetri iec60870 |
+| IEC 60870-5-102 | Niche, REE profile only | Specialized | gisce iec870ree |
+| IEC 60870-5-103 | Thin, mostly controlling systems | Established | go-iecp5 cs103, Open103, ARIEC103, iec103-dotnet |
+| IEC 60870-5-104 | Specialized | Established | lib60870, OpenMUC j60870, go-iecp5, part5 |
 | IEC 61850 | Specialized | Established | libiec61850, IEC61850bean, dscsystems/go-iec61850, iec61850-rust |
 | Siemens S7 | Mature for classic S7 | Established | Snap7, S7NetPlus, python-snap7, Apache PLC4X |
 | OpenADR | Smaller, evolving | Not transparent | OpenLEADR (Python and Rust), ElaadNL |

@@ -1,0 +1,150 @@
+---
+kind: protocol
+name: "IEC 60870-5-103"
+short: "IEC 103"
+standard: "IEC 60870-5-103"
+summary: "The informative interface of protection equipment: how a substation controller polls protection relays for their state, events, settings and fault records."
+order: 4.2
+facts:
+  - { label: 'Transport', value: 'FT 1.2 on a serial line or fibre optic ring; or a terminal server that passes the line through' }
+  - { label: 'Link', value: 'Unbalanced: the controlling system polls each relay' }
+  - { label: 'Addressing', value: 'Function type (FUN) and information number (INF)' }
+  - { label: 'Library', value: 'go-iec60870-5 (iec103)' }
+  - { label: 'CLI', value: 'iec103ctl' }
+  - { label: 'Interop', value: 'iec60870-5-interop v0.4.0' }
+icon: go-iec60870-5
+docs: /docs/protocols/iec-103/
+layers:
+  - label: 'Application layer'
+    items:
+      - { name: 'IEC 60870-5-103 ASDUs: general interrogation, commands, generic services, disturbance data', id: 'iec-103', note: 'go-iec60870-5 iec103' }
+  - label: 'Link layer'
+    items:
+      - { name: 'IEC 60870-5-2 link procedures, unbalanced, one-octet link address', note: 'go-iec60870-5 link' }
+  - label: 'Frames'
+    items:
+      - { name: 'FT 1.2 frames (IEC 60870-5-1)', note: 'go-iec60870-5 ft12' }
+  - label: 'Physical'
+    items:
+      - { name: 'RS-485 or fibre optic, 9600 or 19200 bit/s; or TCP to a terminal server' }
+---
+
+import Callout from '../../components/Callout.astro';
+
+IEC 60870-5-103 (IEC 103) is the companion standard for the **informative interface of protection equipment**. A **controlling system** (a substation controller, bay controller or gateway) polls **protection relays** (distance, overcurrent, transformer and line differential protection) over a serial line or a fibre optic ring. It uses the FT 1.2 frames and link procedures of [IEC 101](/protocols/iec-101/), but not its data model: IEC 103 addresses everything by a **function type** (FUN: the kind of protection) and an **information number** (INF: what the value means for that function type), so a trip of a distance relay looks the same from every vendor.
+
+Beyond events and measurands, IEC 103 has what protection engineers need: **general commands** to switch protection functions or reset LEDs, **generic services** to read and write settings by group and entry, and the **transmission of disturbance data**, the fault records a relay keeps after it trips, channel by channel.
+
+## Where you meet it
+
+- Substations with protection relays from several vendors, read by a substation automation system or gateway
+- Retrofits, where IEC 103 relays stay in service under a newer IEC 61850 or IEC 104 station level
+- Gateways that translate relay events and fault records into IEC 104 or IEC 61850 for the control centre
+- Fault analysis, where the disturbance records of a relay are collected for engineers
+
+## Quickstart
+
+### From the command line
+
+Install `iec103ctl` with `curl -fsSL https://get.otfabric.io/iec103ctl | sh`, or on Windows `irm https://get.otfabric.io/iec103ctl.ps1 | iex` ([all install options](/docs/install/)). No relay at hand? Start a simulated one:
+
+```sh
+iec103ctl server start
+```
+
+and poll it from another terminal:
+
+```sh
+# Who is it, and what is the state of every indication?
+iec103ctl client identify --url tcp://127.0.0.1:2401
+iec103ctl client interrogate --url tcp://127.0.0.1:2401
+
+# Settings of group 1, through the generic services
+iec103ctl client generic group --url tcp://127.0.0.1:2401 --group 1 --format table
+
+# Recorded faults, and one fault's disturbance data as CSV
+iec103ctl client disturbance list --url tcp://127.0.0.1:2401
+iec103ctl client disturbance get --url tcp://127.0.0.1:2401 --fan 1 --csv fault1.csv
+```
+
+### From Go
+
+```sh
+go get github.com/otfabric/go-iec60870-5
+```
+
+Bring up the link, synchronize the clock, interrogate the relay and read its settings headings:
+
+```go title="main.go"
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"github.com/otfabric/go-iec60870-5/iec103"
+	"github.com/otfabric/go-iec60870-5/iec103/client"
+)
+
+func main() {
+	// A terminal server in front of the relay's serial port.
+	conn, err := net.DialTimeout("tcp", "10.0.0.30:2401", 5*time.Second)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c, err := client.New(conn, client.Config{
+		LinkAddr: 1,
+		NoInitGI: true, // interrogate explicitly below
+		Handler:  func(a *iec103.ASDU) { fmt.Println(a) }, // events, measurands, answers
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := c.WaitUp(ctx); err != nil { // request status, reset CU, identification
+		log.Fatal(err)
+	}
+	if _, err := c.ClockSync(ctx, time.Now()); err != nil {
+		log.Fatal(err)
+	}
+	data, err := c.Interrogate(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("general interrogation returned %d ASDUs\n", len(data))
+
+	headings, err := c.ReadHeadings(ctx) // generic services: the groups of settings
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, set := range headings.Sets {
+		fmt.Printf("group %d: %s\n", set.GIN.Group, set.Value.Text())
+	}
+}
+```
+
+## What go-iec60870-5 and iec103ctl support
+
+| | |
+|---|---|
+| Roles | Controlling system (client) and protection equipment (server) |
+| ASDUs | Every compatible type identification (1 to 11, 20, 21, 23 to 31), with private types and causes kept octet for octet |
+| Client | Link start-up with identification, time synchronization (addressed and broadcast), general interrogation, general commands checked against the standard's table, generic read and write (also staged with execute or abort), the full disturbance data transfer |
+| Server | Answers the link itself, keeps the clock, queues identification after a reset, runs the disturbance data transfer from a record source |
+| CLI | interrogate, command, clock, identify, generic services, disturbance list and get (JSON and CSV), monitor, scan a line, and a simulated relay from YAML |
+| Not yet | One controlling system polling several relays on a shared line, test mode and monitor-direction blocking as server features |
+| Dependencies | Go standard library only |
+
+<Callout type="caution">
+`iec103ctl client command` switches protection functions and `client generic write` changes settings that are in force at once. Only use it on relays and lines you own or are authorized to test, and rehearse against `iec103ctl server start` first.
+</Callout>
+
+## Interoperability
+
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) runs four independent IEC 103 stacks: vitusdong/iec103-dotnet (client and server), masarray ARIEC103, Open103 and the cs103 package of go-iecp5 (clients). go-iec60870-5's protection equipment passes against all four controlling systems, and its disturbance data transfer runs end to end against Open103. The other direction is weaker: the only open relay that serves test data, vitusdong's, deviates from the standard in every reply checked, so the go-iec60870-5 client has one independent peer and it does not behave like a real relay. No open stack offers a standard-conforming IEC 103 protection device; finding that out is part of what the interop suite is for.

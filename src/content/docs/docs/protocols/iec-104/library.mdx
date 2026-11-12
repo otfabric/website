@@ -1,6 +1,6 @@
 ---
 title: Go library
-description: Use go-iec104 to build an IEC 60870-5-104 controlling station or controlled station in pure Go.
+description: Use go-iec60870-5 to build an IEC 60870-5-104 controlling station or controlled station in pure Go.
 sidebar:
   label: Go library
   order: 1
@@ -8,24 +8,25 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-[go-iec104](https://github.com/otfabric/go-iec104) is a pure Go implementation of IEC 60870-5-104 with both roles: a **client** (controlling station) and a **server** (controlled station). It has no cgo and no dependencies outside the standard library. Since v0.0.4 it has the application-layer security of IEC 62351-5. This page follows v0.2.0. The license is MIT.
+The `iec104` packages of [go-iec60870-5](https://github.com/otfabric/go-iec60870-5) implement IEC 60870-5-104 with both roles: a **client** (controlling station) and a **server** (controlled station), with the application-layer security of IEC 62351-5. The same module implements [IEC 101](/docs/protocols/iec-101/library/), [IEC 102](/docs/protocols/iec-102/library/) and [IEC 103](/docs/protocols/iec-103/library/), and IEC 104 shares its ASDU model with IEC 101. It has no cgo and no dependencies outside the standard library. This page follows v0.5.0. The license is MIT.
 
 ## Install
 
 ```sh
-go get github.com/otfabric/go-iec104
+go get github.com/otfabric/go-iec60870-5
 ```
 
-Requires **Go 1.26** or later (since v0.2.0); CI tests Go 1.26 and 1.27.
+Requires **Go 1.26** or later.
 
 | Package | Import path | Contents |
 |---|---|---|
-| `iec104` | `github.com/otfabric/go-iec104` | Shared errors, `State`, `Logger`, `Metrics` |
-| `client` | `.../client` | The controlling station, and `Group` for redundancy |
-| `server` | `.../server` | The controlled station, sessions, `Mux`, `FileServer` |
-| `asdu` | `.../asdu` | ASDU model and codec, independent of the transport and reusable for IEC 60870-5-101 |
-| `apci` | `.../apci` | APDU framing, sequence arithmetic and the `k`/`w`/`t0`..`t3` parameters |
-| `sec` | `.../sec` | IEC 62351-5 application-layer security: identities, trust, the security endpoint and its messages |
+| `iec104` | `github.com/otfabric/go-iec60870-5/iec104` | Shared errors, `State`, `Metrics` |
+| `client` | `.../iec104/client` | The controlling station, and `Group` for redundancy |
+| `server` | `.../iec104/server` | The controlled station, sessions, `Mux`, `FileServer` |
+| `apci` | `.../iec104/apci` | APDU framing, sequence arithmetic and the `k`/`w`/`t0`..`t3` parameters |
+| `asdu` | `github.com/otfabric/go-iec60870-5/asdu` | ASDU model and codec, independent of the transport and shared with IEC 60870-5-101 |
+| `sec` | `github.com/otfabric/go-iec60870-5/sec` | IEC 62351-5 application-layer security: identities, trust, the security endpoint and its messages |
+| `iec60870` | `github.com/otfabric/go-iec60870-5` | The `Logger` interfaces and constructors, shared by every companion standard |
 
 ## Client: connect, interrogate, command
 
@@ -40,8 +41,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/otfabric/go-iec104/asdu"
-	"github.com/otfabric/go-iec104/client"
+	"github.com/otfabric/go-iec60870-5/asdu"
+	"github.com/otfabric/go-iec60870-5/iec104/client"
 )
 
 func main() {
@@ -147,8 +148,8 @@ package main
 import (
 	"log"
 
-	"github.com/otfabric/go-iec104/asdu"
-	"github.com/otfabric/go-iec104/server"
+	"github.com/otfabric/go-iec60870-5/asdu"
+	"github.com/otfabric/go-iec60870-5/iec104/server"
 )
 
 func main() {
@@ -181,7 +182,7 @@ func main() {
 }
 ```
 
-`Mux` answers a type without a handler, and since v0.2.0 an ASDU without information objects, with "unknown type identification" and an invalid cause with "unknown cause of transmission". `WithCommonAddrs` answers a foreign station address with "unknown common address". The reply helpers on `Session` are `Confirm`, `Negative`, `Terminate`, `Reject` (causes 44..47) and `Reply`.
+`Mux` answers a type without a handler, and an ASDU without information objects, with "unknown type identification" and an invalid cause with "unknown cause of transmission". `WithCommonAddrs` answers a foreign station address with "unknown common address". The reply helpers on `Session` are `Confirm`, `Negative`, `Terminate`, `Reject` (causes 44..47) and `Reply`.
 
 The library checks the encoding, not the meaning. Select-before-operate state, value ranges and interlocks are the handler's job: keep the selection in your handler and refuse an execute that does not match it.
 
@@ -261,7 +262,7 @@ srv, err := server.New(mux, server.WithCommonAddrs(1),
 |---|---|
 | Procedures | Station Association, Session Key Change, Secure Data, Session Initiation Request; segmentation of long security messages |
 | Trust | Pinned self-signed certificates or public keys, or Central Authorities with an optional list of subjects |
-| MAC algorithms | HMAC-SHA-256 with 16 (default) or 8 octets, HMAC-SHA3-256 (always built since v0.2.0) |
+| MAC algorithms | HMAC-SHA-256 with 16 (default) or 8 octets, HMAC-SHA3-256 |
 | Data protection | The MAC algorithms, or AES-256-GCM, which also encrypts |
 | Access control | The seven roles of IEC TS 60870-5-7; a request no role permits is answered with cause 17 and never reaches the handler. The client reports it as `*iec104.NegativeError` |
 | Several controlling stations | One association per AIM; the connections of a client redundancy group share theirs |
@@ -275,11 +276,10 @@ The server discards unprotected ASDUs. `Session.Security` returns the associatio
 The IEC documents are not freely available and were not used. The message formats, algorithms and state machines were derived from [cB-Sigma/iec60870](https://github.com/cB-Sigma/iec60870) (Apache-2.0) and implemented anew, and the two are tested against each other in both roles. Treat the A-Profile as interoperable with cB-Sigma, not as conformance-tested, and keep TLS with client certificates where both ends support it. One difference is deliberate: acknowledging a file download needs the file read role here, where cB-Sigma asks for file write.
 </Aside>
 
-v0.0.4 renamed the security type identifications to those of the 2025 edition (`asdu.S_AQ_NA_1` .. `asdu.S_KP_NA_1`, `asdu.S_SD_NA_1`), which reuse the numbers 81..91 differently, and the causes to `CauseDataProtection` (14), `CauseSessionKey` (15), `CauseAssociation` (16) and `CauseNotAuthorized` (17). Code that only printed them needs no change.
 
 ## Protocol parameters
 
-Both sides take `apci.Params`; the defaults are those of the standard (`k` 12, `w` 8, `t0` 30 s, `t1` 15 s, `t2` 10 s, `t3` 20 s). Zero fields take defaults and `T3: 0` disables the idle test. `Validate` enforces `1 ≤ W ≤ K ≤ 32767` and `T2 < T1`.
+Both sides take `apci.Params`; the defaults are those of the standard (`k` 12, `w` 8, `t0` 30 s, `t1` 15 s, `t2` 10 s, `t3` 20 s). Zero fields take defaults and `T3: 0` disables the idle test. `Validate` enforces `k` and `w` each in 1..32767 (edition 1 lets `w` exceed `k`) and `T2 < T1`.
 
 ```go
 p := apci.DefaultParams()
@@ -340,7 +340,7 @@ Both are off by default and cost nothing when off.
 
 ```go
 c, err := client.Dial(ctx, "10.0.0.5:2404",
-	client.WithLogger(iec104.NewSlogLogger(slog.NewJSONHandler(os.Stderr, nil))),
+	client.WithLogger(iec60870.NewSlogLogger(slog.NewJSONHandler(os.Stderr, nil))),
 	client.WithMetrics(myMetrics),
 	client.WithReconnect(client.Reconnect{}),
 	client.WithRetry(client.Retry{Attempts: 3}),

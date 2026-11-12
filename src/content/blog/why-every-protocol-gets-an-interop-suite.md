@@ -1,12 +1,12 @@
 ---
 title: Why every protocol gets an interop suite
-description: Every OT Fabric protocol is tested against independent implementations. Sixteen interop suites package 84 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
+description: Every OT Fabric protocol is tested against independent implementations. Sixteen interop suites package 93 reference stacks as containers behind one contract, test them against each other first, and record what they find in our code and in theirs.
 date: 2026-10-12
-updated: 2026-11-09
+updated: 2026-11-12
 authors: [OT Fabric]
 tags: [testing, interop]
 cover:
-  alt: Sixteen OT Fabric interop suites and their 84 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX, Sparkplug B, IEC 104, IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
+  alt: Sixteen OT Fabric interop suites and their 93 independent reference stacks. Modbus, OPC UA, BACnet/IP, Siemens S7, EtherNet/IP, PROFINET, CAN bus, CANopen, KNX, Sparkplug B, IEC 60870-5 (IEC 101, 102, 103 and 104), IEC 61850, DNP3, OCPP, OpenADR and IEEE 2030.5, each with the open-source implementations its suite runs and their languages.
   image: ../../assets/blog/interop-suites.png
 ---
 
@@ -14,7 +14,7 @@ A protocol library that only passes its own tests proves very little. Two implem
 
 So every OT Fabric protocol comes with an interoperability suite: independent, established stacks packaged as containers, with deterministic fixtures and a common contract. Our libraries and tools are tested against them in both directions before a release says it works.
 
-## Sixteen suites, 84 reference stacks
+## Sixteen suites, 93 reference stacks
 
 | Protocol | Suite | Reference implementations |
 |---|---|---|
@@ -22,7 +22,7 @@ So every OT Fabric protocol comes with an interoperability suite: independent, e
 | [OPC UA](/protocols/opc-ua/) | [opcua-interop](/projects/opcua-interop/) | open62541 (C), Eclipse Milo (Java), async-opcua (Rust), UA-.NETStandard (C#), node-opcua (TypeScript), opcua-asyncio (Python) |
 | [BACnet/IP](/protocols/bacnet/) | [bacnet-interop](/projects/bacnet-interop/) | BACnet Stack (C), BACpypes3 (Python), legacy BACpypes (Python), BACnet4J (Java), System.IO.BACnet (C#), worldiety/bacnet (Go), cB-Sigma bacnet (Go), ulbios/bacnet (Go), @bacnet-js/client (TypeScript), as devices, and six of them also as clients to test a server |
 | [Siemens S7](/protocols/s7/) | [snap7-interop](/projects/snap7-interop/) | Snap7 (C++), python-snap7 (Python) |
-| [IEC 60870-5-104](/protocols/iec-104/) | [iec104-interop](/projects/iec104-interop/) | lib60870 (C), OpenMUC j60870 (Java), wendy512/iec104 (Go), cB-Sigma iec60870 (Go) |
+| [IEC 60870-5](/protocols/iec-104/) ([101](/protocols/iec-101/), [102](/protocols/iec-102/), [103](/protocols/iec-103/), [104](/protocols/iec-104/)) | [iec60870-5-interop](/projects/iec60870-5-interop/) | IEC 101: lib60870 (C), cB-Sigma iec60870 (Go), digitalpetri iec60870 (Java). IEC 102: gisce iec870ree (Python), REE profile. IEC 103: vitusdong iec103-dotnet (C#), ARIEC103 (C#), Open103 (C++), go-iecp5 cs103 (Go). IEC 104: lib60870 (C), OpenMUC j60870 (Java), wendy512/iec104 (Go), cB-Sigma iec60870 (Go), part5 (Go) |
 | [IEC 61850](/protocols/iec-61850/) (MMS, GOOSE, Sampled Values) | [iec61850-interop](/projects/iec61850-interop/) | libiec61850 (C), IEC61850bean (Java), dscsystems/go-iec61850 (Go), iec61850-rust (Rust) |
 | [DNP3](/protocols/dnp3/) | [dnp3-interop](/projects/dnp3-interop/) | opendnp3 (C++), DSC go-dnp3 (Go), dnp3py (Python) |
 | [OCPP](/protocols/ocpp/) | [ocpp-interop](/projects/ocpp-interop/) | The Mobility House ocpp (Python), ChargeTimeEU Java-OCA-OCPP (Java), ocpp-go (Go), EVerest libocpp (C++), CitrineOS (TypeScript) |
@@ -75,7 +75,7 @@ A library runs its own scenarios against the images, in both roles: our client a
 - **go-dnp3**: master against every reference outstation and every reference master against its outstation, over TCP, TLS, UDP and serial.
 - **go-opcua**: client and server against all six OPC UA stacks in both directions, with 1280 verified ledger rows, plus PubSub against open62541 and UA-.NETStandard, UA JSON over HTTPS and WebSockets against UA-.NETStandard, the GDS pull model against the UA-.NETStandard Global Discovery Server, and event history and certificate management from every peer client.
 - **go-ieee20305**: its client and device agent against the Envoy and GridAPPS-D servers, and the GridAPPS-D, py20305 and EPRI clients against its server, in both editions and with the CSIP and CSIP-AUS fixtures.
-- **go-iec104**: client and server against lib60870, j60870, wendy512/iec104 and cB-Sigma in both roles, and IEC 62351-5 application-layer security against cB-Sigma in both directions: certificates from an authority or pinned, HMAC and AES-256-GCM, and role-based refusals.
+- **go-iec60870-5**: IEC 104 client and server against lib60870, j60870, wendy512/iec104, cB-Sigma and part5 in both roles, with IEC 62351-5 application-layer security against cB-Sigma in both directions; IEC 101 against lib60870, cB-Sigma and digitalpetri in both roles, unbalanced and balanced, with five sets of field sizes; its IEC 103 relay against four independent controlling systems; its IEC 102 meter against gisce's REE controlling station.
 - **go-iec61850**: MMS client and server against all four IEC 61850 stacks in both directions, and GOOSE and Sampled Values against the libiec61850, dscsystems and iec61850-rust publishers and subscribers in both directions, on a Docker bridge. go-mms alone passes 120 MMS scenarios against libiec61850 and against iec61850-rust.
 - **go-ethernetip**: 184 cases pass against twelve stacks in eight languages, in both roles, none fail, with Class 1 I/O against OpENer, EIPScanner and EEIP.NET, multicast with a listen-only connection, and the Logix drivers of pycomm3, eip-rs and node-ethernet-ip reading and writing structures on its emulated controller.
 - **go-profinet**: 248 checks pass on a real Layer 2 network, none fail: its IO-Controller against the p-net and pnio-rs devices, its IO-Device against profinet-py's controller, DCP against pnio-dcp, MRP rings with cut cables against umrp and microchip-ung/mrp, and its SNMP agent against Net-SNMP, with Wireshark and scapy decoding every frame.

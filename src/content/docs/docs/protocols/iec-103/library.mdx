@@ -1,0 +1,78 @@
+---
+title: Go library
+description: Use the iec103 packages of go-iec60870-5 to poll IEC 60870-5-103 protection relays or to build protection equipment in pure Go, with generic services and disturbance data.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The `iec103` packages of [go-iec60870-5](https://github.com/otfabric/go-iec60870-5) implement IEC 60870-5-103: a **client** (controlling system) and a **server** (protection equipment), on the FT 1.2 and link layers the module shares with [IEC 101](/docs/protocols/iec-101/library/) and [IEC 102](/docs/protocols/iec-102/library/). No cgo, no dependencies outside the standard library. This page follows v0.5.0. The license is MIT.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-iec60870-5
+```
+
+| Package | Import path | Contents |
+|---|---|---|
+| `iec103` | `github.com/otfabric/go-iec60870-5/iec103` | ASDU model and codec, information elements, FUN/INF tables, errors and link state |
+| `client` | `.../iec103/client` | The controlling system (link primary) |
+| `server` | `.../iec103/server` | The protection equipment (link secondary) |
+
+## The ASDU model
+
+Every type identification of the standard's tables has a body type: 1 `TimeTagged`, 2 `RelTimeTagged`, 3 and 9 `Measurands`, 4 `RelTimeMeasurand`, 5 `Identification`, 6 `TimeSync`, 7 `GIInit`, 8 `GITermination`, 10 `GenericData`, 11 `GenericIdent`, 20 `GeneralCommand`, 21 `GenericCommand`, and 23 to 31 for disturbance data. A private type or cause decodes as `Raw` and encodes back octet for octet.
+
+```go
+a := iec103.New(iec103.CauseSpontaneous, 3, iec103.FunDistance, iec103.InfGeneralTrip,
+	iec103.RelTimeTagged{DPI: iec103.DPIOn, RET: 12, FAN: 4, Time: cp.Now()})
+b, err := a.Encode()
+d, err := iec103.Decode(b)
+```
+
+`FunctionType.Compatible`, `StandardInfo` and a `Catalog` for private FUN/INF semantics look up what a value means. `CommandAllowed` checks a general command against table 17. Measurands hold the raw value with overflow and error bits; `MEAOf` and `Value` convert from and to the fraction of full scale.
+
+## Controlling system
+
+```go
+import "github.com/otfabric/go-iec60870-5/iec103/client"
+
+c, err := client.New(port, client.Config{LinkAddr: 1, Handler: func(a *iec103.ASDU) { /* events */ }})
+err = c.WaitUp(ctx)                          // request status, reset CU, identification
+data, err := c.Interrogate(ctx)              // ASDU 7 ... ASDU 8
+t, err := c.ClockSync(ctx, time.Now())       // addressed ASDU 6; BroadcastClockSync for 255
+err = c.Command(ctx, iec103.FunDistance, iec103.InfLEDReset, iec103.DPIOn)
+res, err := c.ReadEntry(ctx, iec103.GIN{Group: 2, Entry: 1}, iec103.KODActualValue)
+w, err := c.BeginWrite()                     // staged write: 248 ... 250 with one RII
+err = w.Stage(ctx, sets...)
+res, err = w.Execute(ctx)                    // or w.Abort(ctx): INF 251
+rec, err := c.Disturbance(ctx, iec103.FunDistance, fan)
+```
+
+- After every initialization the client synchronizes the time and runs a general interrogation, as clause 7.4.1 describes, unless `NoInitTimeSync` or `NoInitGI` is set. The identification is kept and available through `Identification`.
+- `ClockSync` encodes the ASDU 6 when it is transmitted, so the command carries the time of its transmission.
+- The disturbance data transfer acknowledges every part; a channel or tags the relay aborts are acknowledged negatively and the transfer goes on, and the record comes back with `ErrNegative`.
+- One request of each kind at a time (`ErrBusy`), as the standard requires. Every received ASDU reaches the handler, answers included.
+
+## Protection equipment
+
+```go
+import "github.com/otfabric/go-iec60870-5/iec103/server"
+
+s, err := server.New(port, server.Config{
+	LinkAddr: 1, Fun: iec103.FunDistance,
+	Identification: iec103.IdentificationOf(iec103.COLWithGeneric, "VENDOR", [4]byte{}),
+	Handler: server.HandlerFunc(func(s *server.Server, a *iec103.ASDU) { /* GI, commands, generic */ }),
+	Disturbances: recorder, // optional DisturbanceSource
+})
+s.Event(iec103.CauseSpontaneous, iec103.FunDistance, iec103.InfGeneralTrip, iec103.DPIOn)
+```
+
+The server answers the link itself, sets DFC while its queue is more than half full, queues the identification after every reset, and keeps the clock: time tags carry the invalid bit until the first synchronization and after 23 hours without one. The handler answers with `AnswerGI`, `AckCommand`, `GenericAnswer`, `AnswerGenericGI` and `GenericIdentAnswer`. With a `DisturbanceSource` the server runs the disturbance data transfer itself, list included.
+
+<Aside type="note">
+The text held is IEC 60870-5-103:1997, in its identical Russian adoption. Not implemented: one controlling system polling several relays on a shared line, test mode and monitor-direction blocking as server features (the application can send the causes), splitting one generic data element over several ASDUs, and aborting a disturbance transfer from the client.
+</Aside>

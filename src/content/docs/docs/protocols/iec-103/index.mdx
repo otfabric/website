@@ -1,0 +1,57 @@
+---
+title: IEC 60870-5-103
+description: How IEC 60870-5-103 works (the unbalanced FT 1.2 link to protection relays, function type and information number addressing, identification, general interrogation, general commands, time synchronization, generic services and disturbance data) and which OT Fabric projects implement it.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+IEC 60870-5-103 (IEC 103) is the companion standard of IEC 60870-5 for the **informative interface of protection equipment**. A **controlling system** (substation controller, bay controller or gateway) polls **protection equipment** (protection relays) for indications, measurands, settings and fault records. This page explains what matters for using the IEC 103 packages of [go-iec60870-5](/projects/go-iec60870-5/) and [iec103ctl](/projects/iec103ctl/).
+
+## The link
+
+IEC 103 uses the FT 1.2 frames of IEC 60870-5-1 and the **unbalanced** link procedures of IEC 60870-5-2, as [IEC 101](/docs/protocols/iec-101/) can, with a **one-octet link address**, at 9600 or 19200 bit/s on RS-485 or fibre optic. The controlling system starts the link (request status of link, reset of the communication unit or reset of the frame count bit), then polls **class 1** while the relay sets ACD (events, answers) and **class 2** otherwise (measurands). After a reset the relay identifies itself with ASDU 5. Address 255 is the broadcast, for time synchronization.
+
+## Function type and information number
+
+IEC 103 does not use the telecontrol ASDU of IEC 101 and 104. Every field of the data unit identifier is one octet, and an information object is addressed by:
+
+- a **function type** (FUN): the kind of protection, such as 128 distance, 160 overcurrent, 176 transformer differential, 192 line differential, 254 generic, 255 global;
+- an **information number** (INF): what the value means for that function type, from tables in the standard (trip, start, protection active, LED reset, auto-reclose and so on), or private.
+
+So a general trip of a distance relay is FUN 128, INF 68 whatever the vendor. The common address of ASDU is normally the link address.
+
+## Services
+
+| Service | ASDUs | What it does |
+|---|---|---|
+| Identification | 5 | The relay's compatibility level, vendor and software, after a reset or start-up |
+| Time synchronization | 6 | Addressed, or broadcast to address 255 |
+| General interrogation | 7, 8 | The state of every indication that takes part, ending with the scan number |
+| Events and measurands | 1, 2, 3, 4, 9 | Time-tagged indications, relative-time events with fault number, measurands as fractions of full scale |
+| General commands | 20 | Switch protection functions, reset LEDs, as table 17 allows, acknowledged with cause 20 or 21 |
+| Generic services | 10, 11, 21 | Read and write settings and other data by group and entry (GIN), with descriptions, ranges and units |
+| Disturbance data | 23 to 31 | The list of recorded faults, then one record's tags and channels, acknowledged part by part |
+
+<Aside type="note">
+Writes through the generic services take effect at once. A write can be staged (INF 248) and then executed (INF 250) or aborted (INF 251), and only one generic write may be open at a time.
+</Aside>
+
+## Where it is used
+
+- Substations with protection relays from several vendors, read by a substation automation system or gateway
+- Retrofits, where IEC 103 relays stay under a newer IEC 61850 or IEC 104 station level
+- Gateways that turn relay events and fault records into IEC 104 or IEC 61850
+- Collecting disturbance records for fault analysis
+
+## OT Fabric for IEC 60870-5-103
+
+<CardGrid>
+  <LinkCard title="Go library" description="Controlling system and protection equipment, generic services and disturbance data in go-iec60870-5." href="/docs/protocols/iec-103/library/" />
+  <LinkCard title="iec103ctl" description="Interrogate, command, read settings, fetch fault records, scan a line, or simulate a relay." href="/docs/protocols/iec-103/cli/" />
+  <LinkCard title="Testing and interop" description="What has been validated against vitusdong, ARIEC103, Open103 and go-iecp5 cs103." href="/docs/protocols/iec-103/testing/" />
+</CardGrid>
+
+Source code: [go-iec60870-5](https://github.com/otfabric/go-iec60870-5), [iec60870ctl](https://github.com/otfabric/iec60870ctl), [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop).

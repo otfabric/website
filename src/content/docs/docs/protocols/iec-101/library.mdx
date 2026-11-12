@@ -1,0 +1,134 @@
+---
+title: Go library
+description: Use the iec101 packages of go-iec60870-5 to build an IEC 60870-5-101 controlling station or controlled station in pure Go, unbalanced or balanced, with any field sizes.
+sidebar:
+  label: Go library
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The `iec101` packages of [go-iec60870-5](https://github.com/otfabric/go-iec60870-5) implement IEC 60870-5-101 with both roles: a **client** (controlling station) and a **server** (controlled station), unbalanced and balanced. They share the telecontrol ASDU model (`asdu`) with [IEC 104](/docs/protocols/iec-104/library/) and the FT 1.2 and link layers (`ft12`, `link`) with [IEC 102](/docs/protocols/iec-102/library/) and [IEC 103](/docs/protocols/iec-103/library/). No cgo, no dependencies outside the standard library. This page follows v0.5.0. The license is MIT.
+
+## Install
+
+```sh
+go get github.com/otfabric/go-iec60870-5
+```
+
+Requires **Go 1.26** or later.
+
+| Package | Import path | Contents |
+|---|---|---|
+| `iec101` | `github.com/otfabric/go-iec60870-5/iec101` | `Params` (mode, link, field sizes, strict profile), `State`, `Validate`, errors |
+| `client` | `.../iec101/client` | The controlling station |
+| `server` | `.../iec101/server` | The controlled station |
+| `asdu` | `github.com/otfabric/go-iec60870-5/asdu` | The telecontrol ASDU model and codec, configurable field sizes, shared with IEC 104 |
+| `link` | `github.com/otfabric/go-iec60870-5/link` | IEC 60870-5-2 procedures: unbalanced primary and secondary, balanced station, FCB/FCV, retries |
+| `ft12` | `github.com/otfabric/go-iec60870-5/ft12` | FT 1.2 frames and a resynchronizing stream decoder |
+| `cp` | `github.com/otfabric/go-iec60870-5/cp` | Time tags CP16Time2a, CP24Time2a, CP32Time2a, CP56Time2a |
+
+## The transport
+
+A client or server takes any `io.ReadWriter`: a serial port (for example from [go-serial](/projects/go-serial/), at 9600 8E1 for FT 1.2), a TCP connection to a terminal server that passes the line through, or `net.Pipe` in tests. IEC 101 over such a TCP stream is still IEC 101.
+
+## Parameters
+
+`iec101.DefaultParams()` is the most common profile: unbalanced, a one-octet link address, a one-octet cause, a one-octet common address and a two-octet information object address. Change what the station uses:
+
+```go
+p := iec101.DefaultParams()
+p.Mode = iec101.ModeBalanced          // point to point, both ends primary
+p.Link.FT12.AddrSize = 2              // link address: 0 (balanced only), 1 or 2 octets
+p.ASDU.CauseSize = 2                  // with originator address
+p.ASDU.CommonAddrSize = 2
+p.ASDU.IOASize = 3
+p.Link.Timeout = 2500 * time.Millisecond // slow line: about 2.25 s at 1200 bit/s
+p.Strict = true                       // apply the IEC 101 profile checks to every ASDU
+```
+
+## Client: bring up the link, interrogate, command
+
+```go title="main.go"
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"github.com/otfabric/go-iec60870-5/asdu"
+	"github.com/otfabric/go-iec60870-5/iec101"
+	"github.com/otfabric/go-iec60870-5/iec101/client"
+)
+
+func main() {
+	conn, err := net.DialTimeout("tcp", "10.0.0.5:4001", 5*time.Second) // a terminal server
+	if err != nil {
+		log.Fatal(err)
+	}
+	c, err := client.New(conn, client.Config{
+		Params:   iec101.DefaultParams(),
+		LinkAddr: 3,
+		Handler:  func(a *asdu.ASDU) { fmt.Println("monitor:", a) }, // spontaneous and polled data
+		OnState:  func(s iec101.State, err error) { log.Printf("link %s %v", s, err) },
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := c.WaitUp(ctx); err != nil {
+		log.Fatal(err)
+	}
+	data, err := c.Interrogate(ctx, 3, asdu.QOIStation)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("interrogation: %d ASDUs\n", len(data))
+
+	// Select-before-operate: select, then execute.
+	if err := c.Command(ctx, 3, asdu.SingleCommand{IOA: 500, Value: true, Select: true}); err != nil {
+		log.Fatal(err)
+	}
+	if err := c.Command(ctx, 3, asdu.SingleCommand{IOA: 500, Value: true}); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+Client methods: `WaitUp`, `State`, `Close`, `Done`, `Err`, `Send`, `Interrogate`, `CounterInterrogate`, `Read`, `Command`, `Deactivate`, `ClockSync`, `TestCommand` (C_TS_NA_1), `ResetProcess`, `MeasureDelay` and `SetDelay` (C_CD_NA_1). In unbalanced mode the client polls class 1 while the station sets ACD and class 2 at `PollInterval` otherwise; every ASDU it receives reaches the handler. A refusal comes back as `*telecontrol.NegativeError`. A request returns at its context deadline even while the link layer is still repeating its frame.
+
+## Server: a controlled station
+
+```go
+s, err := server.New(port, server.Config{
+	Params: iec101.DefaultParams(), LinkAddr: 3, CommonAddr: 1,
+	Handler: server.HandlerFunc(func(s *server.Server, a *asdu.ASDU) {
+		switch a.First().(type) {
+		case asdu.Interrogation:
+			_ = s.Confirm(a)
+			_ = s.Send(asdu.New(asdu.CauseInterrogatedStation, 1, asdu.SinglePoint{IOA: 100, Value: true}))
+			_ = s.Terminate(a)
+		default:
+			_ = s.Reject(a, asdu.CauseUnknownType)
+		}
+	}),
+})
+// Spontaneous data goes out as class 1.
+err = s.Send(asdu.New(asdu.CauseSpontaneous, 1, asdu.SinglePoint{IOA: 100, Value: false}))
+```
+
+Server methods: `Send` (class 1), `SendClass`, `Pending`, `Reply`, `Confirm`, `Negative`, `Terminate`, `Reject`, `State`, `Params`, `Close`, `Done`, `Err`. The server answers the link itself: status of link, reset of remote link, FCB repetitions answered with the stored response, DFC while its input queue is more than half full, and the end of initialization after the first reset.
+
+## The strict profile
+
+The ASDU codec accepts everything IEC 104 allows. `Params.Strict` applies `iec101.Validate` to every ASDU sent and received: reserved types such as the CP56Time2a commands of IEC 104 (IEC 60870-5-101:2003 7.2.1.1), cause 0, common address 0 and misuse of the broadcast address, and the rules for system commands. The strict client drops and logs what fails; the strict server mirrors a control-direction ASDU negatively with the fitting "unknown ..." cause.
+
+<Aside type="note">
+The implementation was checked clause by clause against IEC 60870-5-101:2003 (in its identical Russian adoption); Amendment 1:2015 is not held. The open deviations are listed in the library's LIMITATIONS.md. Not implemented yet: file transfer, IEC 62351-5 on IEC 101, and one client polling several stations of a multidrop line (the link layer can address them; the client takes one link address).
+</Aside>

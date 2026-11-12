@@ -1,6 +1,6 @@
 ---
 title: Testing and interop
-description: How the OT Fabric IEC 60870-5-104 projects are tested, against which reference stacks, how to test your own stack against OT Fabric's go-iec104 image, and what has and has not been validated.
+description: How the OT Fabric IEC 60870-5-104 projects are tested, against which reference stacks, and what has and has not been validated.
 sidebar:
   label: Testing and interop
   order: 3
@@ -8,7 +8,7 @@ sidebar:
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-IEC 60870-5-104 implementations disagree in small ways: a missing type, a refusal without the P/N bit, a timer that cannot be switched off. OT Fabric tests its IEC 104 code in three layers: tests inside each repository, a simulated station for hardware-free work, and an interop suite that runs the library against four independent stacks on every push, one of them with the application-layer security of IEC 62351-5.
+IEC 60870-5-104 implementations disagree in small ways: a missing type, a refusal without the P/N bit, a timer that cannot be switched off. OT Fabric tests its IEC 104 code in three layers: tests inside each repository, a simulated station for hardware-free work, and an interop suite that runs the library against five independent stacks on every push, one of them with the application-layer security of IEC 62351-5.
 
 ## Simulators
 
@@ -17,8 +17,8 @@ You have two stations to test against without hardware:
 | Simulator | Where | Use it for |
 |---|---|---|
 | `iec104ctl server start` | [iec104ctl](/docs/protocols/iec-104/cli/) | Developing a SCADA front end or gateway. A YAML model with simulated values, select-before-operate, queued events, redundant connections, files, TLS and IEC 62351-5 with roles |
-| `go run ./examples/server -addr :2404` | [go-iec104](https://github.com/otfabric/go-iec104) | A small station with single and double points, measurements, counters, a commandable switch and spontaneous updates |
-| Reference servers in containers | [iec104-interop](https://github.com/otfabric/iec104-interop) | Checking your code against lib60870-C, j60870, wendy512/iec104 or cB-Sigma/iec60870 |
+| `go run ./iec104/examples/server -addr :2404` | [go-iec60870-5](https://github.com/otfabric/go-iec60870-5) | A small station with single and double points, measurements, counters, a commandable switch and spontaneous updates |
+| Reference servers in containers | [iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) | Checking your code against lib60870-C, j60870, wendy512/iec104, cB-Sigma/iec60870 or part5 |
 
 ```sh
 # A simulated station for a CI pipeline, stopped after 60 seconds
@@ -27,42 +27,42 @@ iec104ctl server start --config model.yaml --duration 60
 
 ## Tests inside the repositories
 
-**go-iec104** needs no hardware and no external process:
+**go-iec60870-5** needs no hardware and no external process:
 
 ```sh
-make check      # format, lint, vet, vulnerability scan, tests, coverage
-make test       # tests with the race detector
-make fuzz       # codec fuzz targets (FUZZTIME=30s each)
-make test-cbsigma  # IEC 62351-5 against cB-Sigma/iec60870 in process (Go 1.26)
-make bench      # codec benchmarks
+make check      # format, lint, vet, vulnerability scan, tests with -race, coverage floors, examples, docs
+make fuzz       # fuzz targets
+make interop    # IEC 104 against the pinned reference images (Docker)
 ```
 
 | Layer | How it is tested |
 |---|---|
-| `apci`, `asdu` | Byte vectors from the standard, round trips over every type identification, error tables, fuzzing |
-| `internal/link` | A scripted peer writing raw APDUs over loopback TCP: windows, each timer, each violation |
-| `client`, `server` | Against each other over loopback TCP, including TLS, reconnect and server restart |
-| `sec` | 95% of its statements: encodings checked against octet strings from cB-Sigma/iec60870's encoder and RFC 3394 and RFC 5869 vectors; two endpoints on a simulated connection through every procedure, timeout, failure and backoff; tampered and replayed messages, refused certificates and algorithms; a fuzz target for the decoder and both roles |
-| `e2e` | Client against server end to end over TCP, TLS, with `k = w = 1` and with IEC 62351-5 (HMAC over TCP, AES-256-GCM over TLS, eight controlling stations at once, role-based refusals); a wire matrix of all 67 type identifications in every variant; 40,000 frames each way to wrap the 15-bit sequence numbers |
+| `iec104/apci`, `asdu` | Byte vectors from the standard, round trips over every type identification, error tables, fuzzing |
+| `iec104/internal/link` | A scripted peer writing raw APDUs over loopback TCP: windows, each timer, each violation |
+| `iec104/client`, `iec104/server` | Against each other over loopback TCP, including TLS, reconnect and server restart |
+| `sec` | Encodings checked against octet strings from cB-Sigma/iec60870's encoder and RFC 3394 and RFC 5869 vectors; two endpoints on a simulated connection through every procedure, timeout, failure and backoff; tampered and replayed messages, refused certificates and algorithms; fuzzing |
+| `iec104/e2e` | Client against server end to end over TCP, TLS, with `k = w = 1` and with IEC 62351-5; a wire matrix of all 67 type identifications in every variant; 40,000 frames each way to wrap the 15-bit sequence numbers |
+| Recorded traffic | Public IEC 104 captures replayed through the decoders, client and server, and checked against Wireshark's dissector |
 
-The `e2e` tests execute about 85% of the library's statements. The rest (malformed frames, sequence errors, protocol violations) is covered by the scripted-peer tests of `internal/link` and the codec tests.
+The IEC 104 packages were also checked clause by clause against the text of IEC 60870-5-104 edition 1; five deviations found that way were fixed, each with a test that cites the clause.
 
-**iec104ctl** runs every command through the real command tree against an in-process simulated station (`internal/stationtest`), over TCP and TLS, in all three output formats, with its exit codes. Statement coverage was 94% at v0.1.0, with a floor of 85% enforced by `make coverage`. v0.2.0 adds the IEC 62351-5 cases: authority and pinned trust, HMAC-SHA-256, HMAC-SHA3-256 and AES-256-GCM, a viewer refused a command with cause 17, untrusted certificates on either side, a client without security against a secure station, and every validation error.
+**iec104ctl** runs every command through the real command tree against an in-process simulated station, over TCP and TLS, in all three output formats, with its exit codes, and against go-iec60870-5's own servers and clients (`make e2e` in iec60870ctl).
 
 ## The interop suite
 
-[iec104-interop](https://github.com/otfabric/iec104-interop) v0.5.0 (container contract 1.3) packages four independent IEC 104 implementations as container images, each with client and server:
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 (container contract 2.3) packages independent implementations of the whole IEC 60870-5 family as container images. For IEC 104 there are five, each with client and server:
 
 | Adapter | Implementation | Language | Image |
 |---|---|---|---|
-| `lib60870` | MZ Automation lib60870-C v2.4.1 | C | `ghcr.io/otfabric/iec104-interop-lib60870` |
-| `openmuc` | OpenMUC j60870 1.8.0 | Java | `ghcr.io/otfabric/iec104-interop-openmuc` |
-| `wendy512` | wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | Go | `ghcr.io/otfabric/iec104-interop-wendy512` |
-| `cbsigma` | cB-Sigma/iec60870 v0.3.0 | Go | `ghcr.io/otfabric/iec104-interop-cbsigma` |
+| `lib60870` | MZ Automation lib60870-C v2.4.1 | C | `ghcr.io/otfabric/iec60870-5-interop-iec104-lib60870` |
+| `openmuc` | OpenMUC j60870 1.8.0 | Java | `ghcr.io/otfabric/iec60870-5-interop-iec104-openmuc` |
+| `wendy512` | wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | Go | `ghcr.io/otfabric/iec60870-5-interop-iec104-wendy512` |
+| `cbsigma` | cB-Sigma/iec60870 v0.3.0 | Go | `ghcr.io/otfabric/iec60870-5-interop-iec104-cbsigma` |
+| `part5` | pascaldekloe/part5 v0.3.0 | Go | `ghcr.io/otfabric/iec60870-5-interop-iec104-part5` |
 
-cB-Sigma/iec60870 is the only one with IEC 62351-5. Contract 1.3 adds interrogation groups, a quality on `M_BO_NA_1`, mutual TLS (IEC 62351-3), file upload and the file directory, and redundancy groups (edition 2, clause 10), each behind a feature in `print-capabilities`. The suite follows the latest upstream release even when it has a bug: j60870 1.8.0 cannot decode a read command (`C_RD_NA_1`) and closes the connection on one, so the read cases of j60870 pairings are listed as a known upstream bug, and the self-test fails once a release fixes it ([fix proposed upstream](https://github.com/gythialy/j60870/pull/75)). The images run as a non-root user, with base images pinned by digest and upstream sources by commit or exact version.
+cB-Sigma/iec60870 is the only one with IEC 62351-5. The contract covers interrogation groups, a quality on `M_BO_NA_1`, mutual TLS (IEC 62351-3), file transfer and the file directory, and redundancy groups (edition 2, clause 10), each behind a feature in `print-capabilities`. The suite follows the latest upstream release even when it has a bug: j60870 1.8.0 cannot decode a read command (`C_RD_NA_1`) and closes the connection on one, so the read cases of j60870 pairings are listed as a known upstream bug, and the self-test fails once a release fixes it ([fix proposed upstream](https://github.com/gythialy/j60870/pull/75)). The images run as a non-root user, with base images pinned by digest and upstream sources by commit or exact version.
 
-The repository owns the adapters, a fixture format and a **baseline fixture**: station 1 with twelve points (IOA 100..300), seven commands (IOA 500..510, one with select required) and two files (IOA 30000 and 30001). Every server adapter serves the fixture the same way. It does not contain any library under test; go-iec104 pulls the images and owns its own scenarios and assertions.
+The repository owns the adapters, a fixture format and a **baseline fixture** per standard. Every server adapter serves the fixture the same way. It does not contain any library under test; go-iec60870-5 and iec60870ctl pull the images and own their own scenarios and assertions.
 
 ### Running it
 
@@ -72,35 +72,29 @@ Needs Docker and `jq`.
 1. Build the images and check the container contract:
 
    ```sh
-   make images      # build the adapter images for this machine
-   make smoke       # container contract of each image
-   make interop     # every client against every server
+   make images            # build every adapter image for this machine
+   make smoke-iec104      # container contract of each IEC 104 image
+   make interop-iec104    # every IEC 104 client against every IEC 104 server
    ```
 
-2. Run one reference server on loopback:
+2. Run a reference server and wait until it is ready:
 
    ```sh
-   make run-lib60870        # 127.0.0.1:2404, baseline fixture, Ctrl-C to stop
-   make run-cbsigma         # 127.0.0.1:2407
+   docker run -d --name ref -p 127.0.0.1:2404:2404 \
+     ghcr.io/otfabric/iec60870-5-interop-iec104-lib60870:v0.4.0 server
+   until docker exec ref test -f /run/iec60870-5-interop/ready; do sleep 0.1; done
    ```
 
-3. Run a reference client against it:
+3. Run a reference client of another stack against it:
 
    ```sh
    docker run --rm --add-host=host.docker.internal:host-gateway \
-     ghcr.io/otfabric/iec104-interop-openmuc:dev \
+     ghcr.io/otfabric/iec60870-5-interop-iec104-openmuc:v0.4.0 \
      client interrogate --host host.docker.internal --port 2404 | jq .
    ```
 </Steps>
 
-Every image has the same commands: `server`, `client <operation>` (`connect`, `interrogate`, `counter-interrogate`, `read`, `clock-sync`, `test-command`, `command`, `monitor`, `file-get`), `print-capabilities` and `print-fixture`. A client prints one JSON result document; a server prints a JSON Lines stream of what it received. Wait for the readiness file, never for a delay:
-
-```sh
-docker run -d --name ref -p 127.0.0.1:2404:2404 ghcr.io/otfabric/iec104-interop-lib60870:<tag> server
-until docker exec ref test -f /run/iec104-interop/ready; do sleep 0.1; done
-```
-
-Pin images by digest for release qualification; the digests are in each release's `manifest.json`.
+Every image has the same commands: `server`, `client <operation>` (`connect`, `interrogate`, `counter-interrogate`, `read`, `clock-sync`, `test-command`, `command`, `monitor`, `file-get` and more), `print-capabilities` and `print-fixture`. A client prints one JSON result document; a server prints a JSON Lines stream of what it received. Wait for the readiness file, never for a delay. Pin images by digest for release qualification; the digests are in each release's `manifest.json`.
 
 <Aside type="caution">
 The reference servers are unauthenticated stations that accept commands from anyone, and the clients send commands to whatever address they are given. Never attach a server to a plant network and never point a client at a real station.
@@ -108,84 +102,50 @@ The reference servers are unauthenticated stations that accept commands from any
 
 ### Capabilities
 
-The stacks do not all support the same. Each image declares what it supports with `print-capabilities`, and test suites skip, rather than fail, what an image lacks. A capability is declared only when the self-tests exercise it.
+The stacks do not all support the same. Each image declares what it supports with `print-capabilities`, and test suites skip, rather than fail, what an image lacks.
 
-| | lib60870 | openmuc | wendy512 | cbsigma |
-|---|:---:|:---:|:---:|:---:|
-| General and counter interrogation, read, clock sync, test command | yes | yes ¹ | yes | yes |
-| Direct commands, select-before-operate, deactivation | yes | yes | yes | yes |
-| Commands with time tag | yes | yes | no | yes |
-| Interrogation groups, quality on `M_BO_NA_1` | yes | yes | yes | yes |
-| File download: station / controlling station | yes / yes | yes / yes | yes / no | yes / yes |
-| File upload: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes |
-| File directory, both roles | yes | yes | yes | yes |
-| Redundancy groups: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes |
-| TLS with mutual authentication: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes |
-| STARTDT/STOPDT server events | yes | yes | no | yes |
-| Idle test disabled (`--t3 0`) | yes | no | no | no |
-| IEC 62351-5 (`--secure`) | no | no | no | yes |
+| | lib60870 | openmuc | wendy512 | cbsigma | part5 |
+|---|:---:|:---:|:---:|:---:|:---:|
+| General, group and counter interrogation, read, clock sync, test command | yes | yes ¹ | yes | yes | yes |
+| Direct commands, select-before-operate, deactivation | yes | yes | yes | yes | yes |
+| Commands with time tag | yes | yes | no | yes | yes |
+| File transfer and directory | yes | yes | partly | yes | no |
+| Redundancy groups: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes | no / no |
+| TLS: station / controlling station | yes / yes | yes / yes | no / yes | yes / yes | no / no |
+| IEC 62351-5 | no | no | no | yes | no |
 
 ¹ Read is declared, but j60870 1.8.0 closes the connection on a read command; those cases count as a known bug.
 
-Every "no" is a gap of go-iecp5 v1.2.6, with its evidence in [CAPABILITIES.md](https://github.com/otfabric/iec104-interop/blob/main/docs/CAPABILITIES.md). lib60870-C is built with Mbed TLS 3.6.7 for its TLS station and client.
+The gaps of wendy512 are those of go-iecp5 v1.2.6, and part5 v0.3.0 has no TLS, file transfer or redundancy; the evidence is in [CAPABILITIES.md](https://github.com/otfabric/iec60870-5-interop/blob/main/docs/CAPABILITIES.md).
 
-The security flags of container contract 1.2 (`--secure`, `--security-cert`, `--security-key`, `--security-trust`, `--association-id`, and `--mal`, `--dpa` or `--roles`) take certificates mounted into the cbsigma image. Because it is the only image with them, the suite's own secure cases run cB-Sigma against itself; their value is for a consumer that pairs it with another implementation.
+## What go-iec60870-5 is validated against
 
-go-iecp5 drops the time-tagged commands (types 58..63) and `F_SG_NA_1` on reception, and its refusals with causes 44..47 carry no P/N bit. lib60870 and j60870 scale normalized values differently, so the contract exchanges them as the raw 16-bit number.
+go-iec60870-5 v0.5.0 runs its IEC 104 client and server against the five IEC 104 images of iec60870-5-interop v0.4.0, pinned by digest, on every push and pull request (`make interop`). The last recorded run (2026-11-12): 519 subtests passed, 35 skipped, none failed.
 
-The cross-stack self-test of v0.5.0 (`make interop`) runs all sixteen client and server pairings of the four references, the feature cases across every pair that declares them, and ten secure cases: in CI on amd64 and arm64, 2153 checks passed, none failed, 35 were the known j60870 read bug and 262 were skipped for undeclared capabilities. Each run writes `results.json` in the organisation's interop-result-v1 format.
-
-## What go-iec104 is validated against
-
-go-iec104 v0.2.0 is qualified against iec104-interop v0.5.0, with the images pinned by digest. The interop workflow runs on every push and pull request (`make interop`).
-
-| Reference | go-iec104 client to reference server | Reference client to go-iec104 server |
+| Reference | Client to reference server | Reference client to server |
 |---|---|---|
 | lib60870-C v2.4.1 | pass | pass |
 | j60870 1.8.0 | pass, without file download and read | pass, without read |
-| wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | pass, without time-tagged commands, file download, upload, TLS and redundancy, which its station lacks | pass, without time-tagged commands and file download |
+| wendy512/iec104 v1.0.4 on go-iecp5 v1.2.6 | pass, without time-tagged commands and file transfer | pass, without time-tagged commands and file transfer |
 | cB-Sigma/iec60870 v0.3.0 | pass, and IEC 62351-5 | pass, and IEC 62351-5 |
+| pascaldekloe/part5 v0.3.0 | pass, without file transfer, TLS and redundancy | pass, without file transfer, TLS and redundancy |
 
-**go-iec104 as client** is checked for: interrogation, counter interrogation and read value by value against the fixture; every command type with and without time tag, select-before-operate and deactivation; the refusals (unknown type, cause, common address, object); STARTDT/STOPDT cycles; `k = w = 1`; the idle test in both directions; reconnect after a station restart; concurrent sessions; file download; and a redundancy group across two stacks with failover and switchover.
+**As client** it is checked for: interrogation, counter interrogation and read value by value against the fixture; every command type with and without time tag, select-before-operate and deactivation; the refusals (unknown type, cause, common address, object); STARTDT/STOPDT cycles; `k = w = 1`; the idle test in both directions; reconnect after a station restart; concurrent sessions; file transfer; and a redundancy group across two stacks with failover and switchover.
 
-Contract 1.3's features run in both directions wherever a reference declares them:
+**As server** each reference client's complete result (every ASDU, in order, field by field) must equal what the same client gets from the reference server of its own stack.
 
-| Feature | go-iec104 client to reference server | Reference client to go-iec104 server |
-|---|---|---|
-| Interrogation groups | all four | all four |
-| Quality on `M_BO_NA_1` | all four (j60870 without read) | all four |
-| Mutual TLS, a wrong authority and a peer without TLS refused | lib60870-C, j60870, cB-Sigma | all four |
-| File upload, read back, refusals | lib60870-C, j60870, cB-Sigma | all four |
-| File directory | all four | all four |
-| Redundancy: STOPDT, takeover, a queued event | lib60870-C, j60870, cB-Sigma | all four |
+**IEC 62351-5** is tested against cB-Sigma/iec60870 in two ways. In the container suite, go-iec60870-5's client associates with the cB-Sigma station and the cB-Sigma client with a go-iec60870-5 station: certificates from an authority and pinned, secp256r1 and X25519, HMAC-SHA-256 and AES-256-GCM, other association identities, a viewer's command refused with cause 17 and an operator's executed, an AIM the station refuses, untrusted certificates on either side and a client without security. In process (`iec104/interop/cbsigma`, a module of its own so the library keeps no dependencies), the encodings of every message are compared and complete associations run in both roles.
 
-**go-iec104 as server** runs 34 scenarios per reference client, file download among them. Each must have the outcome the standard prescribes, and the client's complete result (every ASDU, in order, field by field) must equal what the same client gets from the reference server of its own stack.
+To test against another build, set `IEC104_INTEROP_LIB60870_IMAGE`, `IEC104_INTEROP_OPENMUC_IMAGE`, `IEC104_INTEROP_WENDY512_IMAGE`, `IEC104_INTEROP_CBSIGMA_IMAGE` or `IEC104_INTEROP_PART5_IMAGE`; to run one stack only, `IEC104_INTEROP_ADAPTERS=lib60870`.
 
-**IEC 62351-5** is tested against cB-Sigma/iec60870 in two ways. In the container suite, go-iec104's client associates with the cB-Sigma station and the cB-Sigma client with a go-iec104 station: certificates from an authority and pinned, secp256r1 and X25519, HMAC-SHA-256 and AES-256-GCM, other association identities, a viewer's command refused with cause 17 and an operator's executed, an AIM the station refuses, untrusted certificates on either side and a client without security. In process (`interop/cbsigma`, a module of its own so the library keeps no dependencies), the encodings of every message are compared and complete associations run in both roles with every data protection algorithm both have, segmented data, renewals, restarts, reconnects and crossing requests.
-
-To test against another build, set `IEC104_INTEROP_LIB60870_IMAGE`, `IEC104_INTEROP_OPENMUC_IMAGE`, `IEC104_INTEROP_WENDY512_IMAGE` or `IEC104_INTEROP_CBSIGMA_IMAGE`; to run one stack only, `IEC104_INTEROP_ADAPTERS=lib60870`.
-
-**iec104ctl** v0.1.0 had its client commands run against the lib60870-C, j60870 1.7.2 and wendy512/iec104 reference servers, and its simulated station driven by their clients: interrogation, counters, read, clock, test command, commands (direct, select-before-operate, cancel, refused) and, with lib60870-C and j60870, file download.
-
-## Test your stack against OT Fabric's
-
-`ghcr.io/otfabric/iec104-interop-otfabric` is go-iec104 behind the same container contract as the reference images (adapter name `otfabric`), so you can test your IEC 104 client or station against it, the way OT Fabric tests its own stack against yours:
-
-```sh
-docker run -d --name go-iec104 -p 127.0.0.1:2404:2404 ghcr.io/otfabric/iec104-interop-otfabric:<tag> server
-until docker exec go-iec104 test -f /run/iec104-interop/ready; do sleep 0.1; done
-```
-
-The station serves the same fixtures as the references, and `client <operation>` runs go-iec104's controlling station against yours. go-iec104's Self-interop workflow, run by hand, tests a commit against `:latest`. `version` prints the versions inside the image.
-
-Its tags are go-iec104 versions, such as `v0.1.2`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build. It is not part of a iec104-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+**iec104ctl** v0.9.0 runs against the same five references in both roles: 42 checks pass, and the read against j60870 1.8.0 is the known upstream bug.
 
 ## What has not been validated
 
 - **Certified test equipment and field devices.** None of the projects has been run against them. Interoperability reports are welcome, with the `--debug` trace for iec104ctl.
-- **TLS with wendy512.** go-iecp5 has no TLS station; TLS is tested against lib60870-C, j60870 and cB-Sigma.
-- **IEC 62351-5 beyond cB-Sigma.** go-iec104 was derived from cB-Sigma/iec60870, not from the IEC documents, and no third implementation or certified test equipment has checked either. Treat it as interoperable with cB-Sigma, not as conformance-tested. iec104ctl's `--secure` is tested against its own simulated station and relies on go-iec104's tests against cB-Sigma.
+- **TLS with wendy512 and part5.** go-iecp5 has no TLS station and part5 no TLS at all; TLS is tested against lib60870-C, j60870 and cB-Sigma.
+- **IEC 62351-5 beyond cB-Sigma.** The security code was derived from cB-Sigma/iec60870, not from the IEC documents, and no third implementation or certified test equipment has checked either. Treat it as interoperable with cB-Sigma, not as conformance-tested. iec104ctl's `--secure` is tested against its own simulated station and relies on the library's tests against cB-Sigma.
 - **Edges of file transfer and redundancy.** The suite does not compare NOS of `F_AF_NA_1` with AFQ 1 and 2, `sequence` and `timeInvalid` of `F_DR_TA_1`, or whether a connection that was taken over is closed.
 - **Type identifications outside the fixture.** The interop suite covers `M_SP`, `M_DP`, `M_ST`, `M_BO`, `M_ME_NA/NB/NC`, `M_IT` and their CP56Time2a variants, the six command types, and the system commands. Everything else (protection events, packed points, bitstring commands, parameters) is covered by codec tests only.
-- **SQ = 1 answers** are not part of the fixtures.
-- **Faults.** The references are correct peers, not fault injectors. Malformed frames, wrong sequence numbers and timer boundaries are tested with go-iec104's scripted peers.
+- **Edition 2 and Amendment 1.** The clause-by-clause check used edition 1 (2000); where the code follows edition 2 behaviour that edition 1 does not describe, it is marked as such in the library's IEC 104 interoperability list.
+- **Faults.** The references are correct peers, not fault injectors. Malformed frames, wrong sequence numbers and timer boundaries are tested with the library's scripted peers.

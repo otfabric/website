@@ -1,0 +1,101 @@
+---
+title: 'IEC 60870-5 in full: one library for IEC 101, 102, 103 and 104'
+description: go-iec60870-5 implements the four companion standards of IEC 60870-5 under MIT, from serial telecontrol to meter totals, protection relays and IEC 104. iec60870ctl ships iec101ctl to iec104ctl, and iec60870-5-interop tests it all against independent stacks.
+date: 2026-11-12
+authors: [OT Fabric]
+tags: [announcement, iec-104, scada, energy, interop]
+featured: true
+cover:
+  alt: One library, go-iec60870-5, under four companion standards. IEC 101 for telecontrol over serial lines with iec101ctl, tested against lib60870-C, cB-Sigma and digitalpetri. IEC 102 for energy meter totals with iec102ctl, tested against gisce iec870ree. IEC 103 for protection relays with iec103ctl, tested against four stacks. IEC 104 for telecontrol over TCP/IP with iec104ctl, tested against five stacks. None fail.
+  image: ../../assets/blog/iec60870-5-family.svg
+  social: ../../assets/blog/social/iec60870-5-family.png
+---
+
+import Callout from '../../components/Callout.astro';
+import MapLink from '../../components/ecosystem/MapLink.astro';
+
+IEC 104 is how many control centres in Europe, Asia and the Middle East talk to their substations. But it is one member of a family. IEC 60870-5 is a set of base standards (frames, link procedures, data types) and four **companion standards** that apply them to one job each. On the same grid you meet all four: IEC 104 between the control centre and the substation, IEC 101 on the serial and radio links that were never replaced, IEC 103 between the substation controller and its protection relays, and IEC 102 behind the energy meters.
+
+Today OT Fabric covers the whole family with one library, [go-iec60870-5](/projects/go-iec60870-5/), four command-line tools from [iec60870ctl](https://github.com/otfabric/iec60870ctl), and one interop suite, [iec60870-5-interop](/projects/iec60870-5-interop/), with containers per standard.
+
+## Four standards, four jobs
+
+| | IEC 101 | IEC 102 | IEC 103 | IEC 104 |
+|---|---|---|---|---|
+| Job | Telecontrol | Integrated totals (energy) | Protection equipment | Telecontrol |
+| Typical peers | Control centre and RTUs | Metering front end and meters | Substation controller and relays | Control centre and RTUs or gateways |
+| Transport | Serial, modem, radio | Serial, modem | Serial, fibre ring | TCP/IP, port 2404 |
+| Link | FT 1.2, unbalanced or balanced | FT 1.2, unbalanced | FT 1.2, unbalanced | APCI with sequence numbers and windows |
+| Data model | Telecontrol ASDUs | Records of integrated totals | Function type and information number | Telecontrol ASDUs, as IEC 101 |
+| Data flow | Polled and spontaneous | Only answers what it is asked | Polled events and disturbance records | Spontaneous, with acknowledgement windows |
+
+**[IEC 101](/protocols/iec-101/)** is the original telecontrol standard: a controlling station polls RTUs in substations, pumping stations and wind parks over serial lines, leased lines, modems and radio. It defined the data model of stations with a common address, points with an information object address, general interrogation, time-tagged events and select-before-operate. One line can serve many stations, and the sizes of the address fields are chosen per project, so a master has to be told how each station is set up. You still meet it in distribution grids, pipelines, water and district heating, and behind terminal servers and 101-to-104 gateways.
+
+**[IEC 104](/protocols/iec-104/)** takes the IEC 101 data model to TCP/IP. The serial link procedures are replaced by the APCI, with sequence numbers, acknowledgement windows and timers, the address sizes are fixed, and a control centre can hold redundant connections to a station. It is the most deployed member of the family today, and with TLS (IEC 62351-3) and application-layer security (IEC 62351-5) the one that is secured.
+
+**[IEC 103](/protocols/iec-103/)** keeps the serial frames of IEC 101 but not its data model. It is for protection relays: everything is addressed by a function type (what kind of protection) and an information number (what the value means for it), so a trip of a distance relay looks the same from every vendor. On top of events and measurands it has general commands, generic services to read and write settings, and the transfer of disturbance data, the fault records a relay keeps after it trips.
+
+**[IEC 102](/protocols/iec-102/)** is for energy meters. A metering front end reads integrated totals, the counters of a meter per integration period, by record address, counter range and time window. It has no spontaneous data and time formats of its own. It is best known in Spain, where Red Eléctrica built fiscal metering on it and added a profile with sessions, clock setting and tariffs.
+
+## go-iec60870-5
+
+[go-iec60870-5](/projects/go-iec60870-5/) v0.5.0 is one module with no dependencies outside the standard library. The base standards are shared: FT 1.2 frames, the IEC 60870-5-2 link procedures, the telecontrol ASDUs and the security of IEC 62351-5. Each companion standard is a package with a client and a server:
+
+- **`iec101`**: unbalanced and balanced links, class 1 and class 2 polling, every field size the standard allows, interrogation, commands, clock synchronization and delay acquisition, with an optional strict mode for the IEC 101 profile.
+- **`iec102`**: every read of integrated totals, events, product information and the meter clock, with the REE profile as an opt-in package, `iec102/ree`.
+- **`iec103`**: the link start-up with identification, time synchronization, general interrogation and commands, generic services and the full disturbance data transfer, and a server that plays the relay.
+- **`iec104`**: the IEC 104 client and server, with TLS, redundancy groups, file transfer and IEC 62351-5.
+
+The serial standards take any `io.ReadWriter`: a serial port, a TCP connection to a terminal server, or a pipe in a test. If you used our earlier IEC 104 library, the client, server and APCI packages are now under `iec104/`, and `asdu` and `sec` stay at the root of the module.
+
+## iec101ctl, iec102ctl, iec103ctl and iec104ctl
+
+[iec60870ctl](https://github.com/otfabric/iec60870ctl) v0.9.0 builds four tools from one repository, one per standard, and each has a simulated device to work against:
+
+```sh
+# Install one, or all four
+curl -fsSL https://get.otfabric.io/iec101ctl | sh
+
+# IEC 101: interrogate an RTU on a serial line
+iec101ctl client interrogate --url serial:///dev/ttyUSB0 --link-address 3 --ca 3
+
+# IEC 102: one day of the hourly load profile, in an REE session
+iec102ctl client totals --url tcp://10.0.0.20:2401 --record 11 \
+  --from 2026-01-01T01:00 --to 2026-01-02T00:00 --access-key 7
+
+# IEC 103: list a relay's fault records and save one as CSV
+iec103ctl client disturbance list --url tcp://10.0.0.30:2401
+iec103ctl client disturbance get --url tcp://10.0.0.30:2401 --fan 1 --csv fault1.csv
+
+# IEC 104: watch a substation until Ctrl-C
+iec104ctl client monitor --ip 10.0.0.10 --interrogate
+```
+
+[iec101ctl](/projects/iec101ctl/), [iec102ctl](/projects/iec102ctl/), [iec103ctl](/projects/iec103ctl/) and [iec104ctl](/projects/iec104ctl/) share one layout of `client` and `server` commands, output in text, a table or JSON with stable shapes, and one set of exit codes, so a script written for one reads the same for the others. `server start` gives you a simulated RTU, meter or relay from a YAML model. The [install guide](/docs/install/) lists every option, Windows included.
+
+## Tested against independent stacks
+
+[iec60870-5-interop](/projects/iec60870-5-interop/) v0.4.0 packages independent implementations of the whole family as containers, one image per standard and stack, behind one contract. On the serial standards the byte stream crosses one TCP connection unchanged, as through a terminal server.
+
+- **IEC 101** against MZ Automation lib60870-C, cB-Sigma/iec60870 and digitalpetri/iec60870, unbalanced and balanced, with five sets of field sizes: 490 subtests pass, none fail.
+- **IEC 102** against gisce/iec870ree, an REE controlling station: go-iec60870-5's meter passes all 18 checks.
+- **IEC 103** against vitusdong/iec103-dotnet, masarray ARIEC103, Open103 and the cs103 package of go-iecp5: 75 subtests pass, none fail, and the disturbance data transfer runs end to end against Open103.
+- **IEC 104** against lib60870-C, OpenMUC j60870, wendy512/iec104, cB-Sigma/iec60870 and pascaldekloe/part5: 519 subtests pass, none fail, with IEC 62351-5 both ways against cB-Sigma.
+
+The CLIs run the same matrix through their own command tree. The suite is also honest about where the open ecosystem is thin. IEC 102 has no open implementation of a meter, so the go-iec60870-5 client is tested against its own server and recorded traffic only. IEC 103 has no open relay that conforms to the standard: the one that serves test data deviates from it in every reply checked. A simulated meter in `iec102ctl` and a simulated relay in `iec103ctl` are useful for that reason alone.
+
+<Callout type="note" title="Interoperability, not certification">
+go-iec60870-5 v0.5.0, iec60870ctl v0.9.0 and iec60870-5-interop v0.4.0 are pre-1.0 and interoperability tested, not conformance tested, and nothing has been certified. We do not hold the text of IEC 60870-5-102; its codec is built from vendor documentation, recorded meter traffic and independent implementations. What is and is not covered per standard is in Testing and interop of [IEC 101](/docs/protocols/iec-101/testing/), [IEC 102](/docs/protocols/iec-102/testing/), [IEC 103](/docs/protocols/iec-103/testing/) and [IEC 104](/docs/protocols/iec-104/testing/).
+</Callout>
+
+## Built with AI agents
+
+Like the rest of OT Fabric, the IEC 60870-5 projects are built by people and AI agents together. Four standards that share frames but not data models are a good test of that way of working: shared code where the standards agree, a package of its own where they do not, and every disagreement with an independent stack traced to a frame and written down. The interop matrix is part of every release and public, so you can judge the result yourself.
+
+## Who else implements IEC 60870-5
+
+The ecosystem map now lists IEC 101, 102 and 103 as protocols of their own, next to IEC 104: [8 implementations of IEC 101](/ecosystem/implementations/?protocol=iec-101), [4 of IEC 102](/ecosystem/implementations/?protocol=iec-102), [9 of IEC 103](/ecosystem/implementations/?protocol=iec-103) and [14 of IEC 104](/ecosystem/implementations/?protocol=iec-104), with language, licence, roles and latest release.
+
+<MapLink protocol="iec-104" title="Explore IEC 104 on the ecosystem map" />
+
+Start with the [protocol docs](/docs/protocols/), or `go get github.com/otfabric/go-iec60870-5`.

@@ -1,0 +1,83 @@
+---
+title: iec103ctl
+description: Poll IEC 60870-5-103 protection relays from the command line (general interrogation, general commands, clock, identification, settings through the generic services, disturbance data as JSON or CSV, monitoring, line scans), or simulate a relay.
+sidebar:
+  label: iec103ctl
+  order: 2
+---
+
+import InstallTool from '../../../../../components/docs/InstallTool.astro';
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+[iec103ctl](https://github.com/otfabric/iec60870ctl) polls and simulates protection equipment that speaks IEC 60870-5-103. As a controlling system it runs a general interrogation, sends general commands, synchronizes the clock, reads the identification, reads and writes settings with the generic services, lists recorded faults and transfers their disturbance data, monitors what the relay sends and scans a line for link addresses. As protection equipment it simulates a relay from a model, so that a station controller or gateway has something to poll. It is one of the four tools of [iec60870ctl](https://github.com/otfabric/iec60870ctl) and is built on [go-iec60870-5](/docs/protocols/iec-103/library/). This page follows v0.9.0; the full reference is [docs/iec103ctl/usage.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/iec103ctl/usage.md).
+
+<Aside type="caution" title="Responsible use">
+iec103ctl sends real requests to protection relays. Use it only on equipment and lines you own or are authorized to test. `client command` switches protection functions, `client generic write` changes settings that are in force at once, `client clock` sets the relay's clock, and `client scan` resets the link of every device it finds, which clears their transmit buffers. While iec103ctl holds a line, the station controller cannot poll.
+</Aside>
+
+## Install
+
+<InstallTool tool="iec103ctl" />
+
+## Try it without a relay
+
+<Steps>
+1. Start the built-in demo device (TCP port 2401):
+
+   ```sh
+   iec103ctl server start
+   ```
+
+2. Poll it from another terminal:
+
+   ```sh
+   iec103ctl client identify --url tcp://127.0.0.1:2401
+   iec103ctl client interrogate --url tcp://127.0.0.1:2401
+   iec103ctl client command --url tcp://127.0.0.1:2401 --fun 160 --inf 16 --value off --wait-report 1000
+   iec103ctl client generic group --url tcp://127.0.0.1:2401 --group 1 --format table
+   iec103ctl client disturbance list --url tcp://127.0.0.1:2401
+   iec103ctl client disturbance get --url tcp://127.0.0.1:2401 --fan 1 --csv fault1.csv
+   ```
+</Steps>
+
+## Line and link flags
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--url` | | `tcp://host[:port]` (a terminal server, port 2401) or `serial:///dev/ttyUSB0` (`serial://COM3`) |
+| `--baud`, `--data-bits`, `--parity`, `--stop-bits` | 9600, 8, even, 1 | The serial character format |
+| `--link-address` | 1 | The device's link address, 0 to 254 |
+| `--common-address` | the link address | Common address of ASDU |
+| `--link-timeout`, `--retries` | 1000 ms, 3 | How long a frame waits for its answer, and how often it is repeated |
+| `--reset-fcb` | off | Initialize the link with reset FCB instead of reset CU |
+| `--timezone` | utc | Zone of the time tags on the wire |
+
+Unlike a full controlling system, iec103ctl never follows the link start-up with an automatic time synchronization and general interrogation: every command does only what it is asked.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `client interrogate` (`gi`) | General interrogation: the state of every indication, until the termination with the same scan number |
+| `client command` | General command with `--fun`, `--inf` and `--value on\|off`; commands outside table 17 are refused before anything is sent. `--wait-report` waits for the change of state |
+| `client clock` | Time synchronization, addressed and confirmed, or `--broadcast` to address 255 |
+| `client identify` | The identification after a reset, and those of start-up and power on |
+| `client generic headings\|group\|directory\|entry\|read\|interrogate\|write` | The generic services: read settings by group and entry with their descriptions, ranges and units; write one data set with execute or abort |
+| `client disturbance list\|get` (`fault`) | The list of recorded faults, and one record's description, tags and channels, written as JSON (`--output`) or CSV (`--csv`) |
+| `client monitor` | Poll and print every ASDU as it arrives, JSON Lines with `--format json` |
+| `client scan` | Try every link address from `--start` to `--end` and list those that answer, with their identification |
+| `server start` | Serve a simulated relay from `--config` (YAML or JSON) or the demo, on TCP or a serial port |
+| `server generate-config` | Write the demo model |
+
+```sh
+iec103ctl client generic write --url tcp://10.0.0.20 --gin 1.2 --type float32 --value 1.25
+iec103ctl client generic write --url tcp://10.0.0.20 --gin 1.3 --type uint --size 2 --value 450 --mode abort
+iec103ctl client disturbance get --url tcp://10.0.0.20 --fan 7 --output fault7.json --csv fault7.csv
+iec103ctl client scan --url serial:///dev/ttyUSB0 --start 1 --end 32
+```
+
+There is no `discover`: a line has one controlling system and a terminal server's port says nothing about the devices behind it. `client scan` finds the devices of a line.
+
+## Output and exit codes
+
+`--format text`, `json` or `table`, or `IEC103CTL_FORMAT`. A negative acknowledgement, a refused write or an aborted transfer is exit code 6; a read answered with invalid data (cause 43) is 7. iec103ctl adds the error codes `link_down`, `transfer_aborted` and `no_identification`. The rest are the codes shared by the four tools ([exitcodes.md](https://github.com/otfabric/iec60870ctl/blob/main/docs/exitcodes.md)).

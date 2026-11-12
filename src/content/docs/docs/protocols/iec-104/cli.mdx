@@ -9,7 +9,7 @@ sidebar:
 import InstallTool from '../../../../../components/docs/InstallTool.astro';
 import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
-[iec104ctl](https://github.com/otfabric/iec104ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files, over TCP, TLS or the application-layer security of IEC 62351-5. As a controlled station it simulates an RTU from a YAML model. It is built on [go-iec104](/docs/protocols/iec-104/library/). This page describes v0.6.0, built on go-iec104 v0.2.0. IEC 62351-5 arrived in v0.2.0.
+[iec104ctl](https://github.com/otfabric/iec60870ctl) is a command-line tool for IEC 60870-5-104 in both roles. As a controlling station it interrogates an RTU, gateway or IED, watches its events, issues commands and set points (direct or select-before-operate), synchronizes its clock and transfers files, over TCP, TLS or the application-layer security of IEC 62351-5. As a controlled station it simulates an RTU from a YAML model. It is one of the four tools of [iec60870ctl](https://github.com/otfabric/iec60870ctl), next to [iec101ctl](/docs/protocols/iec-101/cli/), [iec102ctl](/docs/protocols/iec-102/cli/) and [iec103ctl](/docs/protocols/iec-103/cli/), and is built on [go-iec60870-5](/docs/protocols/iec-104/library/). This page describes v0.9.0, built on go-iec60870-5 v0.4.1.
 
 <Aside type="caution" title="Responsible use">
 iec104ctl sends real telecontrol requests. Use it only on stations and networks you own or are authorized to test. A station often accepts few connections and sends its events on only one: connecting to a station in service can take its events away from the control centre.
@@ -88,7 +88,7 @@ iec104ctl client interrogate --ip 127.0.0.1 --secure --security-cert scada.pem -
 
 The README has the openssl commands for pinned self-signed certificates and for a plant authority. A refused certificate, an algorithm the station does not accept, or no answer to the key management ends the command with exit code 4 and the error code `security_failed`, before anything else is sent. A request the station's roles do not permit is refused with cause 17 (`not-authorized`), exit code 6. A client without `--secure` gets no answer from a secure station (exit code 5). `--debug` traces the security events (`STAS_PROC_SUCC`, `NODE_NOT_AUTR`, ...) and the algorithms of the session with the frames.
 
-Protocol parameters default to the standard: `--k` 12, `--w` 8, `--t0` 30, `--t1` 15, `--t2` 10, `--t3` 20 (seconds). A station behind an IEC 60870-5-101 gateway may use shorter address fields: `--cot-size` (1 or 2), `--ca-size` (1 or 2) and `--ioa-size` (1 to 3). If every value looks scrambled, or the station closes the connection on the first request, check these first. `--timezone` (`utc`, `local` or an IANA name such as `Europe/Brussels`) says which zone the station keeps its clock in.
+Protocol parameters default to the standard: `--k` 12, `--w` 8, `--t0` 30, `--t1` 15, `--t2` 10, `--t3` 20 (seconds); `--k` and `--w` each take 1 to 32767, and `--w` may exceed `--k`. A station behind an IEC 60870-5-101 gateway may use shorter address fields: `--cot-size` (1 or 2), `--ca-size` (1 or 2) and `--ioa-size` (1 to 3). If every value looks scrambled, or the station closes the connection on the first request, check these first. `--timezone` (`utc`, `local` or an IANA name such as `Europe/Brussels`) says which zone the station keeps its clock in.
 
 ## Command tree
 
@@ -205,6 +205,7 @@ The safety model:
 - A refusal by the station exits 6, and the message says which step was refused.
 - `client reset` has no default for `--qualifier` (`process` or `events`).
 - `client clock --time` refuses a time outside the years 1970 to 2069 (in the `--timezone` zone) with exit 3, because a time tag carries a two-digit year.
+- `client counters --freeze freeze|freeze-reset|reset` returns at the station's confirmation and lists no values; read the frozen values with a following `client counters`.
 - There is no dry-run flag; the simulated station is the place to rehearse.
 
 ```sh
