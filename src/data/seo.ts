@@ -12,7 +12,7 @@ export const ogImage = {
 
 /** Meta description for the homepage: what OT Fabric is and the protocols people search for, in what a search result shows. */
 export const homeDescription =
-	'Open-source libraries, CLIs, desktop apps and interop suites for OT protocols: Modbus, OPC UA, BACnet, IEC 61850, DNP3, OCPP, EtherNet/IP, KNX and more.';
+	'Open-source libraries, CLIs, desktop apps and interop suites for OT protocols: Modbus, OPC UA, BACnet, IEC 104, IEC 61850, DNP3, OCPP, KNX and more.';
 
 /** Longer description for the homepage and machine-readable summaries. */
 export const longDescription =
