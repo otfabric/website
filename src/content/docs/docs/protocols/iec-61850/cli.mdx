@@ -11,7 +11,7 @@ import { Aside, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 
 [iec61850ctl](https://github.com/otfabric/iec61850ctl) is a command-line tool for IEC 61850. It is built on [go-iec61850](https://github.com/otfabric/go-iec61850) and [go-mms](https://github.com/otfabric/go-mms) and ships as a static Go binary with no CGO and no libiec61850 at runtime. Over MMS it browses and reads IEDs, subscribes to reports, operates controls, writes scalar settings, transfers files and reads journals. On the station bus it sniffs, subscribes to and publishes GOOSE and Sampled Values, and reads and writes their control blocks. It also parses SCL offline, runs a local MMS server from SCL, and can expose a small read-only HTTP/JSON API.
 
-This page follows v0.10.0, built on go-iec61850 v1.7.0 and go-mms v1.4.0.
+This page follows v0.13.2, built on go-iec61850 v1.19.4 and go-mms v1.9.2.
 
 ## Install
 
@@ -126,7 +126,7 @@ iec61850ctl get ds --ld MNSREF615LD0 --ln LLN0 --name MeasFlt --detailed
    `--purge-buf` empties the device's buffer, so it needs `--yes` since v0.10.0.
 </Steps>
 
-`--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`). `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically, so a dropped association ends the subscription with exit code `4` instead of waiting silently.
+`subscribe report` registers its handler before it enables the RCB, so the buffered entries a BRCB sends right after `RptEna` are not lost. `--purge-buf`, `--entry-id` and `--resv-tms` are only valid with `--type BR`. The subscription disables the RCB cleanly on exit (Ctrl+C, `--duration` or `--max-reports`). `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically, so a dropped association ends the subscription with exit code `4` instead of waiting silently.
 
 ## Control and scalar writes
 
@@ -280,6 +280,8 @@ iec61850ctl server start --scl device.cid --values device.json --port 102
 | `--files-dir` | Serve a directory read-only through the MMS file services |
 | `--allow-readonly-fc-writes` | Accept client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`), for simulators and test fixtures only. Off by default since v0.7.0: IEC 61850-7-2 makes them read-only, and such a write is answered object-access-denied |
 | `--max-connections` | Reserved; not enforced |
+
+The server follows the SCL as IEC 61850-6 describes it. A `ReportControl` is indexed unless it says `indexed="false"`, so `<ReportControl name="urcb">` is served as `urcb01` (and one already named `urcb01` as `urcb0101`). Journals are named after their `Log` (`LLN0$EventLog`). Reports leave as soon as a trigger fires, and an RCB's `BufTm` holds a report for that time to collect further changes. Operate `t` and `LActTm` carry the TimeQuality "clock not synchronised", as the client's control `T` does, because the host clock's synchronisation is unknown.
 
 Binding port 102 may need elevated privileges; use `--port 1102` for testing, or `--port 0` for an ephemeral port that the readiness line reports. Every server registers handlers for `InteropLD/GGIO1.SPCSO1` (direct), `SPCSO2` (SBO) and `SPCSO3` (SBOw), which update the matching `stVal`; for other models they are inert. `server generate-config` exports a libiec61850 `.cfg` from serialized JSON for external C tooling; iec61850ctl does not run `.cfg` files.
 

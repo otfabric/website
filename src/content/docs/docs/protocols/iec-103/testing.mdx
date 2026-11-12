@@ -12,13 +12,13 @@ The open IEC 103 ecosystem is lopsided: there are several controlling systems, a
 
 ## Tests inside the repositories
 
-**go-iec60870-5** tests every ASDU against the examples of the standard's annex B, round trips and fuzzing, runs the client against the server over in-memory and lossy lines, and adds hostile-peer and chaos tests. Recorded traffic of an SEL RTAC polling several relays decodes and encodes back unchanged. The code was checked clause by clause against IEC 60870-5-103:1997.
+**go-iec60870-5** tests every ASDU against the examples of the standard's annex B, round trips and fuzzing, runs the client against the server over in-memory and lossy lines, and adds hostile-peer and chaos tests. Recorded traffic of an SEL RTAC polling several relays decodes and encodes back unchanged.
 
 **iec103ctl** runs every command against go-iec60870-5's own relay and controlling system (`make e2e` in iec60870ctl), and against the reference images below.
 
 ## The interop suite
 
-[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 packages four independent IEC 103 implementations, unbalanced, over the FT 1.2 byte stream on one TCP connection:
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.5.0 packages four independent IEC 103 implementations, unbalanced, over the FT 1.2 byte stream on one TCP connection:
 
 | Adapter | Implementation | Language | Roles |
 |---|---|---|---|
@@ -33,9 +33,23 @@ Images are `ghcr.io/otfabric/iec60870-5-interop-iec103-<adapter>`. Every referen
 The reference images accept and send commands without authentication. Never attach them to a plant network or point them at a real relay.
 </Aside>
 
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/iec60870-5-interop-iec103-otfabric` is go-iec60870-5 behind the same container contract as the reference images (adapter name `otfabric`), new with iec60870-5-interop v0.5.0, so you can test your IEC 103 controlling system or protection equipment against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-iec103 -p 127.0.0.1:2401:2401 \
+  ghcr.io/otfabric/iec60870-5-interop-iec103-otfabric:<tag> server
+until docker exec go-iec103 test -f /run/iec60870-5-interop/ready; do sleep 0.1; done
+```
+
+The relay serves the baseline fixture on port 2401, with generic services and disturbance data, and `client <operation>` runs go-iec60870-5's controlling system against your relay. Against a relay other than vitusdong, the client bugs of vitusdong and Open103 listed in the suite's `known-bugs-consumer.tsv` show up on the wire; apply that list with `known-bugs.tsv` when you test against it.
+
+Its tags are go-iec60870-5 versions, such as `v0.5.1`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build, and `version` prints the versions inside the image. It is not part of an iec60870-5-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## What go-iec60870-5 is validated against
 
-`make interop-iec103` runs against the pinned v0.4.0 images. The last recorded run (2026-11-12): 75 subtests passed, 38 skipped as known bugs or undeclared features, none failed.
+`make interop-iec103` runs against the pinned images of iec60870-5-interop v0.4.0. The last recorded run (2026-11-12): 75 subtests passed, 38 skipped as known bugs or undeclared features, none failed.
 
 | Direction | Result |
 |---|---|
@@ -43,7 +57,7 @@ The reference images accept and send commands without authentication. Never atta
 | Disturbance data transfer against the go-iec60870-5 relay | Open103's control system runs the whole procedure; its value decoding is a known upstream bug |
 | go-iec60870-5 client against vitusdong | Link start-up, clock synchronization, GI termination and an idle line pass; identification, GI answers and command confirmations are known server bugs |
 
-**iec103ctl** v0.9.0 passes 73 checks against the same four stacks; the skips are known upstream bugs and features an image does not declare.
+**iec103ctl** v0.9.1 passes 73 checks against the same four stacks; the skips are known upstream bugs and features an image does not declare.
 
 ## What has not been validated
 

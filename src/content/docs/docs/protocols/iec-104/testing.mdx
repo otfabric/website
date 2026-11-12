@@ -44,13 +44,11 @@ make interop    # IEC 104 against the pinned reference images (Docker)
 | `iec104/e2e` | Client against server end to end over TCP, TLS, with `k = w = 1` and with IEC 62351-5; a wire matrix of all 67 type identifications in every variant; 40,000 frames each way to wrap the 15-bit sequence numbers |
 | Recorded traffic | Public IEC 104 captures replayed through the decoders, client and server, and checked against Wireshark's dissector |
 
-The IEC 104 packages were also checked clause by clause against the text of IEC 60870-5-104 edition 1; five deviations found that way were fixed, each with a test that cites the clause.
-
 **iec104ctl** runs every command through the real command tree against an in-process simulated station, over TCP and TLS, in all three output formats, with its exit codes, and against go-iec60870-5's own servers and clients (`make e2e` in iec60870ctl).
 
 ## The interop suite
 
-[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 (container contract 2.3) packages independent implementations of the whole IEC 60870-5 family as container images. For IEC 104 there are five, each with client and server:
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.5.0 (container contract 2.3) packages independent implementations of the whole IEC 60870-5 family as container images. For IEC 104 there are five, each with client and server:
 
 | Adapter | Implementation | Language | Image |
 |---|---|---|---|
@@ -81,7 +79,7 @@ Needs Docker and `jq`.
 
    ```sh
    docker run -d --name ref -p 127.0.0.1:2404:2404 \
-     ghcr.io/otfabric/iec60870-5-interop-iec104-lib60870:v0.4.0 server
+     ghcr.io/otfabric/iec60870-5-interop-iec104-lib60870:v0.5.0 server
    until docker exec ref test -f /run/iec60870-5-interop/ready; do sleep 0.1; done
    ```
 
@@ -89,7 +87,7 @@ Needs Docker and `jq`.
 
    ```sh
    docker run --rm --add-host=host.docker.internal:host-gateway \
-     ghcr.io/otfabric/iec60870-5-interop-iec104-openmuc:v0.4.0 \
+     ghcr.io/otfabric/iec60870-5-interop-iec104-openmuc:v0.5.0 \
      client interrogate --host host.docker.internal --port 2404 | jq .
    ```
 </Steps>
@@ -118,9 +116,23 @@ The stacks do not all support the same. Each image declares what it supports wit
 
 The gaps of wendy512 are those of go-iecp5 v1.2.6, and part5 v0.3.0 has no TLS, file transfer or redundancy; the evidence is in [CAPABILITIES.md](https://github.com/otfabric/iec60870-5-interop/blob/main/docs/CAPABILITIES.md).
 
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/iec60870-5-interop-iec104-otfabric` is go-iec60870-5 behind the same container contract as the reference images (adapter name `otfabric`), new with iec60870-5-interop v0.5.0, so you can test your IEC 104 controlling station or controlled station against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-iec104 -p 127.0.0.1:2404:2404 \
+  ghcr.io/otfabric/iec60870-5-interop-iec104-otfabric:<tag> server
+until docker exec go-iec104 test -f /run/iec60870-5-interop/ready; do sleep 0.1; done
+```
+
+The station serves the baseline fixture on port 2404, with TLS, IEC 62351-5, files and redundancy groups behind their flags, and `client <operation>` runs go-iec60870-5's controlling station against yours. One difference from the references: go-iec60870-5 takes `w` independently of `k`, but the image keeps the contract's rule `w <= k`.
+
+Its tags are go-iec60870-5 versions, such as `v0.5.1`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build, and `version` prints the versions inside the image. It is not part of an iec60870-5-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
+
 ## What go-iec60870-5 is validated against
 
-go-iec60870-5 v0.5.0 runs its IEC 104 client and server against the five IEC 104 images of iec60870-5-interop v0.4.0, pinned by digest, on every push and pull request (`make interop`). The last recorded run (2026-11-12): 519 subtests passed, 35 skipped, none failed.
+go-iec60870-5 v0.5.1 runs its IEC 104 client and server against the five IEC 104 images of iec60870-5-interop v0.4.0, pinned by digest, on every push and pull request (`make interop`). The last recorded run (2026-11-12): 519 subtests passed, 35 skipped, none failed.
 
 | Reference | Client to reference server | Reference client to server |
 |---|---|---|
@@ -138,7 +150,7 @@ go-iec60870-5 v0.5.0 runs its IEC 104 client and server against the five IEC 104
 
 To test against another build, set `IEC104_INTEROP_LIB60870_IMAGE`, `IEC104_INTEROP_OPENMUC_IMAGE`, `IEC104_INTEROP_WENDY512_IMAGE`, `IEC104_INTEROP_CBSIGMA_IMAGE` or `IEC104_INTEROP_PART5_IMAGE`; to run one stack only, `IEC104_INTEROP_ADAPTERS=lib60870`.
 
-**iec104ctl** v0.9.0 runs against the same five references in both roles: 42 checks pass, and the read against j60870 1.8.0 is the known upstream bug.
+**iec104ctl** v0.9.1 runs against the same five references in both roles: 42 checks pass, and the read against j60870 1.8.0 is the known upstream bug.
 
 ## What has not been validated
 
@@ -147,5 +159,5 @@ To test against another build, set `IEC104_INTEROP_LIB60870_IMAGE`, `IEC104_INTE
 - **IEC 62351-5 beyond cB-Sigma.** The security code was derived from cB-Sigma/iec60870, not from the IEC documents, and no third implementation or certified test equipment has checked either. Treat it as interoperable with cB-Sigma, not as conformance-tested. iec104ctl's `--secure` is tested against its own simulated station and relies on the library's tests against cB-Sigma.
 - **Edges of file transfer and redundancy.** The suite does not compare NOS of `F_AF_NA_1` with AFQ 1 and 2, `sequence` and `timeInvalid` of `F_DR_TA_1`, or whether a connection that was taken over is closed.
 - **Type identifications outside the fixture.** The interop suite covers `M_SP`, `M_DP`, `M_ST`, `M_BO`, `M_ME_NA/NB/NC`, `M_IT` and their CP56Time2a variants, the six command types, and the system commands. Everything else (protection events, packed points, bitstring commands, parameters) is covered by codec tests only.
-- **Edition 2 and Amendment 1.** The clause-by-clause check used edition 1 (2000); where the code follows edition 2 behaviour that edition 1 does not describe, it is marked as such in the library's IEC 104 interoperability list.
+- **Edition 2 and Amendment 1.** The library follows edition 1 (2000); where the code follows edition 2 behaviour that edition 1 does not describe, it is marked as such in the library's IEC 104 interoperability list.
 - **Faults.** The references are correct peers, not fault injectors. Malformed frames, wrong sequence numbers and timer boundaries are tested with the library's scripted peers.

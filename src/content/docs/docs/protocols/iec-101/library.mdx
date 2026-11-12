@@ -130,5 +130,5 @@ Server methods: `Send` (class 1), `SendClass`, `Pending`, `Reply`, `Confirm`, `N
 The ASDU codec accepts everything IEC 104 allows. `Params.Strict` applies `iec101.Validate` to every ASDU sent and received: reserved types such as the CP56Time2a commands of IEC 104 (IEC 60870-5-101:2003 7.2.1.1), cause 0, common address 0 and misuse of the broadcast address, and the rules for system commands. The strict client drops and logs what fails; the strict server mirrors a control-direction ASDU negatively with the fitting "unknown ..." cause.
 
 <Aside type="note">
-The implementation was checked clause by clause against IEC 60870-5-101:2003 (in its identical Russian adoption); Amendment 1:2015 is not held. The open deviations are listed in the library's LIMITATIONS.md. Not implemented yet: file transfer, IEC 62351-5 on IEC 101, and one client polling several stations of a multidrop line (the link layer can address them; the client takes one link address).
+The implementation follows IEC 60870-5-101:2003; Amendment 1:2015 is not covered. The open deviations are listed in the library's LIMITATIONS.md. Not implemented yet: file transfer, IEC 62351-5 on IEC 101, and one client polling several stations of a multidrop line (the link layer can address them; the client takes one link address).
 </Aside>

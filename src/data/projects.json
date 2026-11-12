@@ -106,11 +106,12 @@
 		"icon": "go-iec61850",
 		"highlights": [
 			"MMS client: browse, typed reads and writes, datasets, URCB and BRCB reports with EntryID resume, direct, SBO and SBOw controls, setting groups, journals and files.",
-			"SCL-driven MMS server with a report engine, the control state machine with CommandTermination, setting groups and journals. One SetValue call drives reports, journals, GOOSE and Sampled Values.",
+			"SCL-driven MMS server with a report engine (BufTm, pluggable BRCB buffer), the control state machine with CommandTermination and interlocking and synchrocheck checks, setting groups with a value bank per group, and journals. One SetValue call drives reports, journals, GOOSE and Sampled Values.",
+			"R-GOOSE and R-SV (IEC TR 61850-90-5): GOOSE and Sampled Values over UDP, unicast or multicast, every SPDU signed with HMAC-SHA256, interop tested against dscsystems/go-iec61850 and libiec61850.",
 			"GOOSE (IEC 61850-8-1): publisher with stNum, sqNum and MinTime to MaxTime retransmission, and a supervised subscriber validated against SCL. Server GoCBs are published on data change and readable and writable over MMS.",
 			"Sampled Values (IEC 61850-9-2, 9-2LE): drift-free publisher with noASDU batching, and a subscriber that counts loss, duplicates and reordering without allocating per frame. Server MSVCBs are published at their sample rate and exposed over MMS.",
 			"Raw Ethernet on Linux (AF_PACKET) and macOS and the BSDs (BPF), plus an in-memory hub with fault injection for tests.",
-			"Interop tested in CI against four independent stacks, libiec61850, IEC61850bean, dscsystems/go-iec61850 and iec61850-rust, in both directions, with GOOSE and Sampled Values on a Docker bridge.",
+			"Interop tested in CI against five independent stacks, libiec61850, IEC61850bean, dscsystems/go-iec61850, iec61850-rust and cB-Sigma, in both directions, with GOOSE and Sampled Values on a Docker bridge.",
 			"Stable v1 API, at least 90% coverage in every package, fuzzed MMS, GOOSE, SV and SCL decoders, and chaos tests. Not certified, and not yet validated against physical IEDs."
 		]
 	},
@@ -130,8 +131,9 @@
 			"Client and server for variable access, named variable lists, files, journals, information reports and Status, over COTP and TPKT on TCP port 102, with optional TLS.",
 			"Built to run unattended: errors that work with errors.Is and errors.As, a Metrics interface, connection retry with backoff and jitter, association and handshake timeouts, and Server.Shutdown.",
 			"A cancelled request no longer tears down its association, and a silent peer can no longer block the listener.",
-			"57 fuzz targets, at least 90% coverage in every package, and an end-to-end test of every exported method between its own client and server.",
-			"Interop tested in both directions against libiec61850, dscsystems/go-iec61850 and iec61850-rust, with 120 passing scenarios against libiec61850."
+			"The client keeps to the outstanding requests and nesting level negotiated at Initiate, an allow-list of services limits what a client may send, and captured traffic decodes passively for trace analysis.",
+			"70 fuzz targets, at least 90% coverage in every package, and an end-to-end test of every exported method between its own client and server.",
+			"Interop tested in both directions against libiec61850, dscsystems/go-iec61850 and iec61850-rust, with 121 passing scenarios against libiec61850."
 		]
 	},
 	{
@@ -153,7 +155,7 @@
 			"TCP gaps reported per association, counters for everything that could not be used, and a damaged file still returns what was read before the damage.",
 			"Tested on captures recorded between five independent IEC 61850 stacks and on public captures, with its MMS decoding checked by hand against Wireshark's dissector.",
 			"Offline only: it never captures live and never sends anything. Pure Go, no cgo and no libpcap.",
-			"Includes mmstracectl, which prints a capture's associations, timeline, reports and GOOSE and SV streams as text, JSON or CSV. Binaries for Linux, macOS and Windows are on GitHub Releases."
+			"Includes mmstracectl, which prints a capture's associations, timeline, reports and GOOSE and SV streams as text, JSON or CSV. Install it with the one-line installer of get.otfabric.io, or take a binary for Linux, macOS or Windows from GitHub Releases."
 		]
 	},
 	{
@@ -204,7 +206,8 @@
 			"Imports the official machine-readable namespace definitions (NSD, IEC 61850-7-7) and embeds every NSD release IEC publishes, 28 namespaces in about 0.3 MB, so lookups need no files.",
 			"Edition-aware: several releases of a namespace side by side, the default, extended and edition2 profiles, any embedded release by its ID (IEC 61850-7-4:2007B4), and the profile that matches the release a device declares in its nameplate. Two namespaces that define the same name give an ambiguity error instead of a silent merge (IEC 61850-7-420 and IEC TR 61850-90-9 both define DBAT).",
 			"Parses and validates references such as LD0/MMXU1.Hz.mag.f[MX] and resolves them down to their basic type, with functional constraints and presence conditions.",
-			"Semantic hints (quantity, phase, unit) from explicit rules for MMXU, MMXN and MMTR, always marked as OT Fabric interpretation and never changing the normative model.",
+			"Semantic hints (quantity, phase, unit) from explicit rules for the measurement, supervision, process and DER classes, always marked as OT Fabric interpretation and never changing the normative model.",
+			"Presence conditions evaluated on an instance, from JSON or SCL: required, optional or forbidden, and satisfied, violated or undetermined, with the reason (nsdctl model check).",
 			"Ontology helpers: a typed concept graph with traversal and JSON export.",
 			"No MMS, GOOSE, Sampled Values or SCL runtime. It is the model layer; communication lives in go-iec61850 and go-mms.",
 			"Includes nsdctl, the command-line tool for inspecting, validating, comparing and generating from NSD packages."
@@ -1367,7 +1370,7 @@
 			"iec-104"
 		],
 		"status": "available",
-		"description": "Independent IEC 60870-5 implementations in containers behind one contract, per companion standard: IEC 101 (lib60870-C, cB-Sigma, digitalpetri), IEC 102 (gisce/iec870ree, REE profile), IEC 103 (vitusdong, ARIEC103, Open103, go-iecp5 cs103) and IEC 104 (lib60870-C, OpenMUC j60870, wendy512, cB-Sigma, part5).",
+		"description": "Independent IEC 60870-5 implementations in containers behind one contract, per companion standard: IEC 101 (lib60870-C, cB-Sigma, digitalpetri), IEC 102 (gisce/iec870ree, REE profile), IEC 103 (vitusdong, ARIEC103, Open103, go-iecp5 cs103) and IEC 104 (lib60870-C, OpenMUC j60870, wendy512, cB-Sigma, part5). OT Fabric's own go-iec60870-5 stack is published behind the same contract, one image per standard, for testing your stack against.",
 		"icon": "go-iec60870-5"
 	},
 	{

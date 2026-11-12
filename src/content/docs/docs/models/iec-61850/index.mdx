@@ -124,7 +124,8 @@ Package `names` has typed constants for every class, data object, CDC and enumer
 | `catalog` | Multi-release index, profiles, namespace-qualified lookups, overlaps, search and diff |
 | `reference` | Instance and class references, logical node names, MMS form |
 | `resolver` | Path and type resolution with provenance |
-| `semantic` | Quantity, phase, reference, component and unit hints from explicit rules |
+| `semantic` | Quantity, phase, reference, component and unit hints from explicit rules, with exclusions and a coverage report |
+| `presence` | Evaluates presence conditions on an instance: required, optional or forbidden, and satisfied, violated or undetermined, with the reason |
 | `ontology` | Typed concept graph with traversal and JSON export |
 | `official` | The embedded official namespaces and profiles |
 | `names` | Generated constants of the default profile |
@@ -133,9 +134,9 @@ The module imports neither go-iec61850 nor go-mms, nor any other transport.
 
 ## Status and scope
 
-go-iec61850-model is pre-release (v0.8.2 at the time of writing). Its README and PROGRESS.md track the state of each part.
+go-iec61850-model is pre-release (v0.10.1 at the time of writing). Its README and PROGRESS.md track the state of each part.
 
-- **Supported:** the NSD importer, catalog and profiles, references, type resolution, semantic mapping for metering classes, ontology helpers, the embedded catalog, generated names and the nsdctl CLI. The importer is tested against the 33 tracked official packages, every NSD release IEC publishes, and 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages.
+- **Supported:** the NSD importer, catalog and profiles, references (control references and array elements included), type resolution, presence condition evaluation, semantic mapping for the measurement, supervision, process and DER classes of IEC 61850-7-4 and 7-420, titles and descriptions of every element in OT Fabric's own wording, ontology helpers, the embedded catalog, generated names and the nsdctl CLI. The importer is tested against the 33 tracked official packages, every NSD release IEC publishes, and 93% of the concrete data objects resolve to leaf types; the rest hit gaps in the published packages.
 - **Not supported:** MMS, GOOSE, Sampled Values or any other communication; an SCL runtime; the IEC 61850-8-1 service namespace. An NSD update monitor is planned.
 
 <Aside type="note" title="IEC content and licensing">

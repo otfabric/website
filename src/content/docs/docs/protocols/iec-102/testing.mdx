@@ -18,11 +18,25 @@ IEC 102 has the thinnest open ecosystem of the IEC 60870-5 family. Every open im
 
 ## The reference image
 
-[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 has one IEC 102 image, `ghcr.io/otfabric/iec60870-5-interop-iec102-gisce`: the controlling station of [gisce/iec870ree](https://github.com/gisce/iec870ree) v0.14.1 (Python, AGPL-3.0), client only, with a TCP transport of its own. It reads product information, the clock and integrated totals, sets the clock and reads tariffs, inside an REE session. Its status is experimental: there is no cross-stack run, because there is no second IEC 102 stack with a meter.
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.5.0 has one IEC 102 reference image, `ghcr.io/otfabric/iec60870-5-interop-iec102-gisce`: the controlling station of [gisce/iec870ree](https://github.com/gisce/iec870ree) v0.14.1 (Python, AGPL-3.0), client only, with a TCP transport of its own. It reads product information, the clock and integrated totals, sets the clock and reads tariffs, inside an REE session. Its status is experimental: there is no independent IEC 102 stack with a meter to run it against. Since v0.5.0 it also runs against OT Fabric's own meter image (below), which shows both keep the contract but is not independent evidence.
 
 <Aside type="note">
 The harness's own self-test runs the gisce image against a scripted meter of the repository, which is not an implementation of IEC 102. A pass there shows that the image keeps the contract, not that either side is right about IEC 102.
 </Aside>
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/iec60870-5-interop-iec102-otfabric` is go-iec60870-5 behind the same container contract as the reference images (adapter name `otfabric`), new with iec60870-5-interop v0.5.0, so you can test your IEC 102 controlling station or meter against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-iec102 -p 127.0.0.1:2401:2401 \
+  ghcr.io/otfabric/iec60870-5-interop-iec102-otfabric:<tag> server
+until docker exec go-iec102 test -f /run/iec60870-5-interop/ready; do sleep 0.1; done
+```
+
+It is the first IEC 102 image of the suite with a meter: the go-iec60870-5 integrated total station serves the baseline fixture (integrated totals, the clock, product identification and tariffs, standard and REE profile) on port 2401, and `client <operation>` runs go-iec60870-5's controlling station against your meter. The gisce controlling station runs every IEC 102 case of the suite against it. Being OT Fabric's own meter, that run shows that both keep the contract, not that the meter is right about IEC 102.
+
+Its tags are go-iec60870-5 versions, such as `v0.5.1`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build, and `version` prints the versions inside the image. It is not part of an iec60870-5-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## What has been validated
 

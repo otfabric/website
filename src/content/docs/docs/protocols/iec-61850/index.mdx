@@ -182,11 +182,11 @@ GOOSE and SV frames go to every port of the segment and act on protection. A tes
 
 | Area | Implemented | Not implemented |
 |---|---|---|
-| MMS client | Browse, read and write (single and bulk), datasets, URCB and BRCB reports with GI, integrity period, EntryID resume and segmented report reassembly, direct, SBO and SBOw controls, setting groups, journals, files | CommandTermination wait and time-activated operate in the client |
-| MMS server | SCL model, report engine, control state machine with positive CommandTermination, setting groups, journals and files through providers, Identify, Status, graceful shutdown | Dynamic datasets, per-group setting banks, persistent buffers, segmented report generation |
-| GOOSE | Publisher, supervised subscriber, SCL binding, server GoCBs on data change, GoCB access over MMS | GOOSE management, GSSE, fixed-offset encoding, mapping received values into a server model |
-| Sampled Values | 9-2LE and generic, publisher with absolute pacing and `noASDU` batching, subscriber with loss accounting, SCL binding, server MSVCBs, MSVCB access over MMS | Unicast SV, hardware time synchronization (PTP or 1PPS) |
-| Security | TLS on the MMS connection | IEC 62351-6 for GOOSE and SV, R-GOOSE and R-SV (IEC 61850-90-5) |
+| MMS client | Browse, read and write (single and bulk), datasets, URCB and BRCB reports with GI, integrity period, EntryID resume and segmented report reassembly, direct, SBO and SBOw controls with CommandTermination wait and time-activated operate, setting groups, journals, files | |
+| MMS server | SCL model, report engine with BufTm and segmentation, control state machine with CommandTermination, interlocking and synchrocheck checks, setting groups with a value bank per group, journals and files through providers, Identify, Status, graceful shutdown | Dynamic datasets, persistent buffers and setting groups out of the box (pluggable), BRCB ResvTms and Owner |
+| GOOSE | Publisher, supervised subscriber, SCL binding, server GoCBs on data change, GoCB access over MMS, R-GOOSE over UDP | GOOSE management, GSSE, mapping received values into a server model |
+| Sampled Values | 9-2LE and generic, publisher with absolute pacing and `noASDU` batching, subscriber with loss accounting, SCL binding, server MSVCBs, MSVCB access over MMS, R-SV over UDP | Unicast SV, hardware time synchronization (PTP or 1PPS) |
+| Security | TLS on the MMS connection, HMAC-SHA256 authentication of R-GOOSE and R-SV (IEC TR 61850-90-5) | IEC 62351-6 for layer-2 GOOSE and SV, encryption of R-GOOSE and R-SV |
 
 The library guide has the details, and [Testing and interop](/docs/protocols/iec-61850/testing/) shows which of these are tested against which stack.
 
@@ -194,7 +194,7 @@ The library guide has the details, and [Testing and interop](/docs/protocols/iec
 
 Plain IEC 61850 MMS has no encryption and, in most deployments, no authentication. ACSE can carry a password in the association request; anyone on the network path can read it. TLS on the TCP connection (IEC 62351-3) is the transport-level option and must be supported by both ends. In practice MMS is protected by network segmentation. Treat port 102 as a control interface, because an associated client can send control commands to any object the device allows to be operated remotely.
 
-GOOSE and Sampled Values are usually neither signed nor encrypted. IEC 62351-6 defines authentication for them, but it is rare in the field and OT Fabric does not implement it. Anyone who can send frames on the segment can forge them, so the process and station buses are protected with VLANs, port security and separate switches.
+GOOSE and Sampled Values are usually neither signed nor encrypted. IEC 62351-6 defines authentication for them, but it is rare in the field and OT Fabric does not implement it for layer-2 frames. Routable GOOSE and SV (R-GOOSE, R-SV) over UDP are signed with HMAC-SHA256 by go-iec61850. Anyone who can send frames on the segment can forge them, so the process and station buses are protected with VLANs, port security and separate switches.
 
 ## Where it is used
 

@@ -20,7 +20,7 @@ Recorded traffic of an SEL RTAC and of three utility stations decodes and encode
 
 ## The interop suite
 
-[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.4.0 (container contract 2.3) packages three independent IEC 101 implementations, each as client and server, unbalanced and balanced:
+[iec60870-5-interop](https://github.com/otfabric/iec60870-5-interop) v0.5.0 (container contract 2.3) packages three independent IEC 101 implementations, each as client and server, unbalanced and balanced:
 
 | Adapter | Implementation | Language | Image |
 |---|---|---|---|
@@ -36,13 +36,13 @@ The serial byte stream crosses one TCP connection unchanged, as through a termin
    ```sh
    docker network create iec101-demo
    docker run -d --rm --name station --network iec101-demo \
-     ghcr.io/otfabric/iec60870-5-interop-iec101-lib60870:v0.4.0 server --link-mode balanced
+     ghcr.io/otfabric/iec60870-5-interop-iec101-lib60870:v0.5.0 server --link-mode balanced
    ```
 
 2. Interrogate it with a controlling station of another stack:
 
    ```sh
-   docker run --rm --network iec101-demo ghcr.io/otfabric/iec60870-5-interop-iec101-cbsigma:v0.4.0 \
+   docker run --rm --network iec101-demo ghcr.io/otfabric/iec60870-5-interop-iec101-cbsigma:v0.5.0 \
      client interrogate --host station --link-mode balanced
    docker stop station && docker network rm iec101-demo
    ```
@@ -51,6 +51,20 @@ The serial byte stream crosses one TCP connection unchanged, as through a termin
 <Aside type="caution">
 The reference stations accept commands from anyone, and the clients send commands to whatever they are given. Never attach them to a plant network or point them at a real station.
 </Aside>
+
+## Test your stack against OT Fabric's
+
+`ghcr.io/otfabric/iec60870-5-interop-iec101-otfabric` is go-iec60870-5 behind the same container contract as the reference images (adapter name `otfabric`), new with iec60870-5-interop v0.5.0, so you can test your IEC 101 controlling station or controlled station against it, the way OT Fabric tests its own stack against yours:
+
+```sh
+docker run -d --name go-iec101 -p 127.0.0.1:2401:2401 \
+  ghcr.io/otfabric/iec60870-5-interop-iec101-otfabric:<tag> server --link-mode balanced
+until docker exec go-iec101 test -f /run/iec60870-5-interop/ready; do sleep 0.1; done
+```
+
+The station serves the baseline fixture on port 2401, unbalanced or balanced, with every field size, and `client <operation>` runs go-iec60870-5's controlling station against yours. Run against the three references, it passed every cross-stack case; the balanced cases against a digitalpetri station are the known upstream bug above.
+
+Its tags are go-iec60870-5 versions, such as `v0.5.1`, and `latest`; a rebuild of a version replaces its tag, so pin the digest when you need an exact build, and `version` prints the versions inside the image. It is not part of an iec60870-5-interop release or its `manifest.json`, and it reports `independentEngine: false`: a result against it tells you about your stack, not something independent about OT Fabric's. A result you publish, naming your implementation and version, is independent evidence. Like the references, it is for testing only and has no place on a network you do not control.
 
 ## What go-iec60870-5 is validated against
 
@@ -66,7 +80,7 @@ The client runs link start-up, interrogation, counter interrogation, read (inclu
 
 The skips are the known bug `digitalpetri-balanced-server-no-link-reset`: a balanced digitalpetri station sends user data without initializing its own primary direction, which IEC 60870-5-101 requires. go-iec60870-5 keeps the "secondary link not reset" state and does not take the data, as cB-Sigma does.
 
-**iec101ctl** v0.9.0 passes 399 cases against the same three stacks, both roles, both link modes, default and non-default field sizes.
+**iec101ctl** v0.9.1 passes 399 cases against the same three stacks, both roles, both link modes, default and non-default field sizes.
 
 ## What has not been validated
 
